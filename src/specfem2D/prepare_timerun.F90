@@ -63,13 +63,13 @@
 
   ! for adjoint kernel runs
   call prepare_timerun_adjoint()
-
+  
   ! reads initial fields from external file if needed
   call prepare_timerun_initialfield
-
+  
   ! compute the source time function and stores it in a text file
   call prepare_timerun_stf()
-
+  
   ! prepares noise simulations
   if (NOISE_TOMOGRAPHY /= 0) call prepare_timerun_noise()
 
@@ -103,7 +103,7 @@
   if (output_energy .and. myrank == 0) open(unit=IOUT_ENERGY,file='OUTPUT_FILES/energy.dat',status='unknown',action='write')
 
   ! Modif DG
-  call find_normals()
+  if(USE_DISCONTINUOUS_METHOD) call find_normals()
 
   ! synchronizes all processes
   call synchronize_all()
@@ -248,12 +248,14 @@
     allocate(buffer_send_faces_vector_ac(max_ibool_interfaces_size_ac,ninterface_acoustic))
     allocate(buffer_recv_faces_vector_ac(max_ibool_interfaces_size_ac,ninterface_acoustic))
     
+    if(USE_DISCONTINUOUS_METHOD) then
     ! MODIF DG
     max_ibool_interfaces_size_ac = maxval(nibool_interfaces_acoustic_DG(:))
     allocate(tab_requests_send_recv_DG(ninterface_acoustic*4))
     allocate(buffer_send_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
     allocate(buffer_recv_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
-
+    endif
+    
     allocate(tab_requests_send_recv_elastic(ninterface_elastic*4))
     allocate(buffer_send_faces_vector_el(max_ibool_interfaces_size_el,ninterface_elastic))
     allocate(buffer_recv_faces_vector_el(max_ibool_interfaces_size_el,ninterface_elastic))
@@ -331,7 +333,7 @@
     ispec = ispec_inner_to_glob(ispec_inner)
     ibool_inner(:,:,ispec_inner) = ibool(:,:,ispec)
   enddo
-
+  
   ! reduces cache misses for outer elements
   call get_global_indirect_addressing(nspec_outer,nglob,ibool_outer,copy_ibool_ori,integer_mask_ibool)
 
@@ -1196,6 +1198,7 @@
     source_time_function(:,:,:) = 0._CUSTOM_REAL
     
     ! DG for adjoint source
+    if(USE_DISCONTINUOUS_METHOD) then
     allocate(source_time_function_rho_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
     source_time_function_rhovx_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
     source_time_function_rhovz_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
@@ -1204,7 +1207,8 @@
     source_time_function_rhovx_DG(:,:,:) = 0._CUSTOM_REAL
     source_time_function_rhovz_DG(:,:,:) = 0._CUSTOM_REAL
     source_time_function_E_DG(:,:,:)     = 0._CUSTOM_REAL
-
+    endif
+    
     ! computes source time function array
     call prepare_source_time_function()
 
@@ -1213,7 +1217,7 @@
     ! dummy allocation
     allocate(source_time_function(1,1,1))
   endif
-
+  
   ! synchronizes all processes
   call synchronize_all()
 

@@ -41,7 +41,7 @@
   integer :: i
   ! for rk44
   double precision :: weight_rk
-
+  
   ! checks if anything to do in this slice
   if (.not. any_acoustic) return
 
@@ -51,7 +51,7 @@
   ! main solver for the acoustic elements
   call compute_forces_acoustic(potential_dot_dot_acoustic,potential_dot_acoustic,potential_acoustic, &
                                PML_BOUNDARY_CONDITIONS,potential_acoustic_old)
-
+  
   ! Stacey boundary conditions
   if (STACEY_BOUNDARY_CONDITIONS) then
     call compute_stacey_acoustic(potential_dot_dot_acoustic,potential_dot_acoustic)
@@ -67,7 +67,7 @@
   if (ACOUSTIC_FORCING) then
     call add_acoustic_forcing_at_rigid_boundary(potential_dot_dot_acoustic)
   endif
-
+  
   ! applies to coupling in case of MPI partitioning:
   !   coupling interfaces might not be properly detected if one material domain is only in an another slice.
   !   in such a case, the common nodes would not be detected as belonging to a coupling interface.
@@ -115,6 +115,12 @@
         call assemble_MPI_vector_ac(potential_dot_acoustic)
       endif
     endif
+    
+    if(.false.) then
+    call build_veloc_boundary_DG(veloc_vector_acoustic_DG_coupling)  
+    call assemble_MPI_vector_ac(veloc_vector_acoustic_DG_coupling  )
+    endif
+    
   endif
 #endif
 
@@ -208,7 +214,7 @@
 
   ! free surface for an acoustic medium
   call enforce_acoustic_free_surface(potential_dot_dot_acoustic,potential_dot_acoustic,potential_acoustic)
-
+  
   end subroutine compute_forces_acoustic_main
 
 !

@@ -69,6 +69,13 @@
                                                 !ZN of the new code with the old code, you will have big difference if you
                                                 !ZN do not tune the source
                                                 / kappastore(i,j,ispec_selected_source(i_source))
+                                                
+                                                !WRITE(*,*) ">>>>", i, j, ispec_is_acoustic(ispec_selected_source(i_source)), &
+                                                !        source_time_function(i_source,it,i_stage)*hlagrange &
+                                                !!ZN becareful the following line is new added, thus when do comparison
+                                                !!ZN of the new code with the old code, you will have big difference if you
+                                                !!ZN do not tune the source
+                                                !/ kappastore(i,j,ispec_selected_source(i_source))
           enddo
         enddo
       ! moment tensor

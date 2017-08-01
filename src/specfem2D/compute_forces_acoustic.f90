@@ -54,7 +54,9 @@
                          rmemory_acoustic_dux_dx,rmemory_acoustic_dux_dz,&
                          rmemory_potential_acoustic_LDDRK, &
                          rmemory_acoustic_dux_dx_LDDRK,rmemory_acoustic_dux_dz_LDDRK,&
-                         deltat
+                         deltat, &
+                         ! MODIF DG
+                         ispec_is_acoustic_DG, USE_DISCONTINUOUS_METHOD
 
   ! PML arrays
   use specfem_par, only: nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
@@ -116,6 +118,10 @@
 ! loop over spectral elements
   do ispec = ifirstelem,ilastelem
 
+    if(USE_DISCONTINUOUS_METHOD) then
+        if(.not. ispec_is_acoustic_DG(ispec)) cycle
+    endif
+    
     ! acoustic spectral element
     if (ispec_is_acoustic(ispec)) then
 

@@ -38,7 +38,7 @@
   use constants,only: IMAIN,NGLLX,NGLLZ,NEDGES
 
   use specfem_par, only : knods,ibool,nglob,nspec,myrank,&
-        link_DG_CG,nglob_DG,ibool_DG!,ispec_is_acoustic
+        link_DG_CG,nglob_DG,ibool_DG,USE_DISCONTINUOUS_METHOD
 
   implicit none
 
@@ -49,7 +49,7 @@
 
   integer, dimension(NEDGES) :: ngnod_begin,ngnod_end
 
-
+  
 !----  create global mesh numbering
   if (myrank == 0) then
     write(IMAIN,*)
@@ -83,9 +83,9 @@
 ! initialisation du tableau de numerotation globale
   ibool(:,:,:) = 0
   
-  ibool_DG(:,:,:) = 0
+  if(USE_DISCONTINUOUS_METHOD) ibool_DG(:,:,:) = 0
   nglob_DG = 0
-
+  
   do numelem = 1,nspec
   do i = 1,NGLLX
     do j = 1,NGLLZ
@@ -304,6 +304,7 @@
   enddo
   enddo
   
+  if(USE_DISCONTINUOUS_METHOD) then
   do numelem = 1,nspec
   do i = 1,NGLLX
     do j = 1,NGLLZ
@@ -318,6 +319,7 @@
     enddo
   enddo
   enddo
+  endif
   
 ! verification de la coherence de la numerotation generee
   if (minval(ibool) /= 1 .or. maxval(ibool) /= nglob) call exit_MPI(myrank,'Error while generating global numbering')

@@ -61,7 +61,7 @@
                          rmemory_displ_elastic_LDDRK, &
                          rmemory_dux_dx_LDDRK,rmemory_dux_dz_LDDRK,rmemory_duz_dx_LDDRK,&
                          ispec_is_acoustic,time_stepping_scheme, elastic_tensor, &
-                         num_fluid_solid_edges, myrank
+                         num_fluid_solid_edges!, myrank
 
   ! PML arrays
   use specfem_par, only: nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &

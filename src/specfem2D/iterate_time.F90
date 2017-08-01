@@ -117,11 +117,8 @@ subroutine iterate_time()
       if (ACOUSTIC_SIMULATION) then
         if (.not. GPU_MODE) then
           
-          if(USE_DISCONTINUOUS_METHOD) then
-                call compute_forces_acoustic_DG_main()
-          else
-                call compute_forces_acoustic_main()
-          endif
+          if(any_acoustic_DG) call compute_forces_acoustic_DG_main()
+          if(.not. only_DG_acoustic) call compute_forces_acoustic_main()
           
           if (SIMULATION_TYPE == 3) call compute_forces_acoustic_main_backward()
           

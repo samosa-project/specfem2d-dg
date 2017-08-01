@@ -316,6 +316,8 @@
     ! For background parameters & inverse method (Temporary)
     allocate(rmass_inverse_acoustic_DG_b(nglob))
     allocate(potential_dphi_dx_DG(nglob), potential_dphi_dz_DG(nglob))
+    
+    if(.not. only_DG_acoustic .AND. any_acoustic_DG) allocate(veloc_vector_acoustic_DG_coupling(nglob, 2))
   
   else
     ! dummy allocate unused arrays with fictitious size
@@ -328,25 +330,23 @@
   allocate(p_DG_init(nglob_DG), T_init(nglob_DG), V_DG(2,2,nglob_DG), T_DG(2,nglob_DG))
   allocate(rmass_inverse_acoustic_DG(nglob_DG))
   
+  !allocate(this_iglob_is_acous(nglob))
+  
   nglob_acoustic_b_DG = 1
   if (SIMULATION_TYPE == 3 .and. any_acoustic) then
     nglob_acoustic_b = nglob
     nspec_acoustic_b = nspec
     
     ! TEST DG
-    if (USE_DISCONTINUOUS_METHOD) then
-        nglob_acoustic_b_DG = nglob!nglob_DG
-        ! kernels
-        ! on local points
-        allocate(v0_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
-        allocate(c_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
-        allocate(gamma_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
-    endif
+    if (USE_DISCONTINUOUS_METHOD) nglob_acoustic_b_DG = nglob!nglob_DG
+
   else
     ! dummy array allocations
     ! allocates unused arrays with fictitious size
     nglob_acoustic_b = 1
     nspec_acoustic_b = 1
+
+    nglob_acoustic_b_DG = 1
   endif
   allocate(b_dot_rho(nglob_acoustic_b_DG))
   allocate(b_dot_rhovx(nglob_acoustic_b_DG))
@@ -360,7 +360,11 @@
   allocate(resu_b_rhovx(nglob_acoustic_b_DG))
   allocate(resu_b_rhovz(nglob_acoustic_b_DG))
   allocate(resu_b_E(nglob_acoustic_b_DG))
-  
+  ! kernels
+  ! on local points
+  allocate(v0_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
+  allocate(c_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
+  allocate(gamma_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
   
   allocate(potential_acoustic(nglob_acoustic))
   allocate(potential_acoustic_old(nglob_acoustic))

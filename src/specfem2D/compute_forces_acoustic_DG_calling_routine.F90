@@ -59,9 +59,13 @@
   
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.0000001_CUSTOM_REAL
   
+  character(len=100) file_name
+  integer :: i,j,ispec
+  
   !integer :: i ,j, ispec
   ! checks if anything to do in this slice
-  if (.not. any_acoustic) return
+  if (.not. any_acoustic_DG) return
+  
   ! Intialization
   if(it == 1 .AND. i_stage == 1) then
   
@@ -106,18 +110,15 @@
         E_init(nglob_DG), &
         rho_init(nglob_DG))
     
-    call prepare_MPI_DG()
-    !call prepare_MPI_DG(my_neighbours)
+   call prepare_MPI_DG()
+   
+   allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
+   ispec_is_acoustic_coupling_ac = -1
+   if(.not. only_DG_acoustic) call find_DG_acoustic_coupling()
     
     !stop
     T_DG = 0
     V_DG = 0
-
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
-  endif
-#endif
     
     call initial_condition_DG()
     
@@ -137,6 +138,25 @@
   endif
 #endif
     
+  endif !if(it == 1 .AND. i_stage == 1)
+  
+  if(it == 1 .AND. i_stage == 1 .AND. .false.) then
+  write(file_name,"('./boundaries_MPI_',i3.3)") myrank
+  open(10,file=file_name, form='formatted')
+  do ispec = 1,nspec
+    ! acoustic spectral element
+    !if (ispec_is_acoustic(ispec)) then
+    !if (ispec_is_acoustic_DG(ispec)) then
+  !if(ispec_is_acoustic_DG(ispec)) then
+      ! first double loop over GLL points to compute and store gradients
+      do j = 1,5
+        do i = 1,5
+                WRITE(10,*) coord(:,ibool_before_perio(i,j,ispec))
+        enddo
+      enddo
+  !endif
+  enddo
+  close(10)
   endif
   
   rk4a_d(1) = 0d0
@@ -193,12 +213,11 @@
     call assemble_MPI_vector_DG(rhovx_DG, buffer_DG_rhovx_P)
     call assemble_MPI_vector_DG(rhovz_DG, buffer_DG_rhovz_P)
     call assemble_MPI_vector_DG(E_DG, buffer_DG_E_P)
-    !call assemble_MPI_vector_DG(e1_DG, buffer_DG_e1_P)
   endif
 #endif
 
   ! Local Discontinuous Galerkin for viscous fluxes
-  if(maxval(muext) > 0 .OR. maxval(etaext) > 0 .OR. maxval(kappa_DG) > 0) then
+  if((maxval(muext) > 0 .OR. maxval(etaext) > 0 .OR. maxval(kappa_DG) > 0)) then
 
 #ifdef USE_MPI
   if (NPROC > 1 .and. ninterface_acoustic > 0) then
@@ -215,13 +234,6 @@
 
   endif
   
-  !if(i_stage == 1) then
-  !      rhovx_init = rhovx_DG
-  !      rhovz_init = rhovz_DG
-  !      E_init     = E_DG
-  !      rho_init   = rho_DG
-  !endif
-  
   call compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
         T_DG, V_DG, e1_DG, &
         dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
@@ -233,10 +245,10 @@
         - (HALFl)*(ONEl/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     
     ! Inverse mass matrix
-    dot_rho(:)   = dot_rho(:) * rmass_inverse_acoustic_DG(:)
+    dot_rho(:)   = dot_rho(:)   * rmass_inverse_acoustic_DG(:)
     dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
     dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
-    dot_E(:)     = dot_E(:) * rmass_inverse_acoustic_DG(:)
+    dot_E(:)     = dot_E(:)     * rmass_inverse_acoustic_DG(:)
     !dot_e1(:)     = dot_e1(:) * rmass_inverse_acoustic_DG(:)
   
     ! RK5-low dissipation Update
@@ -271,7 +283,7 @@
   endif
   
   if(USE_SLOPE_LIMITER) then
-  if(USE_DISCONTINUOUS_METHOD) then
+  if(CONSTRAIN_HYDROSTATIC) then
         veloc_x = rho_DG - rho_init
         call SlopeLimit1(veloc_x, timelocal, 1)
         rho_DG = veloc_x + rho_init
@@ -279,7 +291,7 @@
         call SlopeLimit1(rho_DG, timelocal, 1)
   endif
 
-  if(USE_DISCONTINUOUS_METHOD) then
+  if(CONSTRAIN_HYDROSTATIC) then
         veloc_x = rhovx_DG - rhovx_init
         call SlopeLimit1(veloc_x, timelocal, 1)
         rhovx_DG = veloc_x + rhovx_init
@@ -287,7 +299,7 @@
         call SlopeLimit1(rhovx_DG, timelocal, 2)
   endif
   
-  if(USE_DISCONTINUOUS_METHOD) then
+  if(CONSTRAIN_HYDROSTATIC) then
         veloc_x = rhovz_DG - rhovz_init
         call SlopeLimit1(veloc_x, timelocal, 1)
         rhovz_DG = veloc_x + rhovz_init
@@ -295,7 +307,7 @@
         call SlopeLimit1(rhovz_DG, timelocal, 3)
   endif
   
-  if(USE_DISCONTINUOUS_METHOD) then
+  if(CONSTRAIN_HYDROSTATIC) then
         veloc_x = E_DG - E_init
         call SlopeLimit1(veloc_x, timelocal, 1)
         E_DG = veloc_x + E_init
@@ -809,7 +821,7 @@
     
     use constants,only: CUSTOM_REAL
     
-    use specfem_par, only: NSTEP,NSOURCES, myrank, nrec,&
+    use specfem_par, only: NSTEP,myrank, nrec,&!NSOURCES
                          source_time_function_rho_DG, source_time_function_E_DG, &
                          source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
                          deltat, which_proc_receiver,ispec_is_acoustic, ispec_selected_rec!,is_proc_source, ispec_is_acoustic, ispec_selected_source
@@ -1030,8 +1042,8 @@
     
     integer :: i_2, j_2
     
-    !character(len=100) file_name
-    !write(file_name,"('MPI_',i3.3,'.txt')") myrank
+   ! character(len=100) file_name
+    !write(file_name,"('./boundaries_elastic2_MPI_',i3.3)") myrank
     ! Open output forcing file
     !open(100,file=file_name,form='formatted')
   
@@ -1125,13 +1137,19 @@
       call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
     endif
     
+    WRITE(*,*) "-------------->", myrank, iinterface, my_neighbours(num_interface), num_interface, nb_values
+    
     enddo
     
     ! waits for MPI requests to complete (recv)
     ! each wait returns once the specified MPI request completed
-    do iinterface = 1, ninterface_acoustic_DG*4
+    do iinterface = 1, 4*ninterface_acoustic_DG
+    !do iinterface = 1, ninterface_acoustic_DG
       call MPI_Wait(tab_requests_send_recv_DG(iinterface), &
                   MPI_STATUS_IGNORE, ier)
+    
+      !call MPI_Wait(tab_requests_send_recv_DG(iinterface + 3*ninterface_acoustic_DG), &
+      !            MPI_STATUS_IGNORE, ier)
     enddo
     
     MPI_transfer = -1
@@ -1145,11 +1163,17 @@
     ! loops over all interface points
     do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
     
+       ! WRITE(*,*) "-------------->", myrank, ipoin, iinterface
+    
         iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
         
         i = link_ij_iglob(iglob,1)
         j = link_ij_iglob(iglob,2)
         ispec = link_ij_iglob(iglob,3)
+        
+        !if(ispec_is_acoustic_coupling_el(i,j,ispec,3) >= 0) then
+        !        WRITE(100,*) coord(:,ibool_before_perio(i,j,ispec))
+        !endif
         
         i_2     = buffer_recv_faces_vector_DG_i(ipoin, iinterface)
         j_2     = buffer_recv_faces_vector_DG_j(ipoin, iinterface)
@@ -1176,6 +1200,14 @@
     enddo
     
     enddo
+    
+    !do iinterface = 1, ninterface_acoustic_DG
+    !  call MPI_Wait(tab_requests_send_recv_DG(iinterface + 0), &
+    !              MPI_STATUS_IGNORE, ier)
+    !
+    !  call MPI_Wait(tab_requests_send_recv_DG(iinterface + 2*ninterface_acoustic_DG), &
+    !              MPI_STATUS_IGNORE, ier)
+    !enddo
     
     !close(100)
     
@@ -1420,4 +1452,49 @@ END
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+   subroutine build_veloc_boundary_DG(veloc_vector_acoustic_DG_coupling)    
+    
+    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+    
+    use specfem_par,only: ispec_is_acoustic, ispec_is_acoustic_DG, nspec, nglob, ibool, potential_dot_acoustic, &
+        hprime_xx, hprime_zz, xix, xiz, gammax, gammaz
+
+    implicit none 
+    
+    real(kind=CUSTOM_REAL), dimension(nglob,2) :: veloc_vector_acoustic_DG_coupling
+    integer :: i, j, k, ispec
+    real(kind=CUSTOM_REAL) :: xixl, xizl, gammaxl, gammazl, dux_dxi, dux_dgamma
+
+    veloc_vector_acoustic_DG_coupling = 0.
+
+    do ispec = 1,nspec
+
+    ! acoustic spectral element
+    if (ispec_is_acoustic(ispec) .AND. .not. ispec_is_acoustic_DG(ispec)) then
+
+      ! first double loop over GLL points to compute and store gradients
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+
+            xixl = xix(i,j,ispec)
+            xizl = xiz(i,j,ispec)
+            gammaxl = gammax(i,j,ispec)
+            gammazl = gammaz(i,j,ispec)
+
+            do k = 1,NGLLX
+                dux_dxi    = dux_dxi    + potential_dot_acoustic(ibool(k,j,ispec)) * hprime_xx(i,k)
+                dux_dgamma = dux_dgamma + potential_dot_acoustic(ibool(i,k,ispec)) * hprime_zz(j,k)
+            enddo
+
+            ! derivatives of potential
+            veloc_vector_acoustic_DG_coupling(ibool(i,j,ispec), 1) = dux_dxi * xixl + dux_dgamma * gammaxl
+            veloc_vector_acoustic_DG_coupling(ibool(i,j,ispec), 2) = dux_dxi * xizl + dux_dgamma * gammazl
+        enddo
+     enddo
+     
+    endif
+    
+    enddo
+
+  end subroutine 
 

@@ -65,7 +65,7 @@
                                 ibool_interfaces_acoustic_DG, nibool_interfaces_acoustic_DG, &
                                 inum_interfaces_acoustic_DG, ninterface_acoustic_DG, &
                                 mask_ispec_inner_outer,nibool_interfaces_ext_mesh, ibool_interfaces_ext_mesh_init, &
-                                is_MPI_interface_DG, USE_DISCONTINUOUS_METHOD!, coord, myrank, link_DG_CG!, neighbor_DG, neighbor_DG_corner, &
+                                is_MPI_interface_DG, USE_DISCONTINUOUS_METHOD!,ispec_is_acoustic_DG!, coord, myrank, link_DG_CG!, neighbor_DG, neighbor_DG_corner, &
                                 !ispec_is_acoustic_coupling_el, ispec_is_acoustic_surface_corner, &
                                 !ispec_is_acoustic_surface
   implicit none

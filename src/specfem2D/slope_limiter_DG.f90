@@ -38,7 +38,7 @@
     use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
     use specfem_par, only: nspec, nglob_DG, ibool_DG, Vandermonde, invVandermonde, &
-        neighbor_DG, neighbor_DG_corner,is_corner, NGLLX, NGLLZ, &
+        neighbor_DG, NGLLX, NGLLZ, &!neighbor_DG_corner,is_corner, 
         max_interface_size, ninterface, NPROC, MPI_transfer, ninterface_acoustic!, myrank!, ibool, ibool_before_perio!, coord, i_stage&
         !ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner!,ibool_before_perio,
 
@@ -300,8 +300,9 @@
     use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
     use specfem_par, only: nspec, nglob_DG, ibool_DG, Vandermonde, invVandermonde, &
-        neighbor_DG, neighbor_DG_corner,i_stage,is_corner, ibool, coord,NGLLX, NGLLZ, &
-        max_interface_size, ninterface, NPROC, MPI_transfer, myrank, ibool_before_perio!, &
+        neighbor_DG, NGLLX, NGLLZ, &
+        max_interface_size, ninterface, NPROC, MPI_transfer!, &
+        !ibool, i_stage, ibool_before_perio,is_corner, coord,neighbor_DG_corner,myrank
         !ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner!,ibool_before_perio,
 
     implicit none 
@@ -634,7 +635,7 @@
         real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
         real(kind=CUSTOM_REAL), parameter :: HALFl = ONEl/TWOl
         
-        real(kind=CUSTOM_REAL), parameter :: gradient_factor = ONEl/TWOl
+        real(kind=CUSTOM_REAL), parameter :: gradient_factor = ONEl!/TWOl
 
         logical :: activate_temp, activate
 

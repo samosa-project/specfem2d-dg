@@ -49,7 +49,7 @@
                          b_absorb_elastic_bottom,b_absorb_elastic_top,&
                          ib_left,ib_right,ib_bottom,ib_top, &
                          STACEY_BOUNDARY_CONDITIONS,deltat, &
-                         elastic_tensor, num_fluid_solid_edges
+                         num_fluid_solid_edges!elastic_tensor
 
   ! initialfield
   use specfem_par,only: v0x_left,v0z_left,v0x_right,v0z_right,v0x_bot,v0z_bot, &

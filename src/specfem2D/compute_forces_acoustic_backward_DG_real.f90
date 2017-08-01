@@ -43,11 +43,11 @@
                          xix,xiz,gammax,gammaz,jacobian, &
                          hprimewgll_xx, hprimewgll_zz, wxgll, wzgll, &
                          normal_DG, normal_DG_corner, ibool_DG, weight_DG, weight_DG_corner, &
-                         neighbor_DG, neighbor_DG_corner, is_corner, ibool, &
-                         elastic_tensor, &!ispec_is_acoustic_coupling_el, veloc_elastic,&
+                         neighbor_DG, neighbor_DG_corner, is_corner, &!ibool, &
+                         !elastic_tensor, &!ispec_is_acoustic_coupling_el, veloc_elastic,&
                          dir_normal_DG, dir_normal_DG_corner, &
                          DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
-                         myrank, gammaext_DG, muext, etaext, cnu, coord, &
+                         myrank,&! gammaext_DG, muext,&! etaext, &!, cnu, coord, &
                          hprime_xx, hprime_zz, &
                          windxext, gammaext_DG, gravityext, rhoext, vpext, pext_DG, &
                          it, i_stage
@@ -626,11 +626,11 @@
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
 
-  use specfem_par, only: nglob_DG, ibool_DG, &
-        rho_DG, rhovx_DG, rhovz_DG, E_DG, nspec, &
-        !ispec_is_acoustic, vpext, &
-        hprime_xx, hprime_zz, jacobian, xix, xiz, gammax, gammaz, ibool, &
-        gammaext_DG, rhoext, windxext, gravityext, pext_DG, vpext, MODEL, myrank!, &!gravityext, coord &
+  use specfem_par, only: ibool_DG, &
+        rho_DG, rhovx_DG, rhovz_DG, E_DG, nspec!,nglob_DG &
+        !ispec_is_acoustic, vpext, gammaext_DG,&
+        !hprime_xx, hprime_zz, jacobian, xix, xiz, gammax, gammaz, ibool, &
+        !rhoext, windxext!, pext_DG, vpext!, MODEL, myrank!, &!gravityext, coord, gravityext&
         !myrank, my_neighbours
 
   implicit none
@@ -689,7 +689,7 @@
 
   use specfem_par, only: ibool_before_perio, ibool_DG, coord, MODEL, &
         rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
-        etaext, muext, coord_interface, kappa_DG, cp, cnu, vpext, Htabext_DG
+        etaext, muext, coord_interface, kappa_DG, cp, cnu, vpext!, Htabext_DG
 
   implicit none
   
@@ -830,18 +830,18 @@
   
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
-  use specfem_par,only: nglob_DG,nspec, &!ispec_is_acoustic, &
+  use specfem_par,only: nglob_DG,&!nspec, &!ispec_is_acoustic, &
                          normal_DG, normal_DG_corner, ibool_DG, weight_DG, weight_DG_corner, &
                          ispec_is_acoustic_forcing, &
                          ACOUSTIC_FORCING, is_corner, &
                           ispec_is_acoustic_coupling_el, veloc_elastic,&
                          !coord,ibool_before_perio, &
                          dir_normal_DG, dir_normal_DG_corner, &
-                         DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
+                         DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, NPROC,&
                          !myrank, &
-                         buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P, NPROC, &
-                         buffer_DG_Vxx_P, buffer_DG_Vzz_P, buffer_DG_Vxz_P, buffer_DG_Vzx_P, buffer_DG_Tz_P, buffer_DG_Tx_P, &
-                         MPI_transfer, p_DG_init, gammaext_DG, muext, etaext, kappa_DG, ibool, cnu, &
+                         buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P,  &
+                         !buffer_DG_Vxx_P, buffer_DG_Vzz_P, buffer_DG_Vxz_P, buffer_DG_Vzx_P, buffer_DG_Tz_P, buffer_DG_Tx_P, &
+                         MPI_transfer, ibool, gammaext_DG,&!p_DG_init, muext, etaext, kappa_DG,  cnu, &
                          ! TEST
                          buffer_DG_gamma_P
                          

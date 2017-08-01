@@ -349,8 +349,6 @@
     ! gets interface index in the range of all interfaces [1,ninterface]
     num_interface = inum_interfaces_acoustic_DG(iinterface)
 
-    !WRITE(*,*) ">>>>>>>>>>>>><", iinterface, num_interface
-    
     ! loops over all interface points
     do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
       iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
@@ -362,9 +360,10 @@
 
   enddo
   
-  !buffer_send_faces_vector_DG_temp = buffer_send_faces_vector_DG
+  !WRITE(*,*) myrank,">ninterface_acoustic_DG", ninterface_acoustic_DG,inum_interfaces_acoustic_DG
   
-  !WRITE(*,*) "nb_values : ", nb_values, cpttt
+  !WRITE(*,*) 'ninterface_acoustic_DG', ninterface_acoustic_DG, nibool_interfaces_acoustic_DG
+  !stop 'TAT'
   
   do iinterface = 1, ninterface_acoustic_DG
 
@@ -389,32 +388,37 @@
              my_neighbours(num_interface), 12, MPI_COMM_WORLD, &
              tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), ier)
      
-     !WRITE(*,*) "TAAAAAAAAA", iinterface, (ninterface_acoustic_DG+iinterface), &
-     !   tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), &
-     !   tab_requests_send_recv_DG(iinterface)
-     
     if (ier /= MPI_SUCCESS) then
       call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
     endif
+    
+    !WRITE(*,*) myrank, "--->", iinterface, ninterface_acoustic_DG, num_interface, nb_values, &
+    !    tab_requests_send_recv_DG(:)
 
   enddo
-
+  
   ! waits for MPI requests to complete (recv)
   ! each wait returns once the specified MPI request completed
   do iinterface = 1, ninterface_acoustic_DG*2
+  !do iinterface = 1, ninterface_acoustic_DG
+    !call MPI_Wait(tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), &
     call MPI_Wait(tab_requests_send_recv_DG(iinterface), &
                   MPI_STATUS_IGNORE, ier)
   enddo
-  
+ ! stop 'RRRRtTT'
   ! assembles the array values
   do iinterface = 1, ninterface_acoustic_DG
-
+  
     ! gets global interface index
     num_interface = inum_interfaces_acoustic_DG(iinterface)
 
     ! loops over all interface points
     do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
-      iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
+    
+      !WRITE(*,*) ">>>>>>>>>>", myrank,iinterface, nibool_interfaces_acoustic_DG(num_interface), ipoin, &
+      !  ibool_interfaces_acoustic_DG(ipoin,num_interface)
+    
+      !iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
       
       !WRITE(*,*) myrank,"----->", i, j, ispec, coord(:,link_DG_CG(iglob)), &
       !  buffer_recv_faces_vector_DG(ipoin,iinterface)
@@ -424,7 +428,7 @@
     enddo
 
   enddo
-
+  
   ! waits for MPI requests to complete (send)
   ! just to make sure that all sending is done
   !do iinterface = 1, ninterface_acoustic_DG

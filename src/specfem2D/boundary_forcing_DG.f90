@@ -91,6 +91,7 @@
    veloc_z_DG_P = ZEROl
    endif
   
+    stop 'fqfdfsdf'
    
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Acoustic plane wave forcing

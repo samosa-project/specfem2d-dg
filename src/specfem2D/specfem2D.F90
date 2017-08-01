@@ -378,7 +378,7 @@
 
   ! sets up and precomputes simulation arrays
   call prepare_timerun()
-
+  
   ! steps through time iterations
   if (UNDO_ATTENUATION) then
     call iterate_time_undoatt()

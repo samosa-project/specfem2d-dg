@@ -42,13 +42,13 @@
   
   ! generate the global numbering
   call setup_mesh_numbering()
-
+ 
   ! sets point coordinates
   call setup_mesh_coordinates()
-
+ 
   ! sets material properties on node points
   call setup_mesh_properties()
-
+   
   ! for periodic edges
   call setup_mesh_periodic_edges()
   
@@ -63,7 +63,7 @@
 
   ! synchronizes all processes
   call synchronize_all()
-
+  
   ! performs basic checks on parameters read
   all_anisotropic = .false.
   if (count(ispec_is_anisotropic(:) .eqv. .true.) == nspec) all_anisotropic = .true.
@@ -75,7 +75,7 @@
   if (ATTENUATION_VISCOELASTIC_SOLID .and. all_anisotropic) then
     call exit_MPI(myrank,'Cannot turn attenuation on in anisotropic materials')
   endif
-
+  
   ! synchronizes all processes
   call synchronize_all()
 
@@ -93,8 +93,8 @@
   ! sets up domain coupling, i.e. edge detection for domain coupling
   call get_coupling_edges()
   
-  call setup_mesh_surface_DG_coupling()
-
+  if(USE_DISCONTINUOUS_METHOD) call setup_mesh_surface_DG_coupling()
+  
   ! synchronizes all processes
   call synchronize_all()
 
@@ -123,7 +123,7 @@
   else
     call createnum_slow()
   endif
-
+  
   ! gets total numbers for all slices
   call sum_all_i(count_nspec_acoustic,count_nspec_acoustic_total)
   call sum_all_i(nspec,nspec_total)
@@ -179,11 +179,11 @@
   ! allocate temporary arrays
   allocate(integer_mask_ibool_bef(nglob),stat=ier)
   allocate(copy_ibool_ori_bef(NGLLX,NGLLZ,nspec),stat=ier)
-
+  
   ! reduce cache misses by sorting the global numbering in the order in which it is accessed in the time loop.
   ! this speeds up the calculations significantly on modern processors
   call get_global()
-
+  
   ! synchronizes all processes
   call synchronize_all()
   
@@ -216,11 +216,11 @@
   allocate(coord(NDIM,nglob),stat=ier)
   if (ier /= 0) stop 'Error allocating coord array'
 
-  is_corner = .false.
+  if(USE_DISCONTINUOUS_METHOD) is_corner = .false.
 
   ! Small trick just to find forcing element for solid part
   nb = 0
-
+   
   ! sets the coordinates of the points of the global grid
   found_a_negative_jacobian = .false.
   do ispec = 1,nspec
@@ -257,11 +257,13 @@
         jacobian(i,j,ispec) = jacobianl
         
         ! Quick use of the loops
+        if(USE_DISCONTINUOUS_METHOD) then
         if( ispec == 1 .AND. (j == 1 .AND. i == 1) &
                 .OR. (j == NGLLZ .AND. i == 1) &
                 .OR. (j == 1 .AND. i == NGLLX) &
                 .OR. (j == NGLLZ .AND. i == NGLLX) ) is_corner(i,j) = .true.
-
+        endif
+        
       enddo
     enddo
   enddo
@@ -316,7 +318,7 @@
       enddo
     enddo
   endif
-
+  
   ! synchronizes all processes
   call synchronize_all()
 
@@ -360,6 +362,7 @@
       
       ! Skip non acoustic (thus non fluid) elements
       if (.not. ispec_is_acoustic(ispec)) cycle
+      if (.not. ispec_is_acoustic_DG(ispec)) cycle
       
       ! Ignore interior element nodes
       if(j > 1 .AND. j < NGLLZ .AND. i > 1 .AND. i < NGLLX) cycle
@@ -376,6 +379,7 @@
       
             ! Skip non acoustic (thus non fluid) elements
             if (.not. ispec_is_acoustic(ispec2)) cycle
+            if (.not. ispec_is_acoustic_DG(ispec2)) cycle
       
             ! Ignore current element we are working on
             if(ispec2 == ispec) cycle
@@ -466,7 +470,186 @@
   call setup_mesh_surface_DG()
   
   end subroutine setup_mesh_DG
+
+!
+!-----------------------------------------------------------------------------------
+!
+
+
+  subroutine find_DG_acoustic_coupling()
+
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+  use specfem_par,only: neighbor_DG, ispec_is_acoustic_coupling_ac, ispec_is_acoustic_DG, &
+        ispec_is_acoustic, nspec, ibool_DG, nglob_DG, &
+        ninterface_acoustic, NPROC, MPI_transfer, &!, &
+        max_interface_size, ninterface,ibool!coord, myranknibool_interfaces_acousticibool_before_perio,myrank, nspec
+
+  implicit none
+
+  ! local parameters
+
+  integer :: i, j, ispec
+  integer :: neighbor_top, neighbor_bottom, neighbor_left, neighbor_right, &
+        ipoin, num_interface, iglob_top, iglob_bottom, iglob_left, iglob_right
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: vect_ispec_DG, vect_ispec_CG
+  real(kind=CUSTOM_REAL), dimension(NGLLX*max_interface_size, ninterface) :: buffer_vect_ispec_DG, &
+        buffer_vect_ispec_CG
+   
+   !max_nibool_interfaces = maxval(nibool_interfaces_acoustic(:))
+   !allocate (buffer_vect_ispec_DG(max_nibool_interfaces,ninterface_acoustic), &
+   !     buffer_vect_ispec_CG(max_nibool_interfaces,ninterface_acoustic))
+   
+   !ispec_is_acoustic_coupling_ac = .false.
+   ispec_is_acoustic_coupling_ac = -1
+   
+   vect_ispec_DG = -1.
+   vect_ispec_CG = -1.
+   do ispec = 1, nspec
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+                if(ispec_is_acoustic_DG(ispec)) &
+                        vect_ispec_DG(ibool_DG(i,j,ispec)) = 1.
+                if(ispec_is_acoustic(ispec)) &        
+                        vect_ispec_CG(ibool_DG(i,j,ispec)) = 1.
+          enddo
+        enddo
+   enddo
+   
+   buffer_vect_ispec_DG = -1.
+   buffer_vect_ispec_CG = -1.
   
+#ifdef USE_MPI
+   if (NPROC > 1 .and. ninterface_acoustic > 0) then
+      call assemble_MPI_vector_DG(vect_ispec_DG, buffer_vect_ispec_DG)
+      call assemble_MPI_vector_DG(vect_ispec_CG, buffer_vect_ispec_CG)
+   endif
+#endif
+   
+   !!!!!!!!!!!!!!!!!!!!!!!
+   ! Find surface elements
+   do ispec = 1, nspec
+        
+        if(ispec_is_acoustic_DG(ispec)) then
+        
+        neighbor_top    = neighbor_DG(NGLLX/2, NGLLZ, ispec, 3)
+        neighbor_bottom = neighbor_DG(NGLLX/2, 1, ispec, 3)
+        neighbor_left   = neighbor_DG(1, NGLLZ/2, ispec, 3)
+        neighbor_right  = neighbor_DG(NGLLX, NGLLZ/2, ispec, 3)
+        
+        ! --------------------------------
+        !
+        ! TOP NEIGHBOR
+        !
+        if(neighbor_top > -1) then
+        iglob_top = ibool_DG(NGLLX/2, NGLLZ, ispec)
+        ipoin         = -1
+        num_interface = -1
+        if(NPROC > 1) then
+        ipoin         = MPI_transfer(iglob_top,1,1)
+        num_interface = MPI_transfer(iglob_top,1,2)
+        
+        if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
+                !ispec_is_acoustic_coupling_ac(:,NGLLZ,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(:,NGLLZ,ispec)) = ibool(i,j,ispec)
+                !neighbor_DG(:, NGLLZ, ispec, :)        = -1
+        endif 
+        else
+        if(ispec_is_acoustic(neighbor_top) .AND. .not. ispec_is_acoustic_DG(neighbor_top)) &
+                !ispec_is_acoustic_coupling_ac(:,NGLLZ,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(:,NGLLZ,ispec)) = ibool(i,j,ispec)
+        endif
+        
+        ! --------------------------------
+        !
+        ! BOTTOM NEIGHBOR
+        !
+        if(neighbor_bottom > -1) then
+        iglob_bottom = ibool_DG(NGLLX/2, 1, ispec)
+        ipoin         = -1
+        num_interface = -1
+        if(NPROC > 1) then
+        ipoin         = MPI_transfer(iglob_bottom,1,1)
+        num_interface = MPI_transfer(iglob_bottom,1,2)
+        
+        if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
+                !ispec_is_acoustic_coupling_ac(:,1,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(:,1,ispec)) = ibool(i,j,ispec)
+                !neighbor_DG(:, 1, ispec, :)        = -1
+        endif  
+        else
+        if(ispec_is_acoustic(neighbor_bottom) .AND. .not. ispec_is_acoustic_DG(neighbor_bottom)) &
+                !ispec_is_acoustic_coupling_ac(:,1,ispec) = .true. 
+                ispec_is_acoustic_coupling_ac(ibool_DG(:,1,ispec)) = ibool(i,j,ispec)
+        endif
+        
+        ! --------------------------------
+        !
+        ! LEFT NEIGHBOR
+        !
+        if(neighbor_left > -1) then
+        iglob_left   = ibool_DG(1, NGLLZ/1, ispec)
+        ipoin         = -1
+        num_interface = -1
+        if(NPROC > 1) then
+        ipoin         = MPI_transfer(iglob_left,1,1)
+        num_interface = MPI_transfer(iglob_left,1,2)
+        
+        if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
+                !ispec_is_acoustic_coupling_ac(1,:,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(1,:,ispec)) = ibool(i,j,ispec)
+                !neighbor_DG(1, :, ispec, :) = -1
+        endif   
+        else
+        if(ispec_is_acoustic(neighbor_left) .AND. .not. ispec_is_acoustic_DG(neighbor_left)) &
+                !ispec_is_acoustic_coupling_ac(1,:,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(1,:,ispec)) = ibool(i,j,ispec)
+        endif
+        
+        ! --------------------------------
+        !
+        ! RIGHT NEIGHBOR
+        !
+        if(neighbor_right > -1) then
+        iglob_right  = ibool_DG(NGLLX, NGLLZ/2, ispec)
+        ipoin         = -1
+        num_interface = -1
+        if(NPROC > 1) then
+        ipoin         = MPI_transfer(iglob_right,1,1)
+        num_interface = MPI_transfer(iglob_right,1,2)
+        
+        if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
+                !ispec_is_acoustic_coupling_ac(NGLLX,:,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(NGLLX,:,ispec)) = ibool(i,j,ispec)
+                !neighbor_DG(NGLLX, :, ispec, :)        = -1
+        endif 
+        else
+        if(ispec_is_acoustic(neighbor_right) .AND. .not. ispec_is_acoustic_DG(neighbor_right)) then
+                !ispec_is_acoustic_coupling_ac(NGLLX,:,ispec) = .true.
+                ispec_is_acoustic_coupling_ac(ibool_DG(NGLLX,:,ispec)) = ibool(i,j,ispec)
+        endif
+        endif  
+        
+        !if(ispec_is_acoustic(neighbor_top) .AND. .not. ispec_is_acoustic_DG(neighbor_top)) then
+        !        ispec_is_acoustic_coupling_ac(:,NGLLZ,ispec) = .true.
+        !endif
+        !if(ispec_is_acoustic(neighbor_bottom) .AND. .not. ispec_is_acoustic_DG(neighbor_bottom)) then
+        !        ispec_is_acoustic_coupling_ac(:,1,ispec) = .true.
+        !endif
+        !if(ispec_is_acoustic(neighbor_left) .AND. .not. ispec_is_acoustic_DG(neighbor_left)) then
+        !        ispec_is_acoustic_coupling_ac(1,:,ispec) = .true.
+        !endif
+        !if(ispec_is_acoustic(neighbor_right) .AND. .not. ispec_is_acoustic_DG(neighbor_right)) then
+        !        ispec_is_acoustic_coupling_ac(NGLLX,:,ispec) = .true.
+        !endif
+        
+       ! WRITE(*,*) myrank,ispec,nspec,">>>", neighbor_top, neighbor_bottom, neighbor_left, neighbor_right
+        
+        endif !ispec_is_acoustic_DG
+       
+   enddo
+   
+  end subroutine find_DG_acoustic_coupling
+ 
 !
 !-----------------------------------------------------------------------------------
 !
@@ -545,7 +728,7 @@ subroutine setup_mesh_surface_DG_coupling()
         ispec_is_acoustic_coupling_el, fluid_solid_elastic_iedge, &
         fluid_solid_acoustic_iedge, ivalue_inverse, jvalue_inverse, &
         ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner, is_corner, &
-        ibool_before_perio, coord!, coord_interface, myrank
+        ibool_before_perio, coord!, myrank!, coord_interface, myrank
         !, coord, ibool_before_perio
 
   implicit none
@@ -559,6 +742,10 @@ subroutine setup_mesh_surface_DG_coupling()
         
   real(kind=CUSTOM_REAL) :: coord_interface_loc
    
+   !character(len=100) file_name
+  !write(file_name,"('./boundaries_elastic_MPI_',i3.3)") myrank
+  !open(10,file=file_name, form='formatted')
+  
    !!!!!!!!!!!!!!!!!!!!!!!
    ! Find coupling elements
    coord_interface_loc = 10**8
@@ -589,6 +776,8 @@ subroutine setup_mesh_surface_DG_coupling()
         i_el = ivalue_inverse(ipoin1D,iedge_elastic)
         j_el = jvalue_inverse(ipoin1D,iedge_elastic)
         
+        !WRITE(10,*) coord(:,ibool_before_perio(i,j,ispec_acoustic))
+        
         ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,1) = i_el
         ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,2) = j_el
         ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,3) = ispec_elastic
@@ -599,6 +788,8 @@ subroutine setup_mesh_surface_DG_coupling()
         enddo
 
    enddo
+   
+   !close(10)
 
   end subroutine setup_mesh_surface_DG_coupling
 
@@ -674,7 +865,7 @@ subroutine setup_mesh_surface_DG_coupling()
 
   ! synchronizes all processes
   call synchronize_all()
-
+  
   end subroutine setup_mesh_properties
 
 !
@@ -694,7 +885,7 @@ subroutine setup_mesh_surface_DG_coupling()
   integer :: counter, nb
 
   ! Save ibool for DG normal computations
-  ibool_before_perio = ibool
+  if(USE_DISCONTINUOUS_METHOD) ibool_before_perio = ibool
 
 ! allocate an array to make sure that an acoustic free surface is not enforced on periodic edges
   allocate(this_ibool_is_a_periodic_edge(NGLOB),stat=ier)
@@ -800,7 +991,7 @@ subroutine setup_mesh_surface_DG_coupling()
     if (counter > 0) write(IMAIN,*) 'implemented periodic conditions on ',counter,' grid points on proc ',myrank
 
   endif ! of if (ADD_PERIODIC_CONDITIONS)
-
+  
   end subroutine setup_mesh_periodic_edges
 
 !

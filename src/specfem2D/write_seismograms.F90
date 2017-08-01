@@ -84,17 +84,13 @@
             call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
                                             !potential_gravito,displ_elastic,displs_poroelastic, rhovz_DG/rho_DG,&
                                             potential_gravito,veloc_elastic,displs_poroelastic, &
-                                            0.*rhovz_DG/rho_DG +&
-                                            !+(E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu), &
-                                            0.*(T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)) +&
-                                            (((gammaext_DG - 1.)*( E_DG &
-                                - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init),&
+                                            rhovz_DG,&
                                             ispec,vector_field_element)
           case (2)
             ! velocity
             call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                             potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                            (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu), &
+                                            E_DG, &
                                             ispec,vector_field_element)
           case (3)
             ! acceleration
@@ -110,6 +106,7 @@
             ! displacement
             call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
                                             potential_gravito,displ_elastic,displs_poroelastic, &
+                                            rhovz_DG, &
                                             ispec,vector_field_element)
             ! curl of displacement
             call compute_curl_one_element(ispec,curl_element)

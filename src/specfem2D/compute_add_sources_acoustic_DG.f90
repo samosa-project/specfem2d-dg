@@ -116,9 +116,9 @@
 
   use constants,only: NGLLX,NGLLZ,CUSTOM_REAL
 
-  use specfem_par, only: myrank,ispec_is_acoustic,NSTEP,it,&
+  use specfem_par, only: myrank,ispec_is_acoustic,&
                          nrec,which_proc_receiver,ispec_selected_rec,adj_sourcearrays,&
-                         kappastore, ibool, nglob!ibool_DG
+                         ibool, nglob!ibool_DG
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
@@ -198,9 +198,9 @@
 
   use constants,only: NGLLX,NGLLZ,CUSTOM_REAL
 
-  use specfem_par, only: myrank,ispec_is_acoustic,NSTEP,it,&
+  use specfem_par, only: myrank,ispec_is_acoustic,&
                          nrec,which_proc_receiver,ispec_selected_rec,adj_sourcearrays,&
-                         kappastore, ibool_DG, nglob_DG, deltat!ibool_DG
+                         ibool_DG, nglob_DG!ibool_DG
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
@@ -281,13 +281,12 @@
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
 
-  use specfem_par, only: ispec_is_acoustic,nglob_DG,&
+  use specfem_par, only: nglob_DG,ispec_is_acoustic_DG,&!ispec_is_acoustic
                          NSOURCES,source_type,source_time_function,&
                          is_proc_source,ispec_selected_source,&
-                         hxis_store,hgammas_store,ibool_DG,myrank, &
-                         neighbor_DG, neighbor_DG_corner, is_corner, &
-                         ispec_is_acoustic, link_DG_CG, coord, myrank, link_CG_DG, ibool, cpt_CG_DG, nspec, &
-                         x_source,z_source, jacobian, wxgll, wzgll, ibool_before_perio
+                         ibool_DG, &
+                         coord,  &
+                         jacobian, wxgll, wzgll, ibool_before_perio
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob_DG),intent(inout) :: variable_DG
@@ -303,7 +302,8 @@
   !do ispec = ifirstelem,ilastelem
   do i_source= 1,NSOURCES
   
-    if(ispec_is_acoustic(ispec_selected_source(i_source))) then
+    !if(ispec_is_acoustic(ispec_selected_source(i_source))) then
+    if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
     
     ! if this processor core carries the source and the source element is acoustic
     if (is_proc_source(i_source) == 1) then
@@ -327,7 +327,7 @@
         if(dist < dist_min) dist_min = dist
       enddo
       
-      accuracy = 3.
+      accuracy = 7.
       sigma    = dist_min/sqrt(accuracy*log(10.))
 !    
 
@@ -348,6 +348,8 @@
             wxl = real(wxgll(i), kind=CUSTOM_REAL)
             
             variable_DG(iglob)   = variable_DG(iglob)   + temp_source * wxl * wzl * jacobianl
+            
+            !WRITE(*,*) ">>>>", temp_source, wxl * wzl * jacobianl
             
         enddo ! second loop over the GLL points
       enddo

@@ -1141,7 +1141,7 @@
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
   use specfem_par,only: nglob_DG, ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
-        poroelastcoef,density,kmato,ispec_is_elastic
+        poroelastcoef,density,kmato, ispec_is_acoustic_DG, ispec_is_elastic
 
   implicit none
 
@@ -1193,7 +1193,7 @@
 
   integer :: i,j,ispec,iglob,ii
 
-  double precision :: x,z,frac,tmp1, gamma_temp_prev, gamma_temp, pii, piim1, piim2,piip1
+  double precision :: x,z,frac,tmp1, gamma_temp_prev, gamma_temp, pii, piim1, piim2,piip1, max_z
 
 ! read all the values in the 1D model once and for all
   !open(10,file='./msise_enhanced_2.txt', &
@@ -1240,13 +1240,31 @@
 ! loop on all the elements of the mesh, and inside each element loop on all the GLL points
   do ispec = 1,nspec
 
+    ! Recover current element's max height along z to discriminate between regions
+    max_z = 0.
+    do j = 1,NGLLZ
+        iglob = ibool(1,j,ispec)
+        z = coord(2,iglob) - coord_interface
+        if(j == 1 .OR. z > max_z) max_z = z
+    enddo
 
     do j = 1,NGLLZ
       do i = 1,NGLLX
       
-      !if (material_element(ispec) /= IREGION_AIR ) then
-      if(ispec_is_elastic(ispec)) then
-  
+       iglob = ibool(i,j,ispec)
+
+       x = coord(1,iglob)
+       z = coord(2,iglob) - coord_interface
+
+       ii = 1
+       do while(z >= z_atmos(ii) .and. ii /= NR_LAYER)
+         ii = ii + 1
+       enddo
+      
+   !if (material_element(ispec) /= IREGION_AIR ) then
+   !if(z <= 0 .AND. max_z <= 0.) then
+   if(ispec_is_elastic(ispec)) then
+   
           rho(i,j,ispec) = 2500.d0
           vp(i,j,ispec) = 3600.d0
           vs(i,j,ispec) = vp(i,j,ispec) / 2.d0
@@ -1268,16 +1286,8 @@
   
   else
       
-
-   iglob = ibool(i,j,ispec)
-
-   x = coord(1,iglob)
-   z = coord(2,iglob) - coord_interface
-
-  ii = 1
-  do while(z >= z_atmos(ii) .and. ii /= NR_LAYER)
-    ii = ii + 1
-  enddo
+  ! To be changed if not DG simulation
+  ispec_is_acoustic_DG(ispec) = .true.
 
   if (ii == 1) then
     rho(i,j,ispec) = density_atmos(1)

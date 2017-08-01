@@ -40,7 +40,7 @@
   use specfem_par, only : nspec,ibool,copy_ibool_ori,integer_mask_ibool,SAVE_MODEL,myrank, &
         ! MODIF DG
         link_DG_CG, ibool_DG, ibool_before_perio, integer_mask_ibool_bef, copy_ibool_ori_bef, &
-        cpt_CG_DG, link_CG_DG, nglob
+        cpt_CG_DG, link_CG_DG, nglob, USE_DISCONTINUOUS_METHOD
 
   implicit none
 
@@ -50,8 +50,6 @@
   integer :: ier
   character(len=150) :: outputname
 
-  !integer, :: cpt
-
   ! initializes temporary arrays
   integer_mask_ibool(:) = -1
   copy_ibool_ori(:,:,:) = ibool(:,:,:)
@@ -59,16 +57,18 @@
   integer_mask_ibool_bef(:) = -1
   ! Save a copy of ibool before renumbering
   ! Needs to be corrected because useless
-  ibool_before_perio(:,:,:) = ibool(:,:,:)
-  copy_ibool_ori_bef(:,:,:) = ibool_before_perio(:,:,:)
-
+  if(USE_DISCONTINUOUS_METHOD) ibool_before_perio(:,:,:) = ibool(:,:,:)
+  if(USE_DISCONTINUOUS_METHOD) copy_ibool_ori_bef(:,:,:) = ibool_before_perio(:,:,:)
+  
   inumber = 0
   inumber_bef = 0
   
+  if(USE_DISCONTINUOUS_METHOD) then
   allocate(cpt_CG_DG(nglob))
   cpt_CG_DG = 0
   allocate(link_CG_DG(nglob, 4))
-
+  endif
+  
   ! reduce cache misses in all the elements
   ! loop over spectral elements
   do ispec = 1,nspec
@@ -85,6 +85,7 @@
           ibool(i,j,ispec) = integer_mask_ibool(copy_ibool_ori(i,j,ispec))
         endif
         
+        if(USE_DISCONTINUOUS_METHOD) then
         if (integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec)) == -1) then
           ! create a new point
           inumber_bef = inumber_bef + 1
@@ -94,11 +95,13 @@
           ! use an existing point created previously
           ibool_before_perio(i,j,ispec) = integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec))
         endif
+        endif
         
       enddo
     enddo
   enddo
   
+  if(USE_DISCONTINUOUS_METHOD) then
   do ispec = 1,nspec
     do j = 1,NGLLZ
       do i = 1,NGLLX 
@@ -108,6 +111,7 @@
       enddo
     enddo
   enddo
+  endif
   
   if (trim(SAVE_MODEL) == 'binary') then
     write(outputname,'(a,i6.6,a)') './DATA/proc',myrank,'_NSPEC_ibool.bin'

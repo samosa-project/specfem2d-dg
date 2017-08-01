@@ -101,7 +101,7 @@
   endif
   
   ! Backward inverse matrix
-  rmass_inverse_acoustic_DG_b = 0._CUSTOM_REAL
+  if(USE_DISCONTINUOUS_METHOD) rmass_inverse_acoustic_DG_b = 0._CUSTOM_REAL
 
   do ispec = 1,nspec
     do j = 1,NGLLZ
@@ -369,7 +369,7 @@
       enddo
     enddo
   enddo ! of do ispec = 1,nspec
-
+   
   !
   !--- DK and Zhinan Xie: add C Delta_t / 2 contribution to the mass matrix
   !--- DK and Zhinan Xie: in the case of Clayton-Engquist absorbing boundaries;
@@ -743,7 +743,7 @@
       endif ! acoustic ispec
     enddo
   endif  ! end of absorbing boundaries
-
+  
   end subroutine invert_mass_matrix_init
 !
 !-------------------------------------------------------------------------------------------------
@@ -808,7 +808,7 @@
     !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG_b), &
     !    "maxval", maxval(rmass_inverse_acoustic_DG_b)
     
-  if (any_acoustic) &
+  if (USE_DISCONTINUOUS_METHOD) &
     rmass_inverse_acoustic_DG_b(:) = 1._CUSTOM_REAL /rmass_inverse_acoustic_DG_b(:)
     !rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
   if (any_gravitoacoustic) then

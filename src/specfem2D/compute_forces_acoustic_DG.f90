@@ -41,7 +41,7 @@
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
-  use specfem_par, only: nglob_DG,nspec,ispec_is_acoustic, &
+  use specfem_par, only: nglob_DG,nspec, ispec_is_acoustic_DG,&!ispec_is_acoustic,MINMOD_FACTOR, USE_SLOPE_LIMITER
                          xix,xiz,gammax,gammaz,jacobian, &
                          hprimewgll_xx, &
                          hprimewgll_zz,wxgll,wzgll, &
@@ -53,10 +53,11 @@
                          dir_normal_DG, dir_normal_DG_corner, &
                          DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
                          myrank, &
-                         i_stage, p_DG_init, gammaext_DG, muext, etaext, T_init, kappa_DG, cnu, tau_epsilon, tau_sigma, &
-                         hprime_xx, hprime_zz, &
-                         ibool_before_perio, coord, rhovx_init, rhovz_init, E_init, rho_init, &
-                         CONSTRAIN_HYDROSTATIC, USE_SLOPE_LIMITER, MINMOD_FACTOR, CONSTRAIN_HYDROSTATIC
+                         i_stage, p_DG_init, gammaext_DG, muext, etaext, kappa_DG,tau_epsilon, tau_sigma, &
+                         !hprime_xx, hprime_zz,  cnu, &
+                         !ibool_before_perio, coord, &
+                         rhovx_init, rhovz_init, E_init, rho_init, &!T_init
+                         CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG
                          
   implicit none
 
@@ -172,11 +173,15 @@
   dot_e1    = ZERO
   
   ! add force source
-  !call compute_add_sources_acoustic_DG(dot_rhovx,it,i_stage)
-  !call compute_add_sources_acoustic_DG(dot_rhovz,it,i_stage)
-  !call compute_add_sources_acoustic_DG(dot_E,it,i_stage)
-  !call compute_add_sources_acoustic_DG_spread(dot_E,it,i_stage)
-  !call compute_add_sources_acoustic_DG(dot_rho,it,i_stage)   
+  if(TYPE_SOURCE_DG == 1) then
+        call compute_add_sources_acoustic_DG_spread(dot_rho,it,i_stage)   
+  elseif(TYPE_SOURCE_DG == 2) then
+        
+        call compute_add_sources_acoustic_DG_spread(dot_rhovx,it,i_stage)
+        call compute_add_sources_acoustic_DG_spread(dot_rhovz,it,i_stage)
+  else
+        !call compute_add_sources_acoustic_DG_spread(dot_E,it,i_stage)
+  endif
   
   if(myrank == 0) then
   WRITE(*,*) it,"MAXVAL ", maxval(rho_DG), minval(rho_DG)
@@ -191,7 +196,8 @@
   do ispec = ifirstelem,ilastelem
 
     ! acoustic spectral element
-    if (ispec_is_acoustic(ispec)) then
+    !if (ispec_is_acoustic(ispec)) then
+    if (ispec_is_acoustic_DG(ispec)) then
 
       ! first double loop over GLL points to compute and store gradients
       do j = 1,NGLLZ
@@ -718,7 +724,7 @@
   
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
-  use specfem_par, only: nglob_DG,nspec,ispec_is_acoustic, &
+  use specfem_par, only: nglob_DG,nspec, ispec_is_acoustic_DG,&!ispec_is_acoustic
                          xix,xiz,gammax,gammaz,jacobian, &
                          wxgll,wzgll, ibool_DG, &
                          hprimewgll_zz, hprimewgll_xx, &
@@ -797,7 +803,8 @@
   do ispec = ifirstelem,ilastelem
 
     ! acoustic spectral element
-    if (ispec_is_acoustic(ispec)) then
+    !if (ispec_is_acoustic(ispec)) then
+    if (ispec_is_acoustic_DG(ispec)) then
 
       ! first double loop over GLL points to compute and store gradients
       do j = 1,NGLLZ

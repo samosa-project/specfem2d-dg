@@ -41,13 +41,13 @@
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
 
-  use specfem_par, only: nglob,nglob_DG,nspec, &
+  use specfem_par, only: nglob,nspec, &
                          ibool,ibool_DG,ispec_is_acoustic, &
                          xix,xiz,gammax,gammaz,jacobian, &
                          myrank, coord, hprimewgll_xx, hprimewgll_zz, &
                          !vpext,rhoext, &
-                         hprime_xx, hprime_zz,wxgll,wzgll, &
-                         rhoext, windxext, gammaext_DG, gravityext, pext!, assign_external_model, 
+                         hprime_xx, hprime_zz,wxgll,wzgll!, &
+                         !rhoext, windxext, gammaext_DG, gravityext, pext!, assign_external_model, 
 
   implicit none
 

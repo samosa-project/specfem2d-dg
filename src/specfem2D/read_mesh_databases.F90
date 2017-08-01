@@ -251,6 +251,15 @@
   read(IIN,*) SCALE_HEIGHT
   
   read(IIN,"(a80)") datlin
+  read(IIN,*) surface_density
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) sound_velocity
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) wind   
+  
+  read(IIN,"(a80)") datlin
   read(IIN,*) gravity_cte_DG
   
   read(IIN,"(a80)") datlin
@@ -272,10 +281,28 @@
   read(IIN,*) cnu
   
   read(IIN,"(a80)") datlin
+  read(IIN,*) id_region_DG
+  
+  read(IIN,"(a80)") datlin
   read(IIN,*) coord_interface
   
-  !read(IIN,"(a80)") datlin
-  !read(IIN,*) TYPE_SOURCE_DG
+  read(IIN,"(a80)") datlin
+  read(IIN,*) TYPE_SOURCE_DG
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) TYPE_FORCING
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) main_spatial_period
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) main_time_period
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) forcing_initial_loc
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) forcing_initial_time 
   
   ! read the ACOUSTIC_FORCING flag
   read(IIN,"(a80)") datlin
@@ -1740,23 +1767,25 @@
   use constants,only: TINYVAL
 
   use specfem_par, only : any_acoustic,any_gravitoacoustic,any_elastic,any_poroelastic, &
-    ispec_is_anisotropic,ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic, &
+    ispec_is_anisotropic,ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic, ispec_is_acoustic_DG, &
     porosity,anisotropy,kmato, &
-    nspec,P_SV,count_nspec_acoustic,PML_BOUNDARY_CONDITIONS
+    nspec,P_SV,count_nspec_acoustic,PML_BOUNDARY_CONDITIONS, id_region_DG, only_DG_acoustic, any_acoustic_DG
 
   implicit none
 
   ! local parameters
-  integer :: ispec
+  integer :: ispec, count_nspec_acoustic_DG
 
   ! initializes
   any_acoustic = .false.
+  any_acoustic_DG = .false.
   any_gravitoacoustic = .false.
   any_elastic = .false.
   any_poroelastic = .false.
 
   ! loops over all elements
   count_nspec_acoustic = 0
+  count_nspec_acoustic_DG = 0
   do ispec = 1,nspec
 
     ! checks domain properties
@@ -1764,6 +1793,11 @@
       ! assume acoustic domain
       ! if gravitoacoustic -> set by read_external_model
       ispec_is_acoustic(ispec) = .true.
+      if(kmato(ispec) == id_region_DG) then
+        ispec_is_acoustic_DG(ispec) = .true.
+        count_nspec_acoustic_DG = count_nspec_acoustic_DG + 1
+        any_acoustic_DG = .true.
+      endif
       any_acoustic = .true.
       count_nspec_acoustic = count_nspec_acoustic + 1
 
@@ -1780,8 +1814,15 @@
       ispec_is_poroelastic(ispec) = .true.
       any_poroelastic = .true.
     endif
-
+    
   enddo ! of do ispec = 1,nspec
+  
+  only_DG_acoustic = .false.
+  if(count_nspec_acoustic_DG == count_nspec_acoustic) only_DG_acoustic = .true.
+  
+  !WRITE(*,*) ">>>> count_nspec_acoustic_DG", count_nspec_acoustic_DG, count_nspec_acoustic, &
+  !      only_DG_acoustic
+  !stop 'TOTO'
 
   ! safety checks
   if (.not. P_SV .and. .not. any_elastic) then

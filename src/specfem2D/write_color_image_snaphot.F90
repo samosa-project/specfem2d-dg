@@ -47,11 +47,12 @@
                         potential_gravitoacoustic,potential_dot_gravitoacoustic,potential_dot_dot_gravitoacoustic, &
                         displ_elastic,veloc_elastic,accel_elastic, &
                         displs_poroelastic,velocs_poroelastic,accels_poroelastic,&! density_p, &
-                        E_DG,rhovz_DG,rhovx_DG,rho_DG, nglob_DG, ispec_is_acoustic,gamma_euler, &
-                        rho_DG, rhovz_DG, E_DG, rhovx_DG, cnu, T_init, b_rhovz_DG,p_DG_init,gammaext_DG!, rhovx_DG,rho_DG, E_DG, gammaext_DG, T_init, cnu!, T_init, gammaext_DG, cp, cnu!,p_DG_init, rho_DG, rhovx_DG, E_DG
+                        E_DG,rhovz_DG,rhovx_DG,rho_DG, nglob_DG, gamma_euler, &
+                        rho_DG, rhovz_DG, E_DG, rhovx_DG, cnu, T_init,p_DG_init,gammaext_DG, T_init, E_init, &
+                        ispec_is_acoustic_DG, nglob, any_acoustic_DG!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
 
   ! PML arrays
-  use specfem_par,only: PML_BOUNDARY_CONDITIONS,ispec_is_PML
+  use specfem_par,only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,CONSTRAIN_HYDROSTATIC
 
   use specfem_par_movie
 
@@ -60,10 +61,11 @@
   !local variables
   integer :: i,j,k,ispec,iglob,iproc
   integer :: ier
-  double precision :: rhol
+  double precision :: rhol, coef
   
   
-  logical, dimension(nglob_DG) :: this_iglob_is_acous   
+  logical, dimension(nglob) :: this_iglob_is_acous
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: vector_DG_temp 
   
   if (myrank == 0) then
     write(IMAIN,*)
@@ -73,39 +75,51 @@
 
   if (imagetype_JPEG >= 1 .and. imagetype_JPEG <= 3) then
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the displacement vector...'!, maxval(rhoveloc_acoustic(2,:))
+    
+    if(any_acoustic_DG) then
+    if(imagetype_JPEG == 1) vector_DG_temp = rhovx_DG/rho_DG
+    if(imagetype_JPEG == 2) vector_DG_temp = rhovz_DG/rho_DG
+    if(imagetype_JPEG == 3) vector_DG_temp = sqrt((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)
+    !vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
+    !                                 - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init)
+    endif
+    
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
-    !call compute_vector_whole_medium(b_rhovz_DG,potential_gravitoacoustic, &
-    !call compute_vector_whole_medium(density_p,potential_gravitoacoustic, &
-                                     !potential_gravito,displ_elastic,displs_poroelastic, &
                                      potential_gravito,veloc_elastic,displs_poroelastic, &
-                                    ! rhovz_DG/rho_DG 
-                                     0.*rhovz_DG/rho_DG+0.*rho_DG+(((gammaext_DG - 1.)*( E_DG &
-                                - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init))! &!/rho_DG+0*(rho_DG+rhovz_DG+rhovx_DG+E_DG) +&
-                                     !+ ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - T_init) )
-                                    !rhovz_DG )
-                                     !rhovz_DG+0./rho_DG)
-                                     !rhovz_DG + 0.*E_DG/rho_DG+0.*rhovz_DG/(rho_DG+1.))
-       !                              0.*E_DG+0*rhovz_DG/rho_DG+0*rho_DG+(1.4 - 1.)*( E_DG &
-       ! - (0.5*rho_DG)*( (rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2 ) ))
-
+                                     vector_DG_temp)
+                                     
   else if (imagetype_JPEG >= 4 .and. imagetype_JPEG <= 6) then
+  
+    coef = 0.
+    if(CONSTRAIN_HYDROSTATIC) coef = 1.  
+  
+    if(any_acoustic_DG) then
+    if(imagetype_JPEG == 4) vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
+                                     - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - coef*p_DG_init)
+    if(imagetype_JPEG == 5) vector_DG_temp = E_DG - coef*E_init
+    if(imagetype_JPEG == 6) vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - coef*T_init)
+    endif
+    
+    WRITE(*,*) "TEST", imagetype_JPEG, coef, CONSTRAIN_HYDROSTATIC
+  
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the velocity vector...'
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                     ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - T_init))
+                                     vector_DG_temp )
 
   else if (imagetype_JPEG >= 7 .and. imagetype_JPEG <= 9) then
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the acceleration vector...'
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                      potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                     rhovz_DG)
+                                     rho_DG)
 
   else if (imagetype_JPEG >= 11 .and. imagetype_JPEG <= 13) then
     ! allocation for normalized representation in JPEG image
     ! for an atmosphere model
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of normalized displacement vector...'
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
-                                     potential_gravito,displ_elastic,displs_poroelastic)
+                                     potential_gravito,displ_elastic,displs_poroelastic, &
+                                     rho_DG)
 
     do ispec = 1,nspec
       do j = 1,NGLLZ
@@ -126,7 +140,8 @@
     ! allocation for normalized representation in JPEG image
     ! for an atmosphere model
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                     potential_dot_gravito,veloc_elastic,velocs_poroelastic)
+                                     potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                     rho_DG)
 
     do ispec = 1,nspec
       do j = 1,NGLLZ
@@ -170,17 +185,20 @@
   endif
   
   ! CREATE FLAG FOR NORMALIZATION
+  !if(it == 1) then
   this_iglob_is_acous(:) = .false.
+  if(any_acoustic_DG) then
   do ispec = 1,nspec
         do j = 1,NGLLZ
           do i = 1,NGLLX
             iglob = ibool(i,j,ispec)
-            if (ispec_is_acoustic(ispec)) then
-                this_iglob_is_acous(iglob) = .true.
-            endif
+            !if (ispec_is_acoustic_DG(ispec)) then
+                this_iglob_is_acous(iglob) = ispec_is_acoustic_DG(ispec)!.true.
+           ! endif
           enddo
         enddo
     enddo
+  endif
   
 !! DK DK quick hack to remove the PMLs from JPEG images if needed
 
@@ -199,6 +217,8 @@
 
     if (P_SV) then ! P-SH waves, plot a component of vector, its norm, or else pressure
       if (iglob_image_color(i,j) /= -1) then
+        ! To normalize independently
+        this_ij_image_acous(i,j) = this_iglob_is_acous(iglob_image_color(i,j))
         if (imagetype_JPEG == 1  .or. imagetype_JPEG == 4 .or. imagetype_JPEG == 7 .or. &
             imagetype_JPEG == 11 .or. imagetype_JPEG == 14) then
           ! draw the X component of the vector
@@ -206,8 +226,6 @@
 
         else if (imagetype_JPEG == 2 .or. imagetype_JPEG == 5 .or. imagetype_JPEG == 8 .or. &
                 imagetype_JPEG == 12 .or. imagetype_JPEG == 15) then
-          ! WRITE(*,*) i,j,"---->",iglob_image_color(i,j)
-          this_ij_image_acous(i,j) = this_iglob_is_acous(iglob_image_color(i,j))
           ! draw the Z component of the vector
           image_color_data(i,j) = vector_field_display(2,iglob_image_color(i,j))
 
@@ -271,7 +289,7 @@
         if (j > NZ_IMAGE_color) j = NZ_IMAGE_color
 
         if (P_SV) then ! P-SH waves, plot a component of vector, its norm, or else pressure
-
+          data_pixel_send_ij(k) = this_iglob_is_acous(iglob_image_color(i,j))
           if (imagetype_JPEG == 1 .or. imagetype_JPEG == 4 .or. imagetype_JPEG == 7 .or. &
               imagetype_JPEG == 11 .or. imagetype_JPEG == 14) then
              data_pixel_send(k) = vector_field_display(1,iglob_image_color(i,j))  ! draw the X component of the vector
@@ -279,7 +297,6 @@
           else if (imagetype_JPEG == 2 .or. imagetype_JPEG == 5 .or. imagetype_JPEG == 8 .or. &
                   imagetype_JPEG == 12 .or. imagetype_JPEG == 15) then
              data_pixel_send(k) = vector_field_display(2,iglob_image_color(i,j))  ! draw the Z component of the vector
-             data_pixel_send_ij(k) = this_iglob_is_acous(iglob_image_color(i,j))
 
           else if (imagetype_JPEG == 3 .or. imagetype_JPEG == 6 .or. imagetype_JPEG == 9 .or. &
                   imagetype_JPEG == 13 .or. imagetype_JPEG == 16) then

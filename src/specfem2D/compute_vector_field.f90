@@ -131,7 +131,7 @@
     xix,xiz,gammax,gammaz,ibool, &
     ispec_is_elastic,ispec_is_poroelastic,ispec_is_acoustic,ispec_is_gravitoacoustic, &
     AXISYM,is_on_the_axis, &
-    P_SV,nglob_DG, ibool_DG
+    P_SV,nglob_DG, ibool_DG, ispec_is_acoustic_DG, any_acoustic_DG
 
   implicit none
 
@@ -154,6 +154,8 @@
   double precision :: gravityl,hp1,hp2
   double precision :: rhol
   double precision :: tempx1l,tempx2l
+  
+  logical :: DG_vector_field
   
   ! initializes
   vector_field_element(:,:,:) = 0._CUSTOM_REAL
@@ -194,9 +196,17 @@
     ! we then need to divide by density because the potential is a potential of (density * displacement)
     rhol = density(1,kmato(ispec))
 
+    DG_vector_field = .false.
+    if(any_acoustic_DG) then
+        if(ispec_is_acoustic_DG(ispec)) DG_vector_field = .true.
+    endif
+
     ! double loop over GLL points to compute and store gradients
     do j = 1,NGLLZ
       do i = 1,NGLLX
+      
+        if(.not. DG_vector_field) then
+      
         ! derivative along x
         tempx1l = 0._CUSTOM_REAL
         if (AXISYM) then
@@ -241,17 +251,21 @@
         ! derivatives of potential
         vector_field_element(1,i,j) = (tempx1l*xixl + tempx2l*gammaxl) / rhol        !u_x
         vector_field_element(2,i,j) = (tempx1l*xizl + tempx2l*gammazl) / rhol        !u_z
-        !if(abs(vector_field_element(2,i,j)) < field_acoustic_DG(ibool_DG(i,j,ispec))) &
         
-        vector_field_element(2,i,j) = field_acoustic(iglob)
+        !WRITE(*,*) ">>>>", i,j,ispec,vector_field_element(:,i,j)
         
-        if(.true.) &
+        !vector_field_element(2,i,j) = field_acoustic(iglob)
+        
+       else
+        
+        vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
         vector_field_element(2,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
-        !WRITE(*,*) "field_acoustic(ibool(i,j,ispec))", maxval(field_acoustic(:))
-        !vector_field_element(2,i,j) = field_acoustic(ibool(i,j,ispec))
+        
+       endif ! if(ispec_is_acoustic_DG(ispec))
+        
       enddo
     enddo
-
+    
   else if (ispec_is_gravitoacoustic(ispec)) then
     ! gravito-acoustic element
 

@@ -167,6 +167,15 @@
   call read_value_double_precision_p(SCALE_HEIGHT, 'solver.SCALE_HEIGHT')
   if (err_occurred() /= 0) stop 'error reading parameter SCALE_HEIGHT in Par_file'
   
+  call read_value_double_precision_p(surface_density, 'solver.surface_density')
+  if (err_occurred() /= 0) stop 'error reading parameter surface_density in Par_file'
+  
+  call read_value_double_precision_p(sound_velocity, 'solver.sound_velocity')
+  if (err_occurred() /= 0) stop 'error reading parameter sound_velocity in Par_file'
+  
+  call read_value_double_precision_p(wind, 'solver.wind')
+  if (err_occurred() /= 0) stop 'error reading parameter wind in Par_file'
+  
   call read_value_double_precision_p(gravity, 'solver.gravity')
   if (err_occurred() /= 0) stop 'error reading parameter gravity in Par_file'
   
@@ -188,8 +197,29 @@
   call read_value_double_precision_p(constant_v, 'solver.constant_v')
   if (err_occurred() /= 0) stop 'error reading parameter constant_v in Par_file'
   
+  call read_value_integer_p(id_region_DG, 'solver.id_region_DG')
+  if (err_occurred() /= 0) stop 'error reading parameter id_region_DG in Par_file'
+  
   call read_value_double_precision_p(coord_interface, 'solver.coord_interface')
   if (err_occurred() /= 0) stop 'error reading parameter coord_interface in Par_file'
+  
+  call read_value_integer_p(TYPE_SOURCE_DG, 'solver.TYPE_SOURCE_DG')
+  if (err_occurred() /= 0) stop 'error reading parameter TYPE_SOURCE_DG in Par_file'
+  
+  call read_value_integer_p(TYPE_FORCING, 'solver.TYPE_FORCING')
+  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in Par_file'
+  
+  call read_value_double_precision_p(main_spatial_period, 'solver.main_spatial_period')
+  if (err_occurred() /= 0) stop 'error reading parameter main_spatial_period in Par_file'
+  
+  call read_value_double_precision_p(main_time_period, 'solver.main_time_period')
+  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in main_time_period'
+  
+  call read_value_double_precision_p(forcing_initial_loc, 'solver.forcing_initial_loc')
+  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in forcing_initial_loc'
+  
+  call read_value_double_precision_p(forcing_initial_time, 'solver.forcing_initial_time')
+  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in forcing_initial_time'
   
   !--------------------------------------------------------------------
   !

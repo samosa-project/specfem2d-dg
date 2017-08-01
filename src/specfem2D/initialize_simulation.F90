@@ -119,6 +119,9 @@
                 Drz(NGLLX*NGLLZ,NGLLX*NGLLZ))
           allocate(elastic_tensor(NGLLX, NGLLZ, nspec, 4), &
                 ispec_is_acoustic_coupling_el(NGLLX,NGLLZ,nspec,3))
+          allocate(ispec_is_acoustic_DG(nspec))
+          
+          ispec_is_acoustic_DG = .false.
   endif
   
   ! mesh arrays

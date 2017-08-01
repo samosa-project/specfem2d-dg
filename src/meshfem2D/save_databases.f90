@@ -326,6 +326,12 @@
   write(15,*) USE_ISOTHERMAL_MODEL
   write(15,*) 'SCALE_HEIGHT'
   write(15,*) SCALE_HEIGHT
+  write(15,*) 'surface_density'
+  write(15,*) surface_density   
+  write(15,*) 'sound_velocity'          
+  write(15,*) sound_velocity
+  write(15,*) 'wind'
+  write(15,*) wind
   write(15,*) 'gravity'
   write(15,*) gravity
   write(15,*) 'dynamic_viscosity'
@@ -340,8 +346,22 @@
   write(15,*) constant_p
   write(15,*) 'constant_v'
   write(15,*) constant_v
+  write(15,*) 'id_region_DG'
+  write(15,*) id_region_DG
   write(15,*) 'coord_interface'
   write(15,*) coord_interface
+  write(15,*) 'TYPE_SOURCE_DG'
+  write(15,*) TYPE_SOURCE_DG
+  write(15,*) 'TYPE_FORCING'
+  write(15,*) TYPE_FORCING
+  write(15,*) 'main_spatial_period'
+  write(15,*) main_spatial_period      
+  write(15,*) 'main_time_period'     
+  write(15,*) main_time_period          
+  write(15,*) 'forcing_initial_loc'    
+  write(15,*) forcing_initial_loc       
+  write(15,*) 'forcing_initial_time'  
+  write(15,*) forcing_initial_time
 
   end subroutine save_databases_DG
 

@@ -90,7 +90,11 @@ module specfem_par
   real(kind=CUSTOM_REAL) :: coord_interface
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: error
   
-  integer :: TYPE_SOURCE_DG
+  !logical, dimension(:), allocatable :: this_iglob_is_acous
+  
+  integer :: TYPE_SOURCE_DG, TYPE_FORCING, id_region_DG
+  
+  real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time 
   
   logical :: USE_DISCONTINUOUS_METHOD, USE_SLOPE_LIMITER, CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
   real(kind=CUSTOM_REAL) :: MINMOD_FACTOR, SCALE_HEIGHT, gravity_cte_DG, &
@@ -318,8 +322,10 @@ module specfem_par
   integer, dimension(:,:,:), allocatable :: ibool_DG
   integer, dimension(:,:,:), allocatable :: ibool_before_perio
   logical, dimension(:,:,:), allocatable :: ispec_is_acoustic_forcing, ispec_is_acoustic_surface, &
-        ispec_is_acoustic_surface_corner!, ispec_is_acoustic_coupling
+        ispec_is_acoustic_surface_corner
+  logical, dimension(:), allocatable :: ispec_is_acoustic_DG!, ispec_is_acoustic_coupling
   integer, dimension(:,:,:,:), allocatable :: ispec_is_acoustic_coupling_el
+  integer, dimension(:), allocatable :: ispec_is_acoustic_coupling_ac
   logical, dimension(:,:), allocatable :: is_corner
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: weight_DG, weight_DG_corner
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: dir_normal_DG, dir_normal_DG_corner
@@ -327,6 +333,9 @@ module specfem_par
   integer, parameter :: DIR_DOWN  = -1
   integer, parameter :: DIR_RIGHT = 2
   integer, parameter :: DIR_LEFT  = -2
+  logical :: only_DG_acoustic, any_acoustic_DG
+  
+  real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind  
   
   integer, dimension(:), allocatable :: link_DG_CG, cpt_CG_DG
   integer, dimension(:,:), allocatable :: link_CG_DG
@@ -335,8 +344,6 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: elastic_tensor
  
-  logical, parameter :: DG_SIMULATION = .true.
-  
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
         veloc_x_DG, veloc_z_DG, p_DG, potential_dphi_dx_DG, potential_dphi_dz_DG, &
@@ -356,6 +363,8 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: &
         source_time_function_rho_DG, source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
         source_time_function_E_DG
+        
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
   !real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: &
   !      dot_rho_rk, dot_rhovx_rk, dot_rhovz_rk, dot_E_rk
   !real(kind=CUSTOM_REAL), dimension(:), allocatable :: &
