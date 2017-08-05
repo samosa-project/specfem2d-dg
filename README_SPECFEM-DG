@@ -3,13 +3,13 @@
 **************************************
 
 1 - Lancer le programme "./config_scotch.sh"
-2 - Nettoyer & Compiler SPECFEM2D-DG "make clean; make all"
-3 - Configuration de sa simulation dans le dossier "EXAMPLES/"
+2 - Configuration de sa simulation dans le dossier "EXAMPLES/"
         a - Configurer les paramètres de simulation dans "EXAMPLES/ma_simulation/Par_file*"
         b - Adapter le maillage dans le fichier "EXAMPLES/ma_simulation/interfaces_file*"
         c - Configurer les paramètres de la source dans "EXAMPLES/ma_simulation/SOURCE*"
         [Les étoiles * signifient que le nom du fichier contient au moins (mais parfois plus) 
         le chemin qui est indiqué]
-4 - Configuration des conditions de bord dans le fichier "src/specfem2d/boundary_terms.f90" dans
+3 - Configuration des conditions de bord dans le fichier "src/specfem2d/boundary_terms.f90" dans
     la routine "boundary_condition_DG"
+4 - Nettoyer & Compiler SPECFEM2D-DG "make clean; make all"
 5 - Lancement de la simulation grâce au fichier "EXAMPLES/ma_simulation/run_this_example.sh"
