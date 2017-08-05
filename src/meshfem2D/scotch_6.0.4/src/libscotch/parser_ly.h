@@ -1,21 +1,19 @@
+/* A Bison parser, made by GNU Bison 3.0.2.  */
 
-/* A Bison parser, made by GNU Bison 2.4.1.  */
+/* Bison interface for Yacc-like parsers in C
 
-/* Skeleton interface for Bison's Yacc-like parsers in C
-   
-      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
-   
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -28,27 +26,35 @@
    special exception, which will cause the skeleton and the resulting
    Bison output files to be licensed under the GNU General Public
    License without this special exception.
-   
+
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+#ifndef YY_SCOTCHYY_Y_TAB_H_INCLUDED
+# define YY_SCOTCHYY_Y_TAB_H_INCLUDED
+/* Debug traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 0
+#endif
+#if YYDEBUG
+extern int scotchyydebug;
+#endif
 
-/* Tokens.  */
+/* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
-     METHODNAME = 258,
-     PARAMNAME = 259,
-     VALCASE = 260,
-     VALDOUBLE = 261,
-     VALINT = 262,
-     VALSTRING = 263,
-     VALSTRAT = 264,
-     VALPARAM = 265,
-     VALTEST = 266
-   };
+  enum yytokentype
+  {
+    METHODNAME = 258,
+    PARAMNAME = 259,
+    VALCASE = 260,
+    VALDOUBLE = 261,
+    VALINT = 262,
+    VALSTRING = 263,
+    VALSTRAT = 264,
+    VALPARAM = 265,
+    VALTEST = 266
+  };
 #endif
 /* Tokens.  */
 #define METHODNAME 258
@@ -61,15 +67,12 @@
 #define VALPARAM 265
 #define VALTEST 266
 
-
-
-
+/* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE
+typedef union YYSTYPE YYSTYPE;
+union YYSTYPE
 {
-
-/* Line 1676 of yacc.c  */
-#line 92 "parser_yy.y"
+#line 92 "parser_yy.y" /* yacc.c:1909  */
 
   char                      CASEVAL;              /* Case value          */
   StratTest *               TEST;                 /* Test type           */
@@ -84,16 +87,15 @@ typedef union YYSTYPE
   } SAVE;                                         /* Parameter type    */
   Strat *                   STRAT;                /* Strategy tree     */
 
-
-
-/* Line 1676 of yacc.c  */
-#line 91 "y.tab.h"
-} YYSTYPE;
+#line 91 "y.tab.h" /* yacc.c:1909  */
+};
 # define YYSTYPE_IS_TRIVIAL 1
-# define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 #endif
 
+
 extern YYSTYPE scotchyylval;
 
+int scotchyyparse (void);
 
+#endif /* !YY_SCOTCHYY_Y_TAB_H_INCLUDED  */

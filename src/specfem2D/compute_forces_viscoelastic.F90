@@ -1033,16 +1033,11 @@
           
           ! SAVE TENSOR FOR COUPLING
           if(num_fluid_solid_edges > 0 .AND. &
-                i == 1 .OR. j == 1 .OR. j == NGLLZ .OR. i == NGLLX) then
+                (i == 1 .OR. j == 1 .OR. j == NGLLZ .OR. i == NGLLX)) then
                 elastic_tensor(i,j,ispec,1) = sigma_xx
                 elastic_tensor(i,j,ispec,2) = sigma_xz
                 elastic_tensor(i,j,ispec,3) = sigma_zx
                 elastic_tensor(i,j,ispec,4) = sigma_zz
-                !if(abs(sigma_xx) > 1d-10 .OR. abs(sigma_zz) > 1d-10 .OR. abs(sigma_xz) > 1d-10 .OR. abs(sigma_zx) > 1d-10) &
-                !        WRITE(*,*) "SIGMA", elastic_tensor(i,j,ispec,:)
-                !if(coord(2,ibool(i,j,ispec)) == 2400.) WRITE(*,*) "sigma_zz",sigma_xx, sigma_zx, sigma_xz, sigma_zz, i, j, ispec
-                !if(sigma_xx > 0.000001 .AND. coord(2,ibool(i,j,ispec)) == 2400.) &
-                !WRITE(*,*) "ELASTIC >>",i, j, ispec,sigma_xx, sigma_zx, sigma_xz, sigma_zz
           endif
           
         enddo

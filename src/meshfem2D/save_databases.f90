@@ -315,6 +315,8 @@
   ! DG settings
   write(15,*) 'USE_DISCONTINUOUS_METHOD'
   write(15,*) USE_DISCONTINUOUS_METHOD
+  write(15,*) 'REMOVE_DG_FLUID_TO_SOLID'
+  write(15,*) REMOVE_DG_FLUID_TO_SOLID
   write(15,*) 'USE_SLOPE_LIMITER'
   write(15,*) USE_SLOPE_LIMITER
   write(15,*) 'MINMOD_FACTOR'

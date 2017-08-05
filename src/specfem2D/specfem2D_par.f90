@@ -96,7 +96,8 @@ module specfem_par
   
   real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time 
   
-  logical :: USE_DISCONTINUOUS_METHOD, USE_SLOPE_LIMITER, CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
+  logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
+        CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
   real(kind=CUSTOM_REAL) :: MINMOD_FACTOR, SCALE_HEIGHT, gravity_cte_DG, &
         dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
   

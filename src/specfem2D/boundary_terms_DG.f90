@@ -218,7 +218,7 @@
   !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0
   ! Linear mountains
   !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0, Nsq
-  !real(kind=CUSTOM_REAL) :: Tl, p0,  RR
+  real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
   ! Thermal bubble
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
   !real(kind=CUSTOM_REAL) :: Tl, Tu, p0, rho0, RR, rs!, theta, thetaprime, pibar
@@ -357,6 +357,19 @@
                    * ( exp(-((x-(xo-lambdo/4))/(lambdo/4))**2) - &
                           exp(-((x-(xo+lambdo/4))/(lambdo/4))**2) ) 
    
+   !!!!!!!!!!!!!!!!!!!!!!
+   ! Tsunami forcing
+   VELOC_TSUNAMI = 200
+   perio         = 1000
+   lambdo        = 50000
+   if(timelocal < perio) then
+        veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
+   else
+        veloc_z_DG_P = &
+                2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
+                *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
+   endif
+   
    E_DG_P       = p_DG_P/(gammaext_DG(ibool_DG(i,j,ispec)) - ONEl) &
                         + rho_DG_P*HALFl*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) 
    
@@ -391,7 +404,7 @@
                          buffer_DG_Vxx_P, buffer_DG_Vzz_P, buffer_DG_Vxz_P, buffer_DG_Vzx_P, buffer_DG_Tz_P, buffer_DG_Tx_P, &
                          MPI_transfer, p_DG_init, gammaext_DG, muext, etaext, kappa_DG, ibool, cnu, &
                          ! TEST
-                         buffer_DG_gamma_P, coord, it, &! i_stage,myrank, potential_dot_acoustic,&
+                         buffer_DG_gamma_P, coord,  &! i_stage,myrank, potential_dot_acoustic,&
                          rho_init, rhovx_init, rhovz_init, E_init, &
                          potential_dot_dot_acoustic, &
                          !xix, xiz, gammax, gammaz, hprime_xx, hprime_zz, ibool_before_perio, &
@@ -664,10 +677,10 @@
                !tensor_temp = 0
                ! Maybe we should remove the initial velocity field to veloc_x_DG_P/veloc_z_DG_P in the following
                ! Since we should only have the perturbated non-linear stress tensor
-               tensor_temp(1,1) = -elastic_tensor(i_el,j_el,ispec_el,1) - 0*rho_DG_P*veloc_x_DG_P**2 
-               tensor_temp(1,2) = -elastic_tensor(i_el,j_el,ispec_el,2) - 0*rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-               tensor_temp(2,1) = -elastic_tensor(i_el,j_el,ispec_el,3) - 0*rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-               tensor_temp(2,2) = -elastic_tensor(i_el,j_el,ispec_el,4) - 0*rho_DG_P*veloc_z_DG_P**2 
+               tensor_temp(1,1) = -elastic_tensor(i_el,j_el,ispec_el,1) - rho_DG_P*veloc_x_DG_P**2 
+               tensor_temp(1,2) = -elastic_tensor(i_el,j_el,ispec_el,2) - rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+               tensor_temp(2,1) = -elastic_tensor(i_el,j_el,ispec_el,3) - rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+               tensor_temp(2,2) = -elastic_tensor(i_el,j_el,ispec_el,4) - rho_DG_P*veloc_z_DG_P**2 
                
                ! From traction continuity
                p_DG_P = p_DG_init(iglobM) - (&
@@ -681,11 +694,11 @@
                !veloc_z_DG_P = 2*veloc_z -veloc_z_DG_iM
                !E_DG_P = 2*E_DG_P - E_DG_iM
                
-               if( abs(p_DG_P) > 1.2*abs(p_DG_init(iglobM)) .OR. abs(p_DG_P) < 0.8*abs(p_DG_init(iglobM)) ) &
-               WRITE(*,*) it,i,j,ispec,">>", p_DG_P, p_DG_init(iglobM), (&
-                  nx*( nx*tensor_temp(1,1) + nz*tensor_temp(1,2) ) &
-                + nz*( nx*tensor_temp(2,1) + nz*tensor_temp(2,2) ) ), rho_DG_P*veloc_x_DG_P**2 , rho_DG_P*veloc_z_DG_P**2, &
-                        rho_DG_P*veloc_x_DG_P*veloc_z_DG_P, tensor_temp(1,1), tensor_temp(1,2), tensor_temp(2,1), tensor_temp(2,2)
+               !if( abs(p_DG_P) > 1.2*abs(p_DG_init(iglobM)) .OR. abs(p_DG_P) < 0.8*abs(p_DG_init(iglobM)) ) &
+               !WRITE(*,*) it,i,j,ispec,">>", p_DG_P, p_DG_init(iglobM), (&
+               !   nx*( nx*tensor_temp(1,1) + nz*tensor_temp(1,2) ) &
+               ! + nz*( nx*tensor_temp(2,1) + nz*tensor_temp(2,2) ) ), rho_DG_P*veloc_x_DG_P**2 , rho_DG_P*veloc_z_DG_P**2, &
+               !         rho_DG_P*veloc_x_DG_P*veloc_z_DG_P, tensor_temp(1,1), tensor_temp(1,2), tensor_temp(2,1), tensor_temp(2,2)
                !if(abs(elastic_tensor(i_el,j_el,ispec_el,2)*nz- elastic_tensor(i_el,j_el,ispec_el,4)*nz) > 0. ) &
                !WRITE(*,*) ">>>", i,j,ispec, elastic_tensor(i_el,j_el,ispec_el,2)*nz, elastic_tensor(i_el,j_el,ispec_el,4)*nz
                 

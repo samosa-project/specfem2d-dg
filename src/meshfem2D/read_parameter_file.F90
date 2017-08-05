@@ -152,6 +152,9 @@
   call read_value_logical_p(USE_DISCONTINUOUS_METHOD, 'solver.USE_DISCONTINUOUS_METHOD')
   if (err_occurred() /= 0) stop 'error reading parameter USE_DISCONTINUOUS_METHOD in Par_file'
   
+  call read_value_logical_p(REMOVE_DG_FLUID_TO_SOLID, 'solver.REMOVE_DG_FLUID_TO_SOLID')
+  if (err_occurred() /= 0) stop 'error reading parameter REMOVE_DG_FLUID_TO_SOLID in Par_file'
+  
   call read_value_logical_p(USE_SLOPE_LIMITER, 'solver.USE_SLOPE_LIMITER')
   if (err_occurred() /= 0) stop 'error reading parameter USE_SLOPE_LIMITER in Par_file'
   

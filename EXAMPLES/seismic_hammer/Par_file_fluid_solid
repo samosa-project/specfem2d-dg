@@ -84,6 +84,7 @@ NT_DUMP_ATTENUATION             = 500
 #
 #-----------------------------------------------------------------------------
 USE_DISCONTINUOUS_METHOD        = .true.
+REMOVE_DG_FLUID_TO_SOLID        = .false.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
 CONSTRAIN_HYDROSTATIC           = .true.

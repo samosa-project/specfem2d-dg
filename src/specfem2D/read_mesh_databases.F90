@@ -236,6 +236,9 @@
   read(IIN,*) USE_DISCONTINUOUS_METHOD
   
   read(IIN,"(a80)") datlin
+  read(IIN,*) REMOVE_DG_FLUID_TO_SOLID
+  
+  read(IIN,"(a80)") datlin
   read(IIN,*) USE_SLOPE_LIMITER
   
   read(IIN,"(a80)") datlin
