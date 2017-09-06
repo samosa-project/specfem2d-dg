@@ -195,7 +195,7 @@
 !--- end of Nicolas Le Goff's constants for an unstructured CUBIT/METIS/SCOTCH mesh
 
 ! select fast (Paul Fischer) or slow (topology only) global numbering algorithm
-  logical, parameter :: FAST_NUMBERING = .true.
+  logical, parameter :: FAST_NUMBERING = .false.
 
 ! mesh tolerance for fast global numbering
   double precision, parameter :: SMALLVALTOL = 1.d-10
@@ -270,7 +270,7 @@
   double precision, parameter :: ONE_OVER_24 = 1.d0 / 24.d0
 
 ! very large and very small values
-  double precision, parameter :: HUGEVAL = 1.d+30,TINYVAL = 1.d-9
+  double precision, parameter :: HUGEVAL = 1.d+30,TINYVAL = 1.d-9,TINYVAL_DG = 1.d-9
 
 ! do not use tags for MPI messages, use dummy tag instead
   integer, parameter :: itag = 0
@@ -351,5 +351,7 @@
   real(kind=CUSTOM_REAL), dimension(NSTAGE), parameter :: C_LDDRK = &
     (/0.0_CUSTOM_REAL,0.032918605146_CUSTOM_REAL,0.249351723343_CUSTOM_REAL,&
       0.466911705055_CUSTOM_REAL,0.582030414044_CUSTOM_REAL,0.847252983783_CUSTOM_REAL/)
-
+      
+  ! MODIF DG
+  real(kind=CUSTOM_REAL), parameter :: gamma_euler = 1.4
 

@@ -47,7 +47,7 @@ echo
 echo "  running mesher..."
 echo
 ./xmeshfem2D
-mpirun -np 40 ./xspecfem2D
+mpirun -np 4 ./xspecfem2D
 
 # runs simulation
 echo

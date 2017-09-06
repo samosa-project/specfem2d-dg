@@ -39,7 +39,7 @@ FCFLAGS = -g -O2
 MPIFC = mpif90
 MPILIBS = 
 
-FLAGS_CHECK = -g -std=f2003 -fimplicit-none -frange-check -fmax-errors=10 -pedantic -pedantic-errors -Waliasing -Wampersand -Wcharacter-truncation -Wline-truncation -Wsurprising -Wno-tabs -Wunderflow -ffpe-trap=invalid,zero,overflow -Wunused -Werror -O3
+FLAGS_CHECK = -std=f2003 -fimplicit-none -frange-check -fmax-errors=10 -pedantic -pedantic-errors -Waliasing -Wampersand -Wcharacter-truncation -Wline-truncation -Wsurprising -Wno-tabs -Wunderflow -ffpe-trap=invalid,zero,overflow -Wunused -Werror -O3
 
 FCFLAGS_f90 = -J./obj -I./obj -I.  -I${SETUP}
 
@@ -74,7 +74,7 @@ FCLINK = $(MPIFCCOMPILE_CHECK)
 COND_MPI_CPPFLAGS = -DWITH_MPI
 #COND_MPI_CPPFLAGS =
 
-MPI_INCLUDES = 
+MPI_INCLUDES =  -I/usr/lib/openmpi/include
 
 # fortran compiler setting
 F90 = $(MPIFCCOMPILE_CHECK) -DUSE_MPI
@@ -86,7 +86,7 @@ F90 = $(MPIFCCOMPILE_CHECK) -DUSE_MPI
 ####
 #######################################
 
-USE_BUNDLED_SCOTCH = 0
+USE_BUNDLED_SCOTCH = 1
 
 SCOTCH_DIR = ./src/meshfem2D/scotch
 SCOTCH_INCDIR = ./src/meshfem2D/scotch/include
@@ -99,7 +99,7 @@ F90 += -DUSE_SCOTCH $(SCOTCH_INC)
 
 ## scotch libraries
 MPILIBS += ${SCOTCH_LIBS}
-MPILIBS +=
+#MPILIBS +=
 
 #######################################
 ####

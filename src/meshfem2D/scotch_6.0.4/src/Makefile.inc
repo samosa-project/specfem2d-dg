@@ -9,9 +9,9 @@ CAT		= cat
 CCS		= gcc
 CCP		= mpicc
 CCD		= gcc
-CFLAGS		= -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -Drestrict=__restrict -DIDXSIZE64
+CFLAGS		= -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -Drestrict=__restrict
 CLIBFLAGS	=
-LDFLAGS		= -lz -lm -lrt -pthread
+LDFLAGS		= -lz -lm -pthread
 CP		= cp
 LEX		= flex -Pscotchyy -olex.yy.c
 LN		= ln

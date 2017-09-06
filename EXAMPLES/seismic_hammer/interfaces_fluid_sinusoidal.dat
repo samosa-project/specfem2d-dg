@@ -28,8 +28,8 @@
 # interface number 3 (topography, top of the mesh)
 #
  2
-   0        200   
-   4000        200  
+   0        208   
+   4000        208 
 # interface number 4 (topography, top of the mesh)
 #
  2
@@ -52,21 +52,21 @@
 #
 ## DK DK the original 2000 Geophysics paper used nz = 90 but NGLLZ = 6
 ## DK DK here I rescale it to nz = 108 and NGLLZ = 5 because nowadays we almost always use NGLLZ = 5
- 6
+ 3
 #
 # layer number 2 (middle solid layer)
 #
- 6
+ 3
 #
 # layer number 2 (middle solid layer)
 #
- 13
+ 7
 
 # layer number 3 (subtop solid layer)
 #
- 13
+ 6
 
 
 # layer number 4 (top solid layer)
 #
- 78
+ 39

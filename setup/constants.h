@@ -355,4 +355,3 @@
   ! MODIF DG
   real(kind=CUSTOM_REAL), parameter :: gamma_euler = 1.4
 
-

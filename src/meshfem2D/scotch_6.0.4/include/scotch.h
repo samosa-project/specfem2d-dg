@@ -73,7 +73,7 @@
 
 /*+ Integer type. +*/
 
-typedef int64_t SCOTCH_Idx;
+typedef int SCOTCH_Idx;
 
 typedef int SCOTCH_Num;
 
