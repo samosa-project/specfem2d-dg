@@ -100,7 +100,7 @@
     if(imagetype_JPEG == 6) vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - coef*T_init)
     endif
     
-    WRITE(*,*) "TEST", imagetype_JPEG, coef, CONSTRAIN_HYDROSTATIC
+    !WRITE(*,*) "TEST", imagetype_JPEG, coef, CONSTRAIN_HYDROSTATIC
   
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the velocity vector...'
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
@@ -108,10 +108,17 @@
                                      vector_DG_temp )
 
   else if (imagetype_JPEG >= 7 .and. imagetype_JPEG <= 9) then
+  
+    if(any_acoustic_DG) then
+    if(imagetype_JPEG == 7) vector_DG_temp = rho_DG 
+    if(imagetype_JPEG == 8) vector_DG_temp = rhovx_DG/sqrt(rho_DG)
+    if(imagetype_JPEG == 9) vector_DG_temp = rhovz_DG/sqrt(rho_DG)
+    endif
+  
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the acceleration vector...'
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                      potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                     rho_DG)
+                                     vector_DG_temp)
 
   else if (imagetype_JPEG >= 11 .and. imagetype_JPEG <= 13) then
     ! allocation for normalized representation in JPEG image

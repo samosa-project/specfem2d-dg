@@ -42,7 +42,7 @@
 
   ! local parameters
   integer :: i, j, iglob, irecloc, irec, ispec
-  double precision :: valux,valuz,valcurl
+  double precision :: valux,valuz,valcurl,coef
 
   ! vector field in an element
   real(kind=CUSTOM_REAL), dimension(NDIM,NGLLX,NGLLZ) :: vector_field_element
@@ -84,19 +84,23 @@
             call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
                                             !potential_gravito,displ_elastic,displs_poroelastic, rhovz_DG/rho_DG,&
                                             potential_gravito,veloc_elastic,displs_poroelastic, &
-                                            rhovz_DG,&
+                                            rhovz_DG/rho_DG,&
                                             ispec,vector_field_element)
           case (2)
+            coef = 0.
+            if(CONSTRAIN_HYDROSTATIC) coef = 1.  
             ! velocity
             call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                             potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                            E_DG, &
+                                            (((gammaext_DG - 1.)*( E_DG &
+                                                - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) &
+                                                - coef*p_DG_init), &
                                             ispec,vector_field_element)
           case (3)
             ! acceleration
             call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                             potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                            rhovz_DG, &
+                                            rhovz_DG/sqrt(rho_DG), &
                                             ispec,vector_field_element)
           case (4)
             ! pressure

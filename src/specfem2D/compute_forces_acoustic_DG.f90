@@ -179,8 +179,8 @@
         
         call compute_add_sources_acoustic_DG_spread(dot_rhovx,it,i_stage)
         call compute_add_sources_acoustic_DG_spread(dot_rhovz,it,i_stage)
-  else
-        !call compute_add_sources_acoustic_DG_spread(dot_E,it,i_stage)
+  elseif(TYPE_SOURCE_DG == 3) then
+        call compute_add_sources_acoustic_DG_spread(dot_E,it,i_stage)
   endif
   
   if(myrank == 0) then
