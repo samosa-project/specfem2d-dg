@@ -240,8 +240,6 @@
 
       endif
 
-        WRITE(98,*) i,j,ispec_acoustic,nx,nz,weight, coord(:,ibool(i,j,ispec_acoustic))
-
       ! compute dot product
       displ_n = displ_x*nx + displ_z*nz
       potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + weight*displ_n

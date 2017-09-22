@@ -140,11 +140,6 @@
   ! temporary RK4 variable
   real(kind=CUSTOM_REAL) :: weight_rk
 
-  !if(myrank == 0 .AND. .false.) then
-  !WRITE(*,*) it,"MAXVAL ELASTIC ", maxval(displ_elastic), minval(displ_elastic)
-  !WRITE(*,*) "*****************"
-  !endif
-
   elastic_tensor = 0.
   
   !WRITE(*,*) "VELOC, ELAS", maxval(abs(displ_elastic)), maxval(abs(veloc_elastic))

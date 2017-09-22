@@ -48,8 +48,8 @@
                          rmemory_sfb_potential_ddot_acoustic,timeval,deltat,&
                          rmemory_sfb_potential_ddot_acoustic_LDDRK,i_stage,stage_time_scheme, &
                          ! MODIF DG
-                         ibool_DG, E_DG, rho_DG, rhovx_DG, rhovz_DG, p_DG_init, gammaext_DG, it, i_stage, error, &
-                         any_acoustic_DG, REMOVE_DG_FLUID_TO_SOLID
+                         ibool_DG, E_DG, rho_DG, rhovx_DG, rhovz_DG, p_DG_init, gammaext_DG, i_stage, &
+                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
@@ -67,8 +67,6 @@
                       A0,A1,A2,A3,A4,bb_1,coef0_1,coef1_1,coef2_1,bb_2,coef0_2,coef1_2,coef2_2
 
   real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
-
-  if(it ==1 .AND. i_stage == 1) allocate( error(num_fluid_solid_edges, NGLLX) )
 
   ! loop on all the coupling edges
   do inum = 1,num_fluid_solid_edges
@@ -226,9 +224,9 @@
         endif
 
       endif
-
-      if(any_acoustic_DG .AND. .not. REMOVE_DG_FLUID_TO_SOLID) then
       
+      if(REMOVE_DG_FLUID_TO_SOLID .AND. USE_DISCONTINUOUS_METHOD) then
+
       ! MODIF DG
       iglob_DG = ibool_DG(i,j,ispec_acoustic)
       veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
@@ -238,7 +236,7 @@
         - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) )
       ! Substract inital pressure to find only the perturbation (under linear hypothesis)
       pressure = pressure - p_DG_init(iglob_DG)
-      
+
       accel_elastic(1,iglob) = accel_elastic(1,iglob) &
         - weight*( nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
         + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
