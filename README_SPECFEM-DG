@@ -1,16 +1,60 @@
-**************************************
-* CONFIGURATION RAPIDE DE SPECFEM-DG *
-**************************************
+###############################
+# SPECFEM-DG CONFIGURATION    #
+###############################
 
-1 - Lancer le programme "./config_scotch.sh"
-2 - Configurez SPECFEM: ./configure FC=gfortran CC=gcc MPIFC=mpif90 --with-mpi --enable-double-precision
-3 - Configuration de sa simulation dans le dossier "EXAMPLES/"
-        a - Configurer les paramètres de simulation dans "EXAMPLES/ma_simulation/Par_file*"
-        b - Adapter le maillage dans le fichier "EXAMPLES/ma_simulation/interfaces_file*"
-        c - Configurer les paramètres de la source dans "EXAMPLES/ma_simulation/SOURCE*"
-        [Les étoiles * signifient que le nom du fichier contient au moins (mais parfois plus) 
-        le chemin qui est indiqué]
-4 - Configuration des conditions de bord dans le fichier "src/specfem2d/boundary_terms.f90" dans
-    la routine "boundary_condition_DG"
-5 - Nettoyer & Compiler SPECFEM2D-DG "make clean; make all"
-6 - Lancement de la simulation grâce au fichier "EXAMPLES/ma_simulation/run_this_example.sh"
+# First Installation. #########
+1) Configure SCOTCH:
+  Try:
+    ./config_scotch.sh
+  If it fails, we need to setup a bit more. Move to "./specfem-dg/src/meshfem2D".
+  
+  Check that the symbolic link "scotch" aims at the (last version) provided SCOTCH folder:
+    readlink -f scotch
+  If not, make it be:
+    ln -s -T ./scotch_X.X.X ./scotch
+
+  Get back to "./specfem-dg". Try again:
+    ./config_scotch.sh
+  If it fails, we need to setup a bit more. Move to "./specfem-dg/src/meshfem2D/scotch/src" in order to choose the appropriate Makefile. First, check your architecture:
+    arch
+  Copy the appropriate makefile from the "./Make.inc" folder. For example, on EOS (CALMIP) machines:
+    cp ./Make.inc/Makefile.inc.x86-64_pc_linux2 Makefile.inc
+
+  Eventually, check the glibc version installed on the system with:
+    ldd --version
+  If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
+  
+  Get back to "./specfem-dg". Try again:
+    ./config_scotch.sh
+  If it fails with the error "/usr/bin/ld: cannot find -lz", install the "zlib-dev" package.
+  
+  If the scripts fails again, contact the SPECFEM-DG support.
+
+2) Configure SPECFEM:
+  Install an MPI development package (intel-mpi, mpich, openmpi, ...). Load its module. Check the module is indeed loaded:
+    module list
+  Configure SPECFEM:
+    ./configure FC=gfortran CC=gcc MPIFC=mpif90 --with-mpi --enable-double-precision
+
+3) Compile SPECFEM-DG:
+  Compile SPECFEM-DG:
+    make clean; make all
+
+5) See "running_notes.txt" for the simulations' execution.
+###############################
+
+# Remarks. ####################
+1) Configure your own simulation: it happens in the "./specfem-dg/EXAMPLES/" folder.
+1.1) Configure global parameters in the file "./EXAMPLES/my_simulation/PARFILE".
+1.2) Adapt the mesh in the file "./EXAMPLES/my_simulation/INTERFACESFILE"
+1.3) Configure source parameters in the file "./EXAMPLES/ma_simulation/SOURCEFILE"
+1.4) Note: the names of the files "PARFILE", "INTERFACESFILE", and "SOURCEFILE" may vary, depending of what's inside the "./EXAMPLES/my_simulation/run_this_example.sh" script.
+1.5) Run the simulation using the "./EXAMPLES/my_simulation/run_this_example.sh" script.
+
+2) [DEVELOPEMENT] Configure boundary conditions.
+2.1) Modify the source file "./specfem-dg/src/specfem2d/boundary_terms.f90" according to the wanted boundary conditions.
+2.2) Recompile SPECFEM-DG:
+       make
+     or:
+       make clean; make all
+###############################
