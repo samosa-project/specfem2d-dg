@@ -82,7 +82,7 @@
   enddo  
   
   if(.false.) then
-    ! TODO: Why if(.false.)?
+    ! TODO: Why 'if(.false.)'?
     call recompute_density()
   endif
   
@@ -231,9 +231,9 @@
     ! If an external model data file is given for initial conditions, use it.
     rho_DG_P     = rhoext(i, j, ispec)
     p_DG_P       = pext_DG(i, j, ispec)
-    !p_DG_P       = rho_DG_P * gravityext(i, j, ispec) * Htabext_DG(ibool_DG(i, j, ispec)) ! Hydrostaticity: impose p(x, z) = \rho(x, z) * g(x, z) * H(x, z).
+    !p_DG_P       = rho_DG_P * gravityext(i, j, ispec) * Htabext_DG(ibool_DG(i, j, ispec)) ! Hydrostaticity: impose p = \rho * g * H, where the RHS is gotten from the external model data file.
     veloc_x_DG_P = windxext(i, j, ispec) ! Read horizontal wind.
-    veloc_z_DG_P = 0.0d0 ! Impose vertical wind to zero.
+    veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
 
     if(timelocal == 0) then
       !gravityext(i, j, ispec) = G!9.831
@@ -247,66 +247,73 @@
       !tau_epsilon(i, j, ispec) = 1.
       !tau_sigma(i, j, ispec)   = 1.!0.4013
 
-      potential_dphi_dx_DG(ibool(i, j, ispec)) = 0.
+      potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
     endif
   
   else
-    ! If no external model data file is given (no initial conditions were specified), build initial conditions.
+    ! If no external model data file is given (no initial conditions were specified), build model.
     if(timelocal == 0) then
       ! At initial time, we create an uniform gravity field.
-      gravityext(i, j, ispec) = 0.0d0 !real(coord(1,ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
+      gravityext(i, j, ispec) = ZEROl !real(coord(1,ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
       !gravityext(i, j, ispec) = 9.81d0 ! Earth gravity.
       !gravityext(i, j, ispec) = gravity_cte_DG ! Gravity read from database, and thus from parfile.
       !gravityext(i, j, ispec) = 3.7247 ! Mars gravity.
       if(USE_ISOTHERMAL_MODEL) then
         gravityext(i, j, ispec) = real(gravity_cte_DG, kind=CUSTOM_REAL)
       endif
-      !WRITE(*,*) ">>>", gravity_cte_DG, gravityext(i, j, ispec), abs(real(gravity_cte_DG, kind=CUSTOM_REAL)- gravityext(i, j, ispec))
-      !cp = 29 !7!1010!7/2
-      !cnu = 20.8 !5!718!5/2
+      !WRITE(*,*) ">>>", gravity_cte_DG, gravityext(i, j, ispec), abs(real(gravity_cte_DG, kind=CUSTOM_REAL)- gravityext(i, j, ispec)) ! DEBUG
+      !cp = 29 !7!1010!7/2 ! DEBUG
+      !cnu = 20.8 !5!718!5/2 ! DEBUG
       gammaext_DG(ibool_DG(i, j, ispec)) = cp/cnu!1.33076167! 1.4!gamma_euler
       mu_visco  = dynamic_viscosity_cte_DG!1.092656e-05
-      eta_visco = (4./3.)*dynamic_viscosity_cte_DG!2.67e-05
-      muext(i, j, ispec)  = mu_visco
+      eta_visco = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG!2.67e-05
+      muext(i, j, ispec) = mu_visco
       etaext(i, j, ispec) = eta_visco
-  !        kappa_DG(i, j, ispec) = 0.0
+      !kappa_DG(i, j, ispec) = 0.0
       kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG!0.!0.05!4.79046750E-04
       tau_epsilon(i, j, ispec) = tau_eps_cte_DG!1 !1.5!2.!1.5
       tau_sigma(i, j, ispec)   = tau_sig_cte_DG!1 !1.!1./(8*PI**2)!0.025!1
       
-      potential_dphi_dx_DG(ibool(i, j, ispec)) = 0.
+      potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
     endif
-  
-    e1_DG_P = 0.
-
+    
+    ! Set auxiliary variable.
+    e1_DG_P = ZEROl
+    
+    ! Set density.
     rho_DG_P = surface_density
     if(USE_ISOTHERMAL_MODEL) then
       H = SCALE_HEIGHT!9350!10000
       G = gravityext(i, j, ispec)
       rho_DG_P = surface_density*exp(-z/H)
     endif
-           
-    ! Acoustic only
-    p_DG_P = (sound_velocity**2)*rho_DG_P/gammaext_DG(ibool_DG(i, j, ispec))
-    ! Gravi
+    
+    ! Set pressure.
+    p_DG_P = (sound_velocity**2)*rho_DG_P/gammaext_DG(ibool_DG(i, j, ispec)) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
     if(USE_ISOTHERMAL_MODEL) then
+      ! If we use an isothermal model, replace the value just computed by the one under hydrostatic hypothesis: p = \rho * g * H.
       p_DG_P = rho_DG_P*G*H
     endif
-    veloc_x_DG_P = wind
-    veloc_z_DG_P = ZEROl
+    
+    ! Set wind.
+    veloc_x_DG_P = wind ! Read horizontal wind, from specfem2_par. TODO: why not windxext(i, j, ispec) as above?
+    veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
   endif
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Rayleigh-Taylor instability (case 5.3 paper)
+  
+  ! --------------------------- !
+  ! Rayleigh-Taylor instability !
+  ! (case 5.3 paper).           !
+  ! --------------------------- !
+  ! TODO: do something instead of this 'if(.false.)'.
   if(.false.) then
     Tl = 2.!TWOl
     Tu = 1.
     p0   = ONEl
     rho0 = ONEl
     RR   = 1.!8.3145_CUSTOM_REAL
-    gammaext_DG(ibool_DG(i, j, ispec))   = 1.4
+    gammaext_DG(ibool_DG(i, j, ispec)) = 1.4
     gravityext(i, j, ispec) = 1
     !if(z <= 1._CUSTOM_REAL) &
     p_DG_P = p0*exp(-(z-ONEl/(TWOl))/(RR*Tl))
@@ -323,20 +330,24 @@
   !call boundary_forcing_DG(timelocal, rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, E_DG_P)
        
   ! --------------------------- !
-  ! Acoustic plane wave forcing.!
+  ! Acoustic plane wave         !
+  ! forcing.                    !
   ! --------------------------- !
+  ! TODO: read the parameters from parfile.
   to = 100!5.!/5.
   perio = 100!4.!/5.
-  if(z == ZEROl .AND. TYPE_FORCING == 1) &     
-  veloc_z_DG_P = 0.01*(&
-                - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
+  if(z == ZEROl .AND. TYPE_FORCING == 1) then
+    veloc_z_DG_P = 0.01*(&
+                   - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
                          (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
-                + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
-                         (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) 
+                   + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
+                         (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) )
+  endif
 
   ! --------------------------- !
   ! Gravity wave forcing.       !
   ! --------------------------- !
+  ! TODO: read the parameters from parfile.
   lambdo = 100000
   perio  = 40!200
   xo = 300000
@@ -353,6 +364,7 @@
   ! --------------------------- !
   ! Tsunami forcing.            !
   ! --------------------------- !
+  ! TODO: read the parameters from parfile.
   VELOC_TSUNAMI = 200
   perio = 1000
   lambdo = 50000
@@ -363,7 +375,7 @@
               2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
               *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
   endif
-       
+         
   E_DG_P = p_DG_P/(gammaext_DG(ibool_DG(i, j, ispec)) - ONEl) &
                       + rho_DG_P*HALFl*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) 
 
