@@ -41,7 +41,7 @@ cp DATA/SOURCE OUTPUT_FILES/
 
 # Save model config
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
-cp ../../src/specfem2D/boundary_terms.f90 OUTPUT_FILES/boundary_terms.f90
+cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
 
 # runs database generation
 echo
