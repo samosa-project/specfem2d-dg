@@ -364,16 +364,19 @@
   ! --------------------------- !
   ! Tsunami forcing.            !
   ! --------------------------- !
-  ! TODO: read the parameters from parfile.
-  VELOC_TSUNAMI = 200
-  perio = 1000
-  lambdo = 50000
-  if(timelocal < perio) then
-      veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
-  else
-      veloc_z_DG_P = &
-              2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
-              *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
+  ! TODO: do something instead of this 'if(.false.)'.
+  if(.false.) then
+    ! TODO: read the parameters from parfile.
+    VELOC_TSUNAMI = 200
+    perio = 1000
+    lambdo = 50000
+    if(timelocal < perio) then
+        veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
+    else
+        veloc_z_DG_P = &
+                2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
+                *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
+    endif
   endif
          
   E_DG_P = p_DG_P/(gammaext_DG(ibool_DG(i, j, ispec)) - ONEl) &
