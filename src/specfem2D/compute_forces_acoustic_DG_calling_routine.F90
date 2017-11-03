@@ -31,6 +31,10 @@
 !
 !========================================================================
 
+! ------------------------------------------------------------ !
+! compute_forces_acoustic_DG_main                              !
+! ------------------------------------------------------------ !
+
   subroutine compute_forces_acoustic_DG_main()
 
   use specfem_par
@@ -109,15 +113,17 @@
     !etaext = ZEROl
     !muext = ZEROl
     allocate(rhovx_init(nglob_DG), &
-        rhovz_init(nglob_DG), &
-        E_init(nglob_DG), &
-        rho_init(nglob_DG))
+             rhovz_init(nglob_DG), &
+             E_init(nglob_DG), &
+             rho_init(nglob_DG))
     
     call prepare_MPI_DG()
 
     allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
     ispec_is_acoustic_coupling_ac = -1
-    if(.not. only_DG_acoustic) call find_DG_acoustic_coupling()
+    if(.not. only_DG_acoustic) then
+      call find_DG_acoustic_coupling()
+    endif
     
     !stop
     T_DG = 0
@@ -162,6 +168,7 @@
     close(10)
   endif
   
+  ! RK4 coefficients.
   rk4a_d(1) = 0d0
   rk4a_d(2) = -567301805773.0/1357537059087.0
   rk4a_d(3) = -2404267990393.0/2016746695238.0
@@ -180,7 +187,7 @@
   rk4c_d(4) = 2006345519317.0/3224310063776.0 
   rk4c_d(5) = 2802321613138.0/2924317926251.0
   
-  ! RK3
+  ! RK3 coefficients.
   !rk4a_d(1) = 0d0
   !rk4a_d(2) = -567301805773.0/1357537059087.0
   !rk4a_d(3) = -2404267990393.0/2016746695238.0
@@ -228,24 +235,24 @@
   if((maxval(muext) > 0 .OR. maxval(etaext) > 0 .OR. maxval(kappa_DG) > 0)) then
 #ifdef USE_MPI
     if (NPROC > 1 .and. ninterface_acoustic > 0) then
-      call assemble_MPI_vector_DG(T_DG(1,:), buffer_DG_Tx_P)
-      call assemble_MPI_vector_DG(T_DG(2,:), buffer_DG_Tz_P)
-      call assemble_MPI_vector_DG(V_DG(1,1,:), buffer_DG_Vxx_P)
-      call assemble_MPI_vector_DG(V_DG(2,2,:), buffer_DG_Vzz_P)
-      call assemble_MPI_vector_DG(V_DG(1,2,:), buffer_DG_Vxz_P)
-      call assemble_MPI_vector_DG(V_DG(2,1,:), buffer_DG_Vzx_P)
+      call assemble_MPI_vector_DG(T_DG(1, :), buffer_DG_Tx_P)
+      call assemble_MPI_vector_DG(T_DG(2, :), buffer_DG_Tz_P)
+      call assemble_MPI_vector_DG(V_DG(1, 1, :), buffer_DG_Vxx_P)
+      call assemble_MPI_vector_DG(V_DG(2, 2, :), buffer_DG_Vzz_P)
+      call assemble_MPI_vector_DG(V_DG(1, 2, :), buffer_DG_Vxz_P)
+      call assemble_MPI_vector_DG(V_DG(2, 1, :), buffer_DG_Vzx_P)
     endif
 #endif
     call compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
   endif
   
   call compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
-        T_DG, V_DG, e1_DG, &
-        dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
-        timelocal)
+                                  T_DG, V_DG, e1_DG, &
+                                  dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
+                                  timelocal)
   
   if (time_stepping_scheme == 3) then
-    
+    ! Use RK4.
     save_pressure = (gammaext_DG - ONEl)*( E_DG &
         - (HALFl)*(ONEl/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     
@@ -276,14 +283,13 @@
     
     ! Check non-positivity.
     if(minval(rho_DG) < 10d-14) then
-      WRITE(*,*) "*********************************************"
-      WRITE(*,*) "*********************************************"
-      WRITE(*,*) "*********************************************"
-      WRITE(*,*) "CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG)
-      WRITE(*,*) "*********************************************"
-      WRITE(*,*) "*********************************************"
-      WRITE(*,*) "*********************************************"
+      WRITE(*,*) "***************************************************************"
+      WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG), "*"
+      WRITE(*,*) "***************************************************************"
     endif
+  else
+    stop "Time stepping scheme not implemented for the discontinuous Galerkin method."
+    ! TODO: Implement the other time stepping schemes?
   endif
   
   ! --------------------------- !
@@ -336,12 +342,13 @@
   
   end subroutine compute_forces_acoustic_DG_main
 
-!
-!-------------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! compute_forces_acoustic_main_backward_DG                     !
+! ------------------------------------------------------------ !
 
   subroutine compute_forces_acoustic_main_backward_DG()
-
+  ! TODO: correct with same remarks as in subroutine compute_forces_acoustic_main_DG.
+  
   use specfem_par
 
   implicit none
@@ -374,14 +381,14 @@
     ! Sloper limiter initialization
     call setUpVandermonde()
   
-    resu_rhovx = ZEROl
-    resu_rhovz = ZEROl
-    resu_rho   = ZEROl
-    resu_E     = ZEROl
+    resu_rhovx   = ZEROl
+    resu_rhovz   = ZEROl
+    resu_rho     = ZEROl
+    resu_E       = ZEROl
     dot_rho(:)   = ZEROl
     dot_rhovx(:) = ZEROl
     dot_rhovz(:) = ZEROl
-    dot_E(:)    = ZEROl
+    dot_E(:)     = ZEROl
     
     if(.not. trim(MODEL) == 'external') then
         deallocate(muext, etaext,kappa_DG)
@@ -489,11 +496,12 @@
 
   end subroutine compute_forces_acoustic_main_backward_DG
 
-!
-!-------------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! compute_forces_acoustic_main_backward_DG_other               !
+! ------------------------------------------------------------ !
 
   subroutine compute_forces_acoustic_main_backward_DG_other()
+  ! TODO: correct with same remarks as in subroutine compute_forces_acoustic_main_DG.
 
   use specfem_par
 
@@ -1279,109 +1287,113 @@
   !enddo
 
   end subroutine compute_Vander_matrices
-  
+
+! ------------------------------------------------------------ !
+! FINDInv                                                      !
+! ------------------------------------------------------------ !
   !Subroutine to find the inverse of a square matrix
-!Author : Louisda16th a.k.a Ashwith J. Rego
-!Reference : Algorithm has been well explained in:
-!http://math.uww.edu/~mcfarlat/inverse.htm 
-!http://www.tutor.ms.unimelb.edu.au/matrix/matrix_inverse.html
+  !Author : Louisda16th a.k.a Ashwith J. Rego
+  !Reference : Algorithm has been well explained in:
+  !http://math.uww.edu/~mcfarlat/inverse.htm 
+  !http://www.tutor.ms.unimelb.edu.au/matrix/matrix_inverse.html
 
-SUBROUTINE FINDInv(matrix, inverse, n, errorflag)
+  SUBROUTINE FINDInv(matrix, inverse, n, errorflag)
+  ! TODO: Replace the inner code of this routine (or better, directly the calls to it) by a LAPACK call.
 
-use constants,only: CUSTOM_REAL
+  use constants,only: CUSTOM_REAL
 
-IMPLICIT NONE
-!Declarations
-INTEGER, INTENT(IN) :: n
-INTEGER, INTENT(OUT) :: errorflag !Return error status. -1 for error, 0 for normal
-double precision, INTENT(IN), DIMENSION(n,n) :: matrix !Input matrix
-double precision, INTENT(OUT), DIMENSION(n,n) :: inverse !Inverted matrix
+  IMPLICIT NONE
+  !Declarations
+  INTEGER, INTENT(IN) :: n
+  INTEGER, INTENT(OUT) :: errorflag !Return error status. -1 for error, 0 for normal
+  double precision, INTENT(IN), DIMENSION(n,n) :: matrix !Input matrix
+  double precision, INTENT(OUT), DIMENSION(n,n) :: inverse !Inverted matrix
 
-LOGICAL :: FLAG = .TRUE.
-INTEGER :: i, j, k
-double precision :: m
-double precision, DIMENSION(n,2*n) :: augmatrix !augmented matrix
+  LOGICAL :: FLAG = .TRUE.
+  INTEGER :: i, j, k
+  double precision :: m
+  double precision, DIMENSION(n,2*n) :: augmatrix !augmented matrix
 
-!Augment input matrix with an identity matrix
-DO i = 1, n
-DO j = 1, 2*n
-IF (j <= n ) THEN
-augmatrix(i,j) = matrix(i,j)
-ELSE IF ((i+n) == j) THEN
-augmatrix(i,j) = 1
-Else
-augmatrix(i,j) = 0
-ENDIF
-END DO
-END DO
+  !Augment input matrix with an identity matrix
+  DO i = 1, n
+    DO j = 1, 2*n
+      IF (j <= n ) THEN
+        augmatrix(i,j) = matrix(i,j)
+      ELSE IF ((i+n) == j) THEN
+        augmatrix(i,j) = 1
+      Else
+        augmatrix(i,j) = 0
+      ENDIF
+    END DO
+  END DO
 
-!Reduce augmented matrix to upper traingular form
-DO k =1, n-1
-IF (augmatrix(k,k) == 0) THEN
-        FLAG = .FALSE.
-        DO i = k+1, n
-                        IF (augmatrix(i,k) /= 0) THEN
-                        DO j = 1,2*n
-                                augmatrix(k,j) = augmatrix(k,j)+augmatrix(i,j)
-                        END DO
-                        FLAG = .TRUE.
-                        EXIT
-                ENDIF
-                IF (FLAG .EQV. .FALSE.) THEN
-                        PRINT*, "Matrix is non - invertible"
-                        inverse = 0
-                        errorflag = -1
-                        return
-                ENDIF
+  !Reduce augmented matrix to upper traingular form
+  DO k =1, n-1
+  IF (augmatrix(k,k) == 0) THEN
+    FLAG = .FALSE.
+    DO i = k+1, n
+      IF (augmatrix(i,k) /= 0) THEN
+        DO j = 1,2*n
+          augmatrix(k,j) = augmatrix(k,j)+augmatrix(i,j)
         END DO
-ENDIF
+        FLAG = .TRUE.
+        EXIT
+      ENDIF
+      IF (FLAG .EQV. .FALSE.) THEN
+        PRINT*, "Matrix is non - invertible"
+        inverse = 0
+        errorflag = -1
+        return
+      ENDIF
+    END DO
+  ENDIF
 
-DO j = k+1, n 
-        m = augmatrix(j,k)/augmatrix(k,k)
-        DO i = k, 2*n
-                augmatrix(j,i) = augmatrix(j,i) - m*augmatrix(k,i)
-        END DO
-END DO
+  DO j = k+1, n 
+    m = augmatrix(j,k)/augmatrix(k,k)
+    DO i = k, 2*n
+      augmatrix(j,i) = augmatrix(j,i) - m*augmatrix(k,i)
+    END DO
+  END DO
 
-END DO
+  END DO
 
-!Test for invertibility
-DO i = 1, n
-IF (augmatrix(i,i) == 0) THEN
-PRINT*, "Matrix is non - invertible"
-inverse = 0
-errorflag = -1
-return
-ENDIF
-END DO
+  !Test for invertibility
+  DO i = 1, n
+    IF (augmatrix(i,i) == 0) THEN
+      PRINT*, "Matrix is non - invertible"
+      inverse = 0
+      errorflag = -1
+      return
+    ENDIF
+  END DO
 
-!Make diagonal elements as 1
-DO i = 1 , n
-m = augmatrix(i,i)
-DO j = i , (2 * n) 
-augmatrix(i,j) = (augmatrix(i,j) / m)
-END DO
-END DO
+  !Make diagonal elements as 1
+  DO i = 1 , n
+    m = augmatrix(i,i)
+    DO j = i , (2 * n) 
+    a ugmatrix(i,j) = (augmatrix(i,j) / m)
+    END DO
+  END DO
 
-!Reduced right side half of augmented matrix to identity matrix
-DO k = n-1, 1, -1
-DO i =1, k
-m = augmatrix(i,k+1)
-DO j = k, (2*n)
-augmatrix(i,j) = augmatrix(i,j) -augmatrix(k+1,j) * m
-END DO
-END DO
-END DO 
+  !Reduced right side half of augmented matrix to identity matrix
+  DO k = n-1, 1, -1
+    DO i =1, k
+      m = augmatrix(i,k+1)
+      DO j = k, (2*n)
+        augmatrix(i,j) = augmatrix(i,j) -augmatrix(k+1,j) * m
+      END DO
+    END DO
+  END DO 
 
-!store answer
-DO i =1, n
-DO j = 1, n
-inverse(i,j) = augmatrix(i,j+n)
-END DO
-END DO
-errorflag = 0
-RETURN
-END
+  !store answer
+  DO i =1, n
+    DO j = 1, n
+      inverse(i,j) = augmatrix(i,j+n)
+    END DO
+  END DO
+  errorflag = 0
+  RETURN
+  END SUBROUTINE FINDInv
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
