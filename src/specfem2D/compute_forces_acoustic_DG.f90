@@ -183,12 +183,12 @@
         call compute_add_sources_acoustic_DG_spread(dot_E,it,i_stage)
   endif
   
-  if(myrank == 0) then
-  WRITE(*,*) it,"MAXVAL ", maxval(rho_DG), minval(rho_DG)
-  WRITE(*,*) it,"MAXVAL ", maxval(rhovx_DG), minval(rhovx_DG)
-  WRITE(*,*) it,"MAXVAL ", maxval(rhovz_DG), minval(rhovz_DG)
-  WRITE(*,*) it,"MAXVAL ", maxval(E_DG), minval(E_DG)
-  WRITE(*,*) it,"RATIO PRESSURE", maxval(abs((p_DG-p_DG_init)/p_DG_init))
+  if(myrank == 0 .AND. mod(it, 50)==0) then
+  WRITE(*,*) it,"max, min rho:         ", maxval(rho_DG), minval(rho_DG)
+  WRITE(*,*) it,"max, min rhovx:       ", maxval(rhovx_DG), minval(rhovx_DG)
+  WRITE(*,*) it,"max, min rhovz:       ", maxval(rhovz_DG), minval(rhovz_DG)
+  WRITE(*,*) it,"max, min E:           ", maxval(E_DG), minval(E_DG)
+  WRITE(*,*) it,"|p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init))
   WRITE(*,*) "*****************"
   endif
   

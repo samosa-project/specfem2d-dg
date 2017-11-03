@@ -63,38 +63,41 @@
   integer :: i,j,ispec
   
   !integer :: i ,j, ispec
-  ! checks if anything to do in this slice
-  if (.not. any_acoustic_DG) return
   
-  ! Intialization
+  ! Checks if anything has to be done.
+  if (.not. any_acoustic_DG) then
+    return
+  endif
+  
+  ! Intialisation.
   if(it == 1 .AND. i_stage == 1) then
-  
-    ! Sloper limiter initialization
+    ! Slope limiter initialisation.
+    ! TODO: put this in an "if(USE_SLOPE_LIMITER)"? In other words, check wether or not the Vandermonde matrix is used when the slope limiter is not.
     call setUpVandermonde()
-  
-    resu_rhovx = ZEROl
-    resu_rhovz = ZEROl
-    resu_rho   = ZEROl
-    resu_E     = ZEROl
-    resu_e1     = ZEROl
+    
+    resu_rhovx   = ZEROl
+    resu_rhovz   = ZEROl
+    resu_rho     = ZEROl
+    resu_E       = ZEROl
+    resu_e1      = ZEROl
     dot_rho(:)   = ZEROl
     dot_rhovx(:) = ZEROl
     dot_rhovz(:) = ZEROl
-    dot_E(:)    = ZEROl
+    dot_E(:)     = ZEROl
     dot_e1(:)    = ZEROl
     
     allocate(save_pressure(nglob_DG))
     save_pressure = ZEROl
     
     if(.not. trim(MODEL) == 'external') then
-        deallocate(gravityext, muext, etaext, kappa_DG, &
-                tau_epsilon, tau_sigma)
-        allocate(gravityext(NGLLX,NGLLZ,nspec), &
-              etaext(NGLLX,NGLLZ,nspec), &
-              muext(NGLLX,NGLLZ,nspec), &
-              kappa_DG(NGLLX,NGLLZ,nspec), &
-              tau_epsilon(NGLLX,NGLLZ,nspec), &
-              tau_sigma(NGLLX,NGLLZ,nspec)) 
+      deallocate(gravityext, muext, etaext, kappa_DG, &
+                 tau_epsilon, tau_sigma)
+      allocate(gravityext(NGLLX, NGLLZ, nspec), &
+               etaext(NGLLX, NGLLZ, nspec), &
+               muext(NGLLX, NGLLZ, nspec), &
+               kappa_DG(NGLLX, NGLLZ, nspec), &
+               tau_epsilon(NGLLX, NGLLZ, nspec), &
+               tau_sigma(NGLLX, NGLLZ, nspec)) 
     endif
     
     !rhovx_DG   = ZEROl
@@ -110,18 +113,18 @@
         E_init(nglob_DG), &
         rho_init(nglob_DG))
     
-   call prepare_MPI_DG()
-   
-   allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
-   ispec_is_acoustic_coupling_ac = -1
-   if(.not. only_DG_acoustic) call find_DG_acoustic_coupling()
+    call prepare_MPI_DG()
+
+    allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
+    ispec_is_acoustic_coupling_ac = -1
+    if(.not. only_DG_acoustic) call find_DG_acoustic_coupling()
     
     !stop
     T_DG = 0
     V_DG = 0
-    
+
     call initial_condition_DG()
-    
+
     !if(timelocal == 0) then
     rhovx_init = rhovx_DG
     rhovz_init = rhovz_DG
@@ -130,33 +133,33 @@
     p_DG_init  = (gammaext_DG - ONE)*( E_DG &
         - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
-   !endif
+    !endif
     
 #ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
-  endif
+    if (NPROC > 1 .and. ninterface_acoustic > 0) then
+      call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
+    endif
 #endif
     
   endif !if(it == 1 .AND. i_stage == 1)
   
   if(it == 1 .AND. i_stage == 1 .AND. .false.) then
-  write(file_name,"('./boundaries_MPI_',i3.3)") myrank
-  open(10,file=file_name, form='formatted')
-  do ispec = 1,nspec
-    ! acoustic spectral element
-    !if (ispec_is_acoustic(ispec)) then
-    !if (ispec_is_acoustic_DG(ispec)) then
-  !if(ispec_is_acoustic_DG(ispec)) then
+    write(file_name, "('./boundaries_MPI_',i3.3)") myrank
+    open(10, file=file_name, form='formatted')
+    do ispec = 1,nspec
+      ! acoustic spectral element
+      !if (ispec_is_acoustic(ispec)) then
+      !if (ispec_is_acoustic_DG(ispec)) then
+      !if(ispec_is_acoustic_DG(ispec)) then
       ! first double loop over GLL points to compute and store gradients
       do j = 1,5
         do i = 1,5
-                WRITE(10,*) coord(:,ibool_before_perio(i,j,ispec))
+          WRITE(10, *) coord(:, ibool_before_perio(i, j, ispec))
         enddo
       enddo
-  !endif
-  enddo
-  close(10)
+      !endif
+    enddo
+    close(10)
   endif
   
   rk4a_d(1) = 0d0
@@ -205,8 +208,10 @@
   
   timelocal = (it-1)*deltat + rk4c(i_stage)*deltat
   
-  if(myrank == 0) &
-  WRITE(*,*) "iter", it, i_stage, timelocal
+  if(myrank == 0 .AND. mod(it, 50)==0) then
+    WRITE(*,*) "iter", it, i_stage, timelocal
+  endif
+  
 #ifdef USE_MPI
   if (NPROC > 1 .and. ninterface_acoustic > 0) then
     call assemble_MPI_vector_DG(rho_DG, buffer_DG_rho_P)
@@ -216,22 +221,19 @@
   endif
 #endif
 
-  ! Local Discontinuous Galerkin for viscous fluxes
+  ! Local Discontinuous Galerkin for viscous fluxes.
   if((maxval(muext) > 0 .OR. maxval(etaext) > 0 .OR. maxval(kappa_DG) > 0)) then
-
 #ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(T_DG(1,:), buffer_DG_Tx_P)
-    call assemble_MPI_vector_DG(T_DG(2,:), buffer_DG_Tz_P)
-    call assemble_MPI_vector_DG(V_DG(1,1,:), buffer_DG_Vxx_P)
-    call assemble_MPI_vector_DG(V_DG(2,2,:), buffer_DG_Vzz_P)
-    call assemble_MPI_vector_DG(V_DG(1,2,:), buffer_DG_Vxz_P)
-    call assemble_MPI_vector_DG(V_DG(2,1,:), buffer_DG_Vzx_P)
-  endif
+    if (NPROC > 1 .and. ninterface_acoustic > 0) then
+      call assemble_MPI_vector_DG(T_DG(1,:), buffer_DG_Tx_P)
+      call assemble_MPI_vector_DG(T_DG(2,:), buffer_DG_Tz_P)
+      call assemble_MPI_vector_DG(V_DG(1,1,:), buffer_DG_Vxx_P)
+      call assemble_MPI_vector_DG(V_DG(2,2,:), buffer_DG_Vzz_P)
+      call assemble_MPI_vector_DG(V_DG(1,2,:), buffer_DG_Vxz_P)
+      call assemble_MPI_vector_DG(V_DG(2,1,:), buffer_DG_Vzx_P)
+    endif
 #endif
-
-  call compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
-
+    call compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
   endif
   
   call compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
@@ -264,144 +266,72 @@
     E_DG     = E_DG + rk4b(i_stage)*resu_E 
     e1_DG    = e1_DG + rk4b(i_stage)*resu_e1 
     
-    ! If we want to compute kernels we save regurlaly
+    ! If we want to compute kernels we save regularly.
     if(.false.) then
-    call save_forward_solution()
+      call save_forward_solution()
     endif
     
-    ! Check non-positivity
+    ! Check non-positivity.
     if(minval(rho_DG) < 10d-14) then
-        WRITE(*,*) "*********************************************"
-        WRITE(*,*) "*********************************************"
-        WRITE(*,*) "*********************************************"
-        WRITE(*,*) "CAREFUL VERY SMALL DENSITY : ", minval(rho_DG)
-        WRITE(*,*) "*********************************************"
-        WRITE(*,*) "*********************************************"
-        WRITE(*,*) "*********************************************"
+      WRITE(*,*) "*********************************************"
+      WRITE(*,*) "*********************************************"
+      WRITE(*,*) "*********************************************"
+      WRITE(*,*) "CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG)
+      WRITE(*,*) "*********************************************"
+      WRITE(*,*) "*********************************************"
+      WRITE(*,*) "*********************************************"
     endif
-    
   endif
   
+  ! --------------------------- !
+  ! Remove high-order           !
+  ! coefficients of the         !
+  ! solution.                   !
+  ! --------------------------- !
   if(USE_SLOPE_LIMITER) then
-  if(CONSTRAIN_HYDROSTATIC) then
-        veloc_x = rho_DG - rho_init
-        call SlopeLimit1(veloc_x, timelocal, 1)
-        rho_DG = veloc_x + rho_init
-  else
-        call SlopeLimit1(rho_DG, timelocal, 1)
-  endif
-
-  if(CONSTRAIN_HYDROSTATIC) then
-        veloc_x = rhovx_DG - rhovx_init
-        call SlopeLimit1(veloc_x, timelocal, 1)
-        rhovx_DG = veloc_x + rhovx_init
-  else
-        call SlopeLimit1(rhovx_DG, timelocal, 2)
+    ! rho.
+    if(CONSTRAIN_HYDROSTATIC) then
+      veloc_x = rho_DG - rho_init
+      call SlopeLimit1(veloc_x, timelocal, 1)
+      rho_DG = veloc_x + rho_init
+    else
+      call SlopeLimit1(rho_DG, timelocal, 1)
+    endif
+    ! rhovx.
+    if(CONSTRAIN_HYDROSTATIC) then
+      veloc_x = rhovx_DG - rhovx_init
+      call SlopeLimit1(veloc_x, timelocal, 1)
+      rhovx_DG = veloc_x + rhovx_init
+    else
+      call SlopeLimit1(rhovx_DG, timelocal, 2)
+    endif
+    ! rhovz.
+    if(CONSTRAIN_HYDROSTATIC) then
+      veloc_x = rhovz_DG - rhovz_init
+      call SlopeLimit1(veloc_x, timelocal, 1)
+      rhovz_DG = veloc_x + rhovz_init
+    else
+      call SlopeLimit1(rhovz_DG, timelocal, 3)
+    endif
+    ! E.
+    if(CONSTRAIN_HYDROSTATIC) then
+      veloc_x = E_DG - E_init
+      call SlopeLimit1(veloc_x, timelocal, 1)
+      E_DG = veloc_x + E_init
+    else
+      call SlopeLimit1(E_DG, timelocal, 4)
+    endif
   endif
   
-  if(CONSTRAIN_HYDROSTATIC) then
-        veloc_x = rhovz_DG - rhovz_init
-        call SlopeLimit1(veloc_x, timelocal, 1)
-        rhovz_DG = veloc_x + rhovz_init
-  else
-        call SlopeLimit1(rhovz_DG, timelocal, 3)
+  ! --------------------------- !
+  ! Damp solution in a buffer   !
+  ! zone.                       !
+  ! --------------------------- !
+  if(.true.) then ! TODO: add a parameter for this option in parfile.
+    call absorb_condition_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See "boundary_terms_DG.f90".
   endif
-  
-  if(CONSTRAIN_HYDROSTATIC) then
-        veloc_x = E_DG - E_init
-        call SlopeLimit1(veloc_x, timelocal, 1)
-        E_DG = veloc_x + E_init
-  else
-        call SlopeLimit1(E_DG, timelocal, 4)
-  endif
-  
-  endif
-  
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Damping solution in buffer zone
-  if(.false.) call absorb_condition_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
   
   end subroutine compute_forces_acoustic_DG_main
-
-!
-!-------------------------------------------------------------------------------------
-!
-
-  subroutine absorb_condition_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
-
-  use specfem_par, only: ispec_is_acoustic, nspec, coord, ibool_DG, nglob_DG, &
-        ibool_before_perio
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  implicit none
-  
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
-  
-  ! Local
-  real(kind=CUSTOM_REAL) :: L_buffer_absorb, z, sigma, sigma_max, zmax, beta, z_l, C_1, C_2
-  real(kind=CUSTOM_REAL) :: timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-                        veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
-  integer :: i, j, ispec, ifirstelem, ilastelem, ibool
-  
-  L_buffer_absorb = 10000.
-  beta            = 3.
-  sigma_max       = 1.
-  zmax            = 51000.
-  C_1 = 0.
-  C_2 = 13.
-  
-  ifirstelem = 1
-  ilastelem = nspec
-  
-  if(.false.) then
-  do ispec = ifirstelem,ilastelem
-
-    ! acoustic spectral element
-    if (ispec_is_acoustic(ispec)) then
-
-      ! first double loop over GLL points to compute and store gradients
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-        
-        ibool = ibool_DG(i,j,ispec)
-        z   = coord(2, ibool_before_perio(i, j, ispec))
-        z_l = abs(z - zmax)/L_buffer_absorb
-        !sigma = sigma_max*(abs( 1. - (z - L_buffer_absorb)/L_buffer_absorb ))**beta
-        
-        if(abs(z_l) <= 1.) then
-        
-                z_l = 1.-abs(z_l)
-                sigma = (1 - C_1*z_l**2)*(1 - ( 1 - exp(C_2*(z_l)**2) )/( 1 - exp(C_2) ))
-        
-                call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-                        veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-                
-                WRITE(*,*) timelocal, z,z_l,abs(z - zmax),abs(z - zmax)/L_buffer_absorb,&
-                 sigma!, rho_DG(ibool) , rho_DG_P, sigma*( rho_DG(ibool) -  rho_DG_P), &
-                       ! rho_DG(ibool) - sigma*( rho_DG(ibool) -  rho_DG_P)
-                 
-                !! 1st approach    
-                !rho_DG(ibool)   = rho_DG(ibool) - sigma*( rho_DG(ibool) -  rho_DG_P)
-                !rhovx_DG(ibool) = rhovx_DG(ibool) - sigma*( rhovx_DG(ibool) -  rhovx_DG_P)
-                !rhovz_DG(ibool) = rhovz_DG(ibool) - sigma*( rhovz_DG(ibool) -  rhovz_DG_P)
-                !E_DG(ibool)     = E_DG(ibool) - sigma*( E_DG(ibool) -  E_DG_P)
-                
-                ! 2nd approach 
-                rho_DG(ibool)   = rho_DG(ibool)*sigma
-                rhovx_DG(ibool) = rhovx_DG(ibool)*sigma
-                rhovz_DG(ibool) = rhovz_DG(ibool)*sigma
-                E_DG(ibool)     = E_DG(ibool)*sigma
-        endif
-        
-        enddo
-      enddo
-    
-     endif
-     
-   enddo
-   endif
-  
-  end subroutine absorb_condition_DG
 
 !
 !-------------------------------------------------------------------------------------
@@ -452,16 +382,16 @@
     
     if(.not. trim(MODEL) == 'external') then
         deallocate(muext, etaext,kappa_DG)
-        allocate(etaext(NGLLX,NGLLZ,nspec), &
-              muext(NGLLX,NGLLZ,nspec), &
-              kappa_DG(NGLLX,NGLLZ,nspec) ) 
+        allocate(etaext(NGLLX, NGLLZ, nspec), &
+              muext(NGLLX, NGLLZ, nspec), &
+              kappa_DG(NGLLX, NGLLZ, nspec) ) 
         deallocate(gravityext, windxext, &
               rhoext, vpext, pext_DG)
-        allocate(gravityext(NGLLX,NGLLZ,nspec), &
-              windxext(NGLLX,NGLLZ,nspec), &
-              rhoext(NGLLX,NGLLZ,nspec), &
-              vpext(NGLLX,NGLLZ,nspec), &
-              pext_DG(NGLLX,NGLLZ,nspec) &
+        allocate(gravityext(NGLLX, NGLLZ, nspec), &
+              windxext(NGLLX, NGLLZ, nspec), &
+              rhoext(NGLLX, NGLLZ, nspec), &
+              vpext(NGLLX, NGLLZ, nspec), &
+              pext_DG(NGLLX, NGLLZ, nspec) &
               )
     endif
     
@@ -745,30 +675,30 @@
     resu_rhovz = ZEROl
     resu_rho   = ZEROl
     resu_E     = ZEROl
-    
+
     rho_DG = ZEROl
     rhovx_DG = ZEROl
     rhovz_DG   = ZEROl
     E_DG     = ZEROl
-    
+
     if(.not. trim(MODEL) == 'external') then
         deallocate(gravityext, gammaext_DG, windxext, &
               rhoext, vpext, pext_DG)
-        allocate(gravityext(NGLLX,NGLLZ,nspec), &
+        allocate(gravityext(NGLLX, NGLLZ, nspec), &
               gammaext_DG(nglob_DG), &
-              windxext(NGLLX,NGLLZ,nspec), &
-              rhoext(NGLLX,NGLLZ,nspec), &
-              vpext(NGLLX,NGLLZ,nspec), &
-              pext_DG(NGLLX,NGLLZ,nspec) &
+              windxext(NGLLX, NGLLZ, nspec), &
+              rhoext(NGLLX, NGLLZ, nspec), &
+              vpext(NGLLX, NGLLZ, nspec), &
+              pext_DG(NGLLX, NGLLZ, nspec) &
               )
     endif
-    
+
     call initial_condition_DG_backward()
-    
+
     call prepare_MPI_DG()
-    
+
     endif
-    
+
     dot_rho(:)   = ZEROl
     dot_rhovx(:) = ZEROl
     dot_rhovz(:) = ZEROl
@@ -1055,7 +985,7 @@
     do i = 1, NGLLX
     do j = 1, NGLLZ
     
-        iglob_DG = ibool_DG(i,j,ispec)
+        iglob_DG = ibool_DG(i, j, ispec)
     
         link_ij_iglob(iglob_DG,1) = i
         link_ij_iglob(iglob_DG,2) = j
@@ -1172,18 +1102,18 @@
         ispec = link_ij_iglob(iglob,3)
         
         !if(ispec_is_acoustic_coupling_el(i,j,ispec,3) >= 0) then
-        !        WRITE(100,*) coord(:,ibool_before_perio(i,j,ispec))
+        !        WRITE(100,*) coord(:,ibool_before_perio(i, j, ispec))
         !endif
         
         i_2     = buffer_recv_faces_vector_DG_i(ipoin, iinterface)
         j_2     = buffer_recv_faces_vector_DG_j(ipoin, iinterface)
         
-        !WRITE(100,*) myrank,i,j,ispec,coord(:,ibool(i,j,ispec))
+        !WRITE(100,*) myrank,i,j,ispec,coord(:,ibool(i, j, ispec))
         
         if( (neighbor_DG(i,j,ispec,3) == -1 .OR. &
                 neighbor_DG_corner(i,j,ispec,3) == -1) .AND. (i == i_2 .OR. j == j_2) ) then
         
-        !WRITE(*,*) myrank,"------------>", i,j,ispec,i_2,j_2,coord(:,ibool(i,j,ispec))
+        !WRITE(*,*) myrank,"------------>", i,j,ispec,i_2,j_2,coord(:,ibool(i, j, ispec))
         !WRITE(*,*) "-----", neighbor_DG(i,j,ispec,3), neighbor_DG_corner(i,j,ispec,3)
         !WRITE(*,*) "***********"
         
@@ -1476,10 +1406,10 @@ END
       do j = 1,NGLLZ
         do i = 1,NGLLX
 
-            xixl = xix(i,j,ispec)
-            xizl = xiz(i,j,ispec)
-            gammaxl = gammax(i,j,ispec)
-            gammazl = gammaz(i,j,ispec)
+            xixl = xix(i, j, ispec)
+            xizl = xiz(i, j, ispec)
+            gammaxl = gammax(i, j, ispec)
+            gammazl = gammaz(i, j, ispec)
 
             do k = 1,NGLLX
                 dux_dxi    = dux_dxi    + potential_dot_acoustic(ibool(k,j,ispec)) * hprime_xx(i,k)
@@ -1487,8 +1417,8 @@ END
             enddo
 
             ! derivatives of potential
-            veloc_vector_acoustic_DG_coupling(ibool(i,j,ispec), 1) = dux_dxi * xixl + dux_dgamma * gammaxl
-            veloc_vector_acoustic_DG_coupling(ibool(i,j,ispec), 2) = dux_dxi * xizl + dux_dgamma * gammazl
+            veloc_vector_acoustic_DG_coupling(ibool(i, j, ispec), 1) = dux_dxi * xixl + dux_dgamma * gammaxl
+            veloc_vector_acoustic_DG_coupling(ibool(i, j, ispec), 2) = dux_dxi * xizl + dux_dgamma * gammazl
         enddo
      enddo
      
