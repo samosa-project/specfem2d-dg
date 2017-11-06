@@ -1371,7 +1371,7 @@
   DO i = 1 , n
     m = augmatrix(i,i)
     DO j = i , (2 * n) 
-    a ugmatrix(i,j) = (augmatrix(i,j) / m)
+      augmatrix(i,j) = (augmatrix(i,j) / m)
     END DO
   END DO
 
