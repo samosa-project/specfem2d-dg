@@ -333,20 +333,20 @@
           ! along x direction and z direction
           do k = 1, NGLLX
             dot_rho(iglob) = dot_rho(iglob) + &
-                     (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                     temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                             (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                              temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
                      
             dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                     (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                     temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                               (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             
             dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                     (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                     temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                               (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             
             dot_E(iglob) = dot_E(iglob) + &
-                     (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                     temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                           (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                            temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
           enddo
           
           wzl = real(wzgll(j), kind=CUSTOM_REAL)
@@ -528,9 +528,9 @@
                   V_DG(:,:,iglobP), T_DG(:,iglobP), &
                   MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal, elastic_tensor)
           
+          flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
           flux_rhovx = (rho_DG_P*veloc_x_DG_P**2 + p_DG_P)*nx + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nz
           flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
-          flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
           flux_E     = veloc_x_DG_P*(E_DG_P + p_DG_P)*nx + veloc_z_DG_P*(E_DG_P + p_DG_P)*nz
           
           ! Approximate local maximum linearized acoustic wave speed. In other word, use the Lax-Friedrich flux.
@@ -697,7 +697,7 @@
 ! compute_viscous_tensors                                      !
 ! ------------------------------------------------------------ !
    
-   subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
+  subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
 ! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
   
