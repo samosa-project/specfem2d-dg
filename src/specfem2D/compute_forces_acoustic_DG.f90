@@ -500,7 +500,7 @@
             it_corner = 1
           endif
           
-          ! Step 2: knowing the normals' parameters, compute now the fluxes.
+          ! Step 2: knowing the normals' parameters, compute now the fluxes. We use the Lax-Friedrich flux.
           
           rho_DG_P     = ZERO
           rhovx_DG_P   = ZERO
@@ -533,7 +533,7 @@
           flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
           flux_E     = veloc_x_DG_P*(E_DG_P + p_DG_P)*nx + veloc_z_DG_P*(E_DG_P + p_DG_P)*nz
           
-          ! Approximate local maximum linearized acoustic wave speed. In other word, use the Lax-Friedrich flux.
+          ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = 0.
           jump   = 0.
           !gamma_P = gammaext_DG(iglobM) ! DEBUG

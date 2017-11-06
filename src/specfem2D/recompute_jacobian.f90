@@ -31,6 +31,10 @@
 !
 !========================================================================
 
+! ------------------------------------------------------------ !
+! recompute_jacobian                                           !
+! ------------------------------------------------------------ !
+
 ! Recompute 2D jacobian at a given point in a 4-node or 9-node element
 ! Compute also the global coordinates of the point defined by: (xi,gamma,ispec)
 
@@ -64,7 +68,7 @@
 ! recompute jacobian for any (xi,gamma) point, not necessarily a GLL point
 
 ! create the 2D shape functions and then the Jacobian
-  call define_shape_functions(shape2D,dershape2D,xi,gamma,ngnod)
+  call define_shape_functions(shape2D, dershape2D, xi, gamma, ngnod)
 
 ! compute coordinates and jacobian matrix
   x = ZERO
@@ -92,7 +96,7 @@
 
   enddo
 
-  jacobian = xxi*zgamma - xgamma*zxi
+  jacobian = xxi*zgamma - xgamma*zxi ! See in particular Hesthaven (doi.org/10.1007/9780387720678), section 6.1.
 
 ! the Jacobian is negative, so far this means that there is an error in the mesh
 ! therefore print the coordinates of the mesh points of this element
