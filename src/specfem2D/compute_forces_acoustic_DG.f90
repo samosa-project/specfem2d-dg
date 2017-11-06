@@ -31,6 +31,9 @@
 !
 !========================================================================
 
+! ------------------------------------------------------------ !
+! compute_forces_acoustic_DG                                   !
+! ------------------------------------------------------------ !
 
   subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, &
         T_DG_main, V_DG_main, e1_DG, &
@@ -174,12 +177,12 @@
   
   ! Add force source.
   if(TYPE_SOURCE_DG == 1) then
-    call compute_add_sources_acoustic_DG_spread(dot_rho,it,i_stage)   
+    call compute_add_sources_acoustic_DG_spread(dot_rho, it, i_stage)   
   elseif(TYPE_SOURCE_DG == 2) then
-    call compute_add_sources_acoustic_DG_spread(dot_rhovx,it,i_stage)
-    call compute_add_sources_acoustic_DG_spread(dot_rhovz,it,i_stage)
+    call compute_add_sources_acoustic_DG_spread(dot_rhovx, it, i_stage)
+    call compute_add_sources_acoustic_DG_spread(dot_rhovz, it, i_stage)
   elseif(TYPE_SOURCE_DG == 3) then
-    call compute_add_sources_acoustic_DG_spread(dot_E,it,i_stage)
+    call compute_add_sources_acoustic_DG_spread(dot_E, it, i_stage)
   endif
   
   ! TODO: introduce a verbosity parameter in order to prevent unwanted flooding of the terminal.
@@ -192,16 +195,15 @@
     WRITE(*,"(a,e23.16,a)") "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
   endif
   
-! loop over spectral elements
-  do ispec = ifirstelem,ilastelem
-
+  do ispec = ifirstelem, ilastelem ! Loop over elements.
     ! acoustic spectral element
-    !if (ispec_is_acoustic(ispec)) then
-    if (ispec_is_acoustic_DG(ispec)) then
-
-      ! first double loop over GLL points to compute and store gradients
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
+    if (ispec_is_acoustic_DG(ispec)) then !if (ispec_is_acoustic(ispec)) then
+      ! --------------------------- !
+      ! First set of loops: compute !
+      ! volumic contributions.      !
+      ! --------------------------- !
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
         
           iglob = ibool_DG(i, j, ispec)
           
@@ -334,12 +336,12 @@
     
 ! second double-loop over GLL to compute all the terms
 !
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
           ! along x direction and z direction
           ! and assemble the contributions
-            do k = 1,NGLLX
+            do k = 1, NGLLX
             
               dot_rho(iglob) = dot_rho(iglob) + &
                        (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
@@ -366,357 +368,359 @@
             dot_rhovx(iglob) = dot_rhovx(iglob) + temp_rhovx_gravi(i,j) * wxl * wzl
             dot_rhovz(iglob) = dot_rhovz(iglob) + temp_rhovz_gravi(i,j) * wxl * wzl
             dot_E(iglob)     = dot_E(iglob)     + temp_E_gravi(i,j) * wxl * wzl
-            
         enddo ! second loop over the GLL points
       enddo
       
-    it_corner = 0
-    MPI_change_cpt = .false.
-    
-    do  i = 1,NGLLX
+      it_corner = 0
+      MPI_change_cpt = .false.
       
-      j = 1
-      do while (j <= NGLLZ)
-      
-        ! We skip interior points
-        if(i > 1 .AND. i < NGLLX .AND. j > 1 .AND. j < NGLLZ) then
-                j = j + 1
-                cycle
-        endif
+      ! --------------------------- !
+      ! Second set of loops: add    !
+      ! fluxes between elements,    !
+      ! but only on exterior        !
+      ! points.                     !
+      ! --------------------------- !
+      do  i = 1, NGLLX
+        j = 1
+        do while (j <= NGLLZ)
+          ! We skip interior points
+          if(i > 1 .AND. i < NGLLX .AND. j > 1 .AND. j < NGLLZ) then
+            j = j + 1
+            cycle
+          endif
+          
+          ! Recover neighbor location
+          neighbor = neighbor_DG(i, j, ispec,:)
+          
+          chosen_nxnz_forMPI = -1
         
-        ! Recover neighbor location
-        neighbor = neighbor_DG(i, j, ispec,:)
-        
-        chosen_nxnz_forMPI = -1
-      
-        ! Reinit boolean to know if neighbor exists
-        neighbor_exists = .false.
-        
-        !nx = normal_DG(ispec, ind, 1)
-        !nz = normal_DG(ispec, ind, 2)
-        nx     = normal_DG(i, j, ispec, 1)
-        nz     = normal_DG(i, j, ispec, 2)
-        weight = weight_DG(i, j, ispec)
-        dir_normal = dir_normal_DG(i, j, ispec)
-        chosen_nxnz_forMPI = 0
-        
-        ! Needs x2 points at corners to correctly map edges
-        ! => 2 step on the same point
-        if(it_corner == 1) then
-                neighbor = neighbor_DG_corner(i, j, ispec,:)
-                nx     = normal_DG_corner(i, j, ispec, 1)
-                nz     = normal_DG_corner(i, j, ispec, 2)
-                weight = weight_DG_corner(i, j, ispec)
-                dir_normal = dir_normal_DG_corner(i, j, ispec)
-                chosen_nxnz_forMPI = 1
-                it_corner = 2
-        endif
-        
-        if(neighbor_DG(i, j, ispec,3) > -1 .OR. &
-                neighbor_DG_corner(i, j, ispec,3) > -1) neighbor_exists = .true.
-        
-        ! If not outer boundary check for corresponding neighbor normal
-        if(is_corner(i,j)) then
-                
-                ! If at least one neighbor exists
-                if(neighbor_exists) then
-                
-                i_ex = neighbor(1)
-                j_ex = neighbor(2)
-                ispec_ex = neighbor(3)
-                ! If corner of an outside edge
-                if(it_corner == 2 .AND. neighbor(3) == -1) then
-                        i_ex = neighbor_DG(i, j, ispec,1)
-                        j_ex = neighbor_DG(i, j, ispec,2)
-                        ispec_ex = neighbor_DG(i, j, ispec,3)
-                elseif(it_corner < 2 .AND. neighbor(3) == -1) then
-                        i_ex = neighbor_DG_corner(i, j, ispec,1)
-                        j_ex = neighbor_DG_corner(i, j, ispec,2)
-                        ispec_ex = neighbor_DG_corner(i, j, ispec,3)
+          ! Reinit boolean to know if neighbor exists
+          neighbor_exists = .false.
+          
+          !nx = normal_DG(ispec, ind, 1)
+          !nz = normal_DG(ispec, ind, 2)
+          nx     = normal_DG(i, j, ispec, 1)
+          nz     = normal_DG(i, j, ispec, 2)
+          weight = weight_DG(i, j, ispec)
+          dir_normal = dir_normal_DG(i, j, ispec)
+          chosen_nxnz_forMPI = 0
+          
+          ! Needs x2 points at corners to correctly map edges
+          ! => 2 step on the same point
+          if(it_corner == 1) then
+            neighbor = neighbor_DG_corner(i, j, ispec,:)
+            nx     = normal_DG_corner(i, j, ispec, 1)
+            nz     = normal_DG_corner(i, j, ispec, 2)
+            weight = weight_DG_corner(i, j, ispec)
+            dir_normal = dir_normal_DG_corner(i, j, ispec)
+            chosen_nxnz_forMPI = 1
+            it_corner = 2
+          endif
+          
+          if(neighbor_DG(i, j, ispec,3) > -1 .OR. &
+             neighbor_DG_corner(i, j, ispec,3) > -1) then
+            neighbor_exists = .true.
+          endif
+          
+          ! If not outer boundary check for corresponding neighbor normal
+          if(is_corner(i,j)) then
+            ! If at least one neighbor exists
+            if(neighbor_exists) then
+              i_ex = neighbor(1)
+              j_ex = neighbor(2)
+              ispec_ex = neighbor(3)
+              ! If corner of an outside edge
+              if(it_corner == 2 .AND. neighbor(3) == -1) then
+                i_ex = neighbor_DG(i, j, ispec,1)
+                j_ex = neighbor_DG(i, j, ispec,2)
+                ispec_ex = neighbor_DG(i, j, ispec,3)
+              elseif(it_corner < 2 .AND. neighbor(3) == -1) then
+                i_ex = neighbor_DG_corner(i, j, ispec,1)
+                j_ex = neighbor_DG_corner(i, j, ispec,2)
+                ispec_ex = neighbor_DG_corner(i, j, ispec,3)
+              endif
+              
+              ! Cross product to verify if the normal corresponds to the normal
+              !normal_DG(i_ex,j_ex,ispec_ex, 1) 
+              !normal_DG(i_ex,j_ex,ispec_ex, 2)
+              if( dir_normal /= -dir_normal_DG(i_ex,j_ex,ispec_ex) .AND. &
+                   dir_normal /= -dir_normal_DG_corner(i_ex,j_ex,ispec_ex) ) then
+                      ! Only change normal if inner element
+                      if(neighbor(3) > -1 .AND. it_corner < 2) then
+                        nx     = normal_DG_corner(i, j, ispec, 1)
+                        nz     = normal_DG_corner(i, j, ispec, 2)
+                        weight = weight_DG_corner(i, j, ispec)
+                        dir_normal = dir_normal_DG_corner(i, j, ispec)
+                        ! MODIF for MPI
+                        chosen_nxnz_forMPI = 1
+                      elseif(neighbor(3) > -1 .AND. it_corner == 2) then
+                        nx     = normal_DG(i, j, ispec, 1)
+                        nz     = normal_DG(i, j, ispec, 2)
+                        weight = weight_DG(i, j, ispec)
+                        dir_normal = dir_normal_DG(i, j, ispec)
+                        ! MODIF for MPI
+                        chosen_nxnz_forMPI = 0
+                      endif
+              ! If outside element, if the normal corresponds to the one computed here
+              ! it means that we should take the other one
+              elseif(neighbor(3) == -1) then
+                ! Only change normal if inner element
+                if(it_corner < 2) then
+                  nx     = normal_DG_corner(i, j, ispec, 1)
+                  nz     = normal_DG_corner(i, j, ispec, 2)
+                  weight = weight_DG_corner(i, j, ispec)
+                  dir_normal = dir_normal_DG_corner(i, j, ispec)
+                  ! MODIF for MPI
+                  chosen_nxnz_forMPI = 1
+                elseif(it_corner == 2) then
+                  nx     = normal_DG(i, j, ispec, 1)
+                  nz     = normal_DG(i, j, ispec, 2)
+                  weight = weight_DG(i, j, ispec)
+                  dir_normal = dir_normal_DG(i, j, ispec)
+                  ! MODIF for MPI
+                  chosen_nxnz_forMPI = 0
                 endif
-                
-                ! Cross product to verify if the normal corresponds to the normal
-                !normal_DG(i_ex,j_ex,ispec_ex, 1) 
-                !normal_DG(i_ex,j_ex,ispec_ex, 2)
-                if( dir_normal /= -dir_normal_DG(i_ex,j_ex,ispec_ex) .AND. &
-                     dir_normal /= -dir_normal_DG_corner(i_ex,j_ex,ispec_ex) ) then
-                        ! Only change normal if inner element
-                        if(neighbor(3) > -1 .AND. it_corner < 2) then
-                                nx     = normal_DG_corner(i, j, ispec, 1)
-                                nz     = normal_DG_corner(i, j, ispec, 2)
-                                weight = weight_DG_corner(i, j, ispec)
-                                dir_normal = dir_normal_DG_corner(i, j, ispec)
-                                ! MODIF for MPI
-                                chosen_nxnz_forMPI = 1
-                        elseif(neighbor(3) > -1 .AND. it_corner == 2) then
-                                nx     = normal_DG(i, j, ispec, 1)
-                                nz     = normal_DG(i, j, ispec, 2)
-                                weight = weight_DG(i, j, ispec)
-                                dir_normal = dir_normal_DG(i, j, ispec)
-                                ! MODIF for MPI
-                                chosen_nxnz_forMPI = 0
-                        endif
-                ! If outside element, if the normal corresponds to the one computed here
-                ! it means that we should take the other one
-                elseif(neighbor(3) == -1) then
-                        ! Only change normal if inner element
-                        if(it_corner < 2) then
-                                nx     = normal_DG_corner(i, j, ispec, 1)
-                                nz     = normal_DG_corner(i, j, ispec, 2)
-                                weight = weight_DG_corner(i, j, ispec)
-                                dir_normal = dir_normal_DG_corner(i, j, ispec)
-                                ! MODIF for MPI
-                                chosen_nxnz_forMPI = 1
-                        elseif(it_corner == 2) then
-                                nx     = normal_DG(i, j, ispec, 1)
-                                nz     = normal_DG(i, j, ispec, 2)
-                                weight = weight_DG(i, j, ispec)
-                                dir_normal = dir_normal_DG(i, j, ispec)
-                                ! MODIF for MPI
-                                chosen_nxnz_forMPI = 0
-                        endif
-                endif
-                
-                endif
-                
-        endif
-        
-        ! Interior point
-        iglobM = ibool_DG(i, j, ispec)
-        
-        ! If a MPI surface node has been ill referenced and we need to witch between
-        ! normal_DG and normal_DG_corner
-        if(MPI_change_cpt) then
-        
-                if(chosen_nxnz_forMPI == 1) then
-                                nx     = normal_DG(i, j, ispec, 1)
-                                nz     = normal_DG(i, j, ispec, 2)
-                                weight = weight_DG(i, j, ispec)
-                                dir_normal = dir_normal_DG(i, j, ispec)
-                elseif(chosen_nxnz_forMPI == 0) then
-                                nx     = normal_DG_corner(i, j, ispec, 1)
-                                nz     = normal_DG_corner(i, j, ispec, 2)
-                                weight = weight_DG_corner(i, j, ispec)
-                                dir_normal = dir_normal_DG_corner(i, j, ispec)
-                endif
-                
-        endif !if(is_MPI_interface_DG(iglobM) .AND. NPROC > 1)
-        
-        ! If at corner notify that we will need to go again 
-        if( is_corner(i,j) .AND. it_corner == 0) it_corner = 1
-        
-        rho_DG_P     = ZERO
-        rhovx_DG_P   = ZERO
-        rhovz_DG_P   = ZERO
-        E_DG_P       = ZERO
-        veloc_x_DG_P = ZERO
-        veloc_z_DG_P = ZERO
-        p_DG_P       = ZERO
-        
-        iglobP = 1
-        if(neighbor(1) > -1) &
-        iglobP = ibool_DG(neighbor(1),neighbor(2),neighbor(3))
-        
-        exact_interface_flux = .false.
-        call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
-                rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
-                Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
-                neighbor, MPI_change_cpt, &
-                exact_interface_flux, &
-                rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
-                V_DG(:,:,iglobM), T_DG(:,iglobM), &
-                rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
-                V_DG(:,:,iglobP), T_DG(:,iglobP), &
-                MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal, elastic_tensor)
-        
-        flux_rhovx = (rho_DG_P*veloc_x_DG_P**2 + p_DG_P)*nx + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nz
-        flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
-        flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
-        flux_E     = veloc_x_DG_P*(E_DG_P + p_DG_P)*nx + veloc_z_DG_P*(E_DG_P + p_DG_P)*nz
-        
-        ! Approximate local maximum linearized acoustic wave speed
-        ! Lax-Friedrich
-        lambda = 0.
-        jump   = 0.
-        
-        ! TEST
-        !gamma_P = gammaext_DG(iglobM)
-        veloc_n_M = sqrt(veloc_x_DG(iglobM)**2+veloc_z_DG(iglobM)**2)
-        veloc_n_P = sqrt(veloc_x_DG_P**2+veloc_z_DG_P**2)
-        lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
-                veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
-       
-        !endif
-        
-        !!!!!!!!!!!!!!!!!!!!!!!
-        ! Viscous stress tensor
-        dux_dx = ZERO
-        dux_dz = ZERO
-        duz_dx = ZERO
-        duz_dz = ZERO
-        dT_dx = ZERO
-        dT_dz = ZERO
-        if(muext(i, j, ispec) > 0 .OR. &
-           etaext(i, j, ispec) > 0 .OR. &
-           kappa_DG(i, j, ispec)  > 0) then
-          dux_dx = 0.5*(V_DG(1, 1, iglobM) + Vxx_DG_P)
-          dux_dz = 0.5*(V_DG(1, 2, iglobM) + Vxz_DG_P)
-          duz_dx = 0.5*(V_DG(2, 1, iglobM) + Vzx_DG_P)
-          duz_dz = 0.5*(V_DG(2, 2, iglobM) + Vzz_DG_P)
-          dT_dx = 0.5*(T_DG(1, iglobM) + Tx_DG_P)
-          dT_dz = 0.5*(T_DG(2, iglobM) + Tz_DG_P)
-        endif
-      
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ! Mass conservation equation
-        temp_unknown_M  = rhovx_DG(iglobM)
-        temp_unknown_P  = rhovx_DG_P
-                
-        temp_unknown2_M = rhovz_DG(iglobM)
-        temp_unknown2_P = rhovz_DG_P
-                
-        ! compute dot product
-        flux_x = temp_unknown_M + temp_unknown_P
-        flux_z = temp_unknown2_M + temp_unknown2_P
-        flux_n = flux_x*nx + flux_z*nz
-        jump   = rho_DG(iglobM) - rho_DG_P
-        
-        if(exact_interface_flux) then
-                jump   = 0.
-                !flux_n = flux_rho*2.
-        endif
-        dot_rho(iglobM) = dot_rho(iglobM) - weight*(flux_n + lambda*jump)*HALF
-        
-        !!!!!!!!!!!!!!!!!!!!!
-        ! x-Momentum equation
-        if(.not. CONSTRAIN_HYDROSTATIC) then
-                temp_unknown_M = rho_DG(iglobM)*veloc_x_DG(iglobM)**2 + p_DG(iglobM)
-                temp_unknown_P = rho_DG_P*veloc_x_DG_P**2 + p_DG_P
-                
-                temp_unknown2_M = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
-                temp_unknown2_P = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-        else        
-                temp_unknown_M = rho_DG(iglobM)*veloc_x_DG(iglobM)**2 + (p_DG(iglobM) - p_DG_init(iglobM))
-                temp_unknown_P = rho_DG_P*veloc_x_DG_P**2 + (p_DG_P - p_DG_init(iglobM))
-                
-                temp_unknown2_M = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
-                temp_unknown2_P = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-        endif      
-                
-        ! compute dot product
-        flux_x = temp_unknown_M + temp_unknown_P
-        flux_z = temp_unknown2_M + temp_unknown2_P
-        flux_n = flux_x*nx + flux_z*nz
-        jump   = rhovx_DG(iglobM) - rhovx_DG_P
-        
-        if(exact_interface_flux) jump   = 0.
-        dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ! Viscosity x-Momentum contribution
-        temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
-        temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
-                
-        ! compute dot product
-        flux_x = temp_unknown
-        flux_z = temp_unknown2
-        flux_n = flux_x*nx + flux_z*nz
-                
-        !endif
-        
-        dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
-        dot_E(iglobM)     = dot_E(iglobM) &
-                + weight*( 0.5*(veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
-                + 0.5*(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
-
-        !!!!!!!!!!!!!!!!!!!!!
-        ! z-Momentum equation
-                temp_unknown_M  = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
-                temp_unknown_P  = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-        
-        if(.not. CONSTRAIN_HYDROSTATIC) then        
-                temp_unknown2_M = rho_DG(iglobM)*veloc_z_DG(iglobM)**2 + p_DG(iglobM)
-                temp_unknown2_P = rho_DG_P*veloc_z_DG_P**2 + p_DG_P
-        else
-                temp_unknown2_M = rho_DG(iglobM)*veloc_z_DG(iglobM)**2 + (p_DG(iglobM) - p_DG_init(iglobM))
-                temp_unknown2_P = rho_DG_P*veloc_z_DG_P**2 + (p_DG_P - p_DG_init(iglobM))
-        endif          
-                  
-        ! compute dot product
-        flux_x = temp_unknown_M + temp_unknown_P
-        flux_z = temp_unknown2_M + temp_unknown2_P
-        flux_n = flux_x*nx + flux_z*nz
-        jump   = rhovz_DG(iglobM) - rhovz_DG_P
-                
-        if(exact_interface_flux) jump   = 0.
-        dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
-        
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ! Viscosity z-Momentum contribution
-                
-        temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
-        temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
-                
-        ! compute dot product
-        flux_x = temp_unknown
-        flux_z = temp_unknown2
-        flux_n = flux_x*nx + flux_z*nz
-                
-        dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
-        dot_E(iglobM)     = dot_E(iglobM) &
-                + weight*( 0.5*(veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
-                + 0.5*(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
+              endif
+            endif
+          endif
+          
+          ! Interior point
+          iglobM = ibool_DG(i, j, ispec)
+          
+          ! If a MPI surface node has been ill referenced and we need to witch between
+          ! normal_DG and normal_DG_corner
+          if(MPI_change_cpt) then
+            if(chosen_nxnz_forMPI == 1) then
+              nx     = normal_DG(i, j, ispec, 1)
+              nz     = normal_DG(i, j, ispec, 2)
+              weight = weight_DG(i, j, ispec)
+              dir_normal = dir_normal_DG(i, j, ispec)
+            elseif(chosen_nxnz_forMPI == 0) then
+              nx     = normal_DG_corner(i, j, ispec, 1)
+              nz     = normal_DG_corner(i, j, ispec, 2)
+              weight = weight_DG_corner(i, j, ispec)
+              dir_normal = dir_normal_DG_corner(i, j, ispec)
+            endif
+          endif !if(is_MPI_interface_DG(iglobM) .AND. NPROC > 1)
+          
+          ! If at corner notify that we will need to go again 
+          if( is_corner(i,j) .AND. it_corner == 0) then
+            it_corner = 1
+          endif
+          
+          rho_DG_P     = ZERO
+          rhovx_DG_P   = ZERO
+          rhovz_DG_P   = ZERO
+          E_DG_P       = ZERO
+          veloc_x_DG_P = ZERO
+          veloc_z_DG_P = ZERO
+          p_DG_P       = ZERO
+          
+          iglobP = 1
+          if(neighbor(1) > -1) then
+            iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
+          endif
+          
+          exact_interface_flux = .false.
+          call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
+                  rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
+                  Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
+                  neighbor, MPI_change_cpt, &
+                  exact_interface_flux, &
+                  rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
+                  V_DG(:,:,iglobM), T_DG(:,iglobM), &
+                  rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
+                  V_DG(:,:,iglobP), T_DG(:,iglobP), &
+                  MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal, elastic_tensor)
+          
+          flux_rhovx = (rho_DG_P*veloc_x_DG_P**2 + p_DG_P)*nx + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nz
+          flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
+          flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
+          flux_E     = veloc_x_DG_P*(E_DG_P + p_DG_P)*nx + veloc_z_DG_P*(E_DG_P + p_DG_P)*nz
+          
+          ! Approximate local maximum linearized acoustic wave speed
+          ! Lax-Friedrich
+          lambda = 0.
+          jump   = 0.
+          
+          ! TEST
+          !gamma_P = gammaext_DG(iglobM)
+          veloc_n_M = sqrt(veloc_x_DG(iglobM)**2+veloc_z_DG(iglobM)**2)
+          veloc_n_P = sqrt(veloc_x_DG_P**2+veloc_z_DG_P**2)
+          lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
+                  veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
          
-        !!!!!!!!!!!!!!!!!
-        ! Energy equation
-        if(.not. CONSTRAIN_HYDROSTATIC) then
-          temp_unknown_M = veloc_x_DG(iglobM)*(E_DG(iglobM) + p_DG(iglobM))
-          temp_unknown_P = veloc_x_DG_P*(E_DG_P + p_DG_P)
+          !endif
           
-          temp_unknown2_M = veloc_z_DG(iglobM)*(E_DG(iglobM) + p_DG(iglobM))
-          temp_unknown2_P = veloc_z_DG_P*(E_DG_P + p_DG_P)
-        else        
-          temp_unknown_M = veloc_x_DG(iglobM)*(E_DG(iglobM) + (p_DG(iglobM)- p_DG_init(iglobM)))
-          temp_unknown_P = veloc_x_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
+          !!!!!!!!!!!!!!!!!!!!!!!
+          ! Viscous stress tensor
+          dux_dx = ZERO
+          dux_dz = ZERO
+          duz_dx = ZERO
+          duz_dz = ZERO
+          dT_dx = ZERO
+          dT_dz = ZERO
+          if(muext(i, j, ispec) > 0 .OR. &
+             etaext(i, j, ispec) > 0 .OR. &
+             kappa_DG(i, j, ispec)  > 0) then
+            dux_dx = 0.5*(V_DG(1, 1, iglobM) + Vxx_DG_P)
+            dux_dz = 0.5*(V_DG(1, 2, iglobM) + Vxz_DG_P)
+            duz_dx = 0.5*(V_DG(2, 1, iglobM) + Vzx_DG_P)
+            duz_dz = 0.5*(V_DG(2, 2, iglobM) + Vzz_DG_P)
+            dT_dx = 0.5*(T_DG(1, iglobM) + Tx_DG_P)
+            dT_dz = 0.5*(T_DG(2, iglobM) + Tz_DG_P)
+          endif
+        
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Mass conservation equation
+          temp_unknown_M  = rhovx_DG(iglobM)
+          temp_unknown_P  = rhovx_DG_P
+                  
+          temp_unknown2_M = rhovz_DG(iglobM)
+          temp_unknown2_P = rhovz_DG_P
+                  
+          ! compute dot product
+          flux_x = temp_unknown_M + temp_unknown_P
+          flux_z = temp_unknown2_M + temp_unknown2_P
+          flux_n = flux_x*nx + flux_z*nz
+          jump   = rho_DG(iglobM) - rho_DG_P
           
-          temp_unknown2_M = veloc_z_DG(iglobM)*(E_DG(iglobM) + (p_DG(iglobM)- p_DG_init(iglobM)))
-          temp_unknown2_P = veloc_z_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
-        endif        
-                
-        ! compute dot product
-        flux_x = temp_unknown_M + temp_unknown_P
-        flux_z = temp_unknown2_M + temp_unknown2_P
-        flux_n = flux_x*nx + flux_z*nz
-        jump   = E_DG(iglobM) - E_DG_P
-        
-        if(exact_interface_flux) then
-                jump   = 0.
-        endif
-        dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
-        
-        !!!!!!!!!!!!!
-        ! Heat flux
-        dot_E(iglobM)     = dot_E(iglobM) &
-                + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
-        
-        ! Increment NGLLZ counter
-        j = j + 1
-        
-        ! If at corner and first step => go again 
-        if(it_corner == 1) j = j - 1
-        ! Reset corner notification
-        if(it_corner == 2) it_corner = 0
+          if(exact_interface_flux) then
+                  jump   = 0.
+                  !flux_n = flux_rho*2.
+          endif
+          dot_rho(iglobM) = dot_rho(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          
+          !!!!!!!!!!!!!!!!!!!!!
+          ! x-Momentum equation
+          if(.not. CONSTRAIN_HYDROSTATIC) then
+                  temp_unknown_M = rho_DG(iglobM)*veloc_x_DG(iglobM)**2 + p_DG(iglobM)
+                  temp_unknown_P = rho_DG_P*veloc_x_DG_P**2 + p_DG_P
+                  
+                  temp_unknown2_M = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
+                  temp_unknown2_P = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+          else        
+                  temp_unknown_M = rho_DG(iglobM)*veloc_x_DG(iglobM)**2 + (p_DG(iglobM) - p_DG_init(iglobM))
+                  temp_unknown_P = rho_DG_P*veloc_x_DG_P**2 + (p_DG_P - p_DG_init(iglobM))
+                  
+                  temp_unknown2_M = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
+                  temp_unknown2_P = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+          endif      
+                  
+          ! compute dot product
+          flux_x = temp_unknown_M + temp_unknown_P
+          flux_z = temp_unknown2_M + temp_unknown2_P
+          flux_n = flux_x*nx + flux_z*nz
+          jump   = rhovx_DG(iglobM) - rhovx_DG_P
+          
+          if(exact_interface_flux) jump   = 0.
+          dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Viscosity x-Momentum contribution
+          temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
+          temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
+                  
+          ! compute dot product
+          flux_x = temp_unknown
+          flux_z = temp_unknown2
+          flux_n = flux_x*nx + flux_z*nz
+                  
+          !endif
+          
+          dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
+          dot_E(iglobM)     = dot_E(iglobM) &
+                  + weight*( 0.5*(veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
+                  + 0.5*(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
+
+          !!!!!!!!!!!!!!!!!!!!!
+          ! z-Momentum equation
+                  temp_unknown_M  = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
+                  temp_unknown_P  = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+          
+          if(.not. CONSTRAIN_HYDROSTATIC) then        
+                  temp_unknown2_M = rho_DG(iglobM)*veloc_z_DG(iglobM)**2 + p_DG(iglobM)
+                  temp_unknown2_P = rho_DG_P*veloc_z_DG_P**2 + p_DG_P
+          else
+                  temp_unknown2_M = rho_DG(iglobM)*veloc_z_DG(iglobM)**2 + (p_DG(iglobM) - p_DG_init(iglobM))
+                  temp_unknown2_P = rho_DG_P*veloc_z_DG_P**2 + (p_DG_P - p_DG_init(iglobM))
+          endif          
+                    
+          ! compute dot product
+          flux_x = temp_unknown_M + temp_unknown_P
+          flux_z = temp_unknown2_M + temp_unknown2_P
+          flux_n = flux_x*nx + flux_z*nz
+          jump   = rhovz_DG(iglobM) - rhovz_DG_P
+                  
+          if(exact_interface_flux) jump   = 0.
+          dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Viscosity z-Momentum contribution
+                  
+          temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
+          temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
+                  
+          ! compute dot product
+          flux_x = temp_unknown
+          flux_z = temp_unknown2
+          flux_n = flux_x*nx + flux_z*nz
+                  
+          dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
+          dot_E(iglobM)     = dot_E(iglobM) &
+                  + weight*( 0.5*(veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
+                  + 0.5*(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
+           
+          !!!!!!!!!!!!!!!!!
+          ! Energy equation
+          if(.not. CONSTRAIN_HYDROSTATIC) then
+            temp_unknown_M = veloc_x_DG(iglobM)*(E_DG(iglobM) + p_DG(iglobM))
+            temp_unknown_P = veloc_x_DG_P*(E_DG_P + p_DG_P)
+            
+            temp_unknown2_M = veloc_z_DG(iglobM)*(E_DG(iglobM) + p_DG(iglobM))
+            temp_unknown2_P = veloc_z_DG_P*(E_DG_P + p_DG_P)
+          else        
+            temp_unknown_M = veloc_x_DG(iglobM)*(E_DG(iglobM) + (p_DG(iglobM)- p_DG_init(iglobM)))
+            temp_unknown_P = veloc_x_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
+            
+            temp_unknown2_M = veloc_z_DG(iglobM)*(E_DG(iglobM) + (p_DG(iglobM)- p_DG_init(iglobM)))
+            temp_unknown2_P = veloc_z_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
+          endif        
+                  
+          ! compute dot product
+          flux_x = temp_unknown_M + temp_unknown_P
+          flux_z = temp_unknown2_M + temp_unknown2_P
+          flux_n = flux_x*nx + flux_z*nz
+          jump   = E_DG(iglobM) - E_DG_P
+          
+          if(exact_interface_flux) then
+                  jump   = 0.
+          endif
+          dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          
+          !!!!!!!!!!!!!
+          ! Heat flux
+          dot_E(iglobM)     = dot_E(iglobM) &
+                  + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
+          
+          ! Increment NGLLZ counter
+          j = j + 1
+          
+          ! If at corner and first step => go again 
+          if(it_corner == 1) j = j - 1
+          ! Reset corner notification
+          if(it_corner == 2) it_corner = 0
+
+        enddo
       enddo
-    enddo
-    
-    endif ! end of test if acoustic element
-    
-  enddo
+    endif ! End of test if acoustic element
+  enddo ! End of loop on elements.
   
   end subroutine compute_forces_acoustic_DG
   
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ------------------------------------------------------------ !
+! compute_viscous_tensors                                      !
+! ------------------------------------------------------------ !
    
    subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
