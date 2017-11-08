@@ -661,7 +661,7 @@
 
       ! Get density (and only density).
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
+                                 veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
       !rho_DG_P = rho_DG_iM ! DEBUG
 
@@ -779,8 +779,8 @@
       trans_boundary = trans_boundary/(nx * tz - tx * nz)
      
      ! From free slip and normal velocity continuity
-     veloc_x_DG_P = trans_boundary(1,1)*normal_v + trans_boundary(1,2)*tangential_v!veloc_elastic(1,iglob)
-     veloc_z_DG_P = trans_boundary(2,1)*normal_v + trans_boundary(2,2)*tangential_v
+     veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+     veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       
       !if(coord(2,ibool(i, j, ispec)) == 0) &
       !WRITE(*,*) ">>>>", veloc_x_DG_P, veloc_z_DG_P, nx,nz, coord(:,ibool(i, j, ispec)), veloc_x_DG_P, veloc_z_DG_P, &
