@@ -56,7 +56,7 @@
 !  integer,intent(in) :: it,i_stage!
 !
 !  !local variables
-!  integer :: irec_local,irec,i,j,ispec!,j_neighbor,ispec_neighbor,k!, iglob, cpt_loc, i2, i_neighbor
+!  integer :: irec_local,irec,i, j, ispec!,j_neighbor,ispec_neighbor,k!, iglob, cpt_loc, i2, i_neighbor
 !  !integer, dimension(4) :: iglob_surface
 !  double precision :: hlagrange
 !
@@ -89,13 +89,13 @@
 !            
 !            ispec = ispec_selected_rec(irec_local)
 !            
-!            b_rho_DG(ibool_DG(i,j,ispec))   = b_rho_DG(ibool_DG(i,j,ispec)) &
+!            b_rho_DG(ibool_DG(i, j, ispec))   = b_rho_DG(ibool_DG(i, j, ispec)) &
 !                - source_time_function_rho_DG(irec_local,it,i_stage)*hlagrange
-!            b_rhovx_DG(ibool_DG(i,j,ispec)) = b_rhovx_DG(ibool_DG(i,j,ispec)) &
+!            b_rhovx_DG(ibool_DG(i, j, ispec)) = b_rhovx_DG(ibool_DG(i, j, ispec)) &
 !                - source_time_function_rhovx_DG(irec_local,it,i_stage)*hlagrange
-!            b_rhovz_DG(ibool_DG(i,j,ispec)) = b_rhovz_DG(ibool_DG(i,j,ispec)) &
+!            b_rhovz_DG(ibool_DG(i, j, ispec)) = b_rhovz_DG(ibool_DG(i, j, ispec)) &
 !                - source_time_function_rhovz_DG(irec_local,it,i_stage)*hlagrange
-!            b_E_DG(ibool_DG(i,j,ispec))     = b_E_DG(ibool_DG(i,j,ispec)) &
+!            b_E_DG(ibool_DG(i, j, ispec))     = b_E_DG(ibool_DG(i, j, ispec)) &
 !                - source_time_function_E_DG(irec_local,it,i_stage)*hlagrange
 !            
 !          enddo
@@ -145,21 +145,21 @@
         ! add source array
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            !iglob = ibool_DG(i,j,ispec_selected_rec(irec))
-            iglob = ibool(i,j,ispec_selected_rec(irec))
+            !iglob = ibool_DG(i, j, ispec_selected_rec(irec))
+            iglob = ibool(i, j, ispec_selected_rec(irec))
             
             b_dot_rho(iglob)   = b_dot_rho(iglob) &
                                 + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
             b_dot_rhovx(iglob) = b_dot_rhovx(iglob) &
                                 + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
                                 
             if(i == 1 .AND. j == 1) &
                 WRITE(11,*)  adj_sourcearrays(irec_local,it_tmp,2,3,5)  
@@ -169,18 +169,18 @@
                                 !ZN becareful the following line is new added, thus when do comparison
                                 !ZN of the new code with the old code, you will have big difference if you
                                 !ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
             !if(i == 2 .AND. j == 2) &
             b_dot_E(iglob)     = b_dot_E(iglob) !&
                                 !adj_sourcearrays(irec_local,it_tmp,1,i,j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
 
           enddo
         enddo
-        !WRITE(*,*) i,j,ispec_selected_rec(irec),irec,myrank,"-- SOURCE -> ", &
+        !WRITE(*,*) i, j, ispec_selected_rec(irec),irec,myrank,"-- SOURCE -> ", &
         !        minval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), maxval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), &
         !        which_proc_receiver
       endif ! if element acoustic
@@ -227,21 +227,21 @@
         ! add source array
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            !iglob = ibool_DG(i,j,ispec_selected_rec(irec))
-            iglob = ibool_DG(i,j,ispec_selected_rec(irec))
+            !iglob = ibool_DG(i, j, ispec_selected_rec(irec))
+            iglob = ibool_DG(i, j, ispec_selected_rec(irec))
             
             b_dot_rho(iglob)   = b_dot_rho(iglob) &
                                 + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
             b_dot_rhovx(iglob) = b_dot_rhovx(iglob) &
                                 + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
                                 
             if(i == 1 .AND. j == 1) &
                 WRITE(11,*)  adj_sourcearrays(irec_local,it_tmp,2,3,5)  
@@ -253,18 +253,18 @@
                                 !ZN becareful the following line is new added, thus when do comparison
                                 !ZN of the new code with the old code, you will have big difference if you
                                 !ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
             !if(i == 2 .AND. j == 2) &
             b_dot_E(iglob)     = b_dot_E(iglob) !&
                                 !adj_sourcearrays(irec_local,it_tmp,1,i,j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
-                                !/ kappastore(i,j,ispec_selected_rec(irec))
+                                !/ kappastore(i, j, ispec_selected_rec(irec))
 
           enddo
         enddo
-        !WRITE(*,*) i,j,ispec_selected_rec(irec),irec,myrank,"-- SOURCE -> ", &
+        !WRITE(*,*) i, j, ispec_selected_rec(irec),irec,myrank,"-- SOURCE -> ", &
         !        minval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), maxval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), &
         !        which_proc_receiver
       endif ! if element acoustic
@@ -275,9 +275,11 @@
  
   end subroutine compute_add_sources_acoustic_DG_backward_real
   
-  ! ----------------------------------------------------------------------
+! ------------------------------------------------------------ !
+! compute_add_sources_acoustic_DG_spread                       !
+! ------------------------------------------------------------ !
   
-  subroutine compute_add_sources_acoustic_DG_spread(variable_DG,it,i_stage)
+  subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
 
@@ -300,65 +302,56 @@
   integer :: i, j, i_source, ispec, iglob
   
   !do ispec = ifirstelem,ilastelem
-  do i_source= 1,NSOURCES
-  
-    !if(ispec_is_acoustic(ispec_selected_source(i_source))) then
+  do i_source= 1, NSOURCES ! Loop on sources.
     if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
-    
-    ! if this processor core carries the source and the source element is acoustic
-    if (is_proc_source(i_source) == 1) then
-       if (source_type(i_source) == 1) then
-  
-      ispec = ispec_selected_source(i_source)
+      ! If the source element is acoustic.
+      if(is_proc_source(i_source) == 1) then
+        ! If this processor core carries the source.
+        if(source_type(i_source) == 1) then
+          ! If the source is an elastic force or an acoustic pressure.
+          ispec = ispec_selected_source(i_source)
 
-      ! Find coordinates of the center
-      X1(:) = coord(:, ibool_before_perio(1,1,ispec))
-      X2(:) = coord(:, ibool_before_perio(NGLLX,1,ispec))
-      X3(:) = coord(:, ibool_before_perio(1,NGLLZ,ispec))
-      X4(:) = coord(:, ibool_before_perio(NGLLX,NGLLZ,ispec))
-      Xc(1,:) = (X1(:) + X2(:))/2.
-      Xc(2,:) = (X1(:) + X3(:))/2.
-      Xc(3,:) = (X3(:) + X4(:))/2.
-      Xc(4,:) = (X4(:) + X2(:))/2.
-      X0(:) = (Xc(1,:) + Xc(3,:))/2.
-      dist_min = 1d10
-      do j = 1,4
-        dist = sqrt( (Xc(j,1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
-        if(dist < dist_min) dist_min = dist
-      enddo
-      
-      accuracy = 7.
-      sigma    = dist_min/sqrt(accuracy*log(10.))
-!    
-
-! second double-loop over GLL to compute all the terms
-!
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-          iglob = ibool_DG(i,j,ispec)
+          ! Find coordinates of the center
+          X1(:) = coord(:, ibool_before_perio(1, 1, ispec))
+          X2(:) = coord(:, ibool_before_perio(NGLLX, 1, ispec))
+          X3(:) = coord(:, ibool_before_perio(1, NGLLZ, ispec))
+          X4(:) = coord(:, ibool_before_perio(NGLLX, NGLLZ, ispec))
+          Xc(1, :) = (X1(:) + X2(:))/2.
+          Xc(2, :) = (X1(:) + X3(:))/2.
+          Xc(3, :) = (X3(:) + X4(:))/2.
+          Xc(4, :) = (X4(:) + X2(:))/2.
+          X0(:) = (Xc(1, :) + Xc(3, :))/2.
+          dist_min = 1d10
+          do j = 1,4
+            dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
+            if(dist < dist_min) then
+              dist_min = dist
+            endif
+          enddo
           
-            x = coord(1, ibool_before_perio(i,j,ispec))
-            y = coord(2, ibool_before_perio(i,j,ispec))
-            r = sqrt( (x - X0(1))**2 + (y - X0(2))**2 )
-            temp_source = source_time_function(i_source,it,i_stage) * exp(-(r/sigma)**2)            
-            
-            jacobianl = jacobian(i,j,ispec)
-            
-            wzl = real(wzgll(j), kind=CUSTOM_REAL)
-            wxl = real(wxgll(i), kind=CUSTOM_REAL)
-            
-            variable_DG(iglob)   = variable_DG(iglob)   + temp_source * wxl * wzl * jacobianl
-            
-            !WRITE(*,*) ">>>>", temp_source, wxl * wzl * jacobianl
-            
-        enddo ! second loop over the GLL points
-      enddo
+          accuracy = 7.
+          sigma    = dist_min/sqrt(accuracy*log(10.))
+          
+          do j = 1, NGLLZ
+            do i = 1, NGLLX
+              iglob = ibool_DG(i, j, ispec)
+              x = coord(1, ibool_before_perio(i, j, ispec))
+              y = coord(2, ibool_before_perio(i, j, ispec))
+              r = sqrt( (x - X0(1))**2 + (y - X0(2))**2 )
+              temp_source = source_time_function(i_source, it, i_stage) * exp(-(r/sigma)**2) ! See "prepare_source_time_function.f90" for the subroutine initialising the vector "source_time_function".
+              
+              jacobianl = jacobian(i, j, ispec)
+              wzl = real(wzgll(j), kind=CUSTOM_REAL)
+              wxl = real(wxgll(i), kind=CUSTOM_REAL)
+              variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
+              !WRITE(*,*) ">>>>", temp_source, wxl * wzl * jacobianl ! DEBUG
+            enddo
+          enddo
+        endif
+        ! TODO: Implement the case source_type = 2.
+      endif
+    endif
+  enddo
 
-     endif
-     endif
-     endif
-
-   enddo
-
-   end subroutine compute_add_sources_acoustic_DG_spread
+  end subroutine compute_add_sources_acoustic_DG_spread
 
