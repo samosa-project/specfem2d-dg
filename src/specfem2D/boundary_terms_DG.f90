@@ -758,43 +758,64 @@
     
       exact_interface_flux = .false.
 
+      ! Get "background" (or "far-field", or "unperturbed") values.
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
       veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
       
-      !rho_DG_P = rho_DG_iM
-      
+      ! Set the velocity. --------- !
+      ! Convert the velocity components from mesh coordinates to normal/tangential coordinates.
+      ! This is more practical to set the boundary conditions.
+      ! The setting of the boundary conditions is thus made here.
       tx = -nz
       tz =  nx
-     ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
       normal_v = veloc_x_DG_P*nx + veloc_z_DG_P*nz
-      !normal_v     = 2*normal_v-(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz)
-      !tangential_v = -(veloc_x_DG_iM*tx + veloc_z_DG_iM*tz)
+      !normal_v     = 2*normal_v-(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) ! DEBUG
+      !tangential_v = -(veloc_x_DG_iM*tx + veloc_z_DG_iM*tz) ! DEBUG
       tangential_v = (veloc_x_DG_P*tx + veloc_z_DG_P*tz)
       
-     ! Transformation matrix between mesh coordinates and normal/tangential coordinates
+      ! Notes:
+      !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
+      !   Setting the normal/tangential components this way comes from the "free slip" condition and the "normal velocity continuity" condition.
+      
+      ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
       trans_boundary(1, 1) =  tz
       trans_boundary(1, 2) = -nz
       trans_boundary(2, 1) = -tx
       trans_boundary(2, 2) =  nx
       trans_boundary = trans_boundary/(nx * tz - tx * nz)
      
-     ! From free slip and normal velocity continuity
-     veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-     veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
+      veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
+      veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       
-      !if(coord(2,ibool(i, j, ispec)) == 0) &
-      !WRITE(*,*) ">>>>", veloc_x_DG_P, veloc_z_DG_P, nx,nz, coord(:,ibool(i, j, ispec)), veloc_x_DG_P, veloc_z_DG_P, &
+      ! DEBUG
+      !if(coord(2,ibool(i, j, ispec)) == 0) then
+      !  WRITE(*,*) ">>>>", veloc_x_DG_P, veloc_z_DG_P, nx,nz, coord(:,ibool(i, j, ispec)), veloc_x_DG_P, veloc_z_DG_P, &
       !        veloc_x_DG_iM, veloc_z_DG_iM
+      !endif
       
-      E_DG_P       = p_DG_P/(gammaext_DG(iglobM) - ONE) &
-              + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) 
-      !E_DG_P       = p_DG_iM/(gammaext_DG(iglobM) - ONE)! &
-              !+ rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) 
+      ! Set the energy. ----------- !
+      E_DG_P = p_DG_P/(gammaext_DG(iglobM) - ONE) &
+               + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
+      ! DEBUG
+      !E_DG_P = p_DG_iM/(gammaext_DG(iglobM) - ONE)! &
+      !         + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) 
       !E_DG_P = E_DG_iM
+      !E_DG_P = p_DG_P/(gammaext_DG(iglobM) - ONE) &
+      !        + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
       
+      ! Set the temperature. ------ !
+      T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/(cnu)
+      !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu) ! DEBUG
+      !Tx_DG_P = -T_DG_iM(1) ! DEBUG
+      !Tz_DG_P = -T_DG_iM(2) ! DEBUG
+      
+      ! Set the momenta. ---------- !
       rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
       rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
       
+      ! TODO: Decide what to do with those cases below.
+      ! Those are test cases, intended to test characteristic-based boundary conditions.
       if(coord(2, ibool(i, j, ispec)) == 20000. .AND. .false.) then
         ! --------------------------- !
         ! neighbor(3) == -1,          !
@@ -803,7 +824,6 @@
         !     characteristic based BC,!
         !     top boundary.           !
         ! --------------------------- !
-        ! TODO: Decide what to do with this case (we are in a 'if(.false.)').
         
         un_in       = veloc_x_DG_iM*nx + veloc_z_DG_iM*nz
         un_inf      = veloc_x_DG_P*nx  + veloc_z_DG_P*nz
@@ -857,7 +877,6 @@
         !veloc_z_DG_P = -veloc_z_DG_iM + 2.*veloc_z_DG_P     
         E_DG_P       = -E_DG_iM + 2.*E_DG_P
       endif
-      
       if(coord(2, ibool(i, j, ispec)) == 0. .AND. .false.) then
         ! --------------------------- !
         ! neighbor(3) == -1,          !
@@ -866,7 +885,6 @@
         !     characteristic based BC,!
         !     bottom boundary.        !
         ! --------------------------- !
-        ! TODO: Decide what to do with this case (we are in a 'if(.false.)').
         
         p_n = (gammaext_DG(iglobM) - ONE)*( E_init(iglobM) &
                 - (HALF/rho_init(iglobM))*( rhovx_init(iglobM)**2 + rhovz_init(iglobM)**2 ) )
@@ -899,16 +917,7 @@
         ! From free slip and normal velocity continuity
         veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v  
-      endif
-      
-      !E_DG_P = p_DG_P/(gammaext_DG(iglobM) - ONE) &
-      !        + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
-      
-      !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
-      T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/(cnu)
-      !Tx_DG_P = -T_DG_iM(1)
-      !Tz_DG_P = -T_DG_iM(2)
-            
+      endif 
     endif
   elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0 .AND. .false.) then
     ! --------------------------- !
