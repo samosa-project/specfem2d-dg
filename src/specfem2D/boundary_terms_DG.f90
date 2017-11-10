@@ -804,12 +804,6 @@
       !E_DG_P = p_DG_P/(gammaext_DG(iglobM) - ONE) &
       !        + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
       
-      ! Set the temperature. ------ !
-      T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/(cnu)
-      !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu) ! DEBUG
-      !Tx_DG_P = -T_DG_iM(1) ! DEBUG
-      !Tz_DG_P = -T_DG_iM(2) ! DEBUG
-      
       ! Set the momenta. ---------- !
       rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
       rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
@@ -917,7 +911,13 @@
         ! From free slip and normal velocity continuity
         veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v  
-      endif 
+      endif
+      
+      ! Set the temperature. ------ !
+      T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/(cnu)
+      !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu) ! DEBUG
+      !Tx_DG_P = -T_DG_iM(1) ! DEBUG
+      !Tz_DG_P = -T_DG_iM(2) ! DEBUG
     endif
   elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0 .AND. .false.) then
     ! --------------------------- !
