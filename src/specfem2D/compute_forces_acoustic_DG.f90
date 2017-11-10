@@ -266,6 +266,9 @@
             dT_dx  = T_DG(1, iglob)
             dT_dz  = T_DG(2, iglob)
             
+            ! TODO: Check the expressions of the viscous momentum volumic terms (temp_unknown and temp_unknown2).
+            ! Some of the energy equation's volumic terms are computed and added alongside the momenta volumic terms. TODO: Explain how.
+            
             temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
             temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
             temp_rhovx_1(i,j) = temp_rhovx_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
@@ -281,11 +284,10 @@
             temp_rhovz_2(i,j) = temp_rhovz_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
             temp_unknown2  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
-            
             temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xizl * temp_unknown2) 
             temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammazl * temp_unknown2) 
             
-            ! Add heat's contributions.
+            ! Add the heat contributions.
             temp_unknown  = kappa_DG(i, j, ispec)*dT_dx
             temp_unknown2 = kappa_DG(i, j, ispec)*dT_dz
             temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
@@ -387,7 +389,6 @@
           ! Reinit boolean to know if neighbor exists.
           neighbor_exists = .false.
           
-          ! TODO: Maybe, put this in the else of the if(it_corner == 1) block below, in order to avoid double affectation.
           !nx = normal_DG(ispec, ind, 1)
           !nz = normal_DG(ispec, ind, 2)
           nx     = normal_DG(i, j, ispec, 1)
