@@ -475,7 +475,7 @@
             endif
           endif ! End of if(is_corner(i, j)).
           
-          ! TODO: Maybe, put all that follows inside the else block of the previous if(is_corner(i, j)) block.
+          ! TODO: Maybe, put all that follows (before "Step 2") inside the else block of the previous if(is_corner(i, j)) block.
           
           ! Interior point
           iglobM = ibool_DG(i, j, ispec)
@@ -536,12 +536,12 @@
           lambda = 0.
           jump   = 0.
           !gamma_P = gammaext_DG(iglobM) ! DEBUG
-          veloc_n_M = sqrt(veloc_x_DG(iglobM)**2+veloc_z_DG(iglobM)**2)
-          veloc_n_P = sqrt(veloc_x_DG_P**2+veloc_z_DG_P**2)
+          veloc_n_M = sqrt(veloc_x_DG(iglobM)**2 + veloc_z_DG(iglobM)**2)
+          veloc_n_P = sqrt(veloc_x_DG_P**2 + veloc_z_DG_P**2)
           lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
-                  veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
+                        veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
           
-          ! Viscous stress tensor's contributions.
+          ! Viscous stress tensor's contributions (already under the form of the average mean flux).
           dux_dx = ZERO
           dux_dz = ZERO
           duz_dx = ZERO
@@ -559,7 +559,7 @@
             dT_dz = 0.5*(T_DG(2, iglobM) + Tz_DG_P)
           endif
           
-          ! Mass conservation equation's contributions.
+          ! Mass conservation equation's contributions (fully inviscid).
           temp_unknown_M  = rhovx_DG(iglobM)
           temp_unknown_P  = rhovx_DG_P
           temp_unknown2_M = rhovz_DG(iglobM)
@@ -600,6 +600,7 @@
           dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
 
           ! x-Momentum equation's viscous contributions.
+          ! Some of the energy equation's terms are included here. TODO: Explain how.
           temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
           temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
           ! Dot product.
@@ -634,6 +635,7 @@
           dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
           ! z-Momentum equation's viscous contributions.
+          ! Some of the energy equation's terms are included here. TODO: Explain how.
           temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
           temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
           ! Dot product.
@@ -646,7 +648,7 @@
                               + weight * (  0.5*(veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                           + 0.5*(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
           
-          ! Energy equation's contributions.
+          ! Energy equation's fully inviscid contributions.
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown_M = veloc_x_DG(iglobM)*(E_DG(iglobM) + p_DG(iglobM))
             temp_unknown_P = veloc_x_DG_P*(E_DG_P + p_DG_P)
@@ -669,7 +671,7 @@
           endif
           dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
-          ! Heat flux' contribution.
+          ! Energy equation's heat flux' contribution (last remaining term, viscous).
           dot_E(iglobM) = dot_E(iglobM) &
                           + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
           

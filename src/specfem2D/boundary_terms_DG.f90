@@ -581,10 +581,10 @@
         tangential_v = veloc_x*tx + veloc_x*tz
 
         ! Transformation matrix between mesh coordinates and normal/tangential coordinates
-        trans_boundary(1, 1) = tz
+        trans_boundary(1, 1) =  tz
         trans_boundary(1, 2) = -nz
         trans_boundary(2, 1) = -tx
-        trans_boundary(2, 2) = nx
+        trans_boundary(2, 2) =  nx
         trans_boundary = trans_boundary/(nx*tz - tx*nz)
 
         ! From free slip and normal velocity continuity
