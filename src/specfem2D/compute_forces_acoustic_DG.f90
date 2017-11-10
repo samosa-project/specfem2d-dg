@@ -600,7 +600,8 @@
           dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
 
           ! x-Momentum equation's viscous contributions.
-          ! Some of the energy equation's terms are included here. TODO: Explain how.
+          ! TODO: Check the expressions of the viscous momentum flux' terms (temp_unknown and temp_unknown2).
+          ! Some of the energy equation's flux' terms are computed and added here. TODO: Explain how.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
           temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
           temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
@@ -609,7 +610,6 @@
           !flux_z = temp_unknown2
           !flux_n = flux_x*nx + flux_z*nz
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations]. Keep the lines above for comprehension.
-          ! TODO: Explain what's below.
           dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
@@ -637,16 +637,16 @@
           dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
           ! z-Momentum equation's viscous contributions.
-          ! Some of the energy equation's terms are included here. TODO: Explain how.
+          ! TODO: Check the expressions of the viscous momentum flux' terms (temp_unknown and temp_unknown2).
+          ! Some of the energy equation's flux' terms are computed and added here. TODO: Explain how.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
           temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
-          temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
+          temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz)
           ! Dot product.
           !flux_x = temp_unknown
           !flux_z = temp_unknown2
           !flux_n = flux_x*nx + flux_z*nz
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations]. Keep the lines above for comprehension.
-          ! TODO: Explain what's below.
           dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
