@@ -326,7 +326,7 @@
         enddo
       enddo
       
-      ! Assemble the contributions previously computed.
+      ! Assemble the contributions previously computed, and add gravity's contribution.
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
@@ -352,10 +352,10 @@
           wzl = real(wzgll(j), kind=CUSTOM_REAL)
           wxl = real(wxgll(i), kind=CUSTOM_REAL)
           
-          dot_rho(iglob)   = dot_rho(iglob)   + temp_rho_gravi(i,j) * wxl * wzl
-          dot_rhovx(iglob) = dot_rhovx(iglob) + temp_rhovx_gravi(i,j) * wxl * wzl
-          dot_rhovz(iglob) = dot_rhovz(iglob) + temp_rhovz_gravi(i,j) * wxl * wzl
-          dot_E(iglob)     = dot_E(iglob)     + temp_E_gravi(i,j) * wxl * wzl
+          dot_rho(iglob)   = dot_rho(iglob)   + temp_rho_gravi(i, j) * wxl * wzl
+          dot_rhovx(iglob) = dot_rhovx(iglob) + temp_rhovx_gravi(i, j) * wxl * wzl
+          dot_rhovz(iglob) = dot_rhovz(iglob) + temp_rhovz_gravi(i, j) * wxl * wzl
+          dot_E(iglob)     = dot_E(iglob)     + temp_E_gravi(i, j) * wxl * wzl
         enddo
       enddo
       
@@ -515,8 +515,7 @@
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           endif
           
-          exact_interface_flux = .false. ! TODO: Why set this to .false.?
-          
+          exact_interface_flux = .false. ! Reset this variable to .false. in case it does not get assigned during the call to compute_interface_unknowns.
           call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                   Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&

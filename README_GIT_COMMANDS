@@ -13,4 +13,3 @@ git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/*
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotchmetis/*.[oa]
 
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/dummysizes
-
