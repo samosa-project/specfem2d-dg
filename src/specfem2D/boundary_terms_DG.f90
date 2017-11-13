@@ -396,7 +396,7 @@
 ! From the coordinates of a GLL point in an element (local coordinates (i, j) and global element number ispec), and its neighbour's identifier (neighbor), compute the values of the constitutive variables at the neighbour.
 ! Variables ending in "_P" (for "plus") are output-intended and are the sought values, or exterior values.
 ! Variables ending in "_iM" (for "minus") are input-intended and should correspond to the interior values.
-! Variables ending in "_iP" are input_intended. TODO: Explain what they are.
+! Variables ending in "_iP" are input-intended, and correspond to the exterior values, if known. Remark that those variables are only used if neighbor(3) != -1.
  
   subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                 rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
@@ -764,7 +764,7 @@
 
       ! Get "background" (or "far-field", or "unperturbed") values.
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
+                                 veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
       
       ! Set the velocity. --------- !
       ! Convert the velocity components from mesh coordinates to normal/tangential coordinates.
@@ -932,7 +932,7 @@
 
     !!elseif(.false.) then
 
-    !!WRITE(*,*) ">>>>>>>>>>>> TOTO"
+    !!WRITE(*,*) ">>>>>>>>>>>> TOTO" ! DEBUG
 
     ! If we already know the "real" flux at boundary
     exact_interface_flux = .true.
@@ -944,7 +944,7 @@
 
     iglob = ibool(i_ac,j_ac,ispec_ac)!ibool(i, j, ispec)
     if(.false.) then
-    WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
+      WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k ! DEBUG
     endif
     ! Only for density
     call boundary_condition_DG(i_ac, j_ac, ispec_ac, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
@@ -1008,8 +1008,8 @@
   else
     ! --------------------------- !
     ! neighbor(3) != -1,          !
-    !   not an outside edge       !
-    !   (simple flux calculation).!
+    !   not an outside edge,      !
+    !   thus values are known.    !
     ! --------------------------- !
     iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
     

@@ -487,9 +487,9 @@
     rhovz_DG = rhovz_DG + rk4b(i_stage)*resu_rhovz
     E_DG     = E_DG + rk4b(i_stage)*resu_E 
     
-    ! If we want to compute kernels we save regurlaly
+    ! If we want to compute kernels, we save regularly.
     if(.false.) then
-    call save_forward_solution()
+      call save_forward_solution()
     endif
     
   endif

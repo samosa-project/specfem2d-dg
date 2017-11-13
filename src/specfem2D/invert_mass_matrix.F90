@@ -72,6 +72,7 @@
 
   ! local parameter
   integer :: ibegin,iend,ispecabs,jbegin,jend,ispec,i,j,iglob
+  real(kind=CUSTOM_REAL) :: coef_stretch_x, coef_stretch_z ! Mesh stretching.
 
   ! material properties of the elastic medium
   real(kind=CUSTOM_REAL) :: mul_unrelaxed_elastic,lambdal_unrelaxed_elastic
@@ -101,7 +102,9 @@
   endif
   
   ! Backward inverse matrix
-  if(USE_DISCONTINUOUS_METHOD) rmass_inverse_acoustic_DG_b = 0._CUSTOM_REAL
+  if(USE_DISCONTINUOUS_METHOD) then
+    rmass_inverse_acoustic_DG_b = 0._CUSTOM_REAL
+  endif
 
   do ispec = 1,nspec
     do j = 1,NGLLZ
@@ -357,13 +360,21 @@
         !           + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) * exp(-coord(2,iglob)/15000)
         
         if(USE_DISCONTINUOUS_METHOD) then
-        ! Backward inverse matrix
-        rmass_inverse_acoustic_DG_b(iglob) = rmass_inverse_acoustic_DG_b(iglob) &
-                   + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) 
+          ! Backward inverse matrix
+          rmass_inverse_acoustic_DG_b(iglob) = rmass_inverse_acoustic_DG_b(iglob) &
+                     + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) 
+          
+          iglob = ibool_DG(i,j,ispec)
+          ! MODIF DG
+          rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+        endif
         
-        iglob = ibool_DG(i,j,ispec)
-        ! MODIF DG
-        rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+        ! --------------------------- !
+        ! Virtual mesh stretching.    !
+        ! --------------------------- !
+        if(.false.) then ! TODO: add a parameter for this option in parfile.
+          call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
+          rmass_inverse_acoustic_DG(iglob) = coef_stretch_x * coef_stretch_z * rmass_inverse_acoustic_DG(iglob)
         endif
         
       enddo
@@ -784,8 +795,8 @@
   if (any_acoustic) then
     where(rmass_inverse_acoustic <= 0._CUSTOM_REAL) rmass_inverse_acoustic = 1._CUSTOM_REAL
     if(USE_DISCONTINUOUS_METHOD) then
-    where(rmass_inverse_acoustic_DG <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG = 1._CUSTOM_REAL
-    where(rmass_inverse_acoustic_DG_b <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG_b = 1._CUSTOM_REAL
+      where(rmass_inverse_acoustic_DG <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG = 1._CUSTOM_REAL
+      where(rmass_inverse_acoustic_DG_b <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG_b = 1._CUSTOM_REAL
     endif
   endif
   if (any_gravitoacoustic) then
@@ -808,9 +819,10 @@
     !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG_b), &
     !    "maxval", maxval(rmass_inverse_acoustic_DG_b)
     
-  if (USE_DISCONTINUOUS_METHOD) &
+  if (USE_DISCONTINUOUS_METHOD) then
     rmass_inverse_acoustic_DG_b(:) = 1._CUSTOM_REAL /rmass_inverse_acoustic_DG_b(:)
     !rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
+  endif
   if (any_gravitoacoustic) then
     rmass_inverse_gravitoacoustic(:) = 1._CUSTOM_REAL / rmass_inverse_gravitoacoustic(:)
     rmass_inverse_gravito(:) = 1._CUSTOM_REAL / rmass_inverse_gravito(:)
@@ -818,7 +830,9 @@
   endif
   
   ! Modif DG
-  if(USE_DISCONTINUOUS_METHOD) rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
+  if(USE_DISCONTINUOUS_METHOD) then
+    rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
+  endif
   
   end subroutine invert_mass_matrix
 

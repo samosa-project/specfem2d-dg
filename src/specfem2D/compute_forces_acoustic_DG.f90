@@ -87,7 +87,8 @@
   real(kind=CUSTOM_REAL) :: lambda, nx, nz, weight, &
         temp_unknown_M, temp_unknown_P, temp_unknown2_M, temp_unknown2_P, &
         temp_unknown, temp_unknown2, &
-        flux_x, flux_z, flux_n, jump, &
+        !flux_x, flux_z, & ! Removed because of the code optimisations below.
+        flux_n, jump, &
         rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, &
         E_DG_P, p_DG_P, rhovx_DG_P, rhovz_DG_P, timelocal, &
         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vxz_DG_P, Vzx_DG_P, T_P, &
@@ -524,6 +525,7 @@
                   V_DG(:,:,iglobP), T_DG(:,iglobP), &
                   MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal, elastic_tensor)
           
+          ! TODO: None of those following four variables are used later in the code. Decide what to do with them.
           flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
           flux_rhovx = (rho_DG_P*veloc_x_DG_P**2 + p_DG_P)*nx + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nz
           flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
@@ -556,15 +558,16 @@
             dT_dz = 0.5*(T_DG(2, iglobM) + Tz_DG_P)
           endif
           
-          ! Mass conservation equation's contributions (fully inviscid).
+          ! Mass conservation equation's contributions (which are fully inviscid).
           temp_unknown_M  = rhovx_DG(iglobM)
           temp_unknown_P  = rhovx_DG_P
           temp_unknown2_M = rhovz_DG(iglobM)
           temp_unknown2_P = rhovz_DG_P
           ! Dot product.
-          flux_x = temp_unknown_M + temp_unknown_P
-          flux_z = temp_unknown2_M + temp_unknown2_P
-          flux_n = flux_x*nx + flux_z*nz
+          !flux_x = temp_unknown_M + temp_unknown_P
+          !flux_z = temp_unknown2_M + temp_unknown2_P
+          !flux_n = flux_x*nx + flux_z*nz
+          flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations]. Keep the lines above for comprehension.
           jump   = rho_DG(iglobM) - rho_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
@@ -586,9 +589,10 @@
             temp_unknown2_P = rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
           endif
           ! Dot product.
-          flux_x = temp_unknown_M + temp_unknown_P
-          flux_z = temp_unknown2_M + temp_unknown2_P
-          flux_n = flux_x*nx + flux_z*nz
+          !flux_x = temp_unknown_M + temp_unknown_P
+          !flux_z = temp_unknown2_M + temp_unknown2_P
+          !flux_n = flux_x*nx + flux_z*nz
+          flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations]. Keep the lines above for comprehension.
           jump   = rhovx_DG(iglobM) - rhovx_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
@@ -623,9 +627,10 @@
             temp_unknown2_P = rho_DG_P*veloc_z_DG_P**2 + (p_DG_P - p_DG_init(iglobM))
           endif
           ! Dot product.
-          flux_x = temp_unknown_M + temp_unknown_P
-          flux_z = temp_unknown2_M + temp_unknown2_P
-          flux_n = flux_x*nx + flux_z*nz
+          !flux_x = temp_unknown_M + temp_unknown_P
+          !flux_z = temp_unknown2_M + temp_unknown2_P
+          !flux_n = flux_x*nx + flux_z*nz
+          flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations]. Keep the lines above for comprehension.
           jump   = rhovz_DG(iglobM) - rhovz_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
@@ -1072,7 +1077,9 @@
           endif
           
           ! If at corner notify that we will need to go again 
-          if(is_corner(i, j) .AND. it_corner == 0) it_corner = 1
+          if(is_corner(i, j) .AND. it_corner == 0) then
+            it_corner = 1
+          endif
           
           rho_DG_P     = ZERO
           rhovx_DG_P   = ZERO
@@ -1087,12 +1094,13 @@
           Vzx_DG_P     = ZERO
           Vxz_DG_P     = ZERO
           
-          exact_interface_flux = .false.
           
           iglobP = 1
-          if(neighbor(1) > -1) &
-          iglobP = ibool_DG(neighbor(1),neighbor(2),neighbor(3))
+          if(neighbor(1) > -1) then
+            iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
+          endif
           
+          exact_interface_flux = .false.  ! Reset this variable to .false. in case it does not get assigned during the call to compute_interface_unknowns.
           ! Get the interface unknowns in order to compute the fluxes.
           call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
@@ -1176,24 +1184,24 @@
   V_DG(2, 2, :) = grad_Vzz
   
   ! --------------------------- !
-  ! Consider virtual mesh       !
-  ! stretching.                 !
+  ! Virtual mesh stretching.    !
   ! --------------------------- !
   if(.false.) then ! TODO: add a parameter for this option in parfile.
-    call add_virtual_stretching(T_DG, V_DG)
+    call virtual_stretch_auxi_visc_tensors_DG(T_DG, V_DG)
   endif
   
   end subroutine compute_viscous_tensors
 
 ! ------------------------------------------------------------ !
-! add_virtual_stretching                                       !
+! virtual_stretch_auxi_visc_tensors_DG                         !
 ! ------------------------------------------------------------ !
 ! TODO: This is a test routine.
+! Multiplies the terms in the auxiliary viscous tensors \mathcal{T} and \mathcal{V} by the corresponding stretching functions. The stretching consists in replacing the derivatives \partial_x and \partial_z by R_x\partial_x and R_y\partial_y.
+! TODO: Instead of recomputing the coefficients at each iteration, a 2 * nglob_DG matrix containing them for all mesh points can be computed and stored before execution, and called to here.
 
-  subroutine add_virtual_stretching(T_DG, V_DG)
+  subroutine virtual_stretch_auxi_visc_tensors_DG(T_DG, V_DG)
 
-  use specfem_par, only: ispec_is_acoustic, nspec, nglob_DG, ibool_DG, &
-                         ibool_before_perio, coord
+  use specfem_par, only: ispec_is_acoustic, nspec, nglob_DG, ibool_DG
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
   implicit none
@@ -1204,7 +1212,41 @@
   
   ! Local
   integer :: i, j, ispec, iglob
-  real(kind=CUSTOM_REAL) :: coef_x, coef_z
+  real(kind=CUSTOM_REAL) :: coef_stretch_x, coef_stretch_z
+  
+  do ispec = 1, nspec
+    if (ispec_is_acoustic(ispec)) then
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          iglob = ibool_DG(i, j, ispec)
+          call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z) ! Get coef_stretch_x and coef_stretch_z based on the element's coordinates.
+          T_DG(1, iglob) = coef_stretch_x * T_DG(1, iglob)
+          T_DG(2, iglob) = coef_stretch_z * T_DG(2, iglob)
+          V_DG(1, :, iglob) = coef_stretch_x * V_DG(1, :, iglob)
+          V_DG(2, :, iglob) = coef_stretch_z * V_DG(2, :, iglob)
+        enddo
+      enddo
+     endif
+   enddo
+  end subroutine virtual_stretch_auxi_visc_tensors_DG
+
+! ------------------------------------------------------------ !
+! virtual_stretch                                              !
+! ------------------------------------------------------------ !
+
+  subroutine virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
+  
+  use specfem_par, only: ibool_DG, ibool_before_perio, coord
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+
+  implicit none
+  
+  ! Input/Output
+  integer, intent(in) :: i, j, ispec
+  real(kind=CUSTOM_REAL), intent(out) :: coef_stretch_x, coef_stretch_z
+  
+  ! Local
+  integer iglob
   real(kind=CUSTOM_REAL) :: eps_l, p, q
   real(kind=CUSTOM_REAL) :: L_buffer, zmax, z, z_l ! Variables used for testing.
   
@@ -1216,30 +1258,15 @@
   L_buffer = 20. ! Length of the buffer in which the mesh is stretched.
   zmax = 50. ! Domain top coordinate.
   
-  do ispec = 1, nspec
-    if (ispec_is_acoustic(ispec)) then
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
-          coef_x = 1. ! By default, mesh is not stretched.
-          coef_z = 1. ! By default, mesh is not stretched.
-          
-          z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
-          z_l = (1. - ((zmax - z)/L_buffer)) ! Relative buffer coordinate.
-          if(z_l > 0. .AND. z_l <= 1.) then
-            !write(*, *) "z", z, "z_l", z_l ! DEBUG
-            
-            coef_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
-            
-            !write(*, *) "z", z, "coef_z", coef_z ! DEBUG
-          endif
-          
-          T_DG(1, iglob) = coef_x * T_DG(1, iglob)
-          T_DG(2, iglob) = coef_z * T_DG(2, iglob)
-          V_DG(1, :, iglob) = coef_x * V_DG(1, :, iglob)
-          V_DG(2, :, iglob) = coef_z * V_DG(2, :, iglob)
-        enddo
-      enddo
-     endif
-   enddo
-  end subroutine add_virtual_stretching
+  iglob = ibool_DG(i, j, ispec)
+  coef_stretch_x = 1. ! By default, mesh is not stretched.
+  coef_stretch_z = 1. ! By default, mesh is not stretched.
+  z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
+  z_l = (1. - ((zmax - z)/L_buffer)) ! Relative buffer coordinate.
+  if(z_l > 0. .AND. z_l <= 1.) then
+    !write(*, *) "z", z, "z_l", z_l ! DEBUG
+    coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
+    !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
+  endif
+  
+  end subroutine virtual_stretch

@@ -56,7 +56,7 @@
   
   integer_mask_ibool_bef(:) = -1
   ! Save a copy of ibool before renumbering
-  ! Needs to be corrected because useless
+  ! TODO: Needs to be corrected because useless
   if(USE_DISCONTINUOUS_METHOD) ibool_before_perio(:,:,:) = ibool(:,:,:)
   if(USE_DISCONTINUOUS_METHOD) copy_ibool_ori_bef(:,:,:) = ibool_before_perio(:,:,:)
   
@@ -86,17 +86,16 @@
         endif
         
         if(USE_DISCONTINUOUS_METHOD) then
-        if (integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec)) == -1) then
-          ! create a new point
-          inumber_bef = inumber_bef + 1
-          ibool_before_perio(i,j,ispec) = inumber_bef
-          integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec)) = inumber_bef
-        else
-          ! use an existing point created previously
-          ibool_before_perio(i,j,ispec) = integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec))
+          if (integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec)) == -1) then
+            ! create a new point
+            inumber_bef = inumber_bef + 1
+            ibool_before_perio(i,j,ispec) = inumber_bef
+            integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec)) = inumber_bef
+          else
+            ! use an existing point created previously
+            ibool_before_perio(i,j,ispec) = integer_mask_ibool_bef(copy_ibool_ori_bef(i,j,ispec))
+          endif
         endif
-        endif
-        
       enddo
     enddo
   enddo
