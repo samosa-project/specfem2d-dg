@@ -367,16 +367,15 @@
           iglob = ibool_DG(i,j,ispec)
           ! MODIF DG
           rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+          
+          ! --------------------------- !
+          ! Virtual mesh stretching.    !
+          ! --------------------------- !
+          if(.false.) then ! TODO: add a parameter for this option in parfile.
+            call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
+            rmass_inverse_acoustic_DG(iglob) = coef_stretch_x * coef_stretch_z * rmass_inverse_acoustic_DG(iglob)
+          endif
         endif
-        
-        ! --------------------------- !
-        ! Virtual mesh stretching.    !
-        ! --------------------------- !
-        if(.false.) then ! TODO: add a parameter for this option in parfile.
-          call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
-          rmass_inverse_acoustic_DG(iglob) = coef_stretch_x * coef_stretch_z * rmass_inverse_acoustic_DG(iglob)
-        endif
-        
       enddo
     enddo
   enddo ! of do ispec = 1,nspec

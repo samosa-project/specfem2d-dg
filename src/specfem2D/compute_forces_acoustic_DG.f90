@@ -73,7 +73,7 @@
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   
   ! local parameters
-  integer :: ispec,i,j,k,iglob, it_corner
+  integer :: ispec,i, j,k,iglob, it_corner
   integer :: ifirstelem,ilastelem
 
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
@@ -221,8 +221,8 @@
           temp_unknown = rhovx_DG(iglob)
           temp_unknown2 = rhovz_DG(iglob)
           
-          temp_rho_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rho_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_rho_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_rho_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + p_DG(iglob)
@@ -231,8 +231,8 @@
           endif
           temp_unknown2 = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
           
-          temp_rhovx_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rhovx_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_rhovx_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_rhovx_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
           if(.not. CONSTRAIN_HYDROSTATIC) then
@@ -241,8 +241,8 @@
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
           
-          temp_rhovz_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rhovz_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_rhovz_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_rhovz_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = veloc_x_DG(iglob)*(E_DG(iglob) + p_DG(iglob))
@@ -252,8 +252,8 @@
             temp_unknown2 = veloc_z_DG(iglob)*(E_DG(iglob) + (p_DG(iglob) - p_DG_init(iglob)))
           endif
           
-          temp_E_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_E_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_E_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_E_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           ! Add the viscous stress tensor's contributions.
           dux_dx = V_DG(1, 1, iglob)
@@ -270,57 +270,57 @@
             ! This vector, [temp_unknown, temp_unknown2], is the first line of the viscous Navier-Stokes tensor (\Sigma_v).
             temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
             temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
-            temp_rhovx_1(i,j) = temp_rhovx_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-            temp_rhovx_2(i,j) = temp_rhovx_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            temp_rhovx_1(i, j) = temp_rhovx_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_rhovx_2(i, j) = temp_rhovx_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
-            ! Use the values stored in temp_unknown and temp_unknown2 to compute the x component of the viscous energy vector (\Sigma_v\cdot\vect{v}).
+            ! Use the values stored in temp_unknown and temp_unknown2 to compute the x component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}).
             temp_unknown  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
-            temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xixl * temp_unknown) 
-            temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown) 
+            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xixl * temp_unknown) 
+            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown) 
             
             ! This vector, [temp_unknown, temp_unknown2], is the second line of the viscous Navier-Stokes tensor (\Sigma_v).
             temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
             temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
-            temp_rhovz_1(i,j) = temp_rhovz_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-            temp_rhovz_2(i,j) = temp_rhovz_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            temp_rhovz_1(i, j) = temp_rhovz_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_rhovz_2(i, j) = temp_rhovz_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
-            ! Use the values stored in temp_unknown and temp_unknown2 to compute the z component of the viscous energy vector (\Sigma_v\cdot\vect{v}).
+            ! Use the values stored in temp_unknown and temp_unknown2 to compute the z component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}).
             temp_unknown2  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
-            temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xizl * temp_unknown2) 
-            temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammazl * temp_unknown2) 
+            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xizl * temp_unknown2) 
+            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammazl * temp_unknown2) 
             
-            ! Add the heat contributions.
+            ! Add the heat contributions (second part of the viscous energy tensor).
             temp_unknown  = kappa_DG(i, j, ispec)*dT_dx
             temp_unknown2 = kappa_DG(i, j, ispec)*dT_dz
-            temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-            temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           endif
           
           
           ! Gravity contributions (separated from the rest).
-          temp_rho_gravi(i,j) = 0.
-          temp_rhovx_gravi(i,j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl!
+          temp_rho_gravi(i, j) = 0.
+          temp_rhovx_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl!
           if(.not. CONSTRAIN_HYDROSTATIC) then
-            temp_rhovz_gravi(i,j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
+            temp_rhovz_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
           else
-            temp_rhovz_gravi(i,j) = -(rho_DG(iglob) - rho_init(iglob)) * potential_dphi_dz_DG(ibool(i, j, ispec)) * jacobianl 
+            temp_rhovz_gravi(i, j) = -(rho_DG(iglob) - rho_init(iglob)) * potential_dphi_dz_DG(ibool(i, j, ispec)) * jacobianl 
           endif
           if(.not. CONSTRAIN_HYDROSTATIC) then
-            temp_E_gravi(i,j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
+            temp_E_gravi(i, j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
           else
-            temp_E_gravi(i,j) = &
+            temp_E_gravi(i, j) = &
                                 -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
-            temp_E_gravi(i,j) = temp_E_gravi(i,j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl       
+            temp_E_gravi(i, j) = temp_E_gravi(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl       
           endif
-          temp_E_gravi(i,j) = temp_E_gravi(i,j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
+          temp_E_gravi(i, j) = temp_E_gravi(i, j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
                               * ( (tau_epsilon(i, j, ispec)/tau_sigma(i, j, ispec)) - 1. ) &
                               * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
           
           ! Memory variable evolution. TODO: Describe more precisely.
-          dot_e1(iglob) = dot_e1(iglob) - (1/tau_sigma(i, j, ispec))*( &
-                (1 - (tau_sigma(i, j, ispec)/tau_epsilon(i, j, ispec)))*(dux_dx + duz_dz) + e1_DG(iglob) )
+          dot_e1(iglob) = dot_e1(iglob) - (1/tau_sigma(i, j, ispec)) &
+                          *( (1 - (tau_sigma(i, j, ispec)/tau_epsilon(i, j, ispec))) * (dux_dx + duz_dz) + e1_DG(iglob) )
           
         enddo
       enddo
@@ -726,7 +726,7 @@
   implicit none
   
   ! local parameters
-  integer :: ispec,i,j,k,iglob, iglobM, iglobP, it_corner
+  integer :: ispec,i, j,k,iglob, iglobM, iglobP, it_corner
   !integer :: ifirstelem,ilastelem
   integer :: i_ex, j_ex, ispec_ex, chosen_nxnz_forMPI, dir_normal
   real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
@@ -817,36 +817,36 @@
             
             ! Viscous stress tensors
             if(.not. CONSTRAIN_HYDROSTATIC) then
-              temp_Tx_1(i,j)  = wzl * jacobianl * (xixl * T(iglob)) 
-              temp_Tz_1(i,j)  = wzl * jacobianl * (xizl * T(iglob)) 
-              temp_Vxx_1(i,j) = wzl * jacobianl * (xixl * veloc_x_DG(iglob) )
-              temp_Vxz_1(i,j) = wzl * jacobianl * (xizl * veloc_x_DG(iglob) )
-              temp_Vzx_1(i,j) = wzl * jacobianl * (xixl * veloc_z_DG(iglob)) 
-              temp_Vzz_1(i,j) = wzl * jacobianl * (xizl * veloc_z_DG(iglob)) 
+              temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * T(iglob)) 
+              temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * T(iglob)) 
+              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * veloc_x_DG(iglob) )
+              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * veloc_x_DG(iglob) )
+              temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * veloc_z_DG(iglob)) 
+              temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * veloc_z_DG(iglob)) 
               
-              temp_Tx_2(i,j)  = wxl * jacobianl * (gammaxl * T(iglob)) 
-              temp_Tz_2(i,j)  = wxl * jacobianl * (gammazl * T(iglob)) 
-              temp_Vxx_2(i,j) = wxl * jacobianl * (gammaxl * veloc_x_DG(iglob)) 
-              temp_Vxz_2(i,j) = wxl * jacobianl * (gammazl * veloc_x_DG(iglob)) 
-              temp_Vzx_2(i,j) = wxl * jacobianl * (gammaxl * veloc_z_DG(iglob)) 
-              temp_Vzz_2(i,j) = wxl * jacobianl * (gammazl * veloc_z_DG(iglob)) 
+              temp_Tx_2(i, j)  = wxl * jacobianl * (gammaxl * T(iglob)) 
+              temp_Tz_2(i, j)  = wxl * jacobianl * (gammazl * T(iglob)) 
+              temp_Vxx_2(i, j) = wxl * jacobianl * (gammaxl * veloc_x_DG(iglob)) 
+              temp_Vxz_2(i, j) = wxl * jacobianl * (gammazl * veloc_x_DG(iglob)) 
+              temp_Vzx_2(i, j) = wxl * jacobianl * (gammaxl * veloc_z_DG(iglob)) 
+              temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * veloc_z_DG(iglob)) 
             else
               vx_init = rhovx_init(iglob)/rho_init(iglob)
               vz_init = rhovz_init(iglob)/rho_init(iglob)
               
-              temp_Tx_1(i,j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)) ) 
-              temp_Tz_1(i,j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)) ) 
-              temp_Vxx_1(i,j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init) )
-              temp_Vxz_1(i,j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob) - vx_init) )
-              temp_Vzx_1(i,j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init) ) 
-              temp_Vzz_1(i,j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init) ) 
+              temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)) ) 
+              temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)) ) 
+              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init) )
+              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob) - vx_init) )
+              temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init) ) 
+              temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init) ) 
               
-              temp_Tx_2(i,j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)) ) 
-              temp_Tz_2(i,j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)) ) 
-              temp_Vxx_2(i,j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init) ) 
-              temp_Vxz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob) - vx_init) ) 
-              temp_Vzx_2(i,j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init) ) 
-              temp_Vzz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init) ) 
+              temp_Tx_2(i, j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)) ) 
+              temp_Tz_2(i, j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)) ) 
+              temp_Vxx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init) ) 
+              temp_Vxz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob) - vx_init) ) 
+              temp_Vzx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init) ) 
+              temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init) ) 
             endif
           else
             ! In that case, compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k directly as it.
@@ -1233,6 +1233,8 @@
 ! ------------------------------------------------------------ !
 ! virtual_stretch                                              !
 ! ------------------------------------------------------------ !
+! Computes the value of the stretching coefficients.
+! TODO: Instead of a function to be called, build a vector that will only need to be computed once and to which simple and less expensive memory calls can be made.
 
   subroutine virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
   

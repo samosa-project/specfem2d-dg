@@ -43,27 +43,29 @@
   double precision, external :: lagrange_deriv_GLL
   !double precision, dimension(NGLLX) :: h, hprime
 
+  ! Local
   integer :: i1,i2,k1,k2
 
-! set up coordinates of the Gauss-Lobatto-Legendre points
+  ! set up coordinates of the Gauss-Lobatto-Legendre points
   call zwgljd(xigll,wxgll,NGLLX,GAUSSALPHA,GAUSSBETA)
   call zwgljd(zigll,wzgll,NGLLZ,GAUSSALPHA,GAUSSBETA)
 
-! if number of points is odd, the middle abscissa is exactly zero
+  ! if number of points is odd, the middle abscissa is exactly zero
   if (mod(NGLLX,2) /= 0) xigll((NGLLX-1)/2+1) = ZERO
   if (mod(NGLLZ,2) /= 0) zigll((NGLLZ-1)/2+1) = ZERO
-
-! calculate derivatives of the Lagrange polynomials
-! and precalculate some products in double precision
-! hprime(i,j) = h'_j(xigll_i) by definition of the derivation matrix
+  
+  ! TODO: Two loops are needed if NGLLX != NGLLZ. Maybe consider merging them since NGLLX will always equal NGLLZ.
+  
+  ! Calculate derivatives of the Lagrange polynomials and precalculate some products in double precision:
+  ! hprime(i,j) = h'_j(xigll_i) (by definition of the derivation matrix).
   do i1 = 1,NGLLX
     do i2 = 1,NGLLX
       hprime_xx(i2,i1) = lagrange_deriv_GLL(i1-1,i2-1,xigll,NGLLX)
-      !call lagrange_any(xigll(i2),NGLLX,xigll,h,hprime)
-      !WRITE(*,*) "TEST LAGRANGE h", h(i2)
-      !WRITE(*,*) "TEST LAGRANGE hprime", hprime(i1)
-      !WRITE(*,*) "TEST LAGRANGE hprime_xx(i2,i1)", hprime_xx(i2,i1)
-      !WRITE(*,*) "*********"
+      !call lagrange_any(xigll(i2),NGLLX,xigll,h,hprime) ! DEBUG
+      !WRITE(*,*) "TEST LAGRANGE h", h(i2) ! DEBUG
+      !WRITE(*,*) "TEST LAGRANGE hprime", hprime(i1) ! DEBUG
+      !WRITE(*,*) "TEST LAGRANGE hprime_xx(i2,i1)", hprime_xx(i2,i1) ! DEBUG
+      !WRITE(*,*) "*********" ! DEBUG
       hprimewgll_xx(i2,i1) = wxgll(i2) * hprime_xx(i2,i1)
     enddo
   enddo
