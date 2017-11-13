@@ -393,6 +393,10 @@
 ! ------------------------------------------------------------ !
 ! compute_interface_unknowns                                   !
 ! ------------------------------------------------------------ !
+! From the coordinates of a GLL point in an element (local coordinates (i, j) and global element number ispec), and its neighbour's identifier (neighbor), compute the values of the constitutive variables at the neighbour.
+! Variables ending in "_P" (for "plus") are output-intended and are the sought values, or exterior values.
+! Variables ending in "_iM" (for "minus") are input-intended and should correspond to the interior values.
+! Variables ending in "_iP" are input_intended. TODO: Explain what they are.
  
   subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                 rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &

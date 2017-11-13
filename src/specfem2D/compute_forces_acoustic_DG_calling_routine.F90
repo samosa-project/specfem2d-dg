@@ -336,7 +336,7 @@
   ! Damp solution in a buffer   !
   ! zone.                       !
   ! --------------------------- !
-  if(.true.) then ! TODO: add a parameter for this option in parfile.
+  if(.false.) then ! TODO: add a parameter for this option in parfile.
     call absorb_condition_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See "boundary_terms_DG.f90".
   endif
   

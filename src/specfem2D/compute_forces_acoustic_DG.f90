@@ -700,10 +700,11 @@
 ! ------------------------------------------------------------ !
 ! compute_viscous_tensors                                      !
 ! ------------------------------------------------------------ !
+! Computes the values of the auxiliary viscous tensors \mathcal{T} and \mathcal{V} at every GLL point of the mesh.
    
   subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
-! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
+! ?? compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
   
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
@@ -1166,7 +1167,7 @@
     grad_Vzz(:) = grad_Vzz(:) * rmass_inverse_acoustic_DG(:)
   endif
   
-  ! Store in variables inteded for output.
+  ! Store in variables intended for output.
   T_DG(1, :) = grad_Tx
   T_DG(2, :) = grad_Tz
   V_DG(1, 1, :) = grad_Vxx
