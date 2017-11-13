@@ -143,12 +143,12 @@
               ! thus in fluid elements potential_dot_dot_acoustic() is accurate at zeroth order while potential_acoustic()
               ! is accurate at second order and thus contains significantly less numerical noise.
               ! Second derivative of Ricker source time function :
-              source_time_function(i_source,it,i_stage) = factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = factor(i_source) * &
                        2.0d0*aval(i_source) * (3.0d0 - 12.0d0*aval(i_source)*t_used**2 + 4.0d0*aval(i_source)**2*t_used**4) * &
                        exp(-aval(i_source)*t_used**2)
             else
               ! Ricker (second derivative of a Gaussian) source time function
-              source_time_function(i_source,it,i_stage) = - factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = - factor(i_source) * &
                          (ONE-TWO*aval(i_source)*t_used**2) * &
                          exp(-aval(i_source)*t_used**2)
 
@@ -168,12 +168,12 @@
               ! thus in fluid elements potential_dot_dot_acoustic() is accurate at zeroth order while potential_acoustic()
               ! is accurate at second order and thus contains significantly less numerical noise.
               ! Third derivative of Gaussian source time function :
-              source_time_function(i_source,it,i_stage) = factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = factor(i_source) * &
                         4.0d0*aval(i_source)**2*t_used * (3.0d0 - 2.0d0*aval(i_source)*t_used**2) * &
                         exp(-aval(i_source)*t_used**2)
             else
               ! First derivative of a Gaussian source time function
-              source_time_function(i_source,it,i_stage) = - factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = - factor(i_source) * &
                         TWO*aval(i_source)*t_used * &
                         exp(-aval(i_source)*t_used**2)
             endif
@@ -189,20 +189,25 @@
               ! thus in fluid elements potential_dot_dot_acoustic() is accurate at zeroth order while potential_acoustic()
               ! is accurate at second order and thus contains significantly less numerical noise.
               ! Second derivative of Gaussian :
-              source_time_function(i_source,it,i_stage) = factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = factor(i_source) * &
                          2.0d0 * aval(i_source) * (2.0d0 * aval(i_source) * t_used**2 - 1.0d0) * &
                          exp(-aval(i_source)*t_used**2)
             else
               ! Gaussian or Dirac (we use a very thin Gaussian instead) source time function
-              source_time_function(i_source,it,i_stage) = factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = factor(i_source) * &
                         exp(-aval(i_source)*t_used**2)
+              if(.false.) then
+                ! Remove the initial discontinuity (due to the support of Gaussians being non-compact).
+                source_time_function(i_source, it, i_stage) = factor(i_source) * (&
+                exp(-aval(i_source)*t_used**2) - exp(-aval(i_source)*(t0 + tshift_src(i_source))**2))
+              endif
             endif
 
           else if (time_function_type(i_source) == 5) then
             ! Heaviside source time function (we use a very thin error function instead)
             hdur(i_source) = 1.d0 / f0_source(i_source)
             hdur_gauss(i_source) = hdur(i_source) * 5.d0 / 3.d0
-            source_time_function(i_source,it,i_stage) = factor(i_source) * 0.5d0*(1.0d0 + &
+            source_time_function(i_source, it, i_stage) = factor(i_source) * 0.5d0*(1.0d0 + &
                 netlib_specfun_erf(SOURCE_DECAY_MIMIC_TRIANGLE*t_used/hdur_gauss(i_source)))
 
           else if (time_function_type(i_source) == 6) then
@@ -214,12 +219,12 @@
             if (timeval > DecT .and. timeval < Tc) then
               ! source time function from Computational Ocean Acoustics
               omegat =  omega_coa * ( timeval - DecT )
-              source_time_function(i_source,it,i_stage) = factor(i_source) * HALF * &
+              source_time_function(i_source, it, i_stage) = factor(i_source) * HALF * &
                     sin( omegat ) * ( ONE - cos( QUARTER * omegat ) )
-              !source_time_function(i_source,it,i_stage) = - factor(i_source) * HALF / omega_coa / omega_coa * &
+              !source_time_function(i_source, it, i_stage) = - factor(i_source) * HALF / omega_coa / omega_coa * &
               !      ( sin(omegat) - 8.d0 / 9.d0 * sin(3.d0/ 4.d0 * omegat) - 8.d0 / 25.d0 * sin(5.d0 / 4.d0 * omegat) )
             else
-              source_time_function(i_source,it,i_stage) = ZERO
+              source_time_function(i_source, it, i_stage) = ZERO
             endif
 
           else if (time_function_type(i_source) == 7) then
@@ -231,17 +236,17 @@
             if (timeval > DecT .and. timeval < Tc) then
               ! source time function from Computational Ocean Acoustics
               omegat =  omega_coa * ( timeval - DecT )
-              !source_time_function(i_source,it,i_stage) = factor(i_source) * HALF / omega_coa / omega_coa * &
+              !source_time_function(i_source, it, i_stage) = factor(i_source) * HALF / omega_coa / omega_coa * &
               !      ( sin(omegat) - 8.d0 / 9.d0 * sin(3.d0/ 4.d0 * omegat) - &
               !     8.d0 / 25.d0 * sin(5.d0 / 4.d0 * omegat) -1./15.*( timeval - DecT ) + 1./15.*4./f0_source(i_source))
-              source_time_function(i_source,it,i_stage) = factor(i_source) * HALF / omega_coa / omega_coa * &
+              source_time_function(i_source, it, i_stage) = factor(i_source) * HALF / omega_coa / omega_coa * &
                      ( - sin(omegat) + 8.d0 / 9.d0 * sin(3.d0 / 4.d0 * omegat) + &
                       8.d0 / 25.d0 * sin(5.d0 / 4.d0 * omegat) - 1.d0 / 15.d0 * omegat )
             else if (timeval > DecT) then
-              source_time_function(i_source,it,i_stage) = &
+              source_time_function(i_source, it, i_stage) = &
               - factor(i_source) * HALF / omega_coa / 15.d0 * (4.d0 / f0_source(i_source))
             else
-              source_time_function(i_source,it,i_stage) = ZERO
+              source_time_function(i_source, it, i_stage) = ZERO
             endif
 
           else if (time_function_type(i_source) == 8) then
@@ -255,7 +260,7 @@
             endif
 
             ! format: #time #stf-value
-            read(num_file,*) time, source_time_function(i_source,it,i_stage)
+            read(num_file,*) time, source_time_function(i_source, it, i_stage)
 
             ! closes external file
             if (it == NSTEP ) close(num_file)
@@ -267,18 +272,18 @@
             Nc = TWO * f0_source(i_source) / burst_band_width(i_source)
             Tc = Nc / f0_source(i_source) + DecT
             if (timeval > DecT .and. timeval < Tc) then ! t_used > 0 t_used < Nc/f0_source(i_source)) then
-              source_time_function(i_source,it,i_stage) = - factor(i_source) * &
+              source_time_function(i_source, it, i_stage) = - factor(i_source) * &
                         0.5d0*(ONE-cos(TWO*PI*f0_source(i_source)*t_used/Nc))*sin(TWO*PI*f0_source(i_source)*t_used)
             !else if (timeval > DecT) then
-            !  source_time_function(i_source,it,i_stage) = ZERO
+            !  source_time_function(i_source, it, i_stage) = ZERO
             else
-              source_time_function(i_source,it,i_stage) = ZERO
+              source_time_function(i_source, it, i_stage) = ZERO
             endif
           else
             call exit_MPI(myrank,'unknown source time function')
           endif
 
-          stf_used = stf_used + source_time_function(i_source,it,i_stage)
+          stf_used = stf_used + source_time_function(i_source, it, i_stage)
 
           ! output relative time in third column, in case user wants to check it as well
           !if (myrank == 0 .and. i_source == 1) write(55,*) &
