@@ -266,23 +266,24 @@
             dT_dx  = T_DG(1, iglob)
             dT_dz  = T_DG(2, iglob)
             
-            ! TODO: Check the expressions of the viscous momentum volumic terms (temp_unknown and temp_unknown2).
-            ! Some of the energy equation's volumic terms are computed and added alongside the momenta volumic terms. TODO: Explain how.
-            
+            ! This vector, [temp_unknown, temp_unknown2], is the first line of the viscous Navier-Stokes tensor (\Sigma_v).
             temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
             temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
             temp_rhovx_1(i,j) = temp_rhovx_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
             temp_rhovx_2(i,j) = temp_rhovx_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
+            ! Use the values stored in temp_unknown and temp_unknown2 to compute the x component of the viscous energy vector (\Sigma_v\cdot\vect{v}).
             temp_unknown  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
             temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xixl * temp_unknown) 
             temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown) 
             
+            ! This vector, [temp_unknown, temp_unknown2], is the second line of the viscous Navier-Stokes tensor (\Sigma_v).
             temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
             temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
             temp_rhovz_1(i,j) = temp_rhovz_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
             temp_rhovz_2(i,j) = temp_rhovz_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
+            ! Use the values stored in temp_unknown and temp_unknown2 to compute the z component of the viscous energy vector (\Sigma_v\cdot\vect{v}).
             temp_unknown2  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
             temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xizl * temp_unknown2) 
             temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammazl * temp_unknown2) 
@@ -297,31 +298,26 @@
           
           ! Gravity contributions (separated from the rest).
           temp_rho_gravi(i,j) = 0.
-          
           temp_rhovx_gravi(i,j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl!
-          
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_rhovz_gravi(i,j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
           else
             temp_rhovz_gravi(i,j) = -(rho_DG(iglob) - rho_init(iglob)) * potential_dphi_dz_DG(ibool(i, j, ispec)) * jacobianl 
           endif
-          
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_E_gravi(i,j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
           else
             temp_E_gravi(i,j) = &
                                 -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
-                                veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl   
-                        
+                                veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
             temp_E_gravi(i,j) = temp_E_gravi(i,j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl       
           endif
-                
           temp_E_gravi(i,j) = temp_E_gravi(i,j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
                               * ( (tau_epsilon(i, j, ispec)/tau_sigma(i, j, ispec)) - 1. ) &
                               * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
           
-          
+          ! Memory variable evolution. TODO: Describe more precisely.
           dot_e1(iglob) = dot_e1(iglob) - (1/tau_sigma(i, j, ispec))*( &
                 (1 - (tau_sigma(i, j, ispec)/tau_epsilon(i, j, ispec)))*(dux_dx + duz_dz) + e1_DG(iglob) )
           
@@ -601,8 +597,7 @@
           dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
 
           ! x-Momentum equation's viscous contributions.
-          ! TODO: Check the expressions of the viscous momentum flux' terms (temp_unknown and temp_unknown2).
-          ! Some of the energy equation's flux' terms are computed and added here. TODO: Explain how.
+          ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the x-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
           temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
           temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
@@ -612,6 +607,7 @@
           !flux_n = flux_x*nx + flux_z*nz
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations]. Keep the lines above for comprehension.
           dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
+          ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's x component of the mean average flux at the boundary. Thus, we add this contribution here.
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
@@ -638,8 +634,7 @@
           dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
           ! z-Momentum equation's viscous contributions.
-          ! TODO: Check the expressions of the viscous momentum flux' terms (temp_unknown and temp_unknown2).
-          ! Some of the energy equation's flux' terms are computed and added here. TODO: Explain how.
+          ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the z-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
           temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
           temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz)
@@ -649,6 +644,7 @@
           !flux_n = flux_x*nx + flux_z*nz
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations]. Keep the lines above for comprehension.
           dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
+          ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's z component of the mean average flux at the boundary. Thus, we add this contribution here.
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
@@ -666,9 +662,10 @@
             temp_unknown2_P = veloc_z_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
           endif        
           ! Dot product.
-          flux_x = temp_unknown_M + temp_unknown_P
-          flux_z = temp_unknown2_M + temp_unknown2_P
-          flux_n = flux_x*nx + flux_z*nz
+          !flux_x = temp_unknown_M + temp_unknown_P
+          !flux_z = temp_unknown2_M + temp_unknown2_P
+          !flux_n = flux_x*nx + flux_z*nz
+          flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations]. Keep the lines above for comprehension.
           jump   = E_DG(iglobM) - E_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
