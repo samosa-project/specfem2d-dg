@@ -864,21 +864,21 @@
                 dT_dgamma  = dT_dgamma + T(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               else
                 vx_init = rhovx_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-                dux_dxi = dux_dxi    + (veloc_x_DG(ibool_DG(k,j,ispec)) - vx_init) &
-                          * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dux_dxi = dux_dxi + (veloc_x_DG(ibool_DG(k,j,ispec)) - vx_init) &
+                                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
                 vx_init = rhovx_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))       
                 dux_dgamma = dux_dgamma + (veloc_x_DG(ibool_DG(i,k,ispec)) - vx_init) &
-                             * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                                          * real(hprime_zz(j,k), kind=CUSTOM_REAL)
                 vz_init = rhovz_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-                duz_dxi = duz_dxi    + (veloc_z_DG(ibool_DG(k,j,ispec)) - vz_init) &
-                          * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                duz_dxi = duz_dxi + (veloc_z_DG(ibool_DG(k,j,ispec)) - vz_init) &
+                                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
                 vz_init = rhovz_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))
                 duz_dgamma = duz_dgamma + (veloc_z_DG(ibool_DG(i,k,ispec)) - vz_init) &
-                             * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dT_dxi = dT_dxi    + (T(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
-                         * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                                          * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dT_dxi = dT_dxi + (T(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
+                                  * real(hprime_xx(i,k), kind=CUSTOM_REAL)
                 dT_dgamma = dT_dgamma + (T(ibool_DG(i,k,ispec)) - T_init(ibool_DG(i,k,ispec))) &
-                            * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                                         * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
             enddo
 
@@ -1175,5 +1175,71 @@
   V_DG(2, 1, :) = grad_Vzx
   V_DG(2, 2, :) = grad_Vzz
   
-  end subroutine compute_viscous_tensors
+  ! --------------------------- !
+  ! Consider virtual mesh       !
+  ! stretching.                 !
+  ! --------------------------- !
+  if(.false.) then ! TODO: add a parameter for this option in parfile.
+    call add_virtual_stretching(T_DG, V_DG)
+  endif
   
+  end subroutine compute_viscous_tensors
+
+! ------------------------------------------------------------ !
+! add_virtual_stretching                                       !
+! ------------------------------------------------------------ !
+! TODO: This is a test routine.
+
+  subroutine add_virtual_stretching(T_DG, V_DG)
+
+  use specfem_par, only: ispec_is_acoustic, nspec, nglob_DG, ibool_DG, &
+                         ibool_before_perio, coord
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+
+  implicit none
+  
+  ! Input/Output
+  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(inout) :: V_DG
+  real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(inout) :: T_DG
+  
+  ! Local
+  integer :: i, j, ispec, iglob
+  real(kind=CUSTOM_REAL) :: coef_x, coef_z
+  real(kind=CUSTOM_REAL) :: eps_l, p, q
+  real(kind=CUSTOM_REAL) :: L_buffer, zmax, z, z_l ! Variables used for testing.
+  
+  ! Coefficients for the stretching function.
+  eps_l = 1.0d-4
+  p = 3.25d0
+  q = 1.75d0
+  
+  L_buffer = 20. ! Length of the buffer in which the mesh is stretched.
+  zmax = 50. ! Domain top coordinate.
+  
+  do ispec = 1, nspec
+    if (ispec_is_acoustic(ispec)) then
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          iglob = ibool_DG(i, j, ispec)
+          coef_x = 1. ! By default, mesh is not stretched.
+          coef_z = 1. ! By default, mesh is not stretched.
+          
+          z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
+          z_l = (1. - ((zmax - z)/L_buffer)) ! Relative buffer coordinate.
+          if(z_l > 0. .AND. z_l <= 1.) then
+            !write(*, *) "z", z, "z_l", z_l ! DEBUG
+            
+            coef_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
+            
+            !write(*, *) "z", z, "coef_z", coef_z ! DEBUG
+          endif
+          
+          T_DG(1, iglob) = coef_x * T_DG(1, iglob)
+          T_DG(2, iglob) = coef_z * T_DG(2, iglob)
+          V_DG(1, :, iglob) = coef_x * V_DG(1, :, iglob)
+          V_DG(2, :, iglob) = coef_z * V_DG(2, :, iglob)
+        enddo
+      enddo
+     endif
+   enddo
+  end subroutine add_virtual_stretching

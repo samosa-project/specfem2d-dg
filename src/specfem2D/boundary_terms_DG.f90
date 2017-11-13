@@ -1070,11 +1070,11 @@
   real(kind=CUSTOM_REAL) :: beta, sigma_max
   
   real(kind=CUSTOM_REAL) :: timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-                        veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
+                            veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
   integer :: i, j, ispec, ifirstelem, ilastelem, ibool
   
   ! Domain-related quantities.
-  L_buffer_absorb = 20.0d0
+  L_buffer_absorb = 20.0d0 ! Length of the buffer in which the solution is damped.
   zmax            = 50.0d0
   
   ! Arina's damping coefficients.
