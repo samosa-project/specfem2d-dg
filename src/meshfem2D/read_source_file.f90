@@ -91,8 +91,11 @@
   close(IIN_SOURCE)
 
   ! checks counter
-  if (mod(icounter,NLINES_PER_SOURCE) /= 0) &
-    stop 'total number of non blank and non comment lines in SOURCE file should be a multiple of NLINES_PER_SOURCE'
+  if (mod(icounter,NLINES_PER_SOURCE) /= 0) then
+    print *, 'total number of non blank and non comment lines in SOURCE file (', &
+             icounter, ') should be a multiple of NLINES_PER_SOURCE (', NLINES_PER_SOURCE, ')'
+    stop
+  endif
 
   ! total number of sources
   num_sources = icounter / NLINES_PER_SOURCE
