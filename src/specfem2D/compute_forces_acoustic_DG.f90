@@ -105,6 +105,9 @@
   ! Local
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, p_DG
   
+  real(kind=CUSTOM_REAL) :: coef_stretch_x_kj, coef_stretch_x_ki, coef_stretch_x_ik, &
+                            coef_stretch_z_kj, coef_stretch_z_ki, coef_stretch_z_ik ! Mesh stretching.
+  
   ! Viscosity
   !real(kind=CUSTOM_REAL) :: dux_dxi, dux_dgamma, duz_dxi, duz_dgamma
   real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz
@@ -329,23 +332,52 @@
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
+          ! Two loops are merged into one. TODO: Explain how so.
           ! along x direction and z direction
           do k = 1, NGLLX
-            dot_rho(iglob) = dot_rho(iglob) + &
-                             (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                              temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-                     
-            dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                               (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            
-            dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                               (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            
-            dot_E(iglob) = dot_E(iglob) + &
-                           (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                            temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+          
+            ! --------------------------- !
+            ! Virtual mesh stretching.    !
+            ! --------------------------- !
+            if(.false.) then ! TODO: add a parameter for this option in parfile.
+              call virtual_stretch(k, j, ispec, coef_stretch_x_kj, coef_stretch_z_kj)
+              call virtual_stretch(k, i, ispec, coef_stretch_x_ki, coef_stretch_z_ki)
+              call virtual_stretch(i, k, ispec, coef_stretch_x_ik, coef_stretch_z_ik)
+              
+              dot_rho(iglob) = dot_rho(iglob) + &
+                               (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
+                                temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_z_ik*coef_stretch_z_kj   )
+              dot_rhovx(iglob) = dot_rhovx(iglob) + &
+                                 (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
+                                  temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_z_kj*coef_stretch_z_ki   )
+              dot_rhovz(iglob) = dot_rhovz(iglob) + &
+                                 (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
+                                  temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_z_kj*coef_stretch_z_ki   )
+              dot_E(iglob) = dot_E(iglob) + &
+                             (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
+                              temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                  *coef_stretch_z_kj*coef_stretch_z_ki   )
+            else
+              dot_rho(iglob) = dot_rho(iglob) + &
+                               (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+              dot_rhovx(iglob) = dot_rhovx(iglob) + &
+                                 (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                  temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+              dot_rhovz(iglob) = dot_rhovz(iglob) + &
+                                 (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                  temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+              dot_E(iglob) = dot_E(iglob) + &
+                             (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                              temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+            endif
           enddo
           
           wzl = real(wzgll(j), kind=CUSTOM_REAL)
@@ -1257,7 +1289,7 @@
   p = 3.25d0
   q = 1.75d0
   
-  L_buffer = 20. ! Length of the buffer in which the mesh is stretched.
+  L_buffer = 10. ! Length of the buffer in which the mesh is stretched.
   zmax = 50. ! Domain top coordinate.
   
   iglob = ibool_DG(i, j, ispec)

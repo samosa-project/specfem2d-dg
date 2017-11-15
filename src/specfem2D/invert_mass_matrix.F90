@@ -371,6 +371,7 @@
           ! --------------------------- !
           ! Virtual mesh stretching.    !
           ! --------------------------- !
+          ! TODO: Check if this should be done or not.
           if(.false.) then ! TODO: add a parameter for this option in parfile.
             call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
             rmass_inverse_acoustic_DG(iglob) = coef_stretch_x * coef_stretch_z * rmass_inverse_acoustic_DG(iglob)
