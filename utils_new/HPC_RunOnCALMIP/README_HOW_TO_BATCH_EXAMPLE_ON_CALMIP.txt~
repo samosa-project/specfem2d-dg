@@ -1,0 +1,19 @@
+
+###############################################################
+# HOW TO SEND AN EXAMPLE TO BATCH ON CALMIP.                  #
+###############################################################
+
+1) Run:
+    ./prepare_example.sh EXAMPLENAME
+  where EXAMPLENAME is the example's name.
+
+2) Run:
+    ./send_example_to_execution.sh NNODES NCORES EXAMPLENAME TIMELIMIT
+  where
+    NNODES is the number of nodes,
+    NCORES is the number of cores (NNODES * NCORES must match the number of processes specified in the parfile),
+    EXAMPLENAME is the example's name, and
+    TIMELIMIT is the time limit (format hours:minutes:seconds).
+
+###############################################################
+
