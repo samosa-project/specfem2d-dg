@@ -42,7 +42,8 @@
                          potential_gravito,displ_elastic,displs_poroelastic, &
                          potential_dot_acoustic,veloc_elastic,velocs_poroelastic,  &
                          potential_dot_dot_acoustic,accel_elastic,accels_poroelastic, &
-                         rho_DG, rhovx_DG, rhovz_DG, E_DG, cnu,T_init
+                         rho_DG, rhovx_DG, rhovz_DG, E_DG, cnu,T_init, &
+                         potential_dphi_dx_DG!, potential_dphi_dz_DG ! Modification for DG.
 
   use specfem_par_movie,only: this_is_the_first_time_we_dump,mask_ibool,imagetype_wavefield_dumps, &
     use_binary_for_wavefield_dumps,vector_field_display
@@ -117,13 +118,23 @@
                                        T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu))
   else if (imagetype_wavefield_dumps == 2) then
     if (myrank == 0) write(IMAIN,*) 'dumping the velocity vector...'
+    !call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
+    !                                 potential_gravito,veloc_elastic,velocs_poroelastic)
+    ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+    ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
-                                     potential_gravito,veloc_elastic,velocs_poroelastic)
+                                     potential_gravito,veloc_elastic,velocs_poroelastic, &
+                                     potential_dphi_dx_DG)
 
   else if (imagetype_wavefield_dumps == 3) then
     if (myrank == 0) write(IMAIN,*) 'dumping the acceleration vector...'
+    !call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_gravitoacoustic, &
+    !                                 potential_gravito,accel_elastic,accels_poroelastic)
+    ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+    ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_gravitoacoustic, &
-                                     potential_gravito,accel_elastic,accels_poroelastic)
+                                     potential_gravito,accel_elastic,accels_poroelastic, &
+                                     potential_dphi_dx_DG)
 
   else if (imagetype_wavefield_dumps == 4 .and. P_SV) then
     if (myrank == 0) write(IMAIN,*) 'dumping the pressure field...'

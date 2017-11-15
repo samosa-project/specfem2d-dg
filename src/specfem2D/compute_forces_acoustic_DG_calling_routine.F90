@@ -619,7 +619,11 @@
    call compute_add_sources_acoustic_DG_backward(it_temp, &
         b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
    
-   call compute_forces_acoustic_backward_DG(b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
+   ! This call makes the compilation under ifort impossible because of some arguments' size mismatch (or so), which makes sense since indeed the arguments in the routine declaration are not corresponding those called to. However, it seems not to bother gfortran.
+   !call compute_forces_acoustic_backward_DG(b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
+   !     rho_DG, rhovx_DG, rhovz_DG, E_DG, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
+   ! Thus, in order for the compilation to work under ifort, we call this one instead. TODO: Check if this makes sense.
+   call compute_forces_acoustic_backward_DG_real(b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
         rho_DG, rhovx_DG, rhovz_DG, E_DG, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
    
      ! assembling potential_dot_dot or b_potential_dot_dot for acoustic elements

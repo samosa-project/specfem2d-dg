@@ -42,7 +42,8 @@
                          potential_dot_acoustic,potential_dot_gravitoacoustic, &
                          potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
                          potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
-                         potential_dot_dot_gravito,accel_elastic,accels_poroelastic
+                         potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
+                         potential_dphi_dx_DG!, potential_dphi_dz_DG ! Modification for DG.
 
   use specfem_par_movie,only: imagetype_postscript
 
@@ -59,24 +60,39 @@
   if (imagetype_postscript == 1 .and. P_SV) then
 
     if (myrank == 0) write(IMAIN,*) 'drawing displacement vector as small arrows...'
+    !call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
+    !                                 potential_gravito,displ_elastic,displs_poroelastic)
+    ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+    ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
-                                     potential_gravito,displ_elastic,displs_poroelastic)
+                                     potential_gravito,displ_elastic,displs_poroelastic, &
+                                     potential_dphi_dx_DG)
 
     call plot_post()
 
   else if (imagetype_postscript == 2 .and. P_SV) then
 
     if (myrank == 0) write(IMAIN,*) 'drawing velocity vector as small arrows...'
+    !call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+    !                                 potential_dot_gravito,veloc_elastic,velocs_poroelastic)
+    ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+    ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                     potential_dot_gravito,veloc_elastic,velocs_poroelastic)
+                                     potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                     potential_dphi_dx_DG)
 
     call plot_post()
 
   else if (imagetype_postscript == 3 .and. P_SV) then
 
     if (myrank == 0) write(IMAIN,*) 'drawing acceleration vector as small arrows...'
+    !call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
+    !                                 potential_dot_dot_gravito,accel_elastic,accels_poroelastic)
+    ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+    ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
-                                     potential_dot_dot_gravito,accel_elastic,accels_poroelastic)
+                                     potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
+                                     potential_dphi_dx_DG)
 
     call plot_post()
 
