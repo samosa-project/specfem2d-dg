@@ -1,6 +1,6 @@
 
 ###############################################################
-# HOW TO SEND AN EXAMPLE TO BATCH ON curie.                   #
+# HOW TO SEND AN EXAMPLE TO BATCH ON Curie.                   #
 ###############################################################
 
 1) Run:
