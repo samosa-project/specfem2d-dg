@@ -252,12 +252,11 @@
   
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
+    ! Set gravity, viscosity coefficients, relaxation times, and gravity potential (Phi) derivatives.
     if(timelocal == 0) then
-      ! At initial time, we create an uniform gravity field.
+      ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
       gravityext(i, j, ispec) = ZEROl !real(coord(1,ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
-      !gravityext(i, j, ispec) = 9.81d0 ! Earth gravity.
-      !gravityext(i, j, ispec) = gravity_cte_DG ! Gravity read from database, and thus from parfile.
-      !gravityext(i, j, ispec) = 3.7247 ! Mars gravity.
+      ! > Isothermal case.
       if(USE_ISOTHERMAL_MODEL) then
         gravityext(i, j, ispec) = real(gravity_cte_DG, kind=CUSTOM_REAL)
       endif
@@ -290,7 +289,9 @@
     endif
     
     ! Set pressure.
+    ! > Isobaric case.
     p_DG_P = (sound_velocity**2)*rho_DG_P/gammaext_DG(ibool_DG(i, j, ispec)) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
+    ! > Isothermal case.
     if(USE_ISOTHERMAL_MODEL) then
       ! If we use an isothermal model, replace the value just computed by the one under hydrostatic hypothesis: p = \rho * g * H.
       p_DG_P = rho_DG_P*G*H
