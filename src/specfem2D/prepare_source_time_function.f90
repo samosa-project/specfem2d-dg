@@ -59,6 +59,8 @@
   double precision, dimension(4) :: c_RK
   character(len=27) :: error_msg1 = 'Error opening file source: '
   character(len=177) :: error_msg
+  
+  double precision :: a_gauss_disc_removal, b_gauss_disc_removal ! Used to remove initial discontinuity for Gaussian sources.
 
   if (stage_time_scheme == 4) then
     c_RK(1) = 0.0d0 * deltat
@@ -195,11 +197,22 @@
             else
               ! Gaussian or Dirac (we use a very thin Gaussian instead) source time function
               source_time_function(i_source, it, i_stage) = factor(i_source) * &
-                        exp(-aval(i_source)*t_used**2)
-              if(.false.) then
-                ! Remove the initial discontinuity (due to the support of Gaussians being non-compact).
-                source_time_function(i_source, it, i_stage) = factor(i_source) * (&
-                exp(-aval(i_source)*t_used**2) - exp(-aval(i_source)*(t0 + tshift_src(i_source))**2))
+                                                            exp(-aval(i_source)*t_used**2)
+              if(.false.) then ! TODO: If this functionnality is kept, add a parameter for this option in parfile.
+                ! Smoothly remove the initial discontinuity (due to the support of Gaussians being non-compact). The quantity removed is linear in time. Its values are:
+                ! - the value of the initial discontinuity at t_used = -(t0+tshift), and
+                ! - zero at t_used = +(t0+tshift).
+                ! Hence the values set in the variables a_gauss_disc_removal and b_gauss_disc_removal. Hence the source is exactly zero at -(t0+tshift) and unchanged after +(t0+tshift).
+                b_gauss_disc_removal = 0.5 * exp(-aval(i_source)*(t0 + tshift_src(i_source))**2)
+                a_gauss_disc_removal = - b_gauss_disc_removal / (t0 + tshift_src(i_source))
+                if(t_used <= t0 + tshift_src(i_source)) then
+                  source_time_function(i_source, it, i_stage) = factor(i_source) * &
+                                                                ( exp(-aval(i_source)*t_used**2) &
+                                                                  - a_gauss_disc_removal * t_used - b_gauss_disc_removal)
+                else
+                  source_time_function(i_source, it, i_stage) = factor(i_source) * &
+                                                                exp(-aval(i_source)*t_used**2)
+                endif
               endif
             endif
 
