@@ -31,7 +31,7 @@
   If the scripts fails again, contact the SPECFEM-DG support.
 
 2) Configure SPECFEM:
-  Install an MPI development package (intel-mpi, mpich, openmpi, ...). Load its module. Check the module is indeed loaded:
+  Install an OpenMPI development package. Load its module. Check the module is indeed loaded:
     module list
   Configure SPECFEM with GNU compilers by running:
     ./configure FC=gfortran CC=gcc MPIFC=mpif90 --with-mpi --enable-double-precision
