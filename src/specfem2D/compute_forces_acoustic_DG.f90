@@ -224,8 +224,8 @@
           temp_unknown = rhovx_DG(iglob)
           temp_unknown2 = rhovz_DG(iglob)
           
-          temp_rho_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rho_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_rho_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
+          temp_rho_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
           
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + p_DG(iglob)

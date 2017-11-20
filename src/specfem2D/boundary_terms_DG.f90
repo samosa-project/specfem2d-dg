@@ -1049,11 +1049,11 @@
   end subroutine compute_interface_unknowns
 
 ! ------------------------------------------------------------ !
-! absorb_condition_DG                                          !
+! damp_solution_DG                                             !
 ! ------------------------------------------------------------ !
 ! TODO: This is a test routine.
 
-  subroutine absorb_condition_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
+  subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
   use specfem_par, only: ispec_is_acoustic, nspec, coord, ibool_DG, nglob_DG, &
         ibool_before_perio
@@ -1139,4 +1139,4 @@
       enddo
      endif
    enddo
-  end subroutine absorb_condition_DG
+  end subroutine damp_solution_DG
