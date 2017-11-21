@@ -328,11 +328,10 @@
       enddo
       
       ! Assemble the contributions previously computed, and add gravity's contribution.
+      ! The integration by quadrature on the GLL points leads to three sums. See in particular Komatitsch (Méthodes spectrales et éléments spectraux pour l'équation de l'élastodynamique 2D et 3D en milieu hétérogène), Annexe 3.A.
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
-          ! Two loops are merged into one. TODO: Explain how so.
-          ! along x direction and z direction
           do k = 1, NGLLX
           
             ! --------------------------- !

@@ -434,6 +434,7 @@
   implicit none
   
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, nspec, 4) :: elastic_tensor
+  ! TODO: Why not loading it from specfem_par? All calls seem to use the one loaded from specfem_par.
   
   integer, intent(in) :: i, j, ispec, chosen_nxnz_forMPI
   
@@ -582,15 +583,15 @@
         tz = nx
 
         ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-        normal_v     = (veloc_x*nx + veloc_x*nz) 
+        normal_v     = veloc_x*nx + veloc_x*nz
         tangential_v = veloc_x*tx + veloc_x*tz
 
-        ! Transformation matrix between mesh coordinates and normal/tangential coordinates
+        ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
         trans_boundary(1, 1) =  tz
         trans_boundary(1, 2) = -nz
         trans_boundary(2, 1) = -tx
         trans_boundary(2, 2) =  nx
-        trans_boundary = trans_boundary/(nx*tz - tx*nz)
+        trans_boundary = trans_boundary/(nx * tz - tx * nz)
 
         ! From free slip and normal velocity continuity
         veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
@@ -686,12 +687,12 @@
       !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz
       !tangential_v    = (veloc_x*tx + veloc_z*tz) 
 
-      ! Transformation matrix between mesh coordinates and normal/tangential coordinates
+      ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
       trans_boundary(1, 1) =  tz
       trans_boundary(1, 2) = -nz
       trans_boundary(2, 1) = -tx
       trans_boundary(2, 2) =  nx
-      trans_boundary = trans_boundary/(nx*tz - tx*nz)
+      trans_boundary = trans_boundary/(nx * tz - tx * nz)
 
       ! From free slip and normal velocity continuity
       veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
@@ -906,12 +907,12 @@
                 - (alpha0*deltaZ1 - deltaZ2star)/(2.*a_n*rho_init(iglobM))
         tangential_v = 0.
 
-        ! Transformation matrix between mesh coordinates and normal/tangential coordinates
+        ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
         trans_boundary(1, 1) =  tz
         trans_boundary(1, 2) = -nz
         trans_boundary(2, 1) = -tx
         trans_boundary(2, 2) =  nx
-        trans_boundary = trans_boundary/(nx*tz - tx*nz)
+        trans_boundary = trans_boundary/(nx * tz - tx * nz)
 
         ! From free slip and normal velocity continuity
         veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
@@ -985,12 +986,12 @@
     normal_v     = veloc_x*nx + veloc_x*nz
     tangential_v = veloc_x*tx + veloc_x*tz
 
-    ! Transformation matrix between mesh coordinates and normal/tangential coordinates
-    trans_boundary(1, 1) =   tz
-    trans_boundary(1, 2) = - nz
-    trans_boundary(2, 1) = - tx
-    trans_boundary(2, 2) =   nx
-    trans_boundary = trans_boundary/(nx*tz - tx*nz)
+    ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
+    trans_boundary(1, 1) =  tz
+    trans_boundary(1, 2) = -nz
+    trans_boundary(2, 1) = -tx
+    trans_boundary(2, 2) =  nx
+    trans_boundary = trans_boundary/(nx * tz - tx * nz)
 
     ! From free slip and normal velocity continuity
     veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
