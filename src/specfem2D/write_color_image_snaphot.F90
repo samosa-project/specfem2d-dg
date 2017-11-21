@@ -58,11 +58,10 @@
 
   implicit none
 
-  !local variables
-  integer :: i,j,k,ispec,iglob,iproc
+  ! Local variables.
+  integer :: i, j,k,ispec,iglob,iproc
   integer :: ier
   double precision :: rhol, coef
-  
   
   logical, dimension(nglob) :: this_iglob_is_acous
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: vector_DG_temp 
@@ -72,119 +71,145 @@
     write(IMAIN,*) 'Creating color image of size ',NX_IMAGE_color,' x ',NZ_IMAGE_color,' for time step ',it
     call flush_IMAIN()
   endif
-
+  
+  ! imagetype_JPEG 1, 2, and 3.
   if (imagetype_JPEG >= 1 .and. imagetype_JPEG <= 3) then
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the displacement vector...'!, maxval(rhoveloc_acoustic(2,:))
     
     if(any_acoustic_DG) then
-    if(imagetype_JPEG == 1) vector_DG_temp = rhovx_DG/rho_DG
-    if(imagetype_JPEG == 2) vector_DG_temp = rhovz_DG/rho_DG
-    if(imagetype_JPEG == 3) vector_DG_temp = sqrt((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)
-    !vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
-    !                                 - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init)
+      if(imagetype_JPEG == 1) then
+        vector_DG_temp = rhovx_DG/rho_DG
+      endif
+      if(imagetype_JPEG == 2) then
+        vector_DG_temp = rhovz_DG/rho_DG
+      endif
+      if(imagetype_JPEG == 3) then
+        vector_DG_temp = sqrt((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)
+      endif
+      !vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
+      !                                 - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init)
     endif
-    
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,veloc_elastic,displs_poroelastic, &
                                      vector_DG_temp)
-                                     
-  else if (imagetype_JPEG >= 4 .and. imagetype_JPEG <= 6) then
   
+  ! imagetype_JPEG 4, 5, and 6.
+  else if (imagetype_JPEG >= 4 .and. imagetype_JPEG <= 6) then
     coef = 0.
-    if(CONSTRAIN_HYDROSTATIC) coef = 1.  
+    if(CONSTRAIN_HYDROSTATIC) then
+      coef = 1.
+    endif
   
     if(any_acoustic_DG) then
-    if(imagetype_JPEG == 4) vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
-                                     - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - coef*p_DG_init)
-    if(imagetype_JPEG == 5) vector_DG_temp = E_DG - coef*E_init
-    if(imagetype_JPEG == 6) vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - coef*T_init)
+      if(imagetype_JPEG == 4) then
+        vector_DG_temp = ( ( (gammaext_DG - 1.) &
+                             * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
+                          - coef*p_DG_init )
+      endif
+      if(imagetype_JPEG == 5) then
+        vector_DG_temp = E_DG - coef*E_init
+      endif
+      if(imagetype_JPEG == 6) then
+        vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - coef*T_init)
+      endif
     endif
-    
-    !WRITE(*,*) "TEST", imagetype_JPEG, coef, CONSTRAIN_HYDROSTATIC
-  
-    if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the velocity vector...'
+    !WRITE(*,*) "TEST", imagetype_JPEG, coef, CONSTRAIN_HYDROSTATIC ! DEBUG
+    if (myrank == 0) then
+      write(IMAIN,*) 'drawing scalar image of part of the velocity vector...'
+    endif
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                     vector_DG_temp )
-
+                                     vector_DG_temp)
+  
+  ! imagetype_JPEG 7, 8, and 9.
   else if (imagetype_JPEG >= 7 .and. imagetype_JPEG <= 9) then
-  
     if(any_acoustic_DG) then
-    if(imagetype_JPEG == 7) vector_DG_temp = rho_DG 
-    if(imagetype_JPEG == 8) vector_DG_temp = rhovx_DG/sqrt(rho_DG)
-    if(imagetype_JPEG == 9) vector_DG_temp = rhovz_DG/sqrt(rho_DG)
+      if(imagetype_JPEG == 7) then
+        vector_DG_temp = rho_DG
+      endif
+      if(imagetype_JPEG == 8) then
+        vector_DG_temp = rhovx_DG/sqrt(rho_DG)
+      endif
+      if(imagetype_JPEG == 9) then
+        vector_DG_temp = rhovz_DG/sqrt(rho_DG)
+      endif
     endif
-  
-    if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the acceleration vector...'
+    if (myrank == 0) then
+      write(IMAIN,*) 'drawing scalar image of part of the acceleration vector...'
+    endif
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                      potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
                                      vector_DG_temp)
-
+  
+  ! imagetype_JPEG 11, 12, and 13.
   else if (imagetype_JPEG >= 11 .and. imagetype_JPEG <= 13) then
     ! allocation for normalized representation in JPEG image
     ! for an atmosphere model
-    if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of normalized displacement vector...'
+    if (myrank == 0) then
+      write(IMAIN,*) 'drawing scalar image of part of normalized displacement vector...'
+    endif
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,displ_elastic,displs_poroelastic, &
                                      rho_DG)
 
-    do ispec = 1,nspec
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
+    do ispec = 1, nspec
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
           if (assign_external_model) then
-            rhol = rhoext(i,j,ispec)
+            rhol = rhoext(i, j, ispec)
           else
-            rhol = density(1,kmato(ispec))
+            rhol = density(1, kmato(ispec))
           endif
-          iglob = ibool(i,j,ispec)
-          vector_field_display(1,iglob) = sqrt(rhol) * vector_field_display(1,iglob)
-          vector_field_display(2,iglob) = sqrt(rhol) * vector_field_display(2,iglob)
+          iglob = ibool(i, j, ispec)
+          vector_field_display(1, iglob) = sqrt(rhol) * vector_field_display(1, iglob)
+          vector_field_display(2, iglob) = sqrt(rhol) * vector_field_display(2, iglob)
         enddo
       enddo
     enddo
-
+  
+  ! imagetype_JPEG 14, 15, and 16.
   else if (imagetype_JPEG >= 14 .and. imagetype_JPEG <= 16) then
     ! allocation for normalized representation in JPEG image
     ! for an atmosphere model
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
                                      rho_DG)
-
-    do ispec = 1,nspec
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
+    do ispec = 1, nspec
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
           if (assign_external_model) then
-            rhol = rhoext(i,j,ispec)
+            rhol = rhoext(i, j, ispec)
           else
-            rhol = density(1,kmato(ispec))
+            rhol = density(1, kmato(ispec))
           endif
-          iglob = ibool(i,j,ispec)
-          vector_field_display(1,iglob) = sqrt(rhol) * vector_field_display(1,iglob)
-          vector_field_display(2,iglob) = sqrt(rhol) * vector_field_display(2,iglob)
+          iglob = ibool(i, j, ispec)
+          vector_field_display(1, iglob) = sqrt(rhol) * vector_field_display(1, iglob)
+          vector_field_display(2, iglob) = sqrt(rhol) * vector_field_display(2, iglob)
         enddo
       enddo
     enddo
 
+  ! imagetype_JPEG 10.
   else if (imagetype_JPEG == 10 .and. P_SV) then
-    if (myrank == 0) write(IMAIN,*) 'drawing image of pressure field...'
+    if (myrank == 0) then
+      write(IMAIN,*) 'drawing image of pressure field...'
+    endif
     call compute_pressure_whole_medium()
-
   else if (imagetype_JPEG == 10 .and. .not. P_SV) then
     call exit_MPI(myrank,'cannot draw pressure field for SH (membrane) waves')
-
   else
     call exit_MPI(myrank,'wrong type for JPEG snapshots')
   endif
 
 !! DK DK quick hack to remove the PMLs from JPEG images if needed: set the vector field to zero there
   if (PML_BOUNDARY_CONDITIONS .and. REMOVE_PMLS_FROM_JPEG_IMAGES) then
-    do ispec = 1,nspec
+    do ispec = 1, nspec
       if (ispec_is_PML(ispec)) then
-        do j = 1,NGLLZ
-          do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            vector_field_display(1,iglob) = 0.d0
-            vector_field_display(2,iglob) = 0.d0
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            iglob = ibool(i, j, ispec)
+            vector_field_display(1, iglob) = 0.d0
+            vector_field_display(2, iglob) = 0.d0
           enddo
         enddo
       endif
@@ -195,15 +220,15 @@
   !if(it == 1) then
   this_iglob_is_acous(:) = .false.
   if(any_acoustic_DG) then
-  do ispec = 1,nspec
-        do j = 1,NGLLZ
-          do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            !if (ispec_is_acoustic_DG(ispec)) then
-                this_iglob_is_acous(iglob) = ispec_is_acoustic_DG(ispec)!.true.
-           ! endif
-          enddo
+    do ispec = 1, nspec
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          iglob = ibool(i, j, ispec)
+          !if (ispec_is_acoustic_DG(ispec)) then
+          this_iglob_is_acous(iglob) = ispec_is_acoustic_DG(ispec)!.true.
+          !endif
         enddo
+      enddo
     enddo
   endif
   
@@ -215,49 +240,49 @@
     j = ceiling(real(num_pixel_loc(k)) / real(NX_IMAGE_color))
     i = num_pixel_loc(k) - (j-1)*NX_IMAGE_color
 
-    ! avoid edge effects
+    ! Avoid edge effects.
     if (i < 1 ) i = 1
     if (j < 1 ) j = 1
-
     if (i > NX_IMAGE_color ) i = NX_IMAGE_color
     if (j > NZ_IMAGE_color ) j = NZ_IMAGE_color
 
     if (P_SV) then ! P-SH waves, plot a component of vector, its norm, or else pressure
-      if (iglob_image_color(i,j) /= -1) then
+      if (iglob_image_color(i, j) /= -1) then
         ! To normalize independently
-        this_ij_image_acous(i,j) = this_iglob_is_acous(iglob_image_color(i,j))
+        this_ij_image_acous(i, j) = this_iglob_is_acous(iglob_image_color(i, j))
+        
         if (imagetype_JPEG == 1  .or. imagetype_JPEG == 4 .or. imagetype_JPEG == 7 .or. &
             imagetype_JPEG == 11 .or. imagetype_JPEG == 14) then
-          ! draw the X component of the vector
-          image_color_data(i,j) = vector_field_display(1,iglob_image_color(i,j))
+          ! Draw the X component of the vector.
+          image_color_data(i, j) = vector_field_display(1, iglob_image_color(i, j))
 
-        else if (imagetype_JPEG == 2 .or. imagetype_JPEG == 5 .or. imagetype_JPEG == 8 .or. &
-                imagetype_JPEG == 12 .or. imagetype_JPEG == 15) then
-          ! draw the Z component of the vector
-          image_color_data(i,j) = vector_field_display(2,iglob_image_color(i,j))
+        else if (imagetype_JPEG == 2  .or. imagetype_JPEG == 5 .or. imagetype_JPEG == 8 .or. &
+                 imagetype_JPEG == 12 .or. imagetype_JPEG == 15) then
+          ! Draw the Z component of the vector.
+          image_color_data(i, j) = vector_field_display(2, iglob_image_color(i, j))
 
-        else if (imagetype_JPEG == 3 .or. imagetype_JPEG == 6 .or. imagetype_JPEG == 9 .or. &
-                imagetype_JPEG == 13 .or. imagetype_JPEG == 16) then
-          ! draw the norm of the vector
-          image_color_data(i,j) = sqrt(vector_field_display(1,iglob_image_color(i,j))**2  &
-                                     + vector_field_display(2,iglob_image_color(i,j))**2)
+        else if (imagetype_JPEG == 3  .or. imagetype_JPEG == 6 .or. imagetype_JPEG == 9 .or. &
+                 imagetype_JPEG == 13 .or. imagetype_JPEG == 16) then
+          ! Draw the norm of the vector.
+          image_color_data(i, j) = sqrt(vector_field_display(1, iglob_image_color(i, j))**2 &
+                                        + vector_field_display(2, iglob_image_color(i, j))**2 )
 
         else if (imagetype_JPEG == 10) then
-          ! by convention we have stored pressure in the 2. component of the array
-          image_color_data(i,j) = vector_field_display(2,iglob_image_color(i,j))
+          ! Draw pressure field.
+          image_color_data(i, j) = vector_field_display(2, iglob_image_color(i, j)) ! By convention, we have stored pressure in the 2nd component of the array.
 
         else
-          call exit_MPI(myrank,'wrong type for JPEG snapshots')
+          call exit_MPI(myrank,'Wrong type for JPEG snapshots.')
         endif
       endif
 
     else
       ! SH (membrane) waves, plot y-component
-      if (iglob_image_color(i,j) /= -1) image_color_data(i,j) = vector_field_display(1,iglob_image_color(i,j))
+      if (iglob_image_color(i, j) /= -1) image_color_data(i, j) = vector_field_display(1, iglob_image_color(i, j))
     endif
   enddo
-  !stop
-  ! assembling array image_color_data on process zero for color output
+  
+  ! Assemble array image_color_data on process zero for color output.
 #ifdef USE_MPI
   if (NPROC > 1) then
     if (myrank == 0) then
@@ -272,15 +297,14 @@
           j = ceiling(real(num_pixel_recv(k,iproc+1)) / real(NX_IMAGE_color))
           i = num_pixel_recv(k,iproc+1) - (j-1)*NX_IMAGE_color
 
-          ! avoid edge effects
+          ! Avoid edge effects.
           if (i < 1) i = 1
           if (j < 1) j = 1
-
           if (i > NX_IMAGE_color) i = NX_IMAGE_color
           if (j > NZ_IMAGE_color) j = NZ_IMAGE_color
 
-          image_color_data(i,j) = data_pixel_recv(k)
-          this_ij_image_acous(i,j) = data_pixel_recv_ij(k)
+          image_color_data(i, j) = data_pixel_recv(k)
+          this_ij_image_acous(i, j) = data_pixel_recv_ij(k)
         enddo
       enddo
     else
@@ -288,38 +312,37 @@
         j = ceiling(real(num_pixel_loc(k)) / real(NX_IMAGE_color))
         i = num_pixel_loc(k) - (j-1)*NX_IMAGE_color
 
-        ! avoid edge effects
+        ! Avoid edge effects.
         if (i < 1) i = 1
         if (j < 1) j = 1
-
         if (i > NX_IMAGE_color) i = NX_IMAGE_color
         if (j > NZ_IMAGE_color) j = NZ_IMAGE_color
 
         if (P_SV) then ! P-SH waves, plot a component of vector, its norm, or else pressure
-          data_pixel_send_ij(k) = this_iglob_is_acous(iglob_image_color(i,j))
+          data_pixel_send_ij(k) = this_iglob_is_acous(iglob_image_color(i, j))
           if (imagetype_JPEG == 1 .or. imagetype_JPEG == 4 .or. imagetype_JPEG == 7 .or. &
               imagetype_JPEG == 11 .or. imagetype_JPEG == 14) then
-             data_pixel_send(k) = vector_field_display(1,iglob_image_color(i,j))  ! draw the X component of the vector
+             data_pixel_send(k) = vector_field_display(1, iglob_image_color(i, j))  ! Draw the X component of the vector
 
           else if (imagetype_JPEG == 2 .or. imagetype_JPEG == 5 .or. imagetype_JPEG == 8 .or. &
                   imagetype_JPEG == 12 .or. imagetype_JPEG == 15) then
-             data_pixel_send(k) = vector_field_display(2,iglob_image_color(i,j))  ! draw the Z component of the vector
+             data_pixel_send(k) = vector_field_display(2, iglob_image_color(i, j))  ! Draw the Z component of the vector
 
           else if (imagetype_JPEG == 3 .or. imagetype_JPEG == 6 .or. imagetype_JPEG == 9 .or. &
                   imagetype_JPEG == 13 .or. imagetype_JPEG == 16) then
-            data_pixel_send(k) = sqrt(vector_field_display(1,iglob_image_color(i,j))**2 + &
-                                      vector_field_display(2,iglob_image_color(i,j))**2)  ! draw the norm of the vector
+            data_pixel_send(k) = sqrt(vector_field_display(1, iglob_image_color(i, j))**2 + &
+                                      vector_field_display(2, iglob_image_color(i, j))**2)  ! Draw the norm of the vector
 
           else if (imagetype_JPEG == 10) then
             ! by convention we have stored pressure in the 2. component of the array
-            data_pixel_send(k) = vector_field_display(2,iglob_image_color(i,j))
+            data_pixel_send(k) = vector_field_display(2, iglob_image_color(i, j))
 
           else
             call exit_MPI(myrank,'wrong type for JPEG snapshots')
           endif
 
         else ! SH (membrane) waves, plot y-component
-          if (iglob_image_color(i,j) /= -1) data_pixel_send(k) = vector_field_display(1,iglob_image_color(i,j))
+          if (iglob_image_color(i, j) /= -1) data_pixel_send(k) = vector_field_display(1, iglob_image_color(i, j))
         endif
       enddo
       
@@ -334,14 +357,11 @@
   iproc = NPROC
 #endif
 
-  ! creates image
+  ! Create image.
   if (myrank == 0) then
     call create_color_image()
-
-    ! user output
-    write(IMAIN,*) 'Color image created'
+    write(IMAIN,*) 'Color image created' ! User output.
     call flush_IMAIN()
   endif
 
   end subroutine write_color_image_snaphot
-

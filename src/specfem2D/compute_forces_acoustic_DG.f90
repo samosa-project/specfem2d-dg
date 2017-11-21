@@ -34,13 +34,12 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_DG                                   !
 ! ------------------------------------------------------------ !
+! TODO: Description.
+! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
 
   subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, &
         T_DG_main, V_DG_main, e1_DG, &
         dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, timelocal)
-
-
-! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
@@ -65,14 +64,14 @@
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, e1_DG
-  real(kind=CUSTOM_REAL), dimension(2,nglob_DG) :: T_DG_main
-  real(kind=CUSTOM_REAL), dimension(2,2,nglob_DG) :: V_DG_main
+  real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(in) :: T_DG_main
+  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(in) :: V_DG_main
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
-  real(kind=CUSTOM_REAL), dimension(2,nglob_DG) :: T_DG
-  real(kind=CUSTOM_REAL), dimension(2,2,nglob_DG) :: V_DG
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
+  real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
+  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   
-  ! local parameters
+  ! Local variables.
   integer :: ispec,i, j,k,iglob, it_corner
   integer :: ifirstelem,ilastelem
 
@@ -775,9 +774,9 @@
 
   real(kind=CUSTOM_REAL) :: temp_Tx, temp_Tz, temp_Vxx, temp_Vzx, temp_Vxz, temp_Vzz
   
-  ! Local
-  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
-  real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
+  ! Local variables.
+  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(out) :: V_DG
+  real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(out) :: T_DG
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
          rho_DG, rhovx_DG, rhovz_DG, E_DG, veloc_x_DG, veloc_z_DG, T, &
          grad_Tx, grad_Tz, grad_Vxx, grad_Vzz, grad_Vxz, grad_Vzx
