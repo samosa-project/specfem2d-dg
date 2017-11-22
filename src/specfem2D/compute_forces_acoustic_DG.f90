@@ -72,7 +72,7 @@
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   
   ! Local variables.
-  integer :: ispec,i, j,k,iglob, it_corner
+  integer :: ispec,i, j,k, iglob, it_corner
   integer :: ifirstelem,ilastelem
 
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
@@ -343,38 +343,38 @@
               call virtual_stretch(i, k, ispec, coef_stretch_x_ik, coef_stretch_z_ik)
               
               dot_rho(iglob) = dot_rho(iglob) + &
-                               (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+                               (temp_rho_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) &
                                   *coef_stretch_x_kj*coef_stretch_x_ki + &
-                                temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
                                   *coef_stretch_z_ik*coef_stretch_z_kj   )
               dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                                 (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL)  &
+                                 (temp_rhovx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL)  &
                                   *coef_stretch_x_kj*coef_stretch_x_ki + &
-                                  temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                  temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
                                   *coef_stretch_z_kj*coef_stretch_z_ki   )
               dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                                 (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL)  &
+                                 (temp_rhovz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL)  &
                                   *coef_stretch_x_kj*coef_stretch_x_ki + &
-                                  temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                                  temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
                                   *coef_stretch_z_kj*coef_stretch_z_ki   )
               dot_E(iglob) = dot_E(iglob) + &
-                             (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL)  &
+                             (temp_E_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL)  &
                                   *coef_stretch_x_kj*coef_stretch_x_ki + &
-                              temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)  &
+                              temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
                                   *coef_stretch_z_kj*coef_stretch_z_ki   )
             else
               dot_rho(iglob) = dot_rho(iglob) + &
-                               (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+                               (temp_rho_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
               dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                                 (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                  temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+                                 (temp_rhovx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                  temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
               dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                                 (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                  temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+                                 (temp_rhovz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                  temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
               dot_E(iglob) = dot_E(iglob) + &
-                             (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                              temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+                             (temp_E_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
             endif
           enddo
           
@@ -756,7 +756,7 @@
   implicit none
   
   ! local parameters
-  integer :: ispec,i, j,k,iglob, iglobM, iglobP, it_corner
+  integer :: ispec,i, j,k, iglob, iglobM, iglobP, it_corner
   !integer :: ifirstelem,ilastelem
   integer :: i_ex, j_ex, ispec_ex, chosen_nxnz_forMPI, dir_normal
   real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
@@ -891,28 +891,28 @@
             ! we can merge the two loops because NGLLX == NGLLZ
             do k = 1, NGLLX
               if(.not. CONSTRAIN_HYDROSTATIC) then
-                dux_dxi    = dux_dxi    + veloc_x_DG(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dux_dgamma = dux_dgamma + veloc_x_DG(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                duz_dxi    = duz_dxi    + veloc_z_DG(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                duz_dgamma = duz_dgamma + veloc_z_DG(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dT_dxi     = dT_dxi    + T(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dT_dgamma  = dT_dgamma + T(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dux_dxi    = dux_dxi    + veloc_x_DG(ibool_DG(k, j,ispec)) * real(hprime_xx(i, k), kind=CUSTOM_REAL)
+                dux_dgamma = dux_dgamma + veloc_x_DG(ibool_DG(i, k, ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                duz_dxi    = duz_dxi    + veloc_z_DG(ibool_DG(k, j,ispec)) * real(hprime_xx(i, k), kind=CUSTOM_REAL)
+                duz_dgamma = duz_dgamma + veloc_z_DG(ibool_DG(i, k, ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dT_dxi     = dT_dxi    + T(ibool_DG(k, j,ispec)) * real(hprime_xx(i, k), kind=CUSTOM_REAL)
+                dT_dgamma  = dT_dgamma + T(ibool_DG(i, k, ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               else
-                vx_init = rhovx_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-                dux_dxi = dux_dxi + (veloc_x_DG(ibool_DG(k,j,ispec)) - vx_init) &
-                                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                vx_init = rhovx_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))       
-                dux_dgamma = dux_dgamma + (veloc_x_DG(ibool_DG(i,k,ispec)) - vx_init) &
+                vx_init = rhovx_init(ibool_DG(k, j,ispec))/rho_init(ibool_DG(k, j,ispec))
+                dux_dxi = dux_dxi + (veloc_x_DG(ibool_DG(k, j,ispec)) - vx_init) &
+                                    * real(hprime_xx(i, k), kind=CUSTOM_REAL)
+                vx_init = rhovx_init(ibool_DG(i, k, ispec))/rho_init(ibool_DG(i, k, ispec))       
+                dux_dgamma = dux_dgamma + (veloc_x_DG(ibool_DG(i, k, ispec)) - vx_init) &
                                           * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                vz_init = rhovz_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-                duz_dxi = duz_dxi + (veloc_z_DG(ibool_DG(k,j,ispec)) - vz_init) &
-                                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                vz_init = rhovz_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))
-                duz_dgamma = duz_dgamma + (veloc_z_DG(ibool_DG(i,k,ispec)) - vz_init) &
+                vz_init = rhovz_init(ibool_DG(k, j,ispec))/rho_init(ibool_DG(k, j,ispec))
+                duz_dxi = duz_dxi + (veloc_z_DG(ibool_DG(k, j,ispec)) - vz_init) &
+                                    * real(hprime_xx(i, k), kind=CUSTOM_REAL)
+                vz_init = rhovz_init(ibool_DG(i, k, ispec))/rho_init(ibool_DG(i, k, ispec))
+                duz_dgamma = duz_dgamma + (veloc_z_DG(ibool_DG(i, k, ispec)) - vz_init) &
                                           * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dT_dxi = dT_dxi + (T(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
-                                  * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dT_dgamma = dT_dgamma + (T(ibool_DG(i,k,ispec)) - T_init(ibool_DG(i,k,ispec))) &
+                dT_dxi = dT_dxi + (T(ibool_DG(k, j,ispec)) - T_init(ibool_DG(k, j,ispec))) &
+                                  * real(hprime_xx(i, k), kind=CUSTOM_REAL)
+                dT_dgamma = dT_dgamma + (T(ibool_DG(i, k, ispec)) - T_init(ibool_DG(i, k, ispec))) &
                                          * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
             enddo
@@ -954,23 +954,23 @@
           ! and assemble the contributions
           do k = 1, NGLLX
             grad_Tx(iglob) = grad_Tx(iglob) - &
-                             (temp_Tx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                             temp_Tx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                             (temp_Tx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                             temp_Tx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
             grad_Tz(iglob) = grad_Tz(iglob) - &
-                             (temp_Tz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                             temp_Tz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                             (temp_Tz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                             temp_Tz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
             grad_Vxx(iglob) = grad_Vxx(iglob) - &
-                              (temp_Vxx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                              temp_Vxx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                              (temp_Vxx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_Vxx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
             grad_Vxz(iglob) = grad_Vxz(iglob) - &
-                              (temp_Vxz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                              temp_Vxz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                              (temp_Vxz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_Vxz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
             grad_Vzx(iglob) = grad_Vzx(iglob) - &
-                              (temp_Vzx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                              temp_Vzx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                              (temp_Vzx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_Vzx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
             grad_Vzz(iglob) = grad_Vzz(iglob) - &
-                              (temp_Vzz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                              temp_Vzz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                              (temp_Vzz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_Vzz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
           enddo
         enddo
       enddo
