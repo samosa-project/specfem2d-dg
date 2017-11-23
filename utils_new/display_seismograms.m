@@ -34,13 +34,16 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
-root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave/test_RAPHAEL'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
 
 % close all; % Close all figure. Comment this to keep them.
 
 % Load sources' positions.
 pos_sources = [0, 0]; % Allocate a row for the first source's position.
-fid = fopen([root_dir, '/DATA/SOURCE']);
+% fid = fopen([root_dir, '/DATA/SOURCE']);
+fid = fopen([output_files_dir, 'SOURCE']);
 line = 0; xfound = 0; zfound = 0;
 while(line ~= -1)
   % TODO: Loop on source number.
