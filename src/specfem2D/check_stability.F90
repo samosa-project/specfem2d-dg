@@ -46,7 +46,7 @@
                          POROELASTIC_SIMULATION,any_poroelastic, &
                          displs_poroelastic,displw_poroelastic, &
                          ACOUSTIC_SIMULATION,any_acoustic,potential_acoustic, &
-                         timestamp_seconds_start
+                         timestamp_seconds_start, nspec, NPROC
 
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
 
@@ -84,12 +84,12 @@
     write(IMAIN,*)
     write(IMAIN,*) '******************************************************************'
     if (timeval >= 1.d-3 .and. timeval < 1000.d0) then
-      write(IMAIN,"('Time step number ',i7,' (t = ',f9.4,' s) out of ',i7)") it,timeval,NSTEP
+      write(IMAIN,"('Timestep ',i7,' (t = ',f9.4,' s) out of ',i7)") it,timeval,NSTEP
     else
-      write(IMAIN,"('Time step number ',i7,' (t = ',1pe13.6,' s) out of ',i7)") it,timeval,NSTEP
+      write(IMAIN,"('Timestep ',i7,' (t = ',1pe13.6,' s) out of ',i7)") it,timeval,NSTEP
     endif
     write(IMAIN,*) '******************************************************************'
-    write(IMAIN,*) 'We have done ',sngl(100.d0*dble(it-1)/dble(NSTEP-1)),'% of the total'
+    write(IMAIN,*) 'Done: ',sngl(100.d0*dble(it-1)/dble(NSTEP-1)),'% of total.'
   endif
 
 
@@ -202,15 +202,17 @@
   timestamp_seconds_current = timestamp*60.d0 + time_values(7) + time_values(8)/1000.d0
 
   ! elapsed time since beginning of the simulation
+  ! TODO: introduce one or more verbosity parameters in order to prevent unwanted flooding of the terminal.
   if (myrank == 0) then
     tCPU = timestamp_seconds_current - timestamp_seconds_start
     int_tCPU = int(tCPU)
     ihours = int_tCPU / 3600
     iminutes = (int_tCPU - 3600*ihours) / 60
     iseconds = int_tCPU - 3600*ihours - 60*iminutes
-    write(IMAIN,*) 'Elapsed time in seconds = ',tCPU
-    write(IMAIN,"(' Elapsed time in hh:mm:ss = ',i6,' h ',i2.2,' m ',i2.2,' s')") ihours,iminutes,iseconds
-    write(IMAIN,*) 'Mean elapsed time per time step in seconds = ',tCPU/dble(it)
+    write(IMAIN,*) 'Elapsed time                    =  ', tCPU, 's.'
+    write(IMAIN,"('                                 = ',i6,' h ',i2.2,' m ',i2.2,' s.')") ihours, iminutes, iseconds
+    write(IMAIN,*) 'Mean elapsed time per time step = ', tCPU/dble(it), 's.'
+    write(IMAIN,*) 'CPU time per cell for 1 it.     = ', 1000*tCPU/(dble(it)*NPROC*nspec), 'ms.'
 
     ! compute estimated remaining simulation time
     t_remain = (NSTEP - it) * (tCPU/dble(it))
@@ -218,9 +220,9 @@
     ihours_remain = int_t_remain / 3600
     iminutes_remain = (int_t_remain - 3600*ihours_remain) / 60
     iseconds_remain = int_t_remain - 3600*ihours_remain - 60*iminutes_remain
-    write(IMAIN,*) 'Time steps remaining = ',NSTEP - it
-    write(IMAIN,*) 'Estimated remaining time in seconds = ',t_remain
-    write(IMAIN,"(' Estimated remaining time in hh:mm:ss = ',i6,' h ',i2.2,' m ',i2.2,' s')") &
+    write(IMAIN,*) 'Time steps remaining            = ', NSTEP - it
+    write(IMAIN,*) 'Estimated remaining time        =', t_remain, 's.'
+    write(IMAIN,"('                                 = ',i6,' h ',i2.2,' m ',i2.2,' s.')") &
            ihours_remain,iminutes_remain,iseconds_remain
 
     ! compute estimated total simulation time
@@ -229,8 +231,8 @@
     ihours_total = int_t_total / 3600
     iminutes_total = (int_t_total - 3600*ihours_total) / 60
     iseconds_total = int_t_total - 3600*ihours_total - 60*iminutes_total
-    write(IMAIN,*) 'Estimated total run time in seconds = ',t_total
-    write(IMAIN,"(' Estimated total run time in hh:mm:ss = ',i6,' h ',i2.2,' m ',i2.2,' s')") &
+    write(IMAIN,*) 'Estimated total run time        =', t_total, 's.'
+    write(IMAIN,"('                                 = ',i6,' h ',i2.2,' m ',i2.2,' s.')") &
            ihours_total,iminutes_total,iseconds_total
 
     if (it < NSTEP) then
