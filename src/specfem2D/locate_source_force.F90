@@ -178,7 +178,7 @@
     number_of_iterations = 0 ! this means that the loop below will not be executed, i.e. we will not iterate
   endif
 
-  do iter_loop = 1,NUM_ITER
+  do iter_loop = 1,NUM_ITER ! TODO: In view of the comment just above, shouldn't the loop be from 1 to number_of_iterations instead of from 1 to NUM_ITER?
 
 ! recompute jacobian for the new point
     call recompute_jacobian(xi,gamma,x,z,xix,xiz,gammax,gammaz,jacobian, &

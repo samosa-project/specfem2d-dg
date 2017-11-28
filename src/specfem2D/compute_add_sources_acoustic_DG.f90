@@ -281,7 +281,7 @@
   
   subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
 
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
+  use constants,only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
 
   use specfem_par, only: nglob_DG,ispec_is_acoustic_DG,&!ispec_is_acoustic
                          NSOURCES,source_type,source_time_function,&
@@ -324,7 +324,7 @@
           
           ! Choose sigma such that the value at the edge of the element is very small, in particular roughly equal to 10^(-accuracy), where accuracy is chosen below.
           accuracy = 7.
-          dist_min = 1d10
+          dist_min = HUGEVAL
           do j = 1, 4
             dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
             if(dist < dist_min) then
