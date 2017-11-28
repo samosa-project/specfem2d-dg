@@ -70,6 +70,15 @@
   ! compute the source time function and stores it in a text file
   call prepare_timerun_stf()
   
+  ! Compute the source spatial function and store it in a variable.
+  ! TODO: add a parameter for this option in parfile.
+  if(.false.) then
+    SIGMA_SSF = 5; ! Standard deviation of an exponential spatial function, in meters.
+    call prepare_timerun_ssf()
+  else
+    SIGMA_SSF = -1; ! Set this way if this option is not activated. To be modified if a parameter is added in parfile.
+  endif
+  
   ! prepares noise simulations
   if (NOISE_TOMOGRAPHY /= 0) call prepare_timerun_noise()
 
@@ -249,11 +258,11 @@
     allocate(buffer_recv_faces_vector_ac(max_ibool_interfaces_size_ac,ninterface_acoustic))
     
     if(USE_DISCONTINUOUS_METHOD) then
-    ! MODIF DG
-    max_ibool_interfaces_size_ac = maxval(nibool_interfaces_acoustic_DG(:))
-    allocate(tab_requests_send_recv_DG(ninterface_acoustic*4))
-    allocate(buffer_send_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
-    allocate(buffer_recv_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
+      ! MODIF DG
+      max_ibool_interfaces_size_ac = maxval(nibool_interfaces_acoustic_DG(:))
+      allocate(tab_requests_send_recv_DG(ninterface_acoustic*4))
+      allocate(buffer_send_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
+      allocate(buffer_recv_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
     endif
     
     allocate(tab_requests_send_recv_elastic(ninterface_elastic*4))
@@ -1175,11 +1184,90 @@
 
   end subroutine prepare_timerun_initialfield
 
+! ------------------------------------------------------------ !
+! prepare_timerun_ssf                                          !
+! ------------------------------------------------------------ !
+! Allocates and prepares a vector containingthe values of the source spatial function.
+  subroutine prepare_timerun_ssf()
 
-!
-!-------------------------------------------------------------------------------------
-!
+  use specfem_par
 
+  implicit none
+
+  if (.not. initialfield) then
+    ! One does not use an initial field.
+    if (myrank == 0) then
+      write(IMAIN,*) 'WARNING: A SOURCE SPATIAL FUNCTION OVER MANY ELEMENTS IS BEING INITIALISED. ', &
+                     'Preparing source spatial function.'
+      call flush_IMAIN()
+    endif
+
+    ! TODO: Implement a less cumbersome way of storing the values. Indeed, not only many values far away from the source will be negligible in this array, but also many points are duplicates (at elements' boundaries).
+    ! For example, instead of storing values over all the points, get the list of points without duplicates, build the list of indices which associated points have a non-negligible value (value greater than a given threshold), and store only the values of the source spatial function at those points.
+    allocate(source_spatial_function_DG(NSOURCES, nspec, NGLLX, NGLLZ))
+    !write(IMAIN, *) 'NSOURCES ', NSOURCES, 'nspec', nspec, 'initialfield', initialfield ! DEBUG
+    source_spatial_function_DG(:, :, :, :) = 0._CUSTOM_REAL
+    call prepare_source_spatial_function_DG() ! Compute the source spatial function array.
+    !write(IMAIN, *) source_spatial_function_DG ! DEBUG
+  else
+    ! One uses an initialfield. Thus, do a dummy allocation.
+    allocate(source_spatial_function_DG(1, 1, 1, 1))
+  endif
+  
+  ! synchronizes all processes
+  call synchronize_all()
+
+  end subroutine prepare_timerun_ssf
+
+! ------------------------------------------------------------ !
+! prepare_source_spatial_function_DG                           !
+! ------------------------------------------------------------ !
+! Compute values of the source spatial function at all points.
+! TODO: Correct the issue which appear for runs with multiple process (it seems only process 0 has values correctly initialised). Note: with only one process, everything works fine.
+
+  subroutine prepare_source_spatial_function_DG
+  
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
+  use specfem_par, only: coord, ibool_before_perio, nspec, &
+                         source_spatial_function_DG, &
+                         SIGMA_SSF, &
+                         NSOURCES, source_type, x_source, z_source, &
+                         myrank ! DEBUG
+  
+  implicit none
+  
+  ! Local variables.
+  integer :: i_source, ispec, i, j
+  real(kind=CUSTOM_REAL) :: distsqrd
+  
+  !write(*, *) 'ouloulou xs zs ', x_source(0), z_source(0) ! DEBUG
+  do i_source = 1, NSOURCES ! Loop on sources.
+    do ispec = 1, nspec
+      !if(myrank==0) write(IMAIN, *) 'ouloulou (', myrank, '), ispec ', ispec ! DEBUG
+      do i = 1, NGLLX
+        do j = 1, NGLLZ
+          !iglob = ibool_DG(i, j, ispec)
+          if(source_type(i_source) == 1) then
+            !if(myrank==0) write(IMAIN, *) '>>>> ispec i j ', ispec, ' ', i, ' ', j ! DEBUG
+            ! If the source is an elastic force or an acoustic pressure.
+            distsqrd =   (coord(1, ibool_before_perio(i, j, ispec)) - x_source(i_source))**2 &
+                       + (coord(2, ibool_before_perio(i, j, ispec)) - z_source(i_source))**2
+            source_spatial_function_DG(i_source, ispec, i, j) = exp(-distsqrd/(SIGMA_SSF**2))
+            
+            write(*,*) "proc", myrank, "ispec i j", ispec, i, j, "ssf", source_spatial_function_DG(i_source, ispec, i, j)
+            
+          ! TODO: Implement the case source_type = 2.
+          endif ! Endif on source_type.
+        enddo
+      enddo
+    enddo
+  enddo
+  
+  end subroutine prepare_source_spatial_function_DG
+
+! ------------------------------------------------------------ !
+! prepare_timerun_stf                                          !
+! ------------------------------------------------------------ !
 
   subroutine prepare_timerun_stf()
 
@@ -1199,14 +1287,14 @@
     
     ! DG for adjoint source
     if(USE_DISCONTINUOUS_METHOD) then
-    allocate(source_time_function_rho_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
-    source_time_function_rhovx_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
-    source_time_function_rhovz_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
-    source_time_function_E_DG(nadj_rec_local,NSTEP,stage_time_scheme))
-    source_time_function_rho_DG(:,:,:)   = 0._CUSTOM_REAL
-    source_time_function_rhovx_DG(:,:,:) = 0._CUSTOM_REAL
-    source_time_function_rhovz_DG(:,:,:) = 0._CUSTOM_REAL
-    source_time_function_E_DG(:,:,:)     = 0._CUSTOM_REAL
+      allocate(source_time_function_rho_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
+      source_time_function_rhovx_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
+      source_time_function_rhovz_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
+      source_time_function_E_DG(nadj_rec_local,NSTEP,stage_time_scheme))
+      source_time_function_rho_DG(:,:,:)   = 0._CUSTOM_REAL
+      source_time_function_rhovx_DG(:,:,:) = 0._CUSTOM_REAL
+      source_time_function_rhovz_DG(:,:,:) = 0._CUSTOM_REAL
+      source_time_function_E_DG(:,:,:)     = 0._CUSTOM_REAL
     endif
     
     ! computes source time function array
@@ -1388,7 +1476,7 @@
            e11(NGLLX,NGLLZ,nspec_allocate,N_SLS), &
            e13(NGLLX,NGLLZ,nspec_allocate,N_SLS),stat=ier)
   if (ier /= 0) stop 'Error allocating attenuation arrays'
-
+  
   e1(:,:,:,:) = 0._CUSTOM_REAL
   e11(:,:,:,:) = 0._CUSTOM_REAL
   e13(:,:,:,:) = 0._CUSTOM_REAL
@@ -1548,7 +1636,6 @@
      rz_viscous_force_RK = 0.d0
     endif
   endif
-
 
   ! sets new material properties
   ! note: velocities might have been shifted by attenuation

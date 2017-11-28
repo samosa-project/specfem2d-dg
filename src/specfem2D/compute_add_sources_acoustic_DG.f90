@@ -288,7 +288,9 @@
                          is_proc_source,ispec_selected_source,&
                          ibool_DG, &
                          coord,  &
-                         jacobian, wxgll, wzgll, ibool_before_perio
+                         jacobian, wxgll, wzgll, ibool_before_perio, &
+                         SIGMA_SSF, nspec, source_spatial_function_DG,& ! For sources spatially distributed over more than one element.
+                         IMAIN ! DEBUG
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob_DG),intent(inout) :: variable_DG
@@ -301,58 +303,83 @@
   real(kind=CUSTOM_REAL) :: jacobianl, wxl, wzl
   integer :: i, j, i_source, ispec, iglob
   
+  real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
+  
   !do ispec = ifirstelem,ilastelem
   do i_source= 1, NSOURCES ! Loop on sources.
-    if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
-      ! If the source element is acoustic.
-      if(is_proc_source(i_source) == 1) then
-        ! If this processor core carries the source.
-        if(source_type(i_source) == 1) then
-          ! If the source is an elastic force or an acoustic pressure.
-          ispec = ispec_selected_source(i_source)
-          
-          ! Spatial source function is under the form exp(-(r/sigma)^2) where r is the distance to the source center point. Here, ispec is the element which is chosen to carry the source. Hence, the source center point must be chosen to be at the center of this element. Hence, find it and save its coordinates in the variable X0.
-          X1(:) = coord(:, ibool_before_perio(1, 1, ispec)) ! Source element's bottom left corner.
-          X2(:) = coord(:, ibool_before_perio(NGLLX, 1, ispec)) ! Source element's bottom right corner.
-          X3(:) = coord(:, ibool_before_perio(1, NGLLZ, ispec)) ! Source element's top left corner.
-          X4(:) = coord(:, ibool_before_perio(NGLLX, NGLLZ, ispec)) ! Source element's top right corner.
-          Xc(1, :) = (X1(:) + X2(:))/2.
-          Xc(2, :) = (X1(:) + X3(:))/2.
-          Xc(3, :) = (X3(:) + X4(:))/2.
-          Xc(4, :) = (X4(:) + X2(:))/2.
-          X0(:) = (Xc(1, :) + Xc(3, :))/2.
-          
-          ! Choose sigma such that the value at the edge of the element is very small, in particular roughly equal to 10^(-accuracy), where accuracy is chosen below.
-          accuracy = 7.
-          dist_min = HUGEVAL
-          do j = 1, 4
-            dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
-            if(dist < dist_min) then
-              dist_min = dist
-            endif
+    stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
+    
+    if(SIGMA_SSF > -1) then
+      ! SIGMA_SSF has been initialised at something else than -1, and thus a source spatially distributed over more than one element was initialised. Because of that, we use this one instead of the basic version over one element only.
+      ! TODO: add a parameter for this option in parfile.
+      do ispec = 1, nspec
+        !if(mod(ispec, 100)==0) write(IMAIN, *) '>>>> ispec i j ', ispec!, ' ', i, ' ', j ! DEBUG
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            temp_source = stf * source_spatial_function_DG(i_source, ispec, i, j) ! See "prepare_timerun.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+            jacobianl = jacobian(i, j, ispec)
+            wzl = real(wzgll(j), kind=CUSTOM_REAL)
+            wxl = real(wxgll(i), kind=CUSTOM_REAL)
+            iglob = ibool_DG(i, j, ispec)
+            variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
           enddo
-          sigma = dist_min/sqrt(accuracy*log(10.))
-          
-          ! At each GLL point of the source element, add to the variable (variable_DG) the value of the source function.
-          do j = 1, NGLLZ
-            do i = 1, NGLLX
-              iglob = ibool_DG(i, j, ispec)
-              x = coord(1, ibool_before_perio(i, j, ispec))
-              y = coord(2, ibool_before_perio(i, j, ispec))
-              r = sqrt( (x - X0(1))**2 + (y - X0(2))**2 )
-              temp_source = source_time_function(i_source, it, i_stage) * exp(-(r/sigma)**2) ! See "prepare_source_time_function.f90" for the subroutine initialising the vector "source_time_function".
-              
-              jacobianl = jacobian(i, j, ispec)
-              wzl = real(wzgll(j), kind=CUSTOM_REAL)
-              wxl = real(wxgll(i), kind=CUSTOM_REAL)
-              variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
-              !WRITE(*,*) ">>>>", temp_source, wxl * wzl * jacobianl ! DEBUG
+        enddo
+      enddo
+    else
+      ! SIGMA_SSF has been initialised at -1. This corresponds to the basic case in which the source spatial function is distributed on one element only.
+      if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
+        ! If the source element is acoustic.
+        if(is_proc_source(i_source) == 1) then
+          ! If this processor core carries the source.
+          if(source_type(i_source) == 1) then
+            ! If the source is an elastic force or an acoustic pressure.
+            ispec = ispec_selected_source(i_source)
+            
+            ! Spatial source function is under the form exp(-(r/sigma)^2) where r is the distance to the source center point. Here, ispec is the element which is chosen to carry the source. Hence, the source center point must be chosen to be at the center of this element. Hence, find it and save its coordinates in the variable X0.
+            X1(:) = coord(:, ibool_before_perio(1, 1, ispec)) ! Source element's bottom left corner.
+            X2(:) = coord(:, ibool_before_perio(NGLLX, 1, ispec)) ! Source element's bottom right corner.
+            X3(:) = coord(:, ibool_before_perio(1, NGLLZ, ispec)) ! Source element's top left corner.
+            X4(:) = coord(:, ibool_before_perio(NGLLX, NGLLZ, ispec)) ! Source element's top right corner.
+            Xc(1, :) = (X1(:) + X2(:))/2.
+            Xc(2, :) = (X1(:) + X3(:))/2.
+            Xc(3, :) = (X3(:) + X4(:))/2.
+            Xc(4, :) = (X4(:) + X2(:))/2.
+            X0(:) = (Xc(1, :) + Xc(3, :))/2.
+            
+            ! Choose sigma such that the value at the edge of the element is very small, in particular roughly equal to 10^(-accuracy), where accuracy is chosen below.
+            accuracy = 7.
+            dist_min = HUGEVAL
+            do j = 1, 4
+              dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
+              if(dist < dist_min) then
+                dist_min = dist
+              endif
             enddo
-          enddo
-        endif
-        ! TODO: Implement the case source_type = 2.
-      endif
-    endif
+            sigma = dist_min/sqrt(accuracy*log(10.))
+            !write(*, *) 'ouloulou SIGMA', sigma !DEBUG
+            
+            ! At each GLL point of the source element, add to the variable (variable_DG) the value of the source function.
+            do j = 1, NGLLZ
+              do i = 1, NGLLX
+                iglob = ibool_DG(i, j, ispec)
+                x = coord(1, ibool_before_perio(i, j, ispec))
+                y = coord(2, ibool_before_perio(i, j, ispec))
+                r = sqrt( (x - X0(1))**2 + (y - X0(2))**2 )
+                temp_source = stf * exp(-(r/sigma)**2) ! See "prepare_source_time_function.f90" for the subroutine initialising the vector "source_time_function".
+                
+                jacobianl = jacobian(i, j, ispec)
+                wzl = real(wzgll(j), kind=CUSTOM_REAL)
+                wxl = real(wxgll(i), kind=CUSTOM_REAL)
+                variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
+                !WRITE(*,*) ">>>>", temp_source, wxl * wzl * jacobianl ! DEBUG
+              enddo
+            enddo
+            
+          ! TODO: Implement the case source_type = 2.
+          endif ! Endif on source_type.
+        endif ! Endif on is_proc_source
+      endif ! Endif on ispec_is_acoustic_DG.
+    endif ! Endif on SIGMA_SSF.
   enddo
 
   end subroutine compute_add_sources_acoustic_DG_spread
