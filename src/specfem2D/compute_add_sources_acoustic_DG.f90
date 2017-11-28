@@ -310,28 +310,30 @@
         if(source_type(i_source) == 1) then
           ! If the source is an elastic force or an acoustic pressure.
           ispec = ispec_selected_source(i_source)
-
-          ! Find coordinates of the center
-          X1(:) = coord(:, ibool_before_perio(1, 1, ispec))
-          X2(:) = coord(:, ibool_before_perio(NGLLX, 1, ispec))
-          X3(:) = coord(:, ibool_before_perio(1, NGLLZ, ispec))
-          X4(:) = coord(:, ibool_before_perio(NGLLX, NGLLZ, ispec))
+          
+          ! Spatial source function is under the form exp(-(r/sigma)^2) where r is the distance to the source center point. Here, ispec is the element which is chosen to carry the source. Hence, the source center point must be chosen to be at the center of this element. Hence, find it and save its coordinates in the variable X0.
+          X1(:) = coord(:, ibool_before_perio(1, 1, ispec)) ! Source element's bottom left corner.
+          X2(:) = coord(:, ibool_before_perio(NGLLX, 1, ispec)) ! Source element's bottom right corner.
+          X3(:) = coord(:, ibool_before_perio(1, NGLLZ, ispec)) ! Source element's top left corner.
+          X4(:) = coord(:, ibool_before_perio(NGLLX, NGLLZ, ispec)) ! Source element's top right corner.
           Xc(1, :) = (X1(:) + X2(:))/2.
           Xc(2, :) = (X1(:) + X3(:))/2.
           Xc(3, :) = (X3(:) + X4(:))/2.
           Xc(4, :) = (X4(:) + X2(:))/2.
           X0(:) = (Xc(1, :) + Xc(3, :))/2.
+          
+          ! Choose sigma such that the value at the edge of the element is very small, in particular roughly equal to 10^(-accuracy), where accuracy is chosen below.
+          accuracy = 7.
           dist_min = 1d10
-          do j = 1,4
+          do j = 1, 4
             dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
             if(dist < dist_min) then
               dist_min = dist
             endif
           enddo
+          sigma = dist_min/sqrt(accuracy*log(10.))
           
-          accuracy = 7.
-          sigma    = dist_min/sqrt(accuracy*log(10.))
-          
+          ! At each GLL point of the source element, add to the variable (variable_DG) the value of the source function.
           do j = 1, NGLLZ
             do i = 1, NGLLX
               iglob = ibool_DG(i, j, ispec)
