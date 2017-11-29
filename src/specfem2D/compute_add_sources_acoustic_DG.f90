@@ -290,7 +290,7 @@
                          coord,  &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
                          SIGMA_SSF, nspec, source_spatial_function_DG, & ! For sources spatially distributed over more than one element.
-                         nglob, &
+                         !nglob, &
                          IMAIN, myrank ! DEBUG
   implicit none
 
@@ -307,8 +307,6 @@
   
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   
-  logical, dimension(nglob) :: already_added
-  
   !do ispec = ifirstelem,ilastelem
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
@@ -316,7 +314,6 @@
     if(SIGMA_SSF > -1) then
       ! SIGMA_SSF has been initialised at something else than -1, and thus a source spatially distributed over more than one element was initialised. Because of that, we use this one instead of the basic version over one element only.
       ! TODO: add a parameter for this option in parfile.
-      already_added(:) = .false.
       do ispec = 1, nspec
         !if(mod(ispec, 100)==0) write(IMAIN, *) '>>>> ispec i j ', ispec!, ' ', i, ' ', j ! DEBUG
         do j = 1, NGLLZ
@@ -333,11 +330,7 @@
             !else if(it==1) then
             !  write(*,*) "ouloulou", iglob_unique, "not added"
             !endif
-            
-            if(.not. already_added(iglob_unique)) then
-              variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
-              already_added(iglob_unique) = .true.
-            endif
+            variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
             
             !DEBUG
             if(.false. .and. it==1) then
