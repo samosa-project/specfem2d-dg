@@ -289,42 +289,96 @@
                          ibool_DG, &
                          coord,  &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
-                         SIGMA_SSF, nspec, source_spatial_function_DG,& ! For sources spatially distributed over more than one element.
-                         IMAIN ! DEBUG
+                         SIGMA_SSF, nspec, source_spatial_function_DG, & ! For sources spatially distributed over more than one element.
+                         nglob, &
+                         IMAIN, myrank ! DEBUG
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob_DG),intent(inout) :: variable_DG
-  integer,intent(in) :: it,i_stage
+  integer, intent(in) :: it, i_stage
   
+  ! Local variables.
   real(kind=CUSTOM_REAL) :: x, y, r, accuracy, sigma, dist_min, dist, temp_source
   real(kind=CUSTOM_REAL), dimension(2) :: X1, X2, X3, X4, X0
-  real(kind=CUSTOM_REAL), dimension(4,2) :: Xc
+  real(kind=CUSTOM_REAL), dimension(4, 2) :: Xc
   
   real(kind=CUSTOM_REAL) :: jacobianl, wxl, wzl
-  integer :: i, j, i_source, ispec, iglob
+  integer :: i, j, i_source, ispec, iglob, iglob_unique
   
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   
+  logical, dimension(nglob) :: already_added
+  
   !do ispec = ifirstelem,ilastelem
-  do i_source= 1, NSOURCES ! Loop on sources.
+  do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
     
     if(SIGMA_SSF > -1) then
       ! SIGMA_SSF has been initialised at something else than -1, and thus a source spatially distributed over more than one element was initialised. Because of that, we use this one instead of the basic version over one element only.
       ! TODO: add a parameter for this option in parfile.
+      already_added(:) = .false.
       do ispec = 1, nspec
         !if(mod(ispec, 100)==0) write(IMAIN, *) '>>>> ispec i j ', ispec!, ' ', i, ' ', j ! DEBUG
         do j = 1, NGLLZ
           do i = 1, NGLLX
-            temp_source = stf * source_spatial_function_DG(i_source, ispec, i, j) ! See "prepare_timerun.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+            iglob_unique = ibool_before_perio(i, j, ispec)
+            iglob = ibool_DG(i, j, ispec)
+            temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_timerun.f90" for the subroutine initialising the vector "source_spatial_function_DG".
             jacobianl = jacobian(i, j, ispec)
             wzl = real(wzgll(j), kind=CUSTOM_REAL)
             wxl = real(wxgll(i), kind=CUSTOM_REAL)
-            iglob = ibool_DG(i, j, ispec)
-            variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
+            
+            !if(already_added(iglob_unique) .and. it==1) then
+            !  write(*,*) "ouloulou", iglob_unique, "already added, iglob", iglob
+            !else if(it==1) then
+            !  write(*,*) "ouloulou", iglob_unique, "not added"
+            !endif
+            
+            if(.not. already_added(iglob_unique)) then
+              variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
+              already_added(iglob_unique) = .true.
+            endif
+            
+            !DEBUG
+            if(.false. .and. it==1) then
+              if(myrank==0) then
+                open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
+                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
+                close(504)
+              endif
+              if(myrank==1) then
+                open(unit=504,file='OUTPUT_FILES/TESTSOURCE1',status='unknown',action='write', position="append")
+                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
+                close(504)
+              endif
+              if(myrank==2) then
+                open(unit=504,file='OUTPUT_FILES/TESTSOURCE2',status='unknown',action='write', position="append")
+                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
+                close(504)
+              endif
+              if(myrank==3) then
+                open(unit=504,file='OUTPUT_FILES/TESTSOURCE3',status='unknown',action='write', position="append")
+                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
+                close(504)
+              endif
+            endif
+            !if(mod(it,20)==0 .and. source_spatial_function_DG(i_source, iglob_unique)>9.5d-1) &
+            !  write(*, *) ">> proc", myrank, "igu", iglob_unique, "ig", iglob, &
+            !              "xyu", coord(:, iglob_unique)
+            !if(source_spatial_function_DG(i_source, iglob)>90d-2 .AND. mod(it, 20)==0) then
+            !  write(*, *) ">> proc", myrank, "ig", iglob, &
+            !              "xy", coord(1, iglob), coord(2, iglob), &
+            !              "ssf", source_spatial_function_DG(i_source, iglob) ! DEBUG
+            !endif
+            !if(temp_source * wxl * wzl * jacobianl>1d-1 .AND. mod(it, 20)==0) then
+            !  write(*, *) ">> proc", myrank, "ig", iglob, &
+            !              "xy", coord(1, iglob), coord(2, iglob), &
+            !              ">> add", temp_source * wxl * wzl * jacobianl ! DEBUG
+            !endif
           enddo
         enddo
       enddo
+      !call synchronize_all()
     else
       ! SIGMA_SSF has been initialised at -1. This corresponds to the basic case in which the source spatial function is distributed on one element only.
       if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then

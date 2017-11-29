@@ -366,8 +366,8 @@ module specfem_par
         source_time_function_E_DG
 
   ! For sources spatially distributed over more than one element.
-  real(kind=CUSTOM_REAL), dimension(:, :, :, :), allocatable :: &
-    source_spatial_function_DG ! Array of values. Usual dimensions: (NSOURCES, nspec, NGLLX, NGLLZ).
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
+    source_spatial_function_DG ! Array of values. Usual dimensions: (NSOURCES, nglob_DG).
   real(kind=CUSTOM_REAL) :: SIGMA_SSF ! Standard deviation of the exponential.
         
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
