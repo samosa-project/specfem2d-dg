@@ -1,20 +1,22 @@
 
 ###############################################################
-# HOW TO SEND AN EXAMPLE TO BATCH ON Curie.                   #
+# HOW TO SEND AN EXAMPLE TO BATCH ON curie.                   #
 ###############################################################
 
-1) Run:
+1) From the EXAMPLES folder, run:
     ./prepare_example.sh EXAMPLENAME
   where EXAMPLENAME is the example's name.
 
-2) Edit "batch_example.slurm" and set the parameters.
+  This script prepares the mesh and sets up symbolic links to the executables and to the parameter files.
 
-3) Run:
-
-4) Run:
-    current_example=CURRENT_EXAMPLE_NAME
-    cp .$current_example/DATA/*SOURCE* .$current_example/DATA/*STATIONS* ../src/specfem2D/boundary_terms_DG.f90 .$current_example/OUTPUT_FILES
-  to save source information, stations, and boundary terms source file.
+2) From the EXAMPLES folder, run:
+    ./send_example_to_execution_Curie.sh NTASKS EXAMPLENAME TIMELIMIT
+  where
+    NTASKS is the number of tasks (must correspond to NPROC in parfile),
+    EXAMPLENAME is the example's name, and
+    TIMELIMIT is the time limit (format hours:minutes:seconds).
+  
+  This script submits the job to the Slurm controller.
 
 ###############################################################
 

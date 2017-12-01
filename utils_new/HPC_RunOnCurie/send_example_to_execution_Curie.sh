@@ -1,27 +1,22 @@
 #!/bin/bash
-# $1 = nombre de noeuds
-# $2 = nombre de coeurs
-# $3 = nom de l'exemple
-# Quantity $1 x $2 corresponds to the wanted number of CPUs.
+# $1 = number of tasks
+# $2 = example name
+# $3 = time limit
 
-slurmFile="batch_example.slurm"
-
-if [[ $# -ne 4 ]]; then
+if [[ $# -ne 3 ]]; then
 echo
-echo "> 4 arguments needed:"
-echo "  - the number of nodes,"
-echo "  - the number of cores,"
+echo "> 2 arguments needed:"
+echo "  - the number of tasks,"
 echo "  - the example's name (a directory with that name must exist), and"
-echo "  - the time limit (format hours:minutes:seconds)."
+echo "  - the time limit (in seconds)."
 echo "> Script will now exit."
 echo
 exit -1
 fi
 
-result_nodes=$(( $1*$2 ))
 echo
-echo "Tasks: $result_nodes ($1 nodes * $2 cores)."
-echo "Example to be ran: '$3'."
+echo "Tasks: $1."
+echo "Example to be ran: '$2'."
 echo
 
 # Loads the modules necessary to the execution of the script (and only those).
@@ -34,7 +29,7 @@ echo
 # module list
 # export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 
-cd ./$3/
+cd ./$2/
 
 # Stores output.
 echo
@@ -46,4 +41,4 @@ cp ./DATA/*SOURCE* ./DATA/*STATIONS* ../../src/specfem2D/boundary_terms_DG.f90 .
 echo
 echo "> Sending solver to queue (`date`)."
 echo
-sbatch --nodes=$1 --ntasks-per-node=$2 --ntasks=$result_nodes --job-name=$3 --time=$4 ../$slurmFile
+ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q standard -A gen10249 -x ../batch_example_job.sh

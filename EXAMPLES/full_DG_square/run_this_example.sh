@@ -59,6 +59,7 @@ if [ $exit_status -ne 0 ]; then
   exit $exit_status
 fi
 
+# Save source and stations info.
 echo
 echo ">> Finish storing output to the 'OUTPUT_FILES' folder."
 cp DATA/*SOURCE* DATA/*STATIONS* OUTPUT_FILES
@@ -75,11 +76,6 @@ if [ $exit_status -ne 0 ]; then
   echo ">> [ERROR] Solver did not finish well. Exiting."
   exit $exit_status
 fi
-
-# Stores output
-echo
-echo ">> Finish storing output to the 'OUTPUT_FILES' folder."
-cp DATA/*SOURCE* DATA/*STATIONS* OUTPUT_FILES
 
 echo
 echo ">> Done (`date`). See results in the 'OUTPUT_FILES' folder."

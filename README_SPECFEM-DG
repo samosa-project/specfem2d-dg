@@ -20,13 +20,13 @@
   Copy the appropriate makefile from the "./Make.inc" folder. For example, on EOS (CALMIP) machines:
     cp ./Make.inc/Makefile.inc.x86-64_pc_linux2 Makefile.inc
 
-  Error "undefined reference to `clock_gettime'". Check the glibc version installed on the system with:
+  Error "undefined reference to `clock_gettime'": check the glibc version installed on the system with:
     ldd --version
   If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
   
   Get back to "./specfem-dg". Try again:
     ./config_scotch.sh
-  If it fails with the error "/usr/bin/ld: cannot find -lz", install the "zlib-dev" package.
+  Error "/usr/bin/ld: cannot find -lz": install the "zlib-dev" package.
   
   If the scripts fails again, contact the SPECFEM-DG support.
 
@@ -41,6 +41,9 @@
 3) Compile SPECFEM-DG:
   Compile SPECFEM-DG:
     make clean; make all
+  Error "undefined reference to `clock_gettime'": check the glibc version installed on the system with:
+    ldd --version
+  If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
 
 5) The simulations' method of execution varies whether you are on a local machine or on a cluster. On a local machine, running the script provided in the folders which are under "./EXAMPLE" should be enough. On a cluster, please report to its documentation.
 ###############################
