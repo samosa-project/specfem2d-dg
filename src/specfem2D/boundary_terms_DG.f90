@@ -781,7 +781,7 @@
       
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
-      !   Setting the normal/tangential components this way comes from the "free slip" condition and the "normal velocity continuity" condition.
+      !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
       
       ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
       trans_boundary(1, 1) =  tz

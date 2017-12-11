@@ -332,6 +332,12 @@
             !endif
             variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
             
+            if(.true. .and. it==50 .and. i==3 .and. j==3 &
+               .and. source_spatial_function_DG(i_source, iglob_unique)>1d-1) then
+              if(myrank==0 .or. myrank==3) write(*,*) "myrank", myrank, &
+                                                      "ssf", source_spatial_function_DG(i_source, iglob_unique)
+            endif
+            
             !DEBUG
             if(.false. .and. it==1) then
               if(myrank==0) then

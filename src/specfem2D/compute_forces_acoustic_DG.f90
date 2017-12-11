@@ -190,12 +190,12 @@
   
   ! TODO: introduce a verbosity parameter in order to prevent unwanted flooding of the terminal.
   if(myrank == 0 .AND. mod(it, 50) == 0) then
-    write(*,"(a)") "               | max                     | min"
+    write(*,"(a)")                 "               | max                     | min"
     WRITE(*,"(a,e24.16,a,e24.16)") " rho           |", maxval(rho_DG), " |", minval(rho_DG)
     WRITE(*,"(a,e24.16,a,e24.16)") " rhovx         |", maxval(rhovx_DG), " |", minval(rhovx_DG)
     WRITE(*,"(a,e24.16,a,e24.16)") " rhovz         |", maxval(rhovz_DG), " |", minval(rhovz_DG)
     WRITE(*,"(a,e24.16,a,e24.16)") " E             |", maxval(E_DG), " |", minval(E_DG)
-    WRITE(*,"(a,e23.16,a)") "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
+    WRITE(*,"(a,e23.16,a)")        "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
   endif
   
   do ispec = ifirstelem, ilastelem ! Loop over elements.

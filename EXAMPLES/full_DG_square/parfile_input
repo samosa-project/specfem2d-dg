@@ -311,7 +311,8 @@ absorbleft                      = .false.
 # Number of regions.
 nbregions                       = 1
 # Set the different regions and model number for each region. Format:
-# regionNumber numberOfXElements startingZElement endingZElement modelNumber
+# regionNumber numberOfXElements startingZElement endingZElement modelNumber (??)
+# startingXElement endingXElement startingZElement endingZElement modelNumber (??)
 1 50 1 50 1
 
 #---------------------------------------------------------------------#

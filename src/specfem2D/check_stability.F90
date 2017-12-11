@@ -212,7 +212,7 @@
     write(IMAIN,*) 'Elapsed time                    =  ', tCPU, 's.'
     write(IMAIN,"('                                 = ',i6,' h ',i2.2,' m ',i2.2,' s.')") ihours, iminutes, iseconds
     write(IMAIN,*) 'Mean elapsed time per time step = ', tCPU/dble(it), 's.'
-    write(IMAIN,*) 'CPU time per cell for 1 it.     = ', 1000*tCPU/(dble(it)*NPROC*nspec), 'ms.'
+    !write(IMAIN,*) 'Real time per cell for 1 it.     = ', 1000*tCPU/(dble(it)*NPROC*nspec), 'ms.'
 
     ! compute estimated remaining simulation time
     t_remain = (NSTEP - it) * (tCPU/dble(it))
