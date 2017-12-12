@@ -306,7 +306,7 @@
           ! output relative time in third column, in case user wants to check it as well
           !if (myrank == 0 .and. i_source == 1) write(55,*) &
           !  sngl(timeval-t0-tshift_src(1)),real(source_time_function(1,it),4),sngl(timeval)
-          if (i_source == 1 .and. i_stage == 1) then
+          if (is_proc_source(i_source) == 1 .and. i_source == 1 .and. i_stage == 1) then
             ! note: earliest start time of the simulation is: (it-1)*deltat - t0
             write(55,*) sngl(timeval-t0),sngl(stf_used),sngl(timeval)
           endif
