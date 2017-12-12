@@ -45,7 +45,8 @@
   use specfem_par, only: AXISYM,NSTEP,NSOURCES,source_time_function, &
                          time_function_type,name_of_source_file,burst_band_width,f0_source,tshift_src,factor, &
                          aval,t0,nb_proc_source,deltat,stage_time_scheme,C_LDDRK,is_proc_source, &
-                         USE_TRICK_FOR_BETTER_PRESSURE,myrank
+                         USE_TRICK_FOR_BETTER_PRESSURE,myrank&
+                         ,SIGMA_SSF
 
   implicit none
 
@@ -133,7 +134,11 @@
         t_used = timeval - t0 - tshift_src(i_source)
         stf_used = 0.d0
 
-        if (is_proc_source(i_source) == 1) then
+        if (is_proc_source(i_source) == 1 .or. SIGMA_SSF > -1) then
+          ! If SIGMA_SSF has been initialised at something else than -1, and thus a source spatially distributed over more than one element was initialised, we need to initialise the STF on all procs.
+          ! TODO: add a parameter for this option in parfile.
+          ! If not, we initialise the STF only on the source proc.
+          ! TODO: source_time_function is a huge vector stored in each process' memory. It is set to zeros on all the processes which are not containing the source. A huge amount of memory could thus be saved if a shared variable could be used instead.
           if (time_function_type(i_source) == 1) then
             ! Ricker type: second derivative
             if (USE_TRICK_FOR_BETTER_PRESSURE) then
@@ -305,7 +310,7 @@
             ! note: earliest start time of the simulation is: (it-1)*deltat - t0
             write(55,*) sngl(timeval-t0),sngl(stf_used),sngl(timeval)
           endif
-        endif
+        endif ! Endif on is_proc_source(i_source).
       enddo
     enddo
   enddo

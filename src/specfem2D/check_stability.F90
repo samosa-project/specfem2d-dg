@@ -46,7 +46,7 @@
                          POROELASTIC_SIMULATION,any_poroelastic, &
                          displs_poroelastic,displw_poroelastic, &
                          ACOUSTIC_SIMULATION,any_acoustic,potential_acoustic, &
-                         timestamp_seconds_start, nspec, NPROC
+                         timestamp_seconds_start!, nspec, NPROC
 
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
 

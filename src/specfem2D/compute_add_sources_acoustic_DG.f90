@@ -289,9 +289,9 @@
                          ibool_DG, &
                          coord,  &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
-                         SIGMA_SSF, nspec, source_spatial_function_DG, & ! For sources spatially distributed over more than one element.
+                         SIGMA_SSF, nspec, source_spatial_function_DG!, & ! For sources spatially distributed over more than one element.
                          !nglob, &
-                         IMAIN, myrank ! DEBUG
+                         !IMAIN, myrank ! DEBUG
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob_DG),intent(inout) :: variable_DG
@@ -324,60 +324,10 @@
             jacobianl = jacobian(i, j, ispec)
             wzl = real(wzgll(j), kind=CUSTOM_REAL)
             wxl = real(wxgll(i), kind=CUSTOM_REAL)
-            
-            !if(already_added(iglob_unique) .and. it==1) then
-            !  write(*,*) "ouloulou", iglob_unique, "already added, iglob", iglob
-            !else if(it==1) then
-            !  write(*,*) "ouloulou", iglob_unique, "not added"
-            !endif
             variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
-            
-            if(.true. .and. it==50 .and. i==3 .and. j==3 &
-               .and. source_spatial_function_DG(i_source, iglob_unique)>1d-1) then
-              if(myrank==0 .or. myrank==3) write(*,*) "myrank", myrank, &
-                                                      "ssf", source_spatial_function_DG(i_source, iglob_unique)
-            endif
-            
-            !DEBUG
-            if(.false. .and. it==1) then
-              if(myrank==0) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
-                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-                close(504)
-              endif
-              if(myrank==1) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE1',status='unknown',action='write', position="append")
-                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-                close(504)
-              endif
-              if(myrank==2) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE2',status='unknown',action='write', position="append")
-                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-                close(504)
-              endif
-              if(myrank==3) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE3',status='unknown',action='write', position="append")
-                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-                close(504)
-              endif
-            endif
-            !if(mod(it,20)==0 .and. source_spatial_function_DG(i_source, iglob_unique)>9.5d-1) &
-            !  write(*, *) ">> proc", myrank, "igu", iglob_unique, "ig", iglob, &
-            !              "xyu", coord(:, iglob_unique)
-            !if(source_spatial_function_DG(i_source, iglob)>90d-2 .AND. mod(it, 20)==0) then
-            !  write(*, *) ">> proc", myrank, "ig", iglob, &
-            !              "xy", coord(1, iglob), coord(2, iglob), &
-            !              "ssf", source_spatial_function_DG(i_source, iglob) ! DEBUG
-            !endif
-            !if(temp_source * wxl * wzl * jacobianl>1d-1 .AND. mod(it, 20)==0) then
-            !  write(*, *) ">> proc", myrank, "ig", iglob, &
-            !              "xy", coord(1, iglob), coord(2, iglob), &
-            !              ">> add", temp_source * wxl * wzl * jacobianl ! DEBUG
-            !endif
           enddo
         enddo
       enddo
-      !call synchronize_all()
     else
       ! SIGMA_SSF has been initialised at -1. This corresponds to the basic case in which the source spatial function is distributed on one element only.
       if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then

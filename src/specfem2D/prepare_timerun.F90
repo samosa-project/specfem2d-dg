@@ -1291,11 +1291,11 @@
             ! If the source is an elastic force or an acoustic pressure.
             distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
                        + (coord(2, iglob_unique) - z_source(i_source))**2.
-            source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))            
+            source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))
+            !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.))
           endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
           
-            !DEBUG
-          if(.false.) then
+          if(.false.) then ! DEBUG
             if(myrank==0) then
               open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
               write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
@@ -1317,15 +1317,7 @@
               close(504)
             endif
             ! Then, use the following Matlab oneliner: path="/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square/OUTPUT_FILES/"; filename="TESTSOURCE"; a0=importdata(strcat(path, "TESTSOURCE0")); a1=importdata(strcat(path, "TESTSOURCE1")); a2=importdata(strcat(path, "TESTSOURCE2")); a3=importdata(strcat(path, "TESTSOURCE3")); a=[a0;a1;a2;a3]; x=a(:,1); z=a(:,2); d=a(:,3); close all; scatter3(x,z,d,9,d);
-          endif
-          !if(distsqrd<=SIGMA_SSF**2. .and. myrank==2) then
-          !write(*,*) "myrank", myrank, "iglob_unique", iglob_unique ! DEBUG
-          !if(source_spatial_function_DG(i_source, iglob_unique)>90d-2) &
-          !  write(*,*) "   proc", myrank, "ig", iglob_unique, &
-          !             "xy", coord(1, iglob_unique), coord(2, iglob_unique), &
-          !             "ssf", source_spatial_function_DG(i_source, iglob_unique) ! DEBUG
-          !endif
-          
+          endif ! Endif DEBUG.
         enddo
       enddo
     enddo
