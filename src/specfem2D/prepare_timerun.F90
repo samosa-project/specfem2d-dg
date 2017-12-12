@@ -208,7 +208,7 @@
   integer :: ispec
   ! inner/outer elements in the case of an MPI simulation
   integer :: ispec_inner,ispec_outer
-  integer, dimension(:,:,:), allocatable :: ibool_outer,ibool_inner
+  integer, dimension(:, :, :), allocatable :: ibool_outer,ibool_inner
 
   ! user output
   if (myrank == 0) then
@@ -806,8 +806,8 @@
       allocate(b_viscodampx(NGLLX,NGLLZ,nspec), &
                b_viscodampz(NGLLX,NGLLZ,nspec),stat=ier)
       if (ier /= 0) stop 'Error allocating b_viscodamp arrays'
-      b_viscodampx(:,:,:) = 0._CUSTOM_REAL
-      b_viscodampz(:,:,:) = 0._CUSTOM_REAL
+      b_viscodampx(:, :, :) = 0._CUSTOM_REAL
+      b_viscodampz(:, :, :) = 0._CUSTOM_REAL
 
       ! array size
       reclen = CUSTOM_REAL * NGLLX * NGLLZ * nspec
@@ -963,19 +963,19 @@
 
     endif
 
-    rho_kl(:,:,:) = 0._CUSTOM_REAL
-    mu_kl(:,:,:) = 0._CUSTOM_REAL
-    kappa_kl(:,:,:) = 0._CUSTOM_REAL
+    rho_kl(:, :, :) = 0._CUSTOM_REAL
+    mu_kl(:, :, :) = 0._CUSTOM_REAL
+    kappa_kl(:, :, :) = 0._CUSTOM_REAL
 
-    rhop_kl(:,:,:) = 0._CUSTOM_REAL
-    beta_kl(:,:,:) = 0._CUSTOM_REAL
-    alpha_kl(:,:,:) = 0._CUSTOM_REAL
-    bulk_c_kl(:,:,:) = 0._CUSTOM_REAL
-    bulk_beta_kl(:,:,:) = 0._CUSTOM_REAL
+    rhop_kl(:, :, :) = 0._CUSTOM_REAL
+    beta_kl(:, :, :) = 0._CUSTOM_REAL
+    alpha_kl(:, :, :) = 0._CUSTOM_REAL
+    bulk_c_kl(:, :, :) = 0._CUSTOM_REAL
+    bulk_beta_kl(:, :, :) = 0._CUSTOM_REAL
 
     if (APPROXIMATE_HESS_KL) then
-      rhorho_el_hessian_final2(:,:,:) = 0._CUSTOM_REAL
-      rhorho_el_hessian_final1(:,:,:) = 0._CUSTOM_REAL
+      rhorho_el_hessian_final2(:, :, :) = 0._CUSTOM_REAL
+      rhorho_el_hessian_final1(:, :, :) = 0._CUSTOM_REAL
     endif
   endif
 
@@ -1015,27 +1015,27 @@
     open(unit = 19, file = 'OUTPUT_FILES/'//outputname,status = 'unknown',iostat=ier)
     if (ier /= 0) stop 'Error writing kernel file to disk'
 
-    rhot_kl(:,:,:) = 0._CUSTOM_REAL
-    rhof_kl(:,:,:) = 0._CUSTOM_REAL
-    eta_kl(:,:,:) = 0._CUSTOM_REAL
-    sm_kl(:,:,:) = 0._CUSTOM_REAL
-    mufr_kl(:,:,:) = 0._CUSTOM_REAL
-    B_kl(:,:,:) = 0._CUSTOM_REAL
-    C_kl(:,:,:) = 0._CUSTOM_REAL
-    M_kl(:,:,:) = 0._CUSTOM_REAL
+    rhot_kl(:, :, :) = 0._CUSTOM_REAL
+    rhof_kl(:, :, :) = 0._CUSTOM_REAL
+    eta_kl(:, :, :) = 0._CUSTOM_REAL
+    sm_kl(:, :, :) = 0._CUSTOM_REAL
+    mufr_kl(:, :, :) = 0._CUSTOM_REAL
+    B_kl(:, :, :) = 0._CUSTOM_REAL
+    C_kl(:, :, :) = 0._CUSTOM_REAL
+    M_kl(:, :, :) = 0._CUSTOM_REAL
 
-    rhob_kl(:,:,:) = 0._CUSTOM_REAL
-    rhofb_kl(:,:,:) = 0._CUSTOM_REAL
-    phi_kl(:,:,:) = 0._CUSTOM_REAL
-    mufrb_kl(:,:,:) = 0._CUSTOM_REAL
+    rhob_kl(:, :, :) = 0._CUSTOM_REAL
+    rhofb_kl(:, :, :) = 0._CUSTOM_REAL
+    phi_kl(:, :, :) = 0._CUSTOM_REAL
+    mufrb_kl(:, :, :) = 0._CUSTOM_REAL
 
-    rhobb_kl(:,:,:) = 0._CUSTOM_REAL
-    rhofbb_kl(:,:,:) = 0._CUSTOM_REAL
-    phib_kl(:,:,:) = 0._CUSTOM_REAL
-    cs_kl(:,:,:) = 0._CUSTOM_REAL
-    cpI_kl(:,:,:) = 0._CUSTOM_REAL
-    cpII_kl(:,:,:) = 0._CUSTOM_REAL
-    ratio_kl(:,:,:) = 0._CUSTOM_REAL
+    rhobb_kl(:, :, :) = 0._CUSTOM_REAL
+    rhofbb_kl(:, :, :) = 0._CUSTOM_REAL
+    phib_kl(:, :, :) = 0._CUSTOM_REAL
+    cs_kl(:, :, :) = 0._CUSTOM_REAL
+    cpI_kl(:, :, :) = 0._CUSTOM_REAL
+    cpII_kl(:, :, :) = 0._CUSTOM_REAL
+    ratio_kl(:, :, :) = 0._CUSTOM_REAL
   endif
 
   ! acoustic domains
@@ -1080,15 +1080,15 @@
       endif
     endif
 
-    rho_ac_kl(:,:,:) = 0._CUSTOM_REAL
-    kappa_ac_kl(:,:,:) = 0._CUSTOM_REAL
+    rho_ac_kl(:, :, :) = 0._CUSTOM_REAL
+    kappa_ac_kl(:, :, :) = 0._CUSTOM_REAL
 
-    rhop_ac_kl(:,:,:) = 0._CUSTOM_REAL
-    alpha_ac_kl(:,:,:) = 0._CUSTOM_REAL
+    rhop_ac_kl(:, :, :) = 0._CUSTOM_REAL
+    alpha_ac_kl(:, :, :) = 0._CUSTOM_REAL
 
     if (APPROXIMATE_HESS_KL) then
-      rhorho_ac_hessian_final2(:,:,:) = 0._CUSTOM_REAL
-      rhorho_ac_hessian_final1(:,:,:) = 0._CUSTOM_REAL
+      rhorho_ac_hessian_final2(:, :, :) = 0._CUSTOM_REAL
+      rhorho_ac_hessian_final1(:, :, :) = 0._CUSTOM_REAL
     endif
   endif
 
@@ -1208,50 +1208,50 @@
     ! For example, instead of storing values over all the points, build the list of indices which associated points have a non-negligible value (value greater than a given threshold), and store only the values of the source spatial function at those points.
     allocate(source_spatial_function_DG(NSOURCES, nglob))
     source_spatial_function_DG(:, :) = 0._CUSTOM_REAL
-    call prepare_source_spatial_function_DG() ! Compute the source spatial function array.
+    call prepare_source_spatial_function_DG() ! Compute the SSF array.
     
-    !write(*, *) ">  proc", myrank, "initialfield", initialfield
-    !write(*, *) source_spatial_function_DG ! DEBUG
-    !write(*, *) 'ouloulou nspec', nspec, 'nglob_DG', nglob_DG, "nglob", nglob ! DEBUG
-    do ispec = 1, nspec
-      do i = 1, NGLLX
-        do j = 1, NGLLZ
-          ig = ibool_before_perio(i, j, ispec)
-          if(source_spatial_function_DG(1, ig)>9.5d-1) &
-            write(*, *) ">  proc", myrank, "ig", ig,&
-                        "xy", coord(1, ig), coord(2, ig), &
-                        "ssf", source_spatial_function_DG(1, ig) ! DEBUG
-            !DEBUG
-            if(.false.) then
-              if(myrank==0) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
-                write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-                close(504)
-              endif
-              if(myrank==1) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE1',status='unknown',action='write', position="append")
-                write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-                close(504)
-              endif
-              if(myrank==2) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE2',status='unknown',action='write', position="append")
-                write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-                close(504)
-              endif
-              if(myrank==3) then
-                open(unit=504,file='OUTPUT_FILES/TESTSOURCE3',status='unknown',action='write', position="append")
-                write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-                close(504)
+    if(.false.) then ! DEBUG
+      !write(*, *) ">  proc", myrank, "initialfield", initialfield
+      !write(*, *) source_spatial_function_DG ! DEBUG
+      !write(*, *) 'ouloulou nspec', nspec, 'nglob_DG', nglob_DG, "nglob", nglob ! DEBUG
+      do ispec = 1, nspec
+        do i = 1, NGLLX
+          do j = 1, NGLLZ
+            ig = ibool_before_perio(i, j, ispec)
+            if(source_spatial_function_DG(1, ig)>9.5d-1) &
+              write(*, *) ">  proc", myrank, "ig", ig,&
+                          "xy", coord(1, ig), coord(2, ig), &
+                          "ssf", source_spatial_function_DG(1, ig) ! DEBUG
+            if(myrank==0) then
+              open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
+              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
+              close(504)
+            endif
+            if(myrank==1) then
+              open(unit=504,file='OUTPUT_FILES/TESTSOURCE1',status='unknown',action='write', position="append")
+              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
+              close(504)
+            endif
+            if(myrank==2) then
+              open(unit=504,file='OUTPUT_FILES/TESTSOURCE2',status='unknown',action='write', position="append")
+              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
+              close(504)
+            endif
+            if(myrank==3) then
+              open(unit=504,file='OUTPUT_FILES/TESTSOURCE3',status='unknown',action='write', position="append")
+              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
+              close(504)
             endif
             ! Then, use the following Matlab oneliner: path="/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square/OUTPUT_FILES/"; filename="TESTSOURCE"; a0=importdata(strcat(path, "TESTSOURCE0")); a1=importdata(strcat(path, "TESTSOURCE1")); a2=importdata(strcat(path, "TESTSOURCE2")); a3=importdata(strcat(path, "TESTSOURCE3")); a=[a0;a1;a2;a3]; x=a(:,1); z=a(:,2); d=a(:,3); close all; scatter3(x,z,d,9,d);
-          endif
+          enddo
         enddo
       enddo
-    enddo
+    endif ! Endif on DEBUG.
+    
   else
     ! One uses an initialfield. Thus, do a dummy allocation.
     allocate(source_spatial_function_DG(1, 1))
-  endif
+  endif ! Endif on initialfield.
   
   call synchronize_all()
 
@@ -1266,11 +1266,10 @@
   subroutine prepare_source_spatial_function_DG
   
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
-  use specfem_par!, only: coord, ibool, nspec, &
-                 !        source_spatial_function_DG, &
-                 !        SIGMA_SSF, &
-                 !        NSOURCES, source_type, x_source, z_source, &
-                 !        myrank ! DEBUG
+  use specfem_par, only: coord, nspec, &
+                         source_spatial_function_DG, &
+                         SIGMA_SSF, &
+                         NSOURCES, source_type, x_source, z_source, ibool_before_perio
   
   implicit none
   
@@ -1278,11 +1277,7 @@
   integer :: i_source, iglob_unique, ispec, i, j
   real(kind=CUSTOM_REAL) :: distsqrd
   
-  !write(*, *) 'ouloulou xs zs ', x_source(0), z_source(0) ! DEBUG
-  !write(*, *) 'ouloulou proc', myrank, nspec ! DEBUG
-  
   do i_source = 1, NSOURCES ! Loop on sources.
-    !do iglob_unique = 1, nglob_DG
     do ispec = 1, nspec
       do i = 1, NGLLX
         do j = 1, NGLLZ
@@ -1294,30 +1289,6 @@
             source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))
             !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.))
           endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
-          
-          if(.false.) then ! DEBUG
-            if(myrank==0) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
-              write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-              close(504)
-            endif
-            if(myrank==1) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE1',status='unknown',action='write', position="append")
-              write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-              close(504)
-            endif
-            if(myrank==2) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE2',status='unknown',action='write', position="append")
-              write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-              close(504)
-            endif
-            if(myrank==3) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE3',status='unknown',action='write', position="append")
-              write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
-              close(504)
-            endif
-            ! Then, use the following Matlab oneliner: path="/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square/OUTPUT_FILES/"; filename="TESTSOURCE"; a0=importdata(strcat(path, "TESTSOURCE0")); a1=importdata(strcat(path, "TESTSOURCE1")); a2=importdata(strcat(path, "TESTSOURCE2")); a3=importdata(strcat(path, "TESTSOURCE3")); a=[a0;a1;a2;a3]; x=a(:,1); z=a(:,2); d=a(:,3); close all; scatter3(x,z,d,9,d);
-          endif ! Endif DEBUG.
         enddo
       enddo
     enddo
@@ -1343,7 +1314,7 @@
     endif
 
     allocate(source_time_function(NSOURCES,NSTEP,stage_time_scheme))
-    source_time_function(:,:,:) = 0._CUSTOM_REAL
+    source_time_function(:, :, :) = 0._CUSTOM_REAL
     
     ! DG for adjoint source
     if(USE_DISCONTINUOUS_METHOD) then
@@ -1351,19 +1322,16 @@
       source_time_function_rhovx_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
       source_time_function_rhovz_DG(nadj_rec_local,NSTEP,stage_time_scheme), &
       source_time_function_E_DG(nadj_rec_local,NSTEP,stage_time_scheme))
-      source_time_function_rho_DG(:,:,:)   = 0._CUSTOM_REAL
-      source_time_function_rhovx_DG(:,:,:) = 0._CUSTOM_REAL
-      source_time_function_rhovz_DG(:,:,:) = 0._CUSTOM_REAL
-      source_time_function_E_DG(:,:,:)     = 0._CUSTOM_REAL
+      source_time_function_rho_DG(:, :, :)   = 0._CUSTOM_REAL
+      source_time_function_rhovx_DG(:, :, :) = 0._CUSTOM_REAL
+      source_time_function_rhovz_DG(:, :, :) = 0._CUSTOM_REAL
+      source_time_function_E_DG(:, :, :)     = 0._CUSTOM_REAL
     endif
-    
-    ! computes source time function array
-    call prepare_source_time_function()
 
+    call prepare_source_time_function() ! Compute the STF array.
   else
-    ! uses an initialfield
-    ! dummy allocation
-    allocate(source_time_function(1,1,1))
+    ! One uses an initialfield. Thus, do a dummy allocation.
+    allocate(source_time_function(1, 1, 1))
   endif
   
   ! synchronizes all processes
@@ -1537,9 +1505,9 @@
            e13(NGLLX,NGLLZ,nspec_allocate,N_SLS),stat=ier)
   if (ier /= 0) stop 'Error allocating attenuation arrays'
   
-  e1(:,:,:,:) = 0._CUSTOM_REAL
-  e11(:,:,:,:) = 0._CUSTOM_REAL
-  e13(:,:,:,:) = 0._CUSTOM_REAL
+  e1(:, :, :,:) = 0._CUSTOM_REAL
+  e11(:, :, :,:) = 0._CUSTOM_REAL
+  e13(:, :, :,:) = 0._CUSTOM_REAL
 
   if (time_stepping_scheme == 2) then
     allocate(e1_LDDRK(NGLLX,NGLLZ,nspec_allocate,N_SLS))
@@ -1550,9 +1518,9 @@
     allocate(e11_LDDRK(1,1,1,1))
     allocate(e13_LDDRK(1,1,1,1))
   endif
-  e1_LDDRK(:,:,:,:) = 0._CUSTOM_REAL
-  e11_LDDRK(:,:,:,:) = 0._CUSTOM_REAL
-  e13_LDDRK(:,:,:,:) = 0._CUSTOM_REAL
+  e1_LDDRK(:, :, :,:) = 0._CUSTOM_REAL
+  e11_LDDRK(:, :, :,:) = 0._CUSTOM_REAL
+  e13_LDDRK(:, :, :,:) = 0._CUSTOM_REAL
 
   if (time_stepping_scheme == 3) then
     allocate(e1_initial_rk(NGLLX,NGLLZ,nspec_allocate,N_SLS))
@@ -1569,21 +1537,21 @@
     allocate(e11_force_rk(1,1,1,1,1))
     allocate(e13_force_rk(1,1,1,1,1))
   endif
-  e1_initial_rk(:,:,:,:) = 0._CUSTOM_REAL
-  e11_initial_rk(:,:,:,:) = 0._CUSTOM_REAL
-  e13_initial_rk(:,:,:,:) = 0._CUSTOM_REAL
-  e1_force_rk(:,:,:,:,:) = 0._CUSTOM_REAL
-  e11_force_rk(:,:,:,:,:) = 0._CUSTOM_REAL
-  e13_force_rk(:,:,:,:,:) = 0._CUSTOM_REAL
+  e1_initial_rk(:, :, :,:) = 0._CUSTOM_REAL
+  e11_initial_rk(:, :, :,:) = 0._CUSTOM_REAL
+  e13_initial_rk(:, :, :,:) = 0._CUSTOM_REAL
+  e1_force_rk(:, :, :,:,:) = 0._CUSTOM_REAL
+  e11_force_rk(:, :, :,:,:) = 0._CUSTOM_REAL
+  e13_force_rk(:, :, :,:,:) = 0._CUSTOM_REAL
 
   ! initialize to dummy values
   ! convention to indicate that Q = 9999 in that element i.e. that there is no viscoelasticity in that element
-  inv_tau_sigma_nu1(:,:,:,:) = -1._CUSTOM_REAL
-  phi_nu1(:,:,:,:) = -1._CUSTOM_REAL
-  inv_tau_sigma_nu2(:,:,:,:) = -1._CUSTOM_REAL
-  phi_nu2(:,:,:,:) = -1._CUSTOM_REAL
-  Mu_nu1(:,:,:) = -1._CUSTOM_REAL
-  Mu_nu2(:,:,:) = -1._CUSTOM_REAL
+  inv_tau_sigma_nu1(:, :, :,:) = -1._CUSTOM_REAL
+  phi_nu1(:, :, :,:) = -1._CUSTOM_REAL
+  inv_tau_sigma_nu2(:, :, :,:) = -1._CUSTOM_REAL
+  phi_nu2(:, :, :,:) = -1._CUSTOM_REAL
+  Mu_nu1(:, :, :) = -1._CUSTOM_REAL
+  Mu_nu2(:, :, :) = -1._CUSTOM_REAL
 
   ! define the attenuation quality factors.
   ! they can be different for each element.
@@ -1680,10 +1648,10 @@
     gammaval = deltat / 2.d0 + deltat**2*thetainv / 6.d0 + deltat**3*thetainv**2 / 24.d0
 
     ! initialize memory variables for attenuation
-    viscox(:,:,:) = 0.d0
-    viscoz(:,:,:) = 0.d0
-    rx_viscous(:,:,:) = 0.d0
-    rz_viscous(:,:,:) = 0.d0
+    viscox(:, :, :) = 0.d0
+    viscoz(:, :, :) = 0.d0
+    rx_viscous(:, :, :) = 0.d0
+    rz_viscous(:, :, :) = 0.d0
     if (time_stepping_scheme == 2) then
      rx_viscous_LDDRK = 0.d0
      rz_viscous_LDDRK = 0.d0
