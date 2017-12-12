@@ -104,9 +104,6 @@
   ! Local
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, p_DG
   
-  real(kind=CUSTOM_REAL) :: coef_stretch_x_kj, coef_stretch_x_ki, coef_stretch_x_ik, &
-                            coef_stretch_z_kj, coef_stretch_z_ki, coef_stretch_z_ik ! Mesh stretching.
-  
   ! Viscosity
   !real(kind=CUSTOM_REAL) :: dux_dxi, dux_dgamma, duz_dxi, duz_dgamma
   real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz
@@ -141,6 +138,13 @@
   real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E
   logical :: ABSORB_BC
   
+  ! TEST STRETCH
+  logical :: STRETCHING
+  real(kind=CUSTOM_REAL) :: coef_stretch_x_ij, coef_stretch_x_ij_prime, &
+                            coef_stretch_z_ij, coef_stretch_z_ij_prime
+  real(kind=CUSTOM_REAL) :: viscous_tens_11, viscous_tens_12, viscous_tens_22
+  STRETCHING = .false.
+  
   ! for MPI transfer
   MPI_iglob = 1
   
@@ -165,7 +169,7 @@
   T_DG = T_DG_main
   V_DG = V_DG_main
   
-  ! Initialise auxiliary unknwons.
+  ! Initialise auxiliary unknowns.
   veloc_x_DG = rhovx_DG/rho_DG
   veloc_z_DG = rhovz_DG/rho_DG
   p_DG       = (gammaext_DG - ONE)*( E_DG &
@@ -210,11 +214,23 @@
           iglob = ibool_DG(i, j, ispec)
           
           jacobianl = jacobian(i, j, ispec)
-        
+          
           xixl = xix(i, j, ispec)
           xizl = xiz(i, j, ispec)
           gammaxl = gammax(i, j, ispec)
           gammazl = gammaz(i, j, ispec)
+          
+          if(STRETCHING) then
+            ! Here is updated the operator \nabla.
+            ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta,
+            ! idem for \partial_z,
+            ! And thus only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
+            call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
+            xixl = coef_stretch_x_ij * xixl
+            xizl = coef_stretch_z_ij * xizl
+            gammaxl = coef_stretch_x_ij * gammaxl
+            gammazl = coef_stretch_z_ij * gammazl
+          endif
           
           wzl = wzgll(j)
           wxl = wxgll(i)
@@ -301,7 +317,7 @@
           
           ! Gravity contributions (separated from the rest).
           temp_rho_gravi(i, j) = 0.
-          temp_rhovx_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl!
+          temp_rhovx_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_rhovz_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
           else
@@ -333,58 +349,69 @@
         do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
           do k = 1, NGLLX
-          
-            ! --------------------------- !
-            ! Virtual mesh stretching.    !
-            ! --------------------------- !
-            if(.false.) then ! TODO: add a parameter for this option in parfile.
-              call virtual_stretch(k, j, ispec, coef_stretch_x_kj, coef_stretch_z_kj)
-              call virtual_stretch(k, i, ispec, coef_stretch_x_ki, coef_stretch_z_ki)
-              call virtual_stretch(i, k, ispec, coef_stretch_x_ik, coef_stretch_z_ik)
-              
-              dot_rho(iglob) = dot_rho(iglob) + &
-                               (temp_rho_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) &
-                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
-                                temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_z_ik*coef_stretch_z_kj   )
-              dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                                 (temp_rhovx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
-                                  temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_z_kj*coef_stretch_z_ki   )
-              dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                                 (temp_rhovz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
-                                  temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_z_kj*coef_stretch_z_ki   )
-              dot_E(iglob) = dot_E(iglob) + &
-                             (temp_E_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_x_kj*coef_stretch_x_ki + &
-                              temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)  &
-                                  *coef_stretch_z_kj*coef_stretch_z_ki   )
-            else
-              dot_rho(iglob) = dot_rho(iglob) + &
-                               (temp_rho_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
-              dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                                 (temp_rhovx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                  temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
-              dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                                 (temp_rhovz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                  temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
-              dot_E(iglob) = dot_E(iglob) + &
-                             (temp_E_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                              temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
-            endif
-          enddo
+            dot_rho(iglob) = dot_rho(iglob) + &
+                             (temp_rho_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+            dot_rhovx(iglob) = dot_rhovx(iglob) + &
+                               (temp_rhovx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+            dot_rhovz(iglob) = dot_rhovz(iglob) + &
+                               (temp_rhovz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+            dot_E(iglob) = dot_E(iglob) + &
+                           (temp_E_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                            temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+          enddo ! Enddo on k.
           
           wzl = real(wzgll(j), kind=CUSTOM_REAL)
           wxl = real(wxgll(i), kind=CUSTOM_REAL)
           
+          ! Gravity terms.
           dot_rho(iglob)   = dot_rho(iglob)   + temp_rho_gravi(i, j) * wxl * wzl
           dot_rhovx(iglob) = dot_rhovx(iglob) + temp_rhovx_gravi(i, j) * wxl * wzl
           dot_rhovz(iglob) = dot_rhovz(iglob) + temp_rhovz_gravi(i, j) * wxl * wzl
           dot_E(iglob)     = dot_E(iglob)     + temp_E_gravi(i, j) * wxl * wzl
+          
+          if(STRETCHING) then
+            ! Here are added the terms $\int_\Omega (F_i+F_v)\Phi\cdot(\nabla\cdot\Ya) d\Omega$.
+            jacobianl = jacobian(i, j, ispec)
+            call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
+            dot_rho(iglob)   = dot_rho(iglob) + (  rhovx_DG(iglob)*coef_stretch_x_ij_prime &
+                                                 + rhovz_DG(iglob)*coef_stretch_z_ij_prime &
+                                                ) * jacobianl*wxl*wzl
+            
+            viscous_tens_11 =   2*muext(i,j,ispec) * V_DG(1, 1, iglob) & ! Viscous tensor, line 1, column 1, term 1
+                              + (etaext(i, j, ispec)-(TWO/3.)*muext(i, j, ispec)) & ! Viscous tensor, line 1, column 1, term 2 (1 of 2)
+                                * (V_DG(1, 1, iglob)+V_DG(2, 2, iglob)) ! Viscous tensor, line 1, column 1, term 2 (2 of 2)
+            viscous_tens_12 = muext(i,j,ispec) * (V_DG(2, 1, iglob)+V_DG(1, 2, iglob)) ! Visous tensor, line 1, column 2
+            viscous_tens_22 =   2*muext(i,j,ispec) * V_DG(2, 2, iglob) & ! Viscous tensor, line 2, column 2, term 1
+                              + (etaext(i, j, ispec)-(TWO/3.)*muext(i, j, ispec)) & ! Viscous tensor, line 2, column 2, term 2 (1 of 2)
+                                * (V_DG(1, 1, iglob)+V_DG(2, 2, iglob)) ! Viscous tensor, line 2, column 2, term 2 (2 of 2)
+            
+            dot_rhovx(iglob) = dot_rhovx(iglob) + (  (  rho_DG(iglob)*veloc_x_DG(iglob)**2 + p_DG(iglob) & ! Inviscid tensor, line 1, column 1
+                                                      - viscous_tens_11 & ! Viscous tensor, line 1, column 1
+                                                     ) * coef_stretch_x_ij_prime  & ! End of x contribution.
+                                                   + (  rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob) & ! Inviscid tensor, line 1, column 2
+                                                      - viscous_tens_12 & ! Visous tensor, line 1, column 2
+                                                     ) * coef_stretch_z_ij_prime & ! End of z contribution.
+                                                  ) * jacobianl*wxl*wzl
+            dot_rhovz(iglob) = dot_rhovz(iglob) + (  (  rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob) & ! Inviscid tensor, line 2, column 1
+                                                      - viscous_tens_12 & ! Visous tensor, line 2, column 1
+                                                     ) * coef_stretch_x_ij_prime & ! End of z contribution.
+                                                   + (  rho_DG(iglob)*veloc_z_DG(iglob)**2 + p_DG(iglob) & ! Inviscid tensor, line 2, column 2
+                                                      - viscous_tens_22 & ! Viscous tensor, line 2, column 2
+                                                     ) * coef_stretch_z_ij_prime  & ! End of x contribution.
+                                                  ) * jacobianl*wxl*wzl
+            dot_E(iglob)     = dot_E(iglob) + (  (   (   E_DG(iglob) + p_DG(iglob) + viscous_tens_11 &
+                                                     ) * veloc_x_DG(iglob) &
+                                                   + ( viscous_tens_12 ) * veloc_z_DG(iglob) &
+                                                 ) * coef_stretch_x_ij_prime & ! End of z contribution.
+                                               + (   (   E_DG(iglob) + p_DG(iglob) + viscous_tens_22 &
+                                                     ) * veloc_z_DG(iglob) &
+                                                   + ( viscous_tens_12 ) * veloc_x_DG(iglob) &
+                                                 ) * coef_stretch_z_ij_prime  & ! End of x contribution.
+                                              ) * jacobianl*wxl*wzl
+          endif
         enddo
       enddo
       
@@ -529,6 +556,12 @@
           endif
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes. We use the Lax-Friedrich flux.
+          
+          if(STRETCHING) then
+            call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
+            nx = coef_stretch_x_ij * nx
+            nz = coef_stretch_z_ij * nz
+          endif
           
           rho_DG_P     = ZERO
           rhovx_DG_P   = ZERO
@@ -799,6 +832,10 @@
   real(kind=CUSTOM_REAL) :: vx_init, vz_init
   
   integer :: coef_surface
+  
+  ! TEST STRETCH
+  logical :: STRETCHING
+  STRETCHING = .false.
   
   ADD_SURFACE_TERMS = .true. ! TODO: Decide to set a value (.true. or .false.), or to introduce a parameter in the parfile.
   !T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
@@ -1216,7 +1253,7 @@
   ! --------------------------- !
   ! Virtual mesh stretching.    !
   ! --------------------------- !
-  if(.false.) then ! TODO: add a parameter for this option in parfile.
+  if(STRETCHING) then ! TODO: add a parameter for this option in parfile.
     call virtual_stretch_auxi_visc_tensors_DG(T_DG, V_DG)
   endif
   
@@ -1302,3 +1339,46 @@
   endif
   
   end subroutine virtual_stretch
+
+! ------------------------------------------------------------ !
+! virtual_stretch_prime                                        !
+! ------------------------------------------------------------ !
+! Computes the value of the stretching coefficients.
+! TODO: Instead of a function to be called, build a vector that will only need to be computed once and to which simple and less expensive memory calls can be made.
+
+  subroutine virtual_stretch_prime(i, j, ispec, coef_stretch_x_prime, coef_stretch_z_prime)
+  
+  use specfem_par, only: ibool_DG, ibool_before_perio, coord
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+
+  implicit none
+  
+  ! Input/Output
+  integer, intent(in) :: i, j, ispec
+  real(kind=CUSTOM_REAL), intent(out) :: coef_stretch_x_prime, coef_stretch_z_prime
+  
+  ! Local
+  integer iglob
+  real(kind=CUSTOM_REAL) :: eps_l, p, q
+  real(kind=CUSTOM_REAL) :: L_buffer, zmax, z, z_l ! Variables used for testing.
+  
+  ! Coefficients for the stretching function.
+  eps_l = 1.0d-4
+  p = 3.25d0
+  q = 1.75d0
+  
+  L_buffer = 10. ! Length of the buffer in which the mesh is stretched.
+  zmax = 50. ! Domain top coordinate.
+  
+  iglob = ibool_DG(i, j, ispec)
+  coef_stretch_x_prime = 0. ! By default, mesh is not stretched.
+  coef_stretch_z_prime = 0. ! By default, mesh is not stretched.
+  z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
+  z_l = (1. - ((zmax - z)/L_buffer)) ! Relative buffer coordinate.
+  if(z_l > 0. .AND. z_l <= 1.) then
+    !write(*, *) "z", z, "z_l", z_l ! DEBUG
+    coef_stretch_z_prime = - (1. - eps_l) * p * q * (1.-z_l)**(p-1.) * (1.-(1.-z_l)**p)**(q-1.) ! Stretching function derivative.
+    !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
+  endif
+  
+  end subroutine virtual_stretch_prime
