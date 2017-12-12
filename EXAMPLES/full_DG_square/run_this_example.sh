@@ -1,8 +1,11 @@
 #!/bin/bash
-# This script runs mesher and solver (in serial) using this example setup.
+# This script runs mesher and solver using the example setup.
 
-# Set this value to the value of the corresponding line in the parfile.
-NPROC=4
+parfile_input_name="parfile_input"
+source_input_name="source_input"
+
+# Read the number of processes to use from the value of the "NPROC" line in the parfile.
+NPROC=$(grep -e "NPROC *= *[0-9]*" $parfile_input_name | grep -oe "[0-9]*")
 
 echo
 echo ">> Running example (`date`)."
@@ -19,8 +22,8 @@ echo
 echo ">> Make symbolic links to parfile and sourcefile in the 'DATA' folder."
 cd DATA/
 rm -f Par_file SOURCE
-ln -s ../parfile_input Par_file
-ln -s ../source_input SOURCE
+ln -s ../$parfile_input_name Par_file
+ln -s ../$source_input_name SOURCE
 cd ../
 
 # Cleans output files.

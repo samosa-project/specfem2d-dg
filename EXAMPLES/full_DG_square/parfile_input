@@ -4,38 +4,42 @@
 #                                                                     #
 #---------------------------------------------------------------------#
 
-# Title of job
+# Title of job.
 title                           = full_DG_square
-# Type of simulation
+
+# Type of simulation.
 # 1: forward
 # 2: adjoint
 # 3: both simultaneously
 # Note: 2 is purposely unused (for compatibility with the numbering of our 3D codes).
 SIMULATION_TYPE                 = 1
-# Noise
+
+# Noise.
 # 0: regular wave propagation simulation
 # 1/2/3: noise simulation
 NOISE_TOMOGRAPHY                = 0
-# Save the last frame (needed for adjoint simulations)
+
+# Save the last frame (needed for adjoint simulations).
 SAVE_FORWARD                    = .false.
 
-# Number of processes (parallel programming)
-NPROC                           = 4
+# Number of processes (message passing interface).
+NPROC                           = 2
 # Partitioning
 # 1: ascending order (very bad idea)
+# 2: (??)
 # 3: SCOTCH
 partitioning_method             = 3
 
-# Number of control nodes per element (4 or 9)
+# Number of control nodes per element (4 or 9).
 ngnod                           = 9
 
-# Time parameters
-# Total number of time steps
+# Time parameters.
+# Total number of time steps.
 NSTEP                           = 2000
-# Duration of a time step (see section "How to choose the time step" of the manual for how to do this)
+# Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 4d-4
 
-# Time stepping scheme
+# Time stepping scheme.
 # 1: Newmark (2nd order)
 # 2: LDDRK4-6 (4th-order 6-stage low storage Runge-Kutta)
 # 3: classical RK4 4th-order 4-stage Runge-Kutta
@@ -47,13 +51,13 @@ AXISYM                          = .false.
 # Set the type of calculation (P-SV or SH/membrane waves).
 P_SV                            = .true.
 
-# Set to true to use GPUs
+# Set to true to use GPUs.
 GPU_MODE                        = .false.
 
-# Available models
+# Available models.
 #   default: define model using nbmodels below
 #   ascii: read model from ascii database file
-#   binary: read model from binary databse file
+#   binary: read model from binary database file
 #   external: define model using define_external_model subroutine
 #   legacy: read model from model_velocity.dat_input
 MODEL                           = default
@@ -99,23 +103,23 @@ CONSTRAIN_HYDROSTATIC           = .true.
 
 # Fluid model
 USE_ISOTHERMAL_MODEL            = .false.
-SCALE_HEIGHT                    = 10000. # Only used if USE_ISOTHERMAL_MODEL is true.
-surface_density                 = 1.4d0 # $\rho_0$. If USE_ISOTHERMAL_MODEL is set to true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL is set to false, $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 340.0d0 # $c$. Only used if USE_ISOTHERMAL_MODEL is set to false (if set to true, $c^2$ is determined with SCALE_HEIGHT).
-wind                            = 0.0d0
-gravity                         = 9.81d0 # Only used if USE_ISOTHERMAL_MODEL is set to true.
-dynamic_viscosity               = 0.00000001d0 # $\mu$.
-thermal_conductivity            = 0.00d0 # $\kappa$.
+SCALE_HEIGHT                    = 10000.         # Scale height for exponential decrease of density. [m]. Only used if USE_ISOTHERMAL_MODEL is true.
+surface_density                 = 1.4d0          # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL is set to true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL is set to false, $\rho(z)=\rho_0$ for all $z$.
+sound_velocity                  = 340.0d0        # $c$. Only used if USE_ISOTHERMAL_MODEL is set to false (if set to true, $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
+wind                            = 0.0d0          # Horizontal wind. [m.s^(-1)].
+gravity                         = 9.81d0         # Only used if USE_ISOTHERMAL_MODEL is set to true.
+dynamic_viscosity               = 1.0d-8         # $\mu$.
+thermal_conductivity            = 0.0d0          # $\kappa$.
 tau_epsilon                     = 1.0d0
 tau_sigma                       = 1.0d0
 constant_p                      = 7/2.0d0
 constant_v                      = 5/2.0d0
 
-# Id refering to "velocity and density models" below
+# ID of the DG region (refering to "Velocity and Density Models" below).
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = 304.0d0 # Only used if USE_ISOTHERMAL_MODEL is set to true.
+coord_interface                 = 304.0d0        # Only used if USE_ISOTHERMAL_MODEL is set to true.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
@@ -126,10 +130,10 @@ TYPE_SOURCE_DG                  = 3
 # 1: only time gaussian derivative
 # 2: time and space gaussian derivative
 TYPE_FORCING                    = 0
-main_spatial_period             = 100000
-main_time_period                = 40
-forcing_initial_loc             = 300000
-forcing_initial_time            = 300000
+main_spatial_period             = 1.0
+main_time_period                = 1.0
+forcing_initial_loc             = 1.0
+forcing_initial_time            = 1.0
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -158,13 +162,13 @@ ACOUSTIC_FORCING                = .false.        # acoustic forcing of an acoust
 #                                                                     #
 #---------------------------------------------------------------------#
 
-# Receiver set parameters for recording stations (i.e. recording points)
+# Receiver set parameters for recording stations (i.e. recording points). Depends on the type of region in which they are inserted.
 # non-DG: 1 records displacement, 2 velocity, 3 acceleration,       4 pressure, 5 curl of displacement, 6 fluid potential
 #     DG: 1 records velocity,     2 pressure, 3 sqrt(rho)*velocity, 4 none,     5 none,                 6 none
 seismotype                      = 2              
                                                  
 
-# subsampling of the seismograms to create smaller files (but less accurately sampled in time)
+# Subsampling of the seismograms to create smaller files (but less accurately sampled in time).
 subsamp_seismos                 = 1
 
 # so far, this option can only be used if all the receivers are in acoustic elements
@@ -187,8 +191,8 @@ USER_T0                         = 0.0d0
 # Seismogram formats.
 save_ASCII_seismograms          = .true.         # ASCII format?
 save_binary_seismograms_single  = .true.         # Single precision binary format? (Can be used jointly with ASCII and double precision.)
-save_binary_seismograms_double  = .false.        # Double precision binary format? (Can be used jointly with ASCII and double precision.)
-SU_FORMAT                       = .false.        # Single precision binary in Seismic Unix format? (adjoint traces will be read in the same format)
+save_binary_seismograms_double  = .false.        # Double precision binary format? (Can be used jointly with ASCII and single precision.)
+SU_FORMAT                       = .false.        # Single precision binary in Seismic Unix format? (Adjoint traces will be read in the same format.)
 
 # Use an existing STATION file found in "./DATA"? If set to false, a new one from the receiver positions (see below) will be created.
 use_existing_STATIONS           = .false.
@@ -197,8 +201,8 @@ use_existing_STATIONS           = .false.
 nreceiversets                   = 1
 
 # Orientation.
-anglerec                        = 0.0d0           # angle to rotate components at receivers
-rec_normal_to_surface           = .false.        # base anglerec normal to surface (external mesh and curve file needed)
+anglerec                        = 0.0d0          # Angle to rotate components at receivers.
+rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 # First receiver set: number of receivers, first receiver's x coordinate in meters, first receiver's z coordinate in meters, last receiver's x coordinate in meters (ignored if 1 receiver), and last receiver's z coordinate in meters (ignored if 1 receiver).
 nrec                            =   4
@@ -206,7 +210,7 @@ xdeb                            =   0.0d0
 zdeb                            =  10.0d0
 xfin                            =   0.0d0
 zfin                            =  40.0d0
-record_at_surface_same_vertical = .false. # Receivers inside the medium? If set to false, receivers at the surface.
+record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface.
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -247,11 +251,11 @@ PERIODIC_HORIZ_DIST             = 4000.0d0
 nbmodels                        = 1
 # Models' description.
 # Available material types (see user manual for more information):
-#   acoustic:    model_number 1 rho Vp 0  0 0 QKappa Qmu 0 0 0 0 0 0
-#   elastic:     model_number 1 rho Vp Vs 0 0 QKappa Qmu 0 0 0 0 0 0
-#   anistoropic: model_number 2 rho c11 c13 c15 c33 c35 c55 c12 c23 c25 0 0 0
-#   poroelastic: model_number 3 rhos rhof phi c kxx kxz kzz Ks Kf Kfr etaf mufr Qmu
-#   tomo:        model_number -1 0 0 A 0 0 0 0 0 0 0 0 0 0
+#   acoustic:    model_number 1  rho  Vp   0   0   0   QKappa Qmu 0   0   0   0    0    0
+#   elastic:     model_number 1  rho  Vp   Vs  0   0   QKappa Qmu 0   0   0   0    0    0
+#   anistoropic: model_number 2  rho  c11  c13 c15 c33 c35    c55 c12 c23 c25 0    0    0
+#   poroelastic: model_number 3  rhos rhof phi c   kxx kxz    kzz Ks  Kf  Kfr etaf mufr Qmu
+#   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
 1 1 1.164 349.0d0 0.0d0 0 0 10.0d0 10.0d0 0 0 0 0 0 0
 
 # External tomography file.
