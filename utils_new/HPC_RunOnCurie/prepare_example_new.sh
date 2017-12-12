@@ -49,7 +49,6 @@ ln -s ../../bin/xspecfem2D
 
 # Stores setup files.
 cp DATA/Par_file OUTPUT_FILES/
-cp DATA/Par_file OUTPUT_FILES/
 cp DATA/SOURCE OUTPUT_FILES/
 
 # Save model configuration.

@@ -29,6 +29,10 @@ echo
 mkdir -p OUTPUT_FILES
 mkdir -p DATA
 
+# Cleans current output and data files.
+rm -rf DATA/*
+rm -rf OUTPUT_FILES/*
+
 # Sets up local DATA/ directory.
 cd DATA/
 ln -s ../Par_file_fluid_solid Par_file
@@ -46,7 +50,6 @@ ln -s ../../bin/xmeshfem2D
 ln -s ../../bin/xspecfem2D
 
 # Stores setup files.
-cp DATA/interfaces OUTPUT_FILES/
 cp DATA/Par_file OUTPUT_FILES/
 cp DATA/SOURCE OUTPUT_FILES/
 
