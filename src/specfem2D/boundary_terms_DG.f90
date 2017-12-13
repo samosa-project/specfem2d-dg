@@ -502,7 +502,7 @@
   !write(file_name,"('./boundaries_elastic_MPI_',i3.3)") myrank ! DEBUG
   !open(10,file=file_name, form='formatted',position='append') ! DEBUG
   
-  exact_interface_flux = .false.
+  exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
   MPI_change_cpt = .false.
   
   if(neighbor(3) == -1) then
@@ -513,8 +513,8 @@
     ipoin         = -1
     num_interface = -1
     if(NPROC > 1) then
-    ipoin         = MPI_transfer(iglobM,MPI_iglob(iglobM), 1)
-    num_interface = MPI_transfer(iglobM,MPI_iglob(iglobM), 2)
+      ipoin         = MPI_transfer(iglobM,MPI_iglob(iglobM), 1)
+      num_interface = MPI_transfer(iglobM,MPI_iglob(iglobM), 2)
     endif                  
     
     if(ipoin > -1) then
@@ -564,7 +564,7 @@
         ! minval(ispec_is_acoustic_coupling_ac)
 
         ! We already know the "real" flux at boundary.
-        exact_interface_flux = .true.
+        exact_interface_flux = .true. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
 
         ! Coordinates of elastic element
         iglob = ibool(i, j, ispec)
@@ -652,11 +652,11 @@
       ! neighbor(3) == -1,          !
       !   elastic coupling.         !
       ! --------------------------- !
-    
+      ! TODO: Clean up all this part.
+      
       ! WRITE(10,*) coord(:,ibool_before_perio(i, j, ispec)) ! DEBUG
 
-      ! If we already know the "real" flux at boundary.
-      exact_interface_flux = .true.
+      exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
 
       ! Coordinates of elastic element
       i_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 1)
@@ -664,8 +664,7 @@
       ispec_el = ispec_is_acoustic_coupling_el(i, j, ispec, 3)
 
       iglob = ibool(i_el, j_el, ispec_el)
-
-      ! Get density (and only density).
+      
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
@@ -681,9 +680,9 @@
       tz =  nx
 
       ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-      normal_v     = (veloc_x*nx + veloc_z*nz) 
-      !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) 
+      normal_v     = (veloc_x*nx + veloc_z*nz)
       tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
+      !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) 
       !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz
       !tangential_v    = (veloc_x*tx + veloc_z*tz) 
 
@@ -694,7 +693,7 @@
       trans_boundary(2, 2) =  nx
       trans_boundary = trans_boundary/(nx * tz - tx * nz)
 
-      ! From free slip and normal velocity continuity
+      ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
       veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
       veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
 
@@ -708,18 +707,22 @@
               !-(elastic_tensor(i_el,j_el,ispec_el,3)*nx + elastic_tensor(i_el,j_el,ispec_el,4)*nz)*tz ) &
               !/(rho_DG_P*veloc_z_DG_P*nz*tx)
 
-      !tensor_temp = 0
+      ! No stress continuity.
+      tensor_temp = 0
+      p_DG_P = p_DG_iM
+      
+      ! Stress continuity.
       ! Maybe we should remove the initial velocity field to veloc_x_DG_P/veloc_z_DG_P in the following
       ! Since we should only have the perturbated non-linear stress tensor
-      tensor_temp(1, 1) = -elastic_tensor(i_el, j_el, ispec_el, 1) - rho_DG_P*veloc_x_DG_P**2 
-      tensor_temp(1, 2) = -elastic_tensor(i_el, j_el, ispec_el, 2) - rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-      tensor_temp(2, 1) = -elastic_tensor(i_el, j_el, ispec_el, 3) - rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
-      tensor_temp(2, 2) = -elastic_tensor(i_el, j_el, ispec_el, 4) - rho_DG_P*veloc_z_DG_P**2 
+      !tensor_temp(1, 1) = -elastic_tensor(i_el, j_el, ispec_el, 1) - rho_DG_P*veloc_x_DG_P**2 
+      !tensor_temp(1, 2) = -elastic_tensor(i_el, j_el, ispec_el, 2) - rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+      !tensor_temp(2, 1) = -elastic_tensor(i_el, j_el, ispec_el, 3) - rho_DG_P*veloc_x_DG_P*veloc_z_DG_P
+      !tensor_temp(2, 2) = -elastic_tensor(i_el, j_el, ispec_el, 4) - rho_DG_P*veloc_z_DG_P**2 
 
       ! From traction continuity
-      p_DG_P = p_DG_init(iglobM) - (&
-                 nx*( nx*tensor_temp(1, 1) + nz*tensor_temp(1, 2) ) &
-               + nz*( nx*tensor_temp(2, 1) + nz*tensor_temp(2, 2) ) )!* 2 - (p_DG_init(iglobM) - p_DG_iM)
+      !p_DG_P = p_DG_init(iglobM) - (&
+      !           nx*( nx*tensor_temp(1, 1) + nz*tensor_temp(1, 2) ) &
+      !         + nz*( nx*tensor_temp(2, 1) + nz*tensor_temp(2, 2) ) )!* 2 - (p_DG_init(iglobM) - p_DG_iM)
 
       ! Deduce energy.
       E_DG_P = p_DG_P/(gammaext_DG(iglobM) - 1.) + HALF*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
@@ -745,7 +748,6 @@
       !veloc_z_DG_P = 2*veloc_z_DG_P - veloc_z_DG_iM
       !p_DG_P       = 2*p_DG_P - p_DG_iM
       !E_DG_P       = 2*E_DG_P - E_DG_iM
-      ! TODO: check whether or not is all this commented section just above useful.
 
       ! Recompute momenta in order not to keep those coming from the call to boundary_condition_DG above.
       rhovx_DG_P = rho_DG_P*veloc_x_DG_P
@@ -762,7 +764,7 @@
       !   conditions.               !
       ! --------------------------- !
     
-      exact_interface_flux = .false.
+      exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
 
       ! Get "background" (or "far-field", or "unperturbed") values.
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
@@ -936,8 +938,7 @@
 
     !!WRITE(*,*) ">>>>>>>>>>>> TOTO" ! DEBUG
 
-    ! If we already know the "real" flux at boundary
-    exact_interface_flux = .true.
+    exact_interface_flux = .true. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
 
     ! Coordinates of elastic element
     i_ac     = neighbor(1)
