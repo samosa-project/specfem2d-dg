@@ -44,7 +44,8 @@ subroutine compute_energy()
     potential_dot_acoustic,potential_dot_gravitoacoustic,potential_dot_gravito, &
     vsext,vpext,rhoext,poroelastcoef,density,kmato,assign_external_model, &
     ispec_is_poroelastic,ispec_is_elastic, &
-    P_SV
+    P_SV &
+    , potential_dphi_dx_DG ! Modification for DG.
 
   implicit none
 
@@ -273,8 +274,13 @@ subroutine compute_energy()
       call compute_pressure_one_element(ispec,pressure_element)
 
       ! compute velocity vector field in this element
+      !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+      !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
+      ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+      ! TODO: Do something here instead of this poor patch.
       call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
+                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                      potential_dphi_dx_DG, ispec,vector_field_element)
 
       ! get density of current spectral element
       lambdal_unrelaxed_elastic = poroelastcoef(1,1,kmato(ispec))
@@ -325,7 +331,8 @@ subroutine compute_energy_fields()
                         integrated_potential_energy_field,max_potential_energy_field,cinetic_effective_duration_field, &
                         potential_effective_duration_field,potential_dot_gravitoacoustic,potential_dot_gravito,velocs_poroelastic, &
                         poroelastcoef,vsext,vpext,rhoext,density,kmato,assign_external_model,jacobian,wxgll,wzgll,displ_elastic, &
-                        hprime_xx,hprime_zz,hprimeBar_xx,xix,xiz,gammax,gammaz,wxglj
+                        hprime_xx,hprime_zz,hprimeBar_xx,xix,xiz,gammax,gammaz,wxglj &
+                        , potential_dphi_dx_DG ! Modification for DG.
 
   implicit none
 
@@ -503,8 +510,13 @@ subroutine compute_energy_fields()
     else
 
       ! compute velocity vector field in this element
+      !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+      !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
+      ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+      ! TODO: Do something here instead of this poor patch.
       call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
+                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                      potential_dphi_dx_DG, ispec,vector_field_element)
 
       ! compute pressure in this element
       call compute_pressure_one_element(ispec,pressure_element)
