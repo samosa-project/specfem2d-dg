@@ -1218,31 +1218,10 @@
         do i = 1, NGLLX
           do j = 1, NGLLZ
             ig = ibool_before_perio(i, j, ispec)
-            if(source_spatial_function_DG(1, ig)>9.5d-1) &
+            if(.false. .and. source_spatial_function_DG(1, ig)>9.5d-1) &
               write(*, *) ">  proc", myrank, "ig", ig,&
                           "xy", coord(1, ig), coord(2, ig), &
                           "ssf", source_spatial_function_DG(1, ig) ! DEBUG
-            if(myrank==0) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE0',status='unknown',action='write', position="append")
-              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-              close(504)
-            endif
-            if(myrank==1) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE1',status='unknown',action='write', position="append")
-              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-              close(504)
-            endif
-            if(myrank==2) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE2',status='unknown',action='write', position="append")
-              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-              close(504)
-            endif
-            if(myrank==3) then
-              open(unit=504,file='OUTPUT_FILES/TESTSOURCE3',status='unknown',action='write', position="append")
-              write(504,*) coord(1, ig), coord(2, ig), source_spatial_function_DG(1, ig)
-              close(504)
-            endif
-            ! Then, use the following Matlab oneliner: path="/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square/OUTPUT_FILES/"; filename="TESTSOURCE"; a0=importdata(strcat(path, "TESTSOURCE0")); a1=importdata(strcat(path, "TESTSOURCE1")); a2=importdata(strcat(path, "TESTSOURCE2")); a3=importdata(strcat(path, "TESTSOURCE3")); a=[a0;a1;a2;a3]; x=a(:,1); z=a(:,2); d=a(:,3); close all; scatter3(x,z,d,9,d);
           enddo
         enddo
       enddo
@@ -1269,13 +1248,26 @@
   use specfem_par, only: coord, nspec, &
                          source_spatial_function_DG, &
                          SIGMA_SSF, &
-                         NSOURCES, source_type, x_source, z_source, ibool_before_perio
+                         NSOURCES, source_type, x_source, z_source, ibool_before_perio &
+                         , myrank
   
   implicit none
   
   ! Local variables.
   integer :: i_source, iglob_unique, ispec, i, j
   real(kind=CUSTOM_REAL) :: distsqrd
+  
+  ! Save values.
+  logical :: SAVE_SSF
+  character(len=21) :: filename
+  
+  SAVE_SSF = .false. ! TODO: Maybe add a parameter to the parfile to enable/disable SSF saving.
+  ! Then, use the Matlab script '/utils_new/show_SSF.m'.
+  
+  if(SAVE_SSF) then
+    write(filename, '( "OUTPUT_FILES/SSF", i5.5 )' ) myrank
+    open(unit=504,file=filename,status='unknown',action='write', position="append")
+  endif
   
   do i_source = 1, NSOURCES ! Loop on sources.
     do ispec = 1, nspec
@@ -1287,12 +1279,21 @@
             distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
                        + (coord(2, iglob_unique) - z_source(i_source))**2.
             source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))
-            !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.))
+            !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
+            !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
           endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
+          
+          if(SAVE_SSF) then
+            write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
+          endif
         enddo
       enddo
     enddo
   enddo
+  
+  if(SAVE_SSF) then
+    close(504)
+  endif
   
   end subroutine prepare_source_spatial_function_DG
 

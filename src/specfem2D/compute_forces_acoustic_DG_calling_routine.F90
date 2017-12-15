@@ -218,7 +218,7 @@
   ! TODO: introduce a verbosity parameter in order to prevent unwanted flooding of the terminal.
   if(myrank == 0 .AND. mod(it, 50)==0) then
     WRITE(*,*) "****************************************************************"
-    WRITE(*,"(a,i5,a,i1,a,e23.16,a,i3,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, &
+    WRITE(*,"(a,i9,a,i1,a,e23.16,a,i3,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, &
     ". Informations for process number ", myrank, "."
   endif
   
