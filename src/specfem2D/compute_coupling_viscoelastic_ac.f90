@@ -49,7 +49,7 @@
                          rmemory_sfb_potential_ddot_acoustic_LDDRK,i_stage,stage_time_scheme, &
                          ! MODIF DG
                          ibool_DG, E_DG, rho_DG, rhovx_DG, rhovz_DG, p_DG_init, gammaext_DG, i_stage, &
-                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD
+                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD, elastic_tensor
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
@@ -225,30 +225,55 @@
 
       endif
       
-      if(REMOVE_DG_FLUID_TO_SOLID .AND. USE_DISCONTINUOUS_METHOD) then
-
-      ! MODIF DG
-      iglob_DG = ibool_DG(i,j,ispec_acoustic)
-      veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
-      veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
-      ! Recover pressure from state equation
-      pressure = (gammaext_DG(iglob_DG) - 1.)*( E_DG(iglob_DG) &
-        - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) )
-      ! Substract inital pressure to find only the perturbation (under linear hypothesis)
-      pressure = pressure - p_DG_init(iglob_DG)
-
-      accel_elastic(1,iglob) = accel_elastic(1,iglob) &
-        - weight*( nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
-        + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
-      accel_elastic(2,iglob) = accel_elastic(2,iglob) &
-        - weight*( nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) &
-        + nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) )!- weight*nz*pressure
+      if(USE_DISCONTINUOUS_METHOD .and. .not. REMOVE_DG_FLUID_TO_SOLID) then
+        ! If DG is used for the acoustic part, and the influence of the fluid on the solid is not removed.
+        ! Get fluid variables (from DG formulation).
+        iglob_DG = ibool_DG(i,j,ispec_acoustic)
+        veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
+        veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
+        pressure = (gammaext_DG(iglob_DG) - 1.)*( E_DG(iglob_DG) &
+          - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
+        pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
+        ! Set elastic acceleration (version 1).
+        if(.false.) then
+        accel_elastic(1,iglob) = accel_elastic(1,iglob) &
+          - weight*( nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
+          + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
+        accel_elastic(2,iglob) = accel_elastic(2,iglob) &
+          - weight*( nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) &
+          + nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) )!- weight*nz*pressure
+        endif
+        ! Set elastic acceleration (version 2).
+        if(.false.) then
+        accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
+                                 - weight*(  nx*(  0.5*(pressure-elastic_tensor(ii2,jj2,ispec_elastic,1)) &
+                                                 + 0.5*rho_DG(iglob_DG)*veloc_x**2) &
+                                           + nz*0.5*rho_DG(iglob_DG)*veloc_x*veloc_z ) &
+                                 + weight*0.5*elastic_tensor(ii2,jj2,ispec_elastic,2)*nz
+        accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
+                                 - weight*(  nz*(  0.5*(pressure-elastic_tensor(ii2,jj2,ispec_elastic,4)) &
+                                                 + 0.5*rho_DG(iglob_DG)*veloc_z**2) &
+                                           + nx*0.5*rho_DG(iglob_DG)*veloc_x*veloc_z ) &
+                                 + weight*0.5*elastic_tensor(ii2,jj2,ispec_elastic,3)*nx
+        endif
+        ! Set elastic acceleration (version 2, better format).
+        if(.true.) then
+        accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
+                                 - 0.5*weight*(  nx*(  pressure + rho_DG(iglob_DG)*veloc_x**2 &
+                                                     - elastic_tensor(ii2,jj2,ispec_elastic,1)) &
+                                               + nz*(  rho_DG(iglob_DG)*veloc_x*veloc_z &
+                                                     - elastic_tensor(ii2,jj2,ispec_elastic,2)))
+        accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
+                                 - 0.5*weight*(  nx*(  rho_DG(iglob_DG)*veloc_x*veloc_z &
+                                                     - elastic_tensor(ii2,jj2,ispec_elastic,3)) &
+                                               + nz*(  pressure + rho_DG(iglob_DG)*veloc_z**2 &
+                                                     - elastic_tensor(ii2,jj2,ispec_elastic,4)))
+        endif
       
       else
-        
-      accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*pressure
-      accel_elastic(2,iglob) = accel_elastic(2,iglob) + weight*nz*pressure
-
+        ! Classic SPECFEM coupling.
+        accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*pressure
+        accel_elastic(2,iglob) = accel_elastic(2,iglob) + weight*nz*pressure
       endif
 
     enddo
