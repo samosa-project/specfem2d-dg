@@ -10,8 +10,8 @@ clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 1.5); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-%set(0, 'defaultTextFontSize', 20);
-set(0, 'defaultAxesFontSize', 10); % Default at 10.
+set(0, 'defaultTextFontSize', 16);
+set(0, 'defaultAxesFontSize', 14); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
@@ -30,16 +30,43 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Mars AGW.
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_KappaON/');
+
+% Mars Gravity Wave.
+% fig_title = strcat('Mars Gravity Wave Simulation');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave/test_RAPHAEL'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9078210_spread_source/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081352_spread_cut_source/');
+
+% Seismic Hammer.
+fig_title = strcat('Seismic Hammer Simulation (New Model)');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
+root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
+
+% Quantity to display:
+%   1 = displacement for non-DG and velocity for DG,
+%   2 = velocity for non-DG and pressure for DG.
+type_display = 2; % Should be the same as the seismotype variable in parfile.
+
+% Unknown:
+% Supposition: for stations in DG zones, pressure is saved in BXZ files. TODO: Check that.
+% unknown = 'BXX';
+unknown = 'BXZ';
+
+% Sub-sample of records.
+nsub = 10;
 
 % close all; % Close all figure. Comment this to keep them.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Loading.                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load sources' positions.
 pos_sources = [0, 0]; % Allocate a row for the first source's position.
 % fid = fopen([root_dir, '/DATA/SOURCE']);
@@ -63,21 +90,7 @@ while(line ~= -1)
 end
 fclose('all');
 
-% fig_title = strcat('Gravito-acoustic propagation from folder : ');
-fig_title = strcat('Mars Gravity Wave Simulation');
-
-% Quantity to display:
-%   1 = displacement for non-DG and velocity for DG,
-%   2 = velocity for non-DG and pressure for DG.
-type_display = 2; % Should be the same as the seismotype variable in parfile.
-
-% Sub-sample of records.
-nsub = 10;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Load stations data.         %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Load stations data.
 A = importdata(strcat(root_dir, '/DATA/STATIONS'));
 pos_stations = [A.data(:, 1) A.data(:, 2)];
 xstattab = pos_stations(:, 1);
@@ -125,6 +138,8 @@ figure();
 hold on;
 
 % Loop on sismograms.
+max_ylim_plus=-Inf;
+min_ylim_minus=+Inf;
 for istat = 1 : nstat
   istat_glob = istattab(istat); % Recover global numer of station.
 
@@ -138,16 +153,26 @@ for istat = 1 : nstat
   % Switch on type of display.
   if (type_display == 1)
     % Original SPECFEM2D's sismogram is displacement.
-    % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
-    unknown = 'BXZ'; unknown_name = 'Vertical {displacement (m), velocity (m/s)} (m)'; % We want the Z component.
     extension = "semd"; % Because original SPECFEM2D's sismogram is displacement.
+    % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
+    unknown = 'BXZ'; unknown_name = 'Vertical {displacement (m), velocity (m/s)}'; % We want the Z component.
+    if(strcmp(unknown,'BXZ'))
+      unknown_name = 'Vertical {displacement (m), velocity (m/s)}';
+    elseif(strcmp(unknown,'BXX'))
+      unknown_name = 'Horizontal {displacement (m), velocity (m/s)}';
+    else
+      error("The variable 'unknown' has a non-standard value.");
+    end
   elseif (type_display == 2)
     % Original SPECFEM2D's sismogram is velocity.
-    % For stations in solid zones it's velocity. For stations in DG zones it's pressure.
-    % Supposition: for stations in DG zones, pressure is saved in BXZ files. TODO: Check that.
-    unknown = 'BXZ';
-    unknown_name = '{Vertical velocity (m/s), Pressure (Pa)}';
     extension = "semv"; % Because original SPECFEM2D's sismogram is velocity.
+    if(strcmp(unknown,'BXZ'))
+      unknown_name = '{Vertical velocity (m/s), Pressure}';
+    elseif(strcmp(unknown,'BXX'))
+      unknown_name = '{Horizontal velocity (m/s), Pressure}';
+    else
+      error("The variable 'unknown' has a non-standard value.");
+    end
   end
 
   % Read the sismogram.
@@ -161,7 +186,7 @@ for istat = 1 : nstat
   Ztime(istat, 1:nd) = data(1:nsub:nt, 1)';
   %Ztime(istat, 1:nd) = Ztime(istat, 1:nd) - Ztime(istat, 1); % Make time values start at zero.
   % Correct for sign of source function for N wave pattern (??)
-  Zamp(istat, 1:nd) = 0.0 - data(1:nsub:nt, 2)';
+  Zamp(istat, 1:nd) = data(1:nsub:nt, 2)';
 
   % Display.
   ax(istat) = subplot(nstat, 1, istat); plot(Ztime(1, :), Zamp(istat, :));
@@ -181,9 +206,32 @@ for istat = 1 : nstat
   end
   xlim([Ztime(1, 1), Ztime(1, end)]);
 
-  legend(strcat('(x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ', ', num2str(ystattab(istat_glob) / 1000), ', ', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
+  legend(strcat('(n,x,z,d)=(', num2str(istat_glob), ',', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
 
   hold on;
+  
+  ax=gca;
+  if(ax.YLim(1)<min_ylim_minus)
+    min_ylim_minus=ax.YLim(1);
+  end
+  if(ax.YLim(2)>max_ylim_plus)
+    max_ylim_plus=ax.YLim(2);
+  end
 end
 linkaxes(ax, 'x');
 %tightfig;
+
+if(nstat>1)
+  normalise_ylims=-1;
+  while(not(normalise_ylims==0 || normalise_ylims==1))
+    normalise_ylims=input('  Normalise y-scale? (0 for no, 1 for yes) > ');
+  end
+  if(normalise_ylims)
+    f=gcf;
+    for i=1:length(f.Children)
+      if(strcmp(f.Children(i).Type,'axes'))
+        f.Children(i).YLim=[min_ylim_minus, max_ylim_plus];
+      end
+    end
+  end
+end
