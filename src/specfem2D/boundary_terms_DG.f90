@@ -708,7 +708,7 @@
               !/(rho_DG_P*veloc_z_DG_P*nz*tx)
 
       ! No stress continuity.
-      tensor_temp = 0
+      tensor_temp = 0.
       p_DG_P = p_DG_iM
       
       ! Stress continuity.
