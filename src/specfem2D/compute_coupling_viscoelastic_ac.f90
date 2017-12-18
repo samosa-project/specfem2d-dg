@@ -31,7 +31,10 @@
 !
 !========================================================================
 
-! for viscoelastic solver
+! ------------------------------------------------------------ !
+! compute_coupling_viscoelastic_ac                             !
+! ------------------------------------------------------------ !
+! Computes the coupling from acoustic (classical and DG) elements to viscoelastic elements.
 
   subroutine compute_coupling_viscoelastic_ac()
 
@@ -278,7 +281,11 @@
   
   end subroutine compute_coupling_viscoelastic_ac
   
-  !!!!!!!!! FORCING
+! ------------------------------------------------------------ !
+! compute_forcing_viscoelastic                                 !
+! ------------------------------------------------------------ !
+! Computes a forcing on the viscoelastic elements.
+
   subroutine compute_forcing_viscoelastic(timelocal)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NGLJ,ZERO,ONE,TWO, &
@@ -297,31 +304,27 @@
 
   ! loop on all the coupling edges
   do inum = 1,nb_forcing_solid
-
     i = forcing_solid(inum, 1)
     j = forcing_solid(inum, 2)
     ispec = forcing_solid(inum, 3)
-
     iglob = ibool(i,j,ispec)
+    xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+    zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
+    jacobian1D = sqrt(xxi**2 + zxi**2)
+    nx = + zxi / jacobian1D
+    nz = - xxi / jacobian1D
+    weight = jacobian1D * wxgll(i)
 
-        xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
-        zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
-        jacobian1D = sqrt(xxi**2 + zxi**2)
-        nx = + zxi / jacobian1D
-        nz = - xxi / jacobian1D
-        weight = jacobian1D * wxgll(i)
+    perio = 0.5
+    to    = 0.5
+    strengh = 100*(&
+              - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
+                       (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
+              + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
+                       (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) 
 
-        perio = 0.5
-        to    = 0.5
-        strengh = 100*(&
-                  - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
-                           (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
-                  + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
-                           (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) 
-
-      accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*strengh
-      accel_elastic(2,iglob) = accel_elastic(2,iglob) + weight*nz*strengh
-
+    accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*strengh
+    accel_elastic(2,iglob) = accel_elastic(2,iglob) + weight*nz*strengh
   enddo
   
   end subroutine compute_forcing_viscoelastic

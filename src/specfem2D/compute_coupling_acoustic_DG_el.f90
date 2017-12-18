@@ -31,7 +31,7 @@
 !
 !========================================================================
 
-! for acoustic solver
+! TODO: Unused, decide what to do with this.
 
   subroutine compute_coupling_acoustic_DG_el(i_current, j_current, ispec_current, &
                 timelocal, rho_DG_P, rhovx_DG_P, &

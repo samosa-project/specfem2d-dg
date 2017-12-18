@@ -31,7 +31,12 @@
 !
 !========================================================================
 
-! for acoustic solver
+! ------------------------------------------------------------ !
+! compute_coupling_viscoelastic_ac                             !
+! ------------------------------------------------------------ !
+! Computes the coupling from viscoelastic elements to acoustic (classical, not DG) elements.
+! Note: the coupling from viscoelastic elements to DG acoustic elements is treated in "boundary_terms_DG.f90".
+! TODO: Maybe format the file containing the [viscoelastic -> DG acoustic] coupling ("boundary_terms_DG.f90") in accordance with the other couplings (for example, in a file "compute_coupling_acousticDG_el.f90").
 
   subroutine compute_coupling_acoustic_el(displ_elastic,displ_elastic_old,potential_dot_dot_acoustic)
 
@@ -240,7 +245,7 @@
 
       endif
 
-      ! compute dot product
+      ! Compute dot product.
       displ_n = displ_x*nx + displ_z*nz
       potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + weight*displ_n
 
@@ -251,7 +256,9 @@
 
   end subroutine compute_coupling_acoustic_el
 
-!========================================================================
+! ------------------------------------------------------------ !
+! compute_coupling_acoustic_el_backward                        !
+! ------------------------------------------------------------ !
 ! for acoustic solver: backward simulation in adjoint inversion
 
   subroutine compute_coupling_acoustic_el_backward(b_displ_elastic,b_potential_dot_dot_acoustic)

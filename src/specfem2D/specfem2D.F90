@@ -349,48 +349,46 @@
 !! DK DK (then array bound checking cannot be used, thus for instance do NOT use -check all in Intel ifort)
 ! #define FORCE_VECTORIZATION
 
-  program specfem2D
+program specfem2D
 
   use specfem_par, only: undo_attenuation
-
   implicit none
 
   ! MPI initialization
   call init_mpi()
 
-  ! force Flush-To-Zero if available to avoid very slow Gradual Underflow trapping
+  ! Force Flush-To-Zero if available to avoid very slow Gradual Underflow trapping.
   call force_ftz()
 
-  ! reads in parameters
+  ! Read in parameters.
   call initialize_simulation()
 
-  ! reads sources, stations, and mesh from database
+  ! Read sources, stations, and mesh from database.
   call read_mesh_databases()
 
-  ! sets up reference element GLL points/weights/derivatives
+  ! Set up reference element GLL points/weights/derivatives.
   call setup_GLL_points()
 
-  ! sets up global mesh numbering and mesh properties
+  ! Set up global mesh numbering and mesh properties.
   call setup_mesh()
 
-  ! defines actual location of source and receivers
+  ! Define actual location of source and receivers.
   call setup_sources_receivers()
 
-  ! sets up and precomputes simulation arrays
+  ! Set up and precomputes simulation arrays.
   call prepare_timerun()
   
-  ! steps through time iterations
+  ! Step through time iterations.
   if (UNDO_ATTENUATION) then
     call iterate_time_undoatt()
   else
     call iterate_time()
   endif
 
-  ! saves last time frame and finishes kernel calculations
+  ! Save last time frame and finishes kernel calculations.
   call finalize_simulation()
 
-  ! MPI finish
+  ! MPI finish.
   call finalize_mpi()
 
-  end program specfem2D
-
+end program specfem2D

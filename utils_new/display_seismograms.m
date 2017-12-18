@@ -43,11 +43,13 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9078210_spread_source/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081352_spread_cut_source/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091089_new_coupling/');
 
 % Seismic Hammer.
 fig_title = strcat('Seismic Hammer Simulation (New Model)');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
 root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_new_coupling/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -71,6 +73,9 @@ nsub = 10;
 pos_sources = [0, 0]; % Allocate a row for the first source's position.
 % fid = fopen([root_dir, '/DATA/SOURCE']);
 fid = fopen([output_files_dir, 'SOURCE']);
+if(fid==-1)
+  error(strcat("Cannot open SOURCE file in ", output_files_dir))
+end
 line = 0; xfound = 0; zfound = 0;
 while(line ~= -1)
   % TODO: Loop on source number.
@@ -134,7 +139,7 @@ nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Plot.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure();
+figure(1);
 hold on;
 
 % Loop on sismograms.
@@ -235,3 +240,4 @@ if(nstat>1)
     end
   end
 end
+figure(1);

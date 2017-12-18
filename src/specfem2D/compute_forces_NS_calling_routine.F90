@@ -31,6 +31,8 @@
 !
 !========================================================================
 
+! TODO: Unused, decide what to do with this.
+
   subroutine compute_forces_NS_main()
 
   use specfem_par

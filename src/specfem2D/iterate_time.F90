@@ -31,7 +31,12 @@
 !
 !========================================================================
 
-subroutine iterate_time()
+! ------------------------------------------------------------ !
+! iterate_time                                                 !
+! ------------------------------------------------------------ !
+! TODO: Description.
+
+  subroutine iterate_time()
 
 #ifdef USE_MPI
   use mpi
@@ -78,19 +83,14 @@ subroutine iterate_time()
   minutes = time_values(6)
   call convtime(timestamp,year,mon,day,hr,minutes)
 
-  ! convert to seconds instead of minutes, to be more precise for 2D runs, which can be fast
+  ! Convert to seconds instead of minutes, to be more precise for 2D runs, which can be fast.
   timestamp_seconds_start = timestamp*60.d0 + time_values(7) + time_values(8)/1000.d0
 
-! *********************************************************
-! ************* MAIN LOOP OVER THE TIME STEPS *************
-! *********************************************************
-  
-  ! synchronize all processes to make sure everybody is ready to start time loop
-  call synchronize_all()
+  call synchronize_all() ! Synchronize all processes to make sure everybody is ready to start time loop.
 
   if (myrank == 0) then
     write(IMAIN,*)
-    write(IMAIN,*) 'Starting time iteration loop ...'
+    write(IMAIN,*) 'Starting time iteration loop...'
     write(IMAIN,*)
     call flush_IMAIN()
   endif
@@ -99,9 +99,8 @@ subroutine iterate_time()
   seismo_offset = 0
   seismo_current = 0
 
-  do it = 1,NSTEP
-    ! compute current time
-    timeval = (it-1) * deltat
+  do it = 1, NSTEP
+    timeval = (it-1) * deltat ! Current time.
 
     ! display time step and max of norm of displacement
     if (mod(it,NSTEP_BETWEEN_OUTPUT_INFO) == 0 .or. it == 5 .or. it == NSTEP) then
@@ -109,62 +108,51 @@ subroutine iterate_time()
     endif
 
     do i_stage = 1, stage_time_scheme
-
-      ! updates wavefields using Newmark time scheme
+      ! Updates wavefields using Newmark time scheme.
       call update_displacement_scheme()
     
-      ! acoustic domains
+      ! Acoustic domains.
       if (ACOUSTIC_SIMULATION) then
         if (.not. GPU_MODE) then
-          
           if(any_acoustic_DG) call compute_forces_acoustic_DG_main()
           if(.not. only_DG_acoustic) call compute_forces_acoustic_main()
-          
           if (SIMULATION_TYPE == 3) call compute_forces_acoustic_main_backward()
-          
         else
-          ! on GPU
           if (any_acoustic) call compute_forces_acoustic_GPU()
         endif
       endif
 
-      ! gravitoacoustic domains
+      ! Gravitoacoustic domains.
       if (GRAVITOACOUSTIC_SIMULATION) then
         if (.not. GPU_MODE) then
           call compute_forces_gravitoacoustic_main()
         else
-          ! on GPU
           if (any_gravitoacoustic) call exit_MPI(myrank,'gravitoacoustic not implemented in GPU MODE yet')
         endif
       endif
         
-      ! elastic domains
+      ! Viscoelastic domains.
       !if (.false. .AND. ELASTIC_SIMULATION) then
       if (ELASTIC_SIMULATION) then
-      
         if(it == 1 .AND. i_stage == 1) then
-                where(rho_DG <= 0._CUSTOM_REAL) rho_DG = 1.
+          where(rho_DG <= 0._CUSTOM_REAL) rho_DG = 1.
         endif
-        
         if (.not. GPU_MODE) then
           call compute_forces_viscoelastic_main()
           if (SIMULATION_TYPE == 3) call compute_forces_viscoelastic_main_backward()
         else
-          ! on GPU
           if (any_elastic) call compute_forces_viscoelastic_GPU()
         endif
       endif
         
-      ! poroelastic domains
+      ! Poroelastic domains.
       if (POROELASTIC_SIMULATION) then
         if (.not. GPU_MODE) then
           call compute_forces_poroelastic_main()
         else
-          ! on GPU
           if (any_poroelastic) call exit_MPI(myrank,'poroelastic not implemented in GPU MODE yet')
         endif
       endif
-
     enddo ! stage_time_scheme (LDDRK or RK)
 
     ! reads in lastframe for adjoint/kernels calculation
@@ -204,7 +192,7 @@ subroutine iterate_time()
   
     ! loop on all the receivers to compute and store the seismograms
     if (.not. SIMULATION_TYPE == 3) then
-    call write_seismograms()
+      call write_seismograms()
     endif
 
     ! kernels calculation
@@ -214,27 +202,20 @@ subroutine iterate_time()
       
     ! display results at given time steps
     call write_movie_output()
-
-    !WRITE(*,*) "------------6>", minval(b_rho_DG), maxval(b_rho_DG)
-
-  enddo ! end of the main time loop
-
-! *********************************************************
-! ************* END MAIN LOOP OVER THE TIME STEPS *********
-! *********************************************************!
+  enddo ! Enddo on it.
 
   ! Transfer fields from GPU card to host for further analysis
   if (GPU_MODE) call it_transfer_from_GPU()
 
-
-  !----  formats
+  ! Formats.
   400 format(/1x,41('=')/,' =  T i m e  e v o l u t i o n  l o o p  ='/1x,41('=')/)
 
-end subroutine iterate_time
+  end subroutine iterate_time
 
-!
-!----------------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! it_transfer_from_GPU                                         !
+! ------------------------------------------------------------ !
+! TODO: Description.
 
 subroutine it_transfer_from_GPU()
 
@@ -319,9 +300,10 @@ subroutine it_transfer_from_GPU()
 
 end subroutine it_transfer_from_GPU
 
-!
-!----------------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! it_read_forward_arrays                                       !
+! ------------------------------------------------------------ !
+! TODO: Description.
 
 subroutine it_read_forward_arrays()
 
@@ -432,9 +414,10 @@ subroutine it_read_forward_arrays()
 
 end subroutine it_read_forward_arrays
 
-!
-!----------------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! it_compute_and_output_energy                                 !
+! ------------------------------------------------------------ !
+! TODO: Description.
 
 subroutine it_compute_and_output_energy()
 
@@ -465,9 +448,10 @@ subroutine it_compute_and_output_energy()
 
 end subroutine it_compute_and_output_energy
 
-!
-!----------------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! it_compute_integrated_energy_field_and_output                !
+! ------------------------------------------------------------ !
+! TODO: Description.
 
 subroutine it_compute_integrated_energy_field_and_output()
   ! compute int_0^t v^2 dt and write it on file if needed

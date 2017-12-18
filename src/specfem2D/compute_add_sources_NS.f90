@@ -31,7 +31,7 @@
 !
 !=====================================================================
 
-! for acoustic solver
+! TODO: Unused, decide what to do with this.
 
   subroutine compute_add_sources_NS(dt_rhoveloc_acoustic,it,i_stage)
 

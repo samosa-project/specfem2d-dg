@@ -31,7 +31,10 @@
 !
 !=====================================================================
 
-! for viscoelastic solver
+! ------------------------------------------------------------ !
+! compute_add_sources_viscoelastic                             !
+! ------------------------------------------------------------ !
+! Computes and adds the viscoelastic sources' terms.
 
   subroutine compute_add_sources_viscoelastic(accel_elastic,it,i_stage)
 
@@ -101,10 +104,9 @@
 
   end subroutine compute_add_sources_viscoelastic
 
-!
-!=====================================================================
-!
-
+! ------------------------------------------------------------ !
+! compute_add_sources_viscoelastic_adjoint                     !
+! ------------------------------------------------------------ !
 ! for viscoelastic solver for adjoint propagation wave field
 
   subroutine compute_add_sources_viscoelastic_adjoint()
