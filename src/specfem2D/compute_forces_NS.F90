@@ -31,6 +31,7 @@
 !
 !========================================================================
 
+! TODO: Unused, decide what to do with this.
 
   subroutine compute_forces_NS(dt_rhoveloc_acoustic, dt_density, dt_rhoenergy, &
         rhoveloc_acoustic, rhoenergy, density_p)

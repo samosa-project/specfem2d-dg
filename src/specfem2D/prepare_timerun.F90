@@ -1187,54 +1187,62 @@
 ! ------------------------------------------------------------ !
 ! prepare_timerun_ssf                                          !
 ! ------------------------------------------------------------ !
-! Allocates and prepares a vector containingthe values of the source spatial function.
-  subroutine prepare_timerun_ssf()
+! Allocates and prepares a vector containing the values of the source spatial function.
+subroutine prepare_timerun_ssf()
   
   use specfem_par
 
   implicit none
   
-  integer :: ig, i, j, ispec ! DEBUG
+  !integer :: ig, i, j, ispec ! DEBUG
 
-  if (.not. initialfield) then
-    ! One does not use an initial field.
-    if (myrank == 0) then
-      write(IMAIN,*) 'WARNING: A SOURCE SPATIAL FUNCTION OVER MANY ELEMENTS IS BEING INITIALISED. ', &
-                     'Preparing source spatial function.'
-      call flush_IMAIN()
-    endif
-
-    ! TODO: Implement a less cumbersome way of storing the values. Indeed, many values far away from the source will be negligible in this array.
-    ! For example, instead of storing values over all the points, build the list of indices which associated points have a non-negligible value (value greater than a given threshold), and store only the values of the source spatial function at those points.
-    allocate(source_spatial_function_DG(NSOURCES, nglob))
-    source_spatial_function_DG(:, :) = 0._CUSTOM_REAL
-    call prepare_source_spatial_function_DG() ! Compute the SSF array.
-    
-    if(.false.) then ! DEBUG
-      !write(*, *) ">  proc", myrank, "initialfield", initialfield
-      !write(*, *) source_spatial_function_DG ! DEBUG
-      !write(*, *) 'ouloulou nspec', nspec, 'nglob_DG', nglob_DG, "nglob", nglob ! DEBUG
-      do ispec = 1, nspec
-        do i = 1, NGLLX
-          do j = 1, NGLLZ
-            ig = ibool_before_perio(i, j, ispec)
-            if(.false. .and. source_spatial_function_DG(1, ig)>9.5d-1) &
-              write(*, *) ">  proc", myrank, "ig", ig,&
-                          "xy", coord(1, ig), coord(2, ig), &
-                          "ssf", source_spatial_function_DG(1, ig) ! DEBUG
-          enddo
-        enddo
-      enddo
-    endif ! Endif on DEBUG.
-    
-  else
+  if(initialfield) then
     ! One uses an initialfield. Thus, do a dummy allocation.
     allocate(source_spatial_function_DG(1, 1))
+  else
+    ! One does not use an initial field.
+    if(.not. any_acoustic_DG) then
+      ! No DG elements exist, ignore call and inform user.
+      if(myrank == 0) then
+        write(IMAIN,*) 'No DG elements exist, spread source spatial function(s) cannot be implemented. '&
+                       'The classical spatial source function(s) will be used.'
+        call flush_IMAIN()
+      endif
+    else
+      ! DG elements exist.
+      if(myrank == 0) then
+        write(IMAIN,*) 'Spread source spatial function(s) is (are) being initialised over the DG elements.'
+        write(IMAIN,*) 'WARNING: THIS KIND OF SOURCE HAS TO BE TUNED NOT TO GENERATE SPURIOUS DISCONTINUITIES, '&
+                       'USE AT YOUR OWN RISK.'
+        call flush_IMAIN()
+      endif
+      ! TODO: Implement a less cumbersome way of storing the values. Indeed, many values far away from the source will be negligible in this array.
+      ! For example, instead of storing values over all the points, build the list of indices which associated points have a non-negligible value (value greater than a given threshold), and store only the values of the source spatial function at those points.
+      allocate(source_spatial_function_DG(NSOURCES, nglob))
+      source_spatial_function_DG(:, :) = 0._CUSTOM_REAL
+      call prepare_source_spatial_function_DG() ! Compute the SSF array.
+      !if(.false.) then ! DEBUG
+      !  !write(*, *) ">  proc", myrank, "initialfield", initialfield
+      !  !write(*, *) source_spatial_function_DG ! DEBUG
+      !  !write(*, *) 'ouloulou nspec', nspec, 'nglob_DG', nglob_DG, "nglob", nglob ! DEBUG
+      !  do ispec = 1, nspec
+      !    do i = 1, NGLLX
+      !      do j = 1, NGLLZ
+      !        ig = ibool_before_perio(i, j, ispec)
+      !        if(.false. .and. source_spatial_function_DG(1, ig)>9.5d-1) &
+      !          write(*, *) ">  proc", myrank, "ig", ig,&
+      !                      "xy", coord(1, ig), coord(2, ig), &
+      !                      "ssf", source_spatial_function_DG(1, ig) ! DEBUG
+      !      enddo
+      !    enddo
+      !  enddo
+      !endif ! Endif on DEBUG.
+    endif ! Endif on any_acoustic_DG.
   endif ! Endif on initialfield.
   
   call synchronize_all()
 
-  end subroutine prepare_timerun_ssf
+end subroutine prepare_timerun_ssf
 
 ! ------------------------------------------------------------ !
 ! prepare_source_spatial_function_DG                           !
@@ -1242,15 +1250,12 @@
 ! Compute values of the source spatial function at all points.
 ! TODO: Correct the issue which appear for runs with multiple process (it seems only process 0 has values correctly initialised). Note: with only one process, everything works fine.
 
-  subroutine prepare_source_spatial_function_DG
+subroutine prepare_source_spatial_function_DG
   
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
-  use specfem_par, only: coord, nspec, &
-                         source_spatial_function_DG, &
-                         SIGMA_SSF, &
-                         NSOURCES, source_type, x_source, z_source, ibool_before_perio &
-                         , myrank
-  
+  use specfem_par, only: coord, ibool_before_perio, IMAIN, ispec_is_acoustic_DG, &
+                         ispec_selected_source, myrank, NSOURCES, nspec, SIGMA_SSF, &
+                         source_spatial_function_DG, source_type, x_source, z_source 
   implicit none
   
   ! Local variables.
@@ -1259,43 +1264,56 @@
   
   ! Save values.
   logical :: SAVE_SSF
-  character(len=21) :: filename
+  character(len=24) :: filename ! 16 for "OUTPUT_FILES/SSF" + N for process numbering.
   
   SAVE_SSF = .false. ! TODO: Maybe add a parameter to the parfile to enable/disable SSF saving.
   ! Then, use the Matlab script '/utils_new/show_SSF.m'.
   
   if(SAVE_SSF) then
-    write(filename, '( "OUTPUT_FILES/SSF", i5.5 )' ) myrank
+    write(filename, '( "OUTPUT_FILES/SSF", i8.8 )' ) myrank
     open(unit=504,file=filename,status='unknown',action='write', position="append")
   endif
-  
   do i_source = 1, NSOURCES ! Loop on sources.
-    do ispec = 1, nspec
-      do i = 1, NGLLX
-        do j = 1, NGLLZ
-          iglob_unique = ibool_before_perio(i, j, ispec)
-          if(source_type(i_source) == 1) then
-            ! If the source is an elastic force or an acoustic pressure.
-            distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
-                       + (coord(2, iglob_unique) - z_source(i_source))**2.
-            source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))
-            !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
-            !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
-          endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
-          
-          if(SAVE_SSF) then
-            write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
-          endif
-        enddo
-      enddo
-    enddo
-  enddo
-  
+    if(.not. ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
+      ! The central point of the source is not in a DG element, ignore call and inform user.
+      if(myrank == 0) then
+        write(IMAIN,*) 'The central point of the source ', i_source, ' is not in a DG element, a spread source spatial function '&
+                       'cannot be implemented. A classical spatial source function will be used.'
+        call flush_IMAIN()
+      endif
+    else
+      ! The central point of the source is indeed in a DG element.
+      ! TODO: More cases may exist where the use of a spread source spatial function has to be discarded. Identify those and produce relevant tests and error messages.
+      do ispec = 1, nspec
+        do i = 1, NGLLX
+          do j = 1, NGLLZ
+            iglob_unique = ibool_before_perio(i, j, ispec)
+            if(source_type(i_source) == 1) then
+              ! If the source is an elastic force or an acoustic pressure.
+              distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
+                         + (coord(2, iglob_unique) - z_source(i_source))**2.
+              source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))
+              !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
+              !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
+            endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
+            
+            if(SAVE_SSF) then
+              write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
+            endif
+          enddo ! Enddo on j.
+        enddo ! Enddo on i.
+      enddo ! Enddo on ispec.
+    endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
+  enddo ! Enddo on i_source.
   if(SAVE_SSF) then
     close(504)
+    if(myrank == 0) then
+      write(IMAIN,*) "The spread source spatial function's values at the mesh's points were saved in the OUTPUT_FILES folder. "&
+                     "Use the Matlab script '/utils_new/show_SSF.m' to plot."
+      call flush_IMAIN()
+    endif
   endif
-  
-  end subroutine prepare_source_spatial_function_DG
+end subroutine prepare_source_spatial_function_DG
 
 ! ------------------------------------------------------------ !
 ! prepare_timerun_stf                                          !

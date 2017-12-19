@@ -73,6 +73,116 @@ module specfem_par
   logical :: read_external_mesh
 
   !---------------------------------------------------------------------
+  ! DG related quantities.
+  !---------------------------------------------------------------------
+  ! Switches (variables' names are self-explanatory).
+  logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
+             CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
+  ! Characterise the simulation (variables' names are self-explanatory).
+  logical :: only_DG_acoustic, any_acoustic_DG
+  
+  ! Constitutive variables.
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
+        veloc_x_DG, veloc_z_DG, p_DG, potential_dphi_dx_DG, potential_dphi_dz_DG, &
+        p_DG_init, T_init
+  ! Initial values of the constitutive variables.
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_init, rhovx_init, rhovz_init, E_init
+  ! Gradients of temperature and velocities.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: T_DG
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: V_DG
+  ! "Time derivatives" of the constitutive variables.
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
+  
+  ! Variables to store numerical time scheme temporary results.
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1
+  
+  ! Backward simulation constitutive variables and their "time derivatives".
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
+                                                       b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E, &
+                                                       resu_b_rho, resu_b_rhovx, resu_b_rhovz, resu_b_E
+  
+  ! Source type (more precisely, this encodes on which Navier-Stokes equation(s) the source(s) is (are) to be used).
+  integer :: TYPE_SOURCE_DG
+  ! Source time functions.
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: &
+        source_time_function_rho_DG, source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
+        source_time_function_E_DG
+  
+  ! Sources spatially distributed over more than one element.
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
+    source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
+  real(kind=CUSTOM_REAL) :: SIGMA_SSF ! Standard deviation of the exponential used for the SSF.
+  
+  ! Inverse mass matrices (forward and backward simulations)
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, &
+                                                       rmass_inverse_acoustic_DG_b
+
+  ! MPI: Transfers' buffers.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, buffer_DG_Vzz_P, &
+                                                          buffer_DG_Vzx_P, buffer_DG_Vxz_P, &
+                                                          ! TEST
+                                                          buffer_DG_gamma_P, buffer_DG_e1_P
+  
+  ! TODO: Explain those variables.
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG, &
+        kappa_DG, tau_sigma, tau_epsilon
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: QKappa_attenuationext,Qmu_attenuationext
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: error
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG, save_pressure
+  real(kind=CUSTOM_REAL) :: coord_interface
+  !logical, dimension(:), allocatable :: this_iglob_is_acous
+  integer :: TYPE_FORCING, id_region_DG
+  real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time 
+  real(kind=CUSTOM_REAL) :: MINMOD_FACTOR, SCALE_HEIGHT, gravity_cte_DG, &
+        dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
+  real(kind=CUSTOM_REAL) :: cp, cnu
+  integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG!, ispec_interfaces_acoustic_DG
+  logical, dimension(:), allocatable  :: is_MPI_interface_DG    
+  integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG!, nispec_interfaces_acoustic_DG
+  integer :: nglob_DG
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_DG
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_DG
+  integer, dimension(:), allocatable  :: tab_requests_send_recv_DG
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: weight_DG, weight_DG_corner
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: dir_normal_DG, dir_normal_DG_corner
+  real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind  
+  integer, dimension(:), allocatable :: link_DG_CG, cpt_CG_DG
+  integer, dimension(:,:), allocatable :: link_CG_DG
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: normal_DG, normal_DG_corner
+  integer, dimension(:,:,:,:), allocatable :: neighbor_DG, neighbor_DG_corner
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: elastic_tensor   
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  ! Indices' mappings. Usually from (ispec, i, j) to iglob.
+  integer, dimension(:,:,:), allocatable :: ibool_DG ! TODO: Explain better.
+  integer, dimension(:,:,:), allocatable :: ibool_before_perio ! TODO: Explain better.
+  
+  ! Characterise whether the element and/or point is something or not. TODO: Explain each better.
+  logical, dimension(:,:,:), allocatable :: ispec_is_acoustic_forcing, ispec_is_acoustic_surface, &
+                                            ispec_is_acoustic_surface_corner
+  logical, dimension(:), allocatable :: ispec_is_acoustic_DG!, ispec_is_acoustic_coupling
+  integer, dimension(:,:,:,:), allocatable :: ispec_is_acoustic_coupling_el
+  integer, dimension(:), allocatable :: ispec_is_acoustic_coupling_ac
+  logical, dimension(:,:), allocatable :: is_corner
+
+  ! Constants for normals.
+  integer, parameter :: DIR_UP    = 1
+  integer, parameter :: DIR_DOWN  = -1
+  integer, parameter :: DIR_RIGHT = 2
+  integer, parameter :: DIR_LEFT  = -2
+
+  ! TODO: Unused, decide what to do with this.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: dt_rhoveloc_acoustic, rhoveloc_acoustic
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dt_density, dt_rhoenergy, rhoenergy, density_p
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: pext
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rhoveloc_x, resu_rhoveloc_z, resu_density, resu_rhoenergy
+  
+  !---------------------------------------------------------------------
   ! for material information
   !---------------------------------------------------------------------
   integer :: numat
@@ -82,26 +192,6 @@ module specfem_par
   double precision, dimension(:,:,:), allocatable :: poroelastcoef
   logical, dimension(:), allocatable :: already_shifted_velocity
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: vpext,vsext,rhoext,gravityext,Nsqext
-  ! MODIF DG
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG, &
-        kappa_DG, tau_sigma, tau_epsilon
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG, save_pressure
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: QKappa_attenuationext,Qmu_attenuationext
-  real(kind=CUSTOM_REAL) :: coord_interface
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: error
-  
-  !logical, dimension(:), allocatable :: this_iglob_is_acous
-  
-  integer :: TYPE_SOURCE_DG, TYPE_FORCING, id_region_DG
-  
-  real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time 
-  
-  logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
-        CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
-  real(kind=CUSTOM_REAL) :: MINMOD_FACTOR, SCALE_HEIGHT, gravity_cte_DG, &
-        dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
-  
-  real(kind=CUSTOM_REAL) :: cp, cnu
   
   ! Trick for plane wave forcing solid
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: forcing_solid
@@ -318,59 +408,6 @@ module specfem_par
 
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable  :: xix,xiz,gammax,gammaz,jacobian
   integer, dimension(:,:,:), allocatable :: ibool
-  
-  ! Modif DG
-  integer, dimension(:,:,:), allocatable :: ibool_DG
-  integer, dimension(:,:,:), allocatable :: ibool_before_perio
-  logical, dimension(:,:,:), allocatable :: ispec_is_acoustic_forcing, ispec_is_acoustic_surface, &
-        ispec_is_acoustic_surface_corner
-  logical, dimension(:), allocatable :: ispec_is_acoustic_DG!, ispec_is_acoustic_coupling
-  integer, dimension(:,:,:,:), allocatable :: ispec_is_acoustic_coupling_el
-  integer, dimension(:), allocatable :: ispec_is_acoustic_coupling_ac
-  logical, dimension(:,:), allocatable :: is_corner
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: weight_DG, weight_DG_corner
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: dir_normal_DG, dir_normal_DG_corner
-  integer, parameter :: DIR_UP    = 1
-  integer, parameter :: DIR_DOWN  = -1
-  integer, parameter :: DIR_RIGHT = 2
-  integer, parameter :: DIR_LEFT  = -2
-  logical :: only_DG_acoustic, any_acoustic_DG
-  
-  real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind  
-  
-  integer, dimension(:), allocatable :: link_DG_CG, cpt_CG_DG
-  integer, dimension(:,:), allocatable :: link_CG_DG
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: normal_DG, normal_DG_corner
-  integer, dimension(:,:,:,:), allocatable :: neighbor_DG, neighbor_DG_corner
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: elastic_tensor
- 
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
-        veloc_x_DG, veloc_z_DG, p_DG, potential_dphi_dx_DG, potential_dphi_dz_DG, &
-        p_DG_init, T_init
-        
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rhovx_init, rhovz_init, E_init, rho_init
-        
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: b_rhovx_DG, b_rhovz_DG, b_E_DG, b_rho_DG, &
-        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E, &
-        resu_b_rho, resu_b_rhovx, resu_b_rhovz, resu_b_E
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
-        
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: T_DG
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: V_DG
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1
-  
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: &
-        source_time_function_rho_DG, source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
-        source_time_function_E_DG
-
-  ! For sources spatially distributed over more than one element.
-  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
-    source_spatial_function_DG ! Array of values. Usual dimensions: (NSOURCES, nglob_DG).
-  real(kind=CUSTOM_REAL) :: SIGMA_SSF ! Standard deviation of the exponential.
-        
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
   !real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: &
   !      dot_rho_rk, dot_rhovx_rk, dot_rhovz_rk, dot_E_rk
   !real(kind=CUSTOM_REAL), dimension(:), allocatable :: &
@@ -502,10 +539,6 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_gravitoacoustic
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_gravito
   
-  ! Modif DG
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, &
-        rmass_inverse_acoustic_DG_b
-  
   ! the variable for PML
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: rmemory_potential_acoustic
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: &
@@ -549,15 +582,7 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_elastic_three
 
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: accel_elastic,veloc_elastic,displ_elastic
-
-  ! MODIF DG
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_accel_x, resu_accel_z, resu_veloc_x, resu_veloc_z
-
-  ! MODIF NS
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: dt_rhoveloc_acoustic, rhoveloc_acoustic
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dt_density, dt_rhoenergy, rhoenergy, density_p
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: pext
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rhoveloc_x, resu_rhoveloc_z, resu_density, resu_rhoenergy
 
   ! PML/attenuation
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: displ_elastic_old
@@ -742,9 +767,6 @@ module specfem_par
   ! global points
   integer :: nglob,npgeo
   
-  ! Modif DG
-  integer :: nglob_DG
-  
   ! spectral-elements
   integer :: nspec
   integer :: ngnod
@@ -773,16 +795,6 @@ module specfem_par
   integer :: ninterface_acoustic, ninterface_elastic,ninterface_poroelastic
   integer, dimension(:), allocatable :: inum_interfaces_acoustic, inum_interfaces_elastic, inum_interfaces_poroelastic
   
-  ! MODIF DG
-  integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG!, ispec_interfaces_acoustic_DG
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, buffer_DG_Vzz_P, &
-        buffer_DG_Vzx_P, buffer_DG_Vxz_P, &
-        ! TEST
-        buffer_DG_gamma_P, buffer_DG_e1_P
-  logical, dimension(:), allocatable  :: is_MPI_interface_DG    
-  integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG!, nispec_interfaces_acoustic_DG
-  
   integer :: ninterface_acoustic_DG
   integer, dimension(:), allocatable :: inum_interfaces_acoustic_DG
   integer, dimension(:,:,:), allocatable :: MPI_transfer
@@ -790,11 +802,7 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_ac
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_ac
   integer, dimension(:), allocatable  :: tab_requests_send_recv_acoustic
-  ! MODIF DG
   !integer, dimension(:,:), allocatable  :: diag_MPI
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_DG
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_DG
-  integer, dimension(:), allocatable  :: tab_requests_send_recv_DG
   
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_el
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_el
@@ -861,7 +869,10 @@ module specfem_par
 
 end module specfem_par
 
-!=====================================================================
+! ------------------------------------------------------------ !
+! specfem_par_noise                                            !
+! ------------------------------------------------------------ !
+! Parameter module for noise simulations.
 
 module specfem_par_noise
 
@@ -926,12 +937,12 @@ module specfem_par_noise
 
 end module specfem_par_noise
 
-!=====================================================================
+! ------------------------------------------------------------ !
+! specfem_par_gpu                                              !
+! ------------------------------------------------------------ !
+! Parameter module for gpu simulations.
 
 module specfem_par_gpu
-
-! parameter module for gpu simulations
-
   use constants,only: CUSTOM_REAL
   implicit none
 
@@ -1009,14 +1020,14 @@ module specfem_par_gpu
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: b_buffer_send_vector_ext_mesh
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_recv_vector_ext_mesh
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: b_buffer_recv_vector_ext_mesh
-
 end module specfem_par_gpu
 
-!=====================================================================
+! ------------------------------------------------------------ !
+! specfem_par_movie                                            !
+! ------------------------------------------------------------ !
+! TODO: Description.
 
 module specfem_par_movie
-
-! parameter module for noise simulations
 
   use constants,only: CUSTOM_REAL
   implicit none
