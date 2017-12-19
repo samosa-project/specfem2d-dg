@@ -72,7 +72,6 @@
 
   ! local parameter
   integer :: ibegin,iend,ispecabs,jbegin,jend,ispec,i,j,iglob
-  real(kind=CUSTOM_REAL) :: coef_stretch_x, coef_stretch_z ! Mesh stretching.
 
   ! material properties of the elastic medium
   real(kind=CUSTOM_REAL) :: mul_unrelaxed_elastic,lambdal_unrelaxed_elastic
@@ -367,15 +366,6 @@
           iglob = ibool_DG(i,j,ispec)
           ! MODIF DG
           rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
-          
-          ! --------------------------- !
-          ! Virtual mesh stretching.    !
-          ! --------------------------- !
-          ! TODO: Check if this should be done or not.
-          if(.false.) then ! TODO: add a parameter for this option in parfile.
-            call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
-            rmass_inverse_acoustic_DG(iglob) = coef_stretch_x * coef_stretch_z * rmass_inverse_acoustic_DG(iglob)
-          endif
         endif
       enddo
     enddo

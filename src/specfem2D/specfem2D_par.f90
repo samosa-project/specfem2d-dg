@@ -158,7 +158,7 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  ! Indices' mappings. Usually from (ispec, i, j) to iglob.
+  ! Indices' mappings. Usually from (i, j, ispec) to iglob.
   integer, dimension(:,:,:), allocatable :: ibool_DG ! TODO: Explain better.
   integer, dimension(:,:,:), allocatable :: ibool_before_perio ! TODO: Explain better.
   

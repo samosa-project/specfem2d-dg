@@ -66,6 +66,9 @@
   character(len=100) file_name
   integer :: i,j,ispec
   
+  !TEST STRETCHING
+  !real(kind=CUSTOM_REAL) :: coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
+  
   !integer :: i ,j, ispec
   
   ! Checks if anything has to be done.
@@ -126,8 +129,8 @@
     endif
     
     !stop
-    T_DG = 0
-    V_DG = 0
+    T_DG = ZEROl
+    V_DG = ZEROl
 
     call initial_condition_DG()
 
@@ -282,9 +285,27 @@
     endif
     
     ! Check non-positivity.
-    if(minval(rho_DG) < 10d-14) then
+    if(myrank==0 .and. minval(rho_DG) < 10d-14) then
       WRITE(*,*) "***************************************************************"
-      WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG), "*"
+      WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG), "    *"
+      if(.true.) then
+        ! DEBUG: Find where density is low.
+        do ispec = 1,nspec
+          do j = 1,NGLLZ
+            do i = 1,NGLLX
+              !write(*,*) rho_DG(ibool_DG(ispec, i, j))
+              !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
+              if(rho_DG(ibool_DG(i, j, ispec))==minval(rho_DG)) then
+                WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
+                write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)), &
+                            ".*"
+                !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
+                !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
+              endif
+            enddo
+          enddo
+        enddo
+      endif
       WRITE(*,*) "***************************************************************"
     endif
   else
@@ -595,25 +616,25 @@
    !if(it_temp == NSTEP .AND. istage_temp == stage_time_scheme) then
   if(it_temp == 1 .AND. istage_temp == 1) then
   
-    resu_b_rhovx = 0.
-    resu_b_rhovz = 0.
-    resu_b_rho   = 0.
-    resu_b_E     = 0.
+    resu_b_rhovx = ZEROl
+    resu_b_rhovz = ZEROl
+    resu_b_rho   = ZEROl
+    resu_b_E     = ZEROl
     
-    b_rho_DG      = 0.
-    b_rhovx_DG    = 0.
-    b_rhovz_DG    = 0.
-    b_E_DG        = 0.
+    b_rho_DG      = ZEROl
+    b_rhovx_DG    = ZEROl
+    b_rhovz_DG    = ZEROl
+    b_E_DG        = ZEROl
     
     ! Read forward solution at stations and data (u_obs - u_forward) for adjoint source
     !call read_source_adj_DG()
     
     endif
 
-   b_dot_rho(:)   = 0.
-   b_dot_rhovx(:) = 0.
-   b_dot_rhovz(:) = 0.
-   b_dot_E(:)     = 0.
+   b_dot_rho(:)   = ZEROl
+   b_dot_rhovx(:) = ZEROl
+   b_dot_rhovz(:) = ZEROl
+   b_dot_E(:)     = ZEROl
    
    ! Source function defined by misfit
    call compute_add_sources_acoustic_DG_backward(it_temp, &
