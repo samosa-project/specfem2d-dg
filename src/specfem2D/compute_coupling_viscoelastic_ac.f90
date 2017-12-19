@@ -52,7 +52,7 @@
                          rmemory_sfb_potential_ddot_acoustic_LDDRK,i_stage,stage_time_scheme, &
                          ! MODIF DG
                          ibool_DG, E_DG, rho_DG, rhovx_DG, rhovz_DG, p_DG_init, gammaext_DG, i_stage, &
-                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD!, elastic_tensor
+                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old

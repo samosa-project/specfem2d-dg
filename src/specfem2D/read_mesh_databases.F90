@@ -1772,7 +1772,8 @@
   use specfem_par, only : any_acoustic,any_gravitoacoustic,any_elastic,any_poroelastic, &
     ispec_is_anisotropic,ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic, ispec_is_acoustic_DG, &
     porosity,anisotropy,kmato, &
-    nspec,P_SV,count_nspec_acoustic,PML_BOUNDARY_CONDITIONS, id_region_DG, only_DG_acoustic, any_acoustic_DG
+    nspec,P_SV,count_nspec_acoustic,PML_BOUNDARY_CONDITIONS, id_region_DG, only_DG_acoustic, any_acoustic_DG, &
+    USE_DISCONTINUOUS_METHOD
 
   implicit none
 
@@ -1796,7 +1797,7 @@
       ! assume acoustic domain
       ! if gravitoacoustic -> set by read_external_model
       ispec_is_acoustic(ispec) = .true.
-      if(kmato(ispec) == id_region_DG) then
+      if(kmato(ispec) == id_region_DG .AND. USE_DISCONTINUOUS_METHOD) then
         ispec_is_acoustic_DG(ispec) = .true.
         count_nspec_acoustic_DG = count_nspec_acoustic_DG + 1
         any_acoustic_DG = .true.
@@ -1820,9 +1821,11 @@
     
   enddo ! of do ispec = 1,nspec
   
+  if(USE_DISCONTINUOUS_METHOD) then
   only_DG_acoustic = .false.
-  if(count_nspec_acoustic_DG == count_nspec_acoustic) only_DG_acoustic = .true.
-  
+  if(count_nspec_acoustic_DG == count_nspec_acoustic) &
+        only_DG_acoustic = .true.
+  endif
   !WRITE(*,*) ">>>> count_nspec_acoustic_DG", count_nspec_acoustic_DG, count_nspec_acoustic, &
   !      only_DG_acoustic
   !stop 'TOTO'

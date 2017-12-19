@@ -35,6 +35,7 @@
 
   use specfem_par
   use specfem_par_noise
+  use constants, only: rk4a_d, rk4b_d, rk4c_d
 
   implicit none
 
@@ -43,27 +44,6 @@
   ! for rk44
   double precision :: weight_rk, timelocal
   
-  ! MODIF DG
-  double precision, dimension(5) :: rk4a_d, rk4b_d, rk4c_d
-
-  rk4a_d(1) = 0d0
-  rk4a_d(2) = -567301805773.0/1357537059087.0
-  rk4a_d(3) = -2404267990393.0/2016746695238.0
-  rk4a_d(4) = -3550918686646.0/2091501179385.0
-  rk4a_d(5) = -1275806237668.0/842570457699.0
-    
-  rk4b_d(1) = 1432997174477.0/9575080441755.0 
-  rk4b_d(2) = 5161836677717.0/13612068292357.0 
-  rk4b_d(3) = 1720146321549.0/2090206949498.0 
-  rk4b_d(4) = 3134564353537.0/4481467310338.0 
-  rk4b_d(5) = 2277821191437.0/14882151754819.0
-    
-  rk4c_d(1) = 0d0
-  rk4c_d(2) = 1432997174477.0/9575080441755.0 
-  rk4c_d(3) = 2526269341429.0/6820363962896.0 
-  rk4c_d(4) = 2006345519317.0/3224310063776.0 
-  rk4c_d(5) = 2802321613138.0/2924317926251.0
-
   ! main solver for the elastic elements
 
   ! checks if anything to do in this slice

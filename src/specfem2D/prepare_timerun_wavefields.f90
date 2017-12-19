@@ -323,12 +323,19 @@
     ! dummy allocate unused arrays with fictitious size
     nglob_DG_loc = 1
   endif
-  allocate(dot_rho(nglob_DG), dot_rhovx(nglob_DG), dot_rhovz(nglob_DG), dot_E(nglob_DG), dot_e1(nglob_DG))
-  allocate(resu_rho(nglob_DG), resu_rhovx(nglob_DG), resu_rhovz(nglob_DG), resu_E(nglob_DG), resu_e1(nglob_DG))
-  allocate(rho_DG(nglob_DG), p_DG(nglob_DG), rhovx_DG(nglob_DG), rhovz_DG(nglob_DG), &
-        veloc_x_DG(nglob_DG), veloc_z_DG(nglob_DG), E_DG(nglob_DG), e1_DG(nglob_DG))
-  allocate(p_DG_init(nglob_DG), T_init(nglob_DG), V_DG(2,2,nglob_DG), T_DG(2,nglob_DG))
-  allocate(rmass_inverse_acoustic_DG(nglob_DG))
+  !allocate(dot_rho(nglob_DG), dot_rhovx(nglob_DG), dot_rhovz(nglob_DG), dot_E(nglob_DG), dot_e1(nglob_DG))
+  !allocate(resu_rho(nglob_DG), resu_rhovx(nglob_DG), resu_rhovz(nglob_DG), resu_E(nglob_DG), resu_e1(nglob_DG))
+  !allocate(rho_DG(nglob_DG), p_DG(nglob_DG), rhovx_DG(nglob_DG), rhovz_DG(nglob_DG), &
+  !      veloc_x_DG(nglob_DG), veloc_z_DG(nglob_DG), E_DG(nglob_DG), e1_DG(nglob_DG))
+  !allocate(p_DG_init(nglob_DG), T_init(nglob_DG), V_DG(2,2,nglob_DG), T_DG(2,nglob_DG))
+  !allocate(rmass_inverse_acoustic_DG(nglob_DG))
+  
+  allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc))
+  allocate(resu_rho(nglob_DG_loc), resu_rhovx(nglob_DG_loc), resu_rhovz(nglob_DG_loc), resu_E(nglob_DG_loc), resu_e1(nglob_DG_loc))
+  allocate(rho_DG(nglob_DG_loc), p_DG(nglob_DG_loc), rhovx_DG(nglob_DG_loc), rhovz_DG(nglob_DG_loc), &
+        veloc_x_DG(nglob_DG_loc), veloc_z_DG(nglob_DG_loc), E_DG(nglob_DG_loc), e1_DG(nglob_DG_loc))
+  allocate(p_DG_init(nglob_DG_loc), T_init(nglob_DG_loc), V_DG(2,2,nglob_DG_loc), T_DG(2,nglob_DG_loc))
+  allocate(rmass_inverse_acoustic_DG(nglob_DG_loc))
   
   !allocate(this_iglob_is_acous(nglob))
   
@@ -385,6 +392,8 @@
     allocate(potential_dot_acoustic_init_rk(nglob_acoustic))
     allocate(potential_dot_dot_acoustic_rk(nglob_acoustic,stage_time_scheme))
     allocate(potential_dot_acoustic_rk(nglob_acoustic,stage_time_scheme))
+    
+    allocate(resu_dot_dot_pot(nglob_acoustic), resu_dot_pot(nglob_acoustic))
   endif
 
   if (SIMULATION_TYPE == 3 .and. any_acoustic) then
@@ -541,6 +550,9 @@
     potential_dot_acoustic_init_rk = 0._CUSTOM_REAL
     potential_dot_dot_acoustic_rk = 0._CUSTOM_REAL
     potential_dot_acoustic_rk = 0._CUSTOM_REAL
+    
+    resu_dot_dot_pot = 0._CUSTOM_REAL
+    resu_dot_pot     = 0._CUSTOM_REAL
   endif
 
   potential_gravitoacoustic = 0._CUSTOM_REAL

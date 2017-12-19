@@ -90,7 +90,7 @@
       !                                 - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init)
     endif
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
-                                     potential_gravito,veloc_elastic,displs_poroelastic, &
+                                     potential_gravito,displ_elastic,displs_poroelastic, &
                                      vector_DG_temp)
   
   ! imagetype_JPEG 4, 5, and 6.

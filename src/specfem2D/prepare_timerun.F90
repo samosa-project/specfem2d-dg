@@ -1548,6 +1548,10 @@ end subroutine prepare_source_spatial_function_DG
     allocate(e1_force_rk(NGLLX,NGLLZ,nspec_allocate,N_SLS,stage_time_scheme))
     allocate(e11_force_rk(NGLLX,NGLLZ,nspec_allocate,N_SLS,stage_time_scheme))
     allocate(e13_force_rk(NGLLX,NGLLZ,nspec_allocate,N_SLS,stage_time_scheme))
+  
+    allocate(resu_e10(NGLLX,NGLLZ,nspec_allocate,N_SLS))
+    allocate(resu_e11(NGLLX,NGLLZ,nspec_allocate,N_SLS))
+    allocate(resu_e13(NGLLX,NGLLZ,nspec_allocate,N_SLS))
   else
     allocate(e1_initial_rk(1,1,1,1))
     allocate(e11_initial_rk(1,1,1,1))
@@ -1555,6 +1559,10 @@ end subroutine prepare_source_spatial_function_DG
     allocate(e1_force_rk(1,1,1,1,1))
     allocate(e11_force_rk(1,1,1,1,1))
     allocate(e13_force_rk(1,1,1,1,1))
+    
+    allocate(resu_e10(1,1,1,1))
+    allocate(resu_e11(1,1,1,1))
+    allocate(resu_e13(1,1,1,1))
   endif
   e1_initial_rk(:, :, :,:) = 0._CUSTOM_REAL
   e11_initial_rk(:, :, :,:) = 0._CUSTOM_REAL
@@ -1562,6 +1570,10 @@ end subroutine prepare_source_spatial_function_DG
   e1_force_rk(:, :, :,:,:) = 0._CUSTOM_REAL
   e11_force_rk(:, :, :,:,:) = 0._CUSTOM_REAL
   e13_force_rk(:, :, :,:,:) = 0._CUSTOM_REAL
+  
+  resu_e10(:, :, :, :) = 0._CUSTOM_REAL
+  resu_e11(:, :, :, :) = 0._CUSTOM_REAL
+  resu_e13(:, :, :, :) = 0._CUSTOM_REAL
 
   ! initialize to dummy values
   ! convention to indicate that Q = 9999 in that element i.e. that there is no viscoelasticity in that element

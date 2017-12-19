@@ -49,6 +49,7 @@
                          c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,c22ext, &
                          ispec_is_anisotropic,anisotropy, &
                          e1_LDDRK,e11_LDDRK,e13_LDDRK, &
+                         resu_e10,resu_e11,resu_e13, &
                          e1_initial_rk,e11_initial_rk,e13_initial_rk,e1_force_RK, e11_force_RK, e13_force_RK, &
                          hprime_xx,hprimewgll_xx,hprime_zz,hprimewgll_zz,wxgll,wzgll, &
                          AXISYM,is_on_the_axis,hprimeBar_xx,hprimeBarwglj_xx,xiglj,wxglj, &
@@ -60,13 +61,14 @@
                          rmemory_dux_dx_prime,rmemory_dux_dz_prime,rmemory_duz_dx_prime,rmemory_duz_dz_prime, &
                          rmemory_displ_elastic_LDDRK, &
                          rmemory_dux_dx_LDDRK,rmemory_dux_dz_LDDRK,rmemory_duz_dx_LDDRK,&
-                         ispec_is_acoustic,time_stepping_scheme, elastic_tensor, &
-                         num_fluid_solid_edges!, myrank
+                         ispec_is_acoustic,time_stepping_scheme
 
   ! PML arrays
   use specfem_par, only: nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 ROTATE_PML_ACTIVATE,ROTATE_PML_ANGLE, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store
+
+  use constants, only: rk4a_d, rk4b_d, rk4c_d
 
   implicit none
 
@@ -139,8 +141,6 @@
 
   ! temporary RK4 variable
   real(kind=CUSTOM_REAL) :: weight_rk
-
-  elastic_tensor = 0.
   
   !WRITE(*,*) "VELOC, ELAS", maxval(abs(displ_elastic)), maxval(abs(veloc_elastic))
 
@@ -283,6 +283,26 @@
                                         2._CUSTOM_REAL * e13_force_RK(i,j,ispec,i_sls,3) + e13_force_RK(i,j,ispec,i_sls,4))
               endif
             endif
+            
+            ! update e1, e11, e13 in ADE formation with classical fifth-order Runge-Kutta scheme
+            if (stage_time_scheme == 5) then
+            
+              resu_e10(i,j,ispec,i_sls) = rk4a_d(i_stage)*resu_e10(i,j,ispec,i_sls) &
+                + deltat*(theta_n_u * phinu1 - e1(i,j,ispec,i_sls) * tauinvnu1)
+              e1(i,j,ispec,i_sls)      = e1(i,j,ispec,i_sls) + rk4b_d(i_stage)*resu_e10(i,j,ispec,i_sls)
+              
+              resu_e11(i,j,ispec,i_sls) = rk4a_d(i_stage)*resu_e11(i,j,ispec,i_sls) &
+                + deltat*((dux_dxl_n(i,j,ispec)-theta_n_u/TWO) * phinu2 - &
+                                                                 e11(i,j,ispec,i_sls) * tauinvnu2)
+              e11(i,j,ispec,i_sls)      = e11(i,j,ispec,i_sls) + rk4b_d(i_stage)*resu_e11(i,j,ispec,i_sls)
+              
+              resu_e13(i,j,ispec,i_sls) = rk4a_d(i_stage)*resu_e13(i,j,ispec,i_sls) &
+                + deltat*((dux_dzl_n(i,j,ispec) + duz_dxl_n(i,j,ispec))*phinu2 - &
+                                                                 e13(i,j,ispec,i_sls) * tauinvnu2)
+              e13(i,j,ispec,i_sls)      = e13(i,j,ispec,i_sls) + rk4b_d(i_stage)*resu_e13(i,j,ispec,i_sls)
+
+            endif
+            
           enddo
         enddo
         enddo
@@ -1024,15 +1044,6 @@
               tempx1(i,j) = wzgll(j)*jacobianl*(sigma_xy*xixl+sigma_zy*xizl) ! this goes to accel_x
               tempx2(i,j) = wxgll(i)*jacobianl*(sigma_xy*gammaxl+sigma_zy*gammazl) ! this goes to accel_x
             endif
-          endif
-          
-          ! SAVE TENSOR FOR COUPLING
-          if(num_fluid_solid_edges > 0 .AND. &
-                (i == 1 .OR. j == 1 .OR. j == NGLLZ .OR. i == NGLLX)) then
-                elastic_tensor(i,j,ispec,1) = sigma_xx
-                elastic_tensor(i,j,ispec,2) = sigma_xz
-                elastic_tensor(i,j,ispec,3) = sigma_zx
-                elastic_tensor(i,j,ispec,4) = sigma_zz
           endif
           
         enddo

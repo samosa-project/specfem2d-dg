@@ -93,6 +93,7 @@
 
   ! Compute maximum amplitude.
   if (.not. USE_CONSTANT_MAX_AMPLITUDE) then
+    amplitude_max = 0.
     !amplitude_max = maxval(abs(image_color_data))
     amplitude_max_var(:) = 0
     ! Different max amplitudes in function of medium*

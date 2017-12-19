@@ -258,10 +258,10 @@
         
         ! Quick use of the loops
         if(USE_DISCONTINUOUS_METHOD) then
-        if( ispec == 1 .AND. (j == 1 .AND. i == 1) &
+        if( ispec == 1 .AND. ((j == 1 .AND. i == 1) &
                 .OR. (j == NGLLZ .AND. i == 1) &
                 .OR. (j == 1 .AND. i == NGLLX) &
-                .OR. (j == NGLLZ .AND. i == NGLLX) ) is_corner(i,j) = .true.
+                .OR. (j == NGLLZ .AND. i == NGLLX)) ) is_corner(i,j) = .true.
         endif
         
       enddo
@@ -1107,6 +1107,8 @@ subroutine setup_mesh_surface_DG_coupling()
            pext_DG(NGLLX,NGLLZ,nspec_ext), &
            gammaext_DG(nglob_DG), &
            kappa_DG(NGLLX,NGLLZ,nspec_ext), stat=ier) 
+  else
+        allocate(gammaext_DG(1))
   endif
            
   if (ier /= 0) stop 'Error allocating external model arrays'

@@ -38,6 +38,7 @@
   subroutine compute_forces_acoustic_DG_main()
 
   use specfem_par
+  use constants, only: rk4a_d, rk4b_d, rk4c_d
 
   implicit none
 
@@ -55,7 +56,6 @@
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   
   real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
-  double precision, dimension(5) :: rk4a_d, rk4b_d, rk4c_d
   
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x
   
@@ -63,7 +63,6 @@
   
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.0000001_CUSTOM_REAL
   
-  character(len=100) file_name
   integer :: i,j,ispec
   
   !TEST STRETCHING
@@ -151,63 +150,6 @@
 #endif
     
   endif !if(it == 1 .AND. i_stage == 1)
-  
-  if(it == 1 .AND. i_stage == 1 .AND. .false.) then
-    write(file_name, "('./boundaries_MPI_',i3.3)") myrank
-    open(10, file=file_name, form='formatted')
-    do ispec = 1,nspec
-      ! acoustic spectral element
-      !if (ispec_is_acoustic(ispec)) then
-      !if (ispec_is_acoustic_DG(ispec)) then
-      !if(ispec_is_acoustic_DG(ispec)) then
-      ! first double loop over GLL points to compute and store gradients
-      do j = 1,5
-        do i = 1,5
-          WRITE(10, *) coord(:, ibool_before_perio(i, j, ispec))
-        enddo
-      enddo
-      !endif
-    enddo
-    close(10)
-  endif
-  
-  ! RK4 coefficients.
-  rk4a_d(1) = 0d0
-  rk4a_d(2) = -567301805773.0/1357537059087.0
-  rk4a_d(3) = -2404267990393.0/2016746695238.0
-  rk4a_d(4) = -3550918686646.0/2091501179385.0
-  rk4a_d(5) = -1275806237668.0/842570457699.0
-    
-  rk4b_d(1) = 1432997174477.0/9575080441755.0 
-  rk4b_d(2) = 5161836677717.0/13612068292357.0 
-  rk4b_d(3) = 1720146321549.0/2090206949498.0 
-  rk4b_d(4) = 3134564353537.0/4481467310338.0 
-  rk4b_d(5) = 2277821191437.0/14882151754819.0
-    
-  rk4c_d(1) = 0d0
-  rk4c_d(2) = 1432997174477.0/9575080441755.0 
-  rk4c_d(3) = 2526269341429.0/6820363962896.0 
-  rk4c_d(4) = 2006345519317.0/3224310063776.0 
-  rk4c_d(5) = 2802321613138.0/2924317926251.0
-  
-  ! RK3 coefficients.
-  !rk4a_d(1) = 0d0
-  !rk4a_d(2) = -567301805773.0/1357537059087.0
-  !rk4a_d(3) = -2404267990393.0/2016746695238.0
-  !rk4a_d(4) = -3550918686646.0/2091501179385.0
-  !rk4a_d(5) = -1275806237668.0/842570457699.0
-    
-  !rk4b_d(1) = 1432997174477.0/9575080441755.0 
-  !rk4b_d(2) = 5161836677717.0/13612068292357.0 
-  !rk4b_d(3) = 1720146321549.0/2090206949498.0 
-  !rk4b_d(4) = 3134564353537.0/4481467310338.0 
-  !rk4b_d(5) = 2277821191437.0/14882151754819.0
-    
-  !rk4c_d(1) = 0d0
-  !rk4c_d(2) = 1d0
-  !rk4c_d(3) = 1d0/2d0
-  !rk4c_d(4) = 0d0
-  !rk4c_d(5) = 0d0
   
   rk4a = real(rk4a_d, kind=CUSTOM_REAL)
   rk4b = real(rk4b_d, kind=CUSTOM_REAL)
@@ -371,6 +313,7 @@
   ! TODO: correct with same remarks as in subroutine compute_forces_acoustic_main_DG.
   
   use specfem_par
+  use constants, only: rk4a_d, rk4b_d, rk4c_d
 
   implicit none
 
@@ -388,7 +331,6 @@
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   
   real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
-  double precision, dimension(5) :: rk4a_d, rk4b_d, rk4c_d
   
   !integer :: i, j, ispec, numelem
   
@@ -447,24 +389,6 @@
 #endif
     
   endif
-  
-  rk4a_d(1) = 0d0
-  rk4a_d(2) = -567301805773.0/1357537059087.0
-  rk4a_d(3) = -2404267990393.0/2016746695238.0
-  rk4a_d(4) = -3550918686646.0/2091501179385.0
-  rk4a_d(5) = -1275806237668.0/842570457699.0
-    
-  rk4b_d(1) = 1432997174477.0/9575080441755.0 
-  rk4b_d(2) = 5161836677717.0/13612068292357.0 
-  rk4b_d(3) = 1720146321549.0/2090206949498.0 
-  rk4b_d(4) = 3134564353537.0/4481467310338.0 
-  rk4b_d(5) = 2277821191437.0/14882151754819.0
-    
-  rk4c_d(1) = 0d0
-  rk4c_d(2) = 1432997174477.0/9575080441755.0 
-  rk4c_d(3) = 2526269341429.0/6820363962896.0 
-  rk4c_d(4) = 2006345519317.0/3224310063776.0 
-  rk4c_d(5) = 2802321613138.0/2924317926251.0
   
   rk4a = real(rk4a_d, kind=CUSTOM_REAL)
   rk4b = real(rk4b_d, kind=CUSTOM_REAL)
@@ -525,7 +449,8 @@
   ! TODO: correct with same remarks as in subroutine compute_forces_acoustic_main_DG.
 
   use specfem_par
-
+  use constants, only: rk4a_d, rk4b_d, rk4c_d
+  
   implicit none
 
   ! local parameters
@@ -539,44 +464,6 @@
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
 
   real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
-  double precision, dimension(5) :: rk4a_d, rk4b_d, rk4c_d
-  
-  rk4a_d(1) = 0d0
-  rk4a_d(2) = -567301805773.0/1357537059087.0
-  rk4a_d(3) = -2404267990393.0/2016746695238.0
-  rk4a_d(4) = -3550918686646.0/2091501179385.0
-  rk4a_d(5) = -1275806237668.0/842570457699.0
-    
-  rk4b_d(1) = 1432997174477.0/9575080441755.0 
-  rk4b_d(2) = 5161836677717.0/13612068292357.0 
-  rk4b_d(3) = 1720146321549.0/2090206949498.0 
-  rk4b_d(4) = 3134564353537.0/4481467310338.0 
-  rk4b_d(5) = 2277821191437.0/14882151754819.0
-    
-  rk4c_d(1) = 0d0
-  rk4c_d(2) = 1432997174477.0/9575080441755.0 
-  rk4c_d(3) = 2526269341429.0/6820363962896.0 
-  rk4c_d(4) = 2006345519317.0/3224310063776.0 
-  rk4c_d(5) = 2802321613138.0/2924317926251.0
-  
-  ! RK3
-  !rk4a_d(1) = 0d0
-  !rk4a_d(2) = -567301805773.0/1357537059087.0
-  !rk4a_d(3) = -2404267990393.0/2016746695238.0
-  !rk4a_d(4) = -3550918686646.0/2091501179385.0
-  !rk4a_d(5) = -1275806237668.0/842570457699.0
-    
-  !rk4b_d(1) = 1432997174477.0/9575080441755.0 
-  !rk4b_d(2) = 5161836677717.0/13612068292357.0 
-  !rk4b_d(3) = 1720146321549.0/2090206949498.0 
-  !rk4b_d(4) = 3134564353537.0/4481467310338.0 
-  !rk4b_d(5) = 2277821191437.0/14882151754819.0
-    
-  !rk4c_d(1) = 0d0
-  !rk4c_d(2) = 1d0
-  !rk4c_d(3) = 1d0/2d0
-  !rk4c_d(4) = 0d0
-  !rk4c_d(5) = 0d0
   
   rk4a = real(rk4a_d, kind=CUSTOM_REAL)
   rk4b = real(rk4b_d, kind=CUSTOM_REAL)

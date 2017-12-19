@@ -349,7 +349,7 @@
               endif
             else ! not axisym
               rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) &
-                   + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) !/ kappal
+                   + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) / kappal
             endif
 
           endif

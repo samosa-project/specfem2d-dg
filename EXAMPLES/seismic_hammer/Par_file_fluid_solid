@@ -83,7 +83,7 @@ NT_DUMP_ATTENUATION             = 500
 # Discontinuous Galerkin
 #
 #-----------------------------------------------------------------------------
-USE_DISCONTINUOUS_METHOD        = .true.
+USE_DISCONTINUOUS_METHOD        = .false.
 REMOVE_DG_FLUID_TO_SOLID        = .false.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0

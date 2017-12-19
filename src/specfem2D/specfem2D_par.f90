@@ -584,6 +584,8 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: accel_elastic,veloc_elastic,displ_elastic
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_accel_x, resu_accel_z, resu_veloc_x, resu_veloc_z
 
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_dot_dot_pot, resu_dot_pot
+
   ! PML/attenuation
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: displ_elastic_old
 
@@ -601,6 +603,7 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: e1_LDDRK,e11_LDDRK,e13_LDDRK
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: e1_initial_rk,e11_initial_rk,e13_initial_rk
   real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: e1_force_rk,e11_force_rk,e13_force_rk
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: resu_e10,resu_e11,resu_e13
 
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: accel_elastic_adj_coupling
 

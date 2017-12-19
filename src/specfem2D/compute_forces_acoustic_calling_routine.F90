@@ -34,6 +34,7 @@
   subroutine compute_forces_acoustic_main()
 
   use specfem_par
+  use constants, only: rk4a_d, rk4b_d, rk4c_d
 
   implicit none
 
@@ -174,6 +175,24 @@
   endif
 
   if (time_stepping_scheme == 3) then
+  
+        potential_dot_dot_acoustic(:) = potential_dot_dot_acoustic(:) * rmass_inverse_acoustic(:)
+
+        if(it == 1 .AND. i_stage == 1) then
+               resu_dot_dot_pot = 0
+                resu_dot_pot = 0
+          endif
+  
+          ! RK5-low dissipation Update
+          resu_dot_dot_pot = rk4a_d(i_stage)*resu_dot_dot_pot + deltat*potential_dot_dot_acoustic(:)
+          resu_dot_pot     = rk4a_d(i_stage)*resu_dot_pot + deltat*potential_dot_acoustic(:)
+    
+          potential_dot_acoustic(:) = potential_dot_acoustic(:) + rk4b_d(i_stage)*resu_dot_dot_pot
+          potential_acoustic(:)     = potential_acoustic(:) + rk4b_d(i_stage)*resu_dot_pot  
+
+  endif
+
+  if (time_stepping_scheme == 13) then
     ! RK scheme
     !! DK DK this should be vectorized
     potential_dot_dot_acoustic(:) = potential_dot_dot_acoustic(:) * rmass_inverse_acoustic(:)
