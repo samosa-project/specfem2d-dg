@@ -16,9 +16,7 @@ set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
 folder = input('Folder containing the SSF files? > ', 's');
-if(not(strcmp(folder(end),'/')))
-  folder=[folder,'/'];
-end
+if(not(strcmp(folder(end),'/'))); folder=[folder,'/']; end;
 
 % Load the data.
 listSSF=dir(strcat(folder, 'SSF*'));

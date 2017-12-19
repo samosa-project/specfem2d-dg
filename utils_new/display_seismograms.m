@@ -48,8 +48,9 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % Seismic Hammer.
 fig_title = strcat('Seismic Hammer Simulation (New Model)');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
-root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_new_coupling/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
+root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -69,6 +70,7 @@ nsub = 10;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if(not(strcmp(output_files_dir(end),'/'))); folder=[folder,'/']; end;
 % Load sources' positions.
 pos_sources = [0, 0]; % Allocate a row for the first source's position.
 % fid = fopen([root_dir, '/DATA/SOURCE']);
@@ -139,7 +141,7 @@ nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Plot.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure(1);
+figure();
 hold on;
 
 % Loop on sismograms.
@@ -211,7 +213,7 @@ for istat = 1 : nstat
   end
   xlim([Ztime(1, 1), Ztime(1, end)]);
 
-  legend(strcat('(n,x,z,d)=(', num2str(istat_glob), ',', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
+  legend(strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
 
   hold on;
   
@@ -240,4 +242,5 @@ if(nstat>1)
     end
   end
 end
+f=gcf; figure(f.Number);
 figure(1);
