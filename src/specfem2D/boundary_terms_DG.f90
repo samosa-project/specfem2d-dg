@@ -180,7 +180,8 @@
         !p_DG_init, T_init, &
         gravity_cte_DG, dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_eps_cte_DG, tau_sig_cte_DG, SCALE_HEIGHT, &
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
-        surface_density, sound_velocity, wind, TYPE_FORCING
+        surface_density, sound_velocity, wind, TYPE_FORCING, &
+        forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period
 
   implicit none
   
@@ -330,7 +331,13 @@
   !call boundary_forcing_DG(timelocal, rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, E_DG_P)
 
   ! Set (overwrite) velocities according to forcing.
-  
+ 
+  ! Forcing parameters from par_file
+  lambdo = main_spatial_period
+  xo     = forcing_initial_loc
+  perio  = main_time_period
+  to     = forcing_initial_time
+
   ! --------------------------- !
   ! Acoustic plane wave         !
   ! forcing.                    !
