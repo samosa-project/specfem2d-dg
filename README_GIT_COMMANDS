@@ -2,9 +2,13 @@
 # git useful commands         #
 ###############################
 
-1) Ignore SCOTCH-related binary modifications. Move to "./specfem-dg".
+1) Ignore binary modifications. Move to "./specfem-dg", and execute:
 
-git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/bin/*
+git update-index --assume-unchanged ./bin/!(*.*)
+
+git update-index --assume-unchanged ./obj/*.o
+
+git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/bin/!(*.*)
 
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/lib/*.a
 
@@ -13,3 +17,5 @@ git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/*
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotchmetis/*.[oa]
 
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/dummysizes
+
+git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/scotch/!(*.*)
