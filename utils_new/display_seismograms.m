@@ -34,7 +34,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_KappaON/');
 
 % Mars Gravity Wave.
-% fig_title = strcat('Mars Gravity Wave Simulation');
+fig_title = strcat('Mars Gravity Wave Simulation');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
@@ -43,13 +43,14 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9078210_spread_source/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081352_spread_cut_source/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091089_new_coupling/');
+root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091089_new_coupling/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
 
 % Seismic Hammer.
-fig_title = strcat('Seismic Hammer Simulation (New Model)');
+% fig_title = strcat('Seismic Hammer Simulation (New Model)');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
-root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
 
 % Quantity to display:

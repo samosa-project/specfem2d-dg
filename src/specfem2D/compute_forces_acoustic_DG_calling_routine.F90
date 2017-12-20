@@ -177,7 +177,7 @@
 #endif
 
   ! Local Discontinuous Galerkin for viscous fluxes.
-  if((maxval(muext) > 0 .OR. maxval(etaext) > 0 .OR. maxval(kappa_DG) > 0)) then
+  if((maxval(muext) > 0 .OR. maxval(etaext) > 0 .OR. maxval(kappa_DG) > 0) .OR. CONSTRAIN_HYDROSTATIC) then
 #ifdef USE_MPI
     if (NPROC > 1 .and. ninterface_acoustic > 0) then
       call assemble_MPI_vector_DG(T_DG(1, :), buffer_DG_Tx_P)
@@ -189,6 +189,7 @@
     endif
 #endif
     call compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
+    ! TODO: If CONSTRAIN_HYDROSTATIC=.true. and muext=etaext=kappa_DG=0, only T_DG is needed. Consider computing only T_DG in that case.
   endif
   
   call compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &

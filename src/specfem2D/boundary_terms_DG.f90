@@ -415,13 +415,13 @@
                 V_DG_iM, T_DG_iM, &
                 rho_DG_iP, E_DG_iP, rhovx_DG_iP, rhovz_DG_iP, &
                 V_DG_iP, T_DG_iP, &
-                MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal, &
-                elastic_tensor)
+                MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal)!, &
+                !elastic_tensor)
   
 ! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
-  use specfem_par,only: nspec, nglob_DG,&!ispec_is_acoustic, ,&
+  use specfem_par,only: nglob_DG,&!ispec_is_acoustic, nspec,&
                          normal_DG, normal_DG_corner, ibool_DG, weight_DG, weight_DG_corner, &
                          ispec_is_acoustic_forcing, &
                          ACOUSTIC_FORCING, is_corner, &
@@ -440,7 +440,7 @@
                          
   implicit none
   
-  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, nspec, 4) :: elastic_tensor
+  !real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, nspec, 4) :: elastic_tensor
   ! TODO: Why not loading it from specfem_par? All calls seem to use the one loaded from specfem_par.
   
   integer, intent(in) :: i, j, ispec, chosen_nxnz_forMPI

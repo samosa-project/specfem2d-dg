@@ -48,8 +48,8 @@
                          b_absorb_elastic_left,b_absorb_elastic_right, &
                          b_absorb_elastic_bottom,b_absorb_elastic_top,&
                          ib_left,ib_right,ib_bottom,ib_top, &
-                         STACEY_BOUNDARY_CONDITIONS,deltat, &
-                         num_fluid_solid_edges!elastic_tensor
+                         STACEY_BOUNDARY_CONDITIONS,deltat!, &
+                         !num_fluid_solid_edges!elastic_tensor
 
   ! initialfield
   use specfem_par,only: v0x_left,v0z_left,v0x_right,v0z_right,v0x_bot,v0z_bot, &
@@ -113,8 +113,6 @@
     if (codeabs(IEDGE4,ispecabs)) then
       i = 1
       do j = 1,NGLLZ
-      
-        if(coord(2,ibool(i,j,ispec)) == 300) cycle
       
         ! Clayton-Engquist condition if elastic
         iglob = ibool(i,j,ispec)
@@ -183,15 +181,6 @@
           accel_elastic(1,iglob) = accel_elastic(1,iglob) - ty*weight
         endif
 
-        ! SAVE TENSOR FOR COUPLING
-        if(num_fluid_solid_edges > 0 .AND. &
-                i == 1 .OR. j == 1 .OR. j == NGLLZ .OR. i == NGLLX) then
-                !elastic_tensor(i,j,ispec,1) = elastic_tensor(i,j,ispec,1) - (tx + traction_x_t0)
-                !elastic_tensor(i,j,ispec,2) = elastic_tensor(i,j,ispec,2) - sigma_xz
-                !elastic_tensor(i,j,ispec,3) = elastic_tensor(i,j,ispec,3) - sigma_zx
-                !elastic_tensor(i,j,ispec,4) = elastic_tensor(i,j,ispec,4) - (tz + traction_z_t0)
-        endif
-
         if (SAVE_FORWARD .and. SIMULATION_TYPE == 1) then
           if (P_SV) then
             ! P-SV waves
@@ -209,8 +198,6 @@
     if (codeabs(IEDGE2,ispecabs)) then
       i = NGLLX
       do j = 1,NGLLZ
-      
-         if(coord(2,ibool(i,j,ispec)) == 300) cycle
       
         ! Clayton-Engquist condition if elastic
         iglob = ibool(i,j,ispec)

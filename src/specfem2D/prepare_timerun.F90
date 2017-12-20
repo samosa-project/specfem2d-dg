@@ -1204,7 +1204,7 @@ subroutine prepare_timerun_ssf()
     if(.not. any_acoustic_DG) then
       ! No DG elements exist, ignore call and inform user.
       if(myrank == 0) then
-        write(IMAIN,*) 'No DG elements exist, spread source spatial function(s) cannot be implemented. '&
+        write(IMAIN,*) 'No DG elements exist, spread source spatial function(s) cannot be implemented. ',&
                        'The classical spatial source function(s) will be used.'
         call flush_IMAIN()
       endif
@@ -1212,7 +1212,7 @@ subroutine prepare_timerun_ssf()
       ! DG elements exist.
       if(myrank == 0) then
         write(IMAIN,*) 'Spread source spatial function(s) is (are) being initialised over the DG elements.'
-        write(IMAIN,*) 'WARNING: THIS KIND OF SOURCE HAS TO BE TUNED NOT TO GENERATE SPURIOUS DISCONTINUITIES, '&
+        write(IMAIN,*) 'WARNING: THIS KIND OF SOURCE HAS TO BE TUNED NOT TO GENERATE SPURIOUS DISCONTINUITIES, ',&
                        'USE AT YOUR OWN RISK.'
         call flush_IMAIN()
       endif
@@ -1277,7 +1277,7 @@ subroutine prepare_source_spatial_function_DG
     if(.not. ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
       ! The central point of the source is not in a DG element, ignore call and inform user.
       if(myrank == 0) then
-        write(IMAIN,*) 'The central point of the source ', i_source, ' is not in a DG element, a spread source spatial function '&
+        write(IMAIN,*) 'The central point of the source ', i_source, ' is not in a DG element, a spread source spatial function ',&
                        'cannot be implemented. A classical spatial source function will be used.'
         call flush_IMAIN()
       endif
@@ -1308,7 +1308,7 @@ subroutine prepare_source_spatial_function_DG
   if(SAVE_SSF) then
     close(504)
     if(myrank == 0) then
-      write(IMAIN,*) "The spread source spatial function's values at the mesh's points were saved in the OUTPUT_FILES folder. "&
+      write(IMAIN,*) "The spread source spatial function's values at the mesh's points were saved in the OUTPUT_FILES folder. ",&
                      "Use the Matlab script '/utils_new/show_SSF.m' to plot."
       call flush_IMAIN()
     endif
