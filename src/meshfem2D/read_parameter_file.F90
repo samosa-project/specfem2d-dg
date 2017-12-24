@@ -216,13 +216,53 @@
   if (err_occurred() /= 0) stop 'error reading parameter main_spatial_period in Par_file'
   
   call read_value_double_precision_p(main_time_period, 'solver.main_time_period')
-  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in main_time_period'
+  if (err_occurred() /= 0) stop 'error reading parameter main_time_period in Par_file'
   
   call read_value_double_precision_p(forcing_initial_loc, 'solver.forcing_initial_loc')
-  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in forcing_initial_loc'
+  if (err_occurred() /= 0) stop 'error reading parameter forcing_initial_loc in Par_file'
   
   call read_value_double_precision_p(forcing_initial_time, 'solver.forcing_initial_time')
-  if (err_occurred() /= 0) stop 'error reading parameter TYPE_FORCING in forcing_initial_time'
+  if (err_occurred() /= 0) stop 'error reading parameter forcing_initial_time in Par_file'
+  
+  ! Default values, used if the parameters are not found in parfile.
+  ABC_STRETCH_TOP    = .false.
+  ABC_STRETCH_LEFT   = .false.
+  ABC_STRETCH_BOTTOM = .false.
+  ABC_STRETCH_RIGHT  = .false.
+  ABC_STRETCH_LBUF   = 0.
+  USE_SPREAD_SSF   = .false.
+  SPREAD_SSF_SAVE  = .false.
+  SPREAD_SSF_SIGMA = 1.
+  REMOVE_STF_INITIAL_DISCONTINUITY=.false.
+  
+  ! Try to read parameters in parfile.
+  call read_value_logical_p(ABC_STRETCH_TOP, 'solver.ABC_STRETCH_TOP')
+  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_TOP in Par_file'
+  call read_value_logical_p(ABC_STRETCH_LEFT, 'solver.ABC_STRETCH_LEFT')
+  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LEFT in Par_file'
+  call read_value_logical_p(ABC_STRETCH_BOTTOM, 'solver.ABC_STRETCH_BOTTOM')
+  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_BOTTOM in Par_file'
+  call read_value_logical_p(ABC_STRETCH_RIGHT, 'solver.ABC_STRETCH_RIGHT')
+  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_RIGHT in Par_file'
+  ABC_STRETCH = (ABC_STRETCH_TOP .or. ABC_STRETCH_LEFT .or. ABC_STRETCH_BOTTOM .or. ABC_STRETCH_RIGHT)
+  call read_value_double_precision_p(ABC_STRETCH_LBUF, 'solver.ABC_STRETCH_LBUF')
+  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LBUF in Par_file'
+  call read_value_logical_p(USE_SPREAD_SSF, 'solver.USE_SPREAD_SSF')
+  !if (err_occurred() /= 0) stop 'error reading parameter USE_SPREAD_SSF in Par_file'
+  call read_value_logical_p(SPREAD_SSF_SAVE, 'solver.SPREAD_SSF_SAVE')
+  !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SAVE in Par_file'
+  call read_value_double_precision_p(SPREAD_SSF_SIGMA, 'solver.SPREAD_SSF_SIGMA')
+  !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SIGMA in Par_file'
+  call read_value_logical_p(REMOVE_STF_INITIAL_DISCONTINUITY, 'solver.REMOVE_STF_INITIAL_DISCONTINUITY')
+  !if (err_occurred() /= 0) stop 'error reading parameter REMOVE_STF_INITIAL_DISCONTINUITY in Par_file'
+
+  !TEST READING NEW PARAMETERS
+  if(.false.) then
+    write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
+    write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA
+    write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
+  endif
+  !stop
   
   !--------------------------------------------------------------------
   !

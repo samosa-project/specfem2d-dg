@@ -357,13 +357,34 @@
   write(15,*) 'TYPE_FORCING'
   write(15,*) TYPE_FORCING
   write(15,*) 'main_spatial_period'
-  write(15,*) main_spatial_period      
-  write(15,*) 'main_time_period'     
-  write(15,*) main_time_period          
-  write(15,*) 'forcing_initial_loc'    
-  write(15,*) forcing_initial_loc       
-  write(15,*) 'forcing_initial_time'  
+  write(15,*) main_spatial_period
+  write(15,*) 'main_time_period'
+  write(15,*) main_time_period
+  write(15,*) 'forcing_initial_loc'
+  write(15,*) forcing_initial_loc
+  write(15,*) 'forcing_initial_time'
   write(15,*) forcing_initial_time
+  
+  write(15,*) 'ABC_STRETCH_TOP'
+  write(15,*) ABC_STRETCH_TOP
+  write(15,*) 'ABC_STRETCH_LEFT'
+  write(15,*) ABC_STRETCH_LEFT
+  write(15,*) 'ABC_STRETCH_BOTTOM'
+  write(15,*) ABC_STRETCH_BOTTOM
+  write(15,*) 'ABC_STRETCH_RIGHT'
+  write(15,*) ABC_STRETCH_RIGHT
+  write(15,*) 'ABC_STRETCH'
+  write(15,*) ABC_STRETCH
+  write(15,*) 'ABC_STRETCH_LBUF'
+  write(15,*) ABC_STRETCH_LBUF
+  write(15,*) 'USE_SPREAD_SSF'
+  write(15,*) USE_SPREAD_SSF
+  write(15,*) 'SPREAD_SSF_SAVE'
+  write(15,*) SPREAD_SSF_SAVE
+  write(15,*) 'SPREAD_SSF_SIGMA'
+  write(15,*) SPREAD_SSF_SIGMA
+  write(15,*) 'REMOVE_STF_INITIAL_DISCONTINUITY'
+  write(15,*) REMOVE_STF_INITIAL_DISCONTINUITY
 
   end subroutine save_databases_DG
 

@@ -45,8 +45,7 @@
   use specfem_par, only: AXISYM,NSTEP,NSOURCES,source_time_function, &
                          time_function_type,name_of_source_file,burst_band_width,f0_source,tshift_src,factor, &
                          aval,t0,nb_proc_source,deltat,stage_time_scheme,C_LDDRK,is_proc_source, &
-                         USE_TRICK_FOR_BETTER_PRESSURE,myrank&
-                         ,SIGMA_SSF
+                         USE_TRICK_FOR_BETTER_PRESSURE,myrank, USE_SPREAD_SSF, REMOVE_STF_INITIAL_DISCONTINUITY
 
   implicit none
 
@@ -134,10 +133,8 @@
         t_used = timeval - t0 - tshift_src(i_source)
         stf_used = 0.d0
 
-        if (is_proc_source(i_source) == 1 .or. SIGMA_SSF > -1) then
-          ! If SIGMA_SSF has been initialised at something else than -1, and thus a source spatially distributed over more than one element was initialised, we need to initialise the STF on all procs.
-          ! TODO: add a parameter for this option in parfile.
-          ! If not, we initialise the STF only on the source proc.
+        if (is_proc_source(i_source) == 1 .or. USE_SPREAD_SSF) then
+          ! If USE_SPREAD_SSF==.true., we need to initialise the STF on all procs. If not, we initialise the STF only on the source proc.
           ! TODO: source_time_function is a huge vector stored in each process' memory. It is set to zeros on all the processes which are not containing the source. A huge amount of memory could thus be saved if a shared variable could be used instead.
           if (time_function_type(i_source) == 1) then
             ! Ricker type: second derivative
@@ -203,7 +200,7 @@
               ! Gaussian or Dirac (we use a very thin Gaussian instead) source time function
               source_time_function(i_source, it, i_stage) = factor(i_source) * &
                                                             exp(-aval(i_source)*t_used**2)
-              if(.false.) then ! TODO: If this functionnality is kept, add a parameter for this option in parfile.
+              if(REMOVE_STF_INITIAL_DISCONTINUITY) then
                 ! Smoothly remove the initial discontinuity (due to the support of Gaussians being non-compact). The quantity removed is linear in time. Its values are:
                 ! - the value of the initial discontinuity at t_used = -(t0+tshift), and
                 ! - zero at t_used = +(t0+tshift).

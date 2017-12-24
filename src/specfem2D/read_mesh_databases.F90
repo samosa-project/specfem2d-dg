@@ -305,7 +305,28 @@
   read(IIN,*) forcing_initial_loc
   
   read(IIN,"(a80)") datlin
-  read(IIN,*) forcing_initial_time 
+  read(IIN,*) forcing_initial_time
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_TOP
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_LEFT
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_BOTTOM
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_RIGHT
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_LBUF
+  read(IIN,"(a80)") datlin
+  read(IIN,*) USE_SPREAD_SSF
+  read(IIN,"(a80)") datlin
+  read(IIN,*) SPREAD_SSF_SAVE
+  read(IIN,"(a80)") datlin
+  read(IIN,*) SPREAD_SSF_SIGMA
+  read(IIN,"(a80)") datlin
+  read(IIN,*) REMOVE_STF_INITIAL_DISCONTINUITY
   
   ! read the ACOUSTIC_FORCING flag
   read(IIN,"(a80)") datlin

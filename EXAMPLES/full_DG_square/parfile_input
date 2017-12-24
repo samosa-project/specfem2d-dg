@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 2
+NPROC                           = 4
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -107,7 +107,7 @@ SCALE_HEIGHT                    = 10000.         # Scale height for exponential 
 surface_density                 = 1.4d0          # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL is set to true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL is set to false, $\rho(z)=\rho_0$ for all $z$.
 sound_velocity                  = 340.0d0        # $c$. Only used if USE_ISOTHERMAL_MODEL is set to false (if set to true, $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
 wind                            = 0.0d0          # Horizontal wind. [m.s^(-1)].
-gravity                         = 9.81d0         # Only used if USE_ISOTHERMAL_MODEL is set to true.
+gravity                         = 9.81d0         # Only used if USE_ISOTHERMAL_MODEL is set to .true..
 dynamic_viscosity               = 1.0d-8         # $\mu$.
 thermal_conductivity            = 0.0d0          # $\kappa$.
 tau_epsilon                     = 1.0d0
@@ -119,11 +119,26 @@ constant_v                      = 5/2.0d0
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = 304.0d0        # Only used if USE_ISOTHERMAL_MODEL is set to true.
+coord_interface                 = 304.0d0        # Only used if USE_ISOTHERMAL_MODEL is set to .true..
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
 TYPE_SOURCE_DG                  = 3
+
+# Absorbing boundary conditions.
+ABC_STRETCH_TOP    = .false. # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_LEFT   = .false. # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_BOTTOM = .false. # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_RIGHT  = .false. # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_LBUF = 20. # Length of the buffer used for the buffer-based stretching method.
+
+# Source spatial function.
+USE_SPREAD_SSF   = .false. # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used.
+SPREAD_SSF_SAVE  = .false. # Only used if USE_SPREAD_SSF is set to .true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
+SPREAD_SSF_SIGMA = 1.0d0 # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
+
+# Source time function.
+REMOVE_STF_INITIAL_DISCONTINUITY=.false.
 
 # Bottom forcing function
 # 0: none
@@ -358,7 +373,7 @@ imagetype_JPEG                  = 4              #    display 1=displ_Ux 2=displ
                                                  # DG display 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=pressure 5=Energy 6=Temperature 7=Density 8=sqrt(rho)*veloc_Ux 9=sqrt(rho)*veloc_Uz 10=none
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
-CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE is set to true.
+CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE is set to .true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
 DRAW_SOURCES_AND_RECEIVERS      = .true.         # Display sources as orange crosses and receivers as green squares?
 DRAW_WATER_IN_BLUE              = .true.         # display acoustic layers as constant blue in JPEG images, because they likely correspond to water in the case of ocean acoustics or in the case of offshore oil industry experiments (if off, display them as greyscale, as for elastic or poroelastic elements, for instance for acoustic-only oil industry models of solid media)

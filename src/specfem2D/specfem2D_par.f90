@@ -75,6 +75,12 @@ module specfem_par
   !---------------------------------------------------------------------
   ! DG related quantities.
   !---------------------------------------------------------------------
+  logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH
+  real(kind=CUSTOM_REAL) :: ABC_STRETCH_LBUF
+  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
+  real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
+  logical :: REMOVE_STF_INITIAL_DISCONTINUITY
+  
   ! Switches (variables' names are self-explanatory).
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
              CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
@@ -111,7 +117,6 @@ module specfem_par
   ! Sources spatially distributed over more than one element.
   real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
     source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
-  real(kind=CUSTOM_REAL) :: SIGMA_SSF ! Standard deviation of the exponential used for the SSF.
   
   ! Inverse mass matrices (forward and backward simulations)
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, &

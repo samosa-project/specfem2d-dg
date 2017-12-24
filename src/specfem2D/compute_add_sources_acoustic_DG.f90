@@ -289,7 +289,7 @@
                          ibool_DG, &
                          coord,  &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
-                         SIGMA_SSF, nspec, source_spatial_function_DG!, & ! For sources spatially distributed over more than one element.
+                         USE_SPREAD_SSF, nspec, source_spatial_function_DG!, & ! For sources spatially distributed over more than one element.
                          !nglob, &
                          !IMAIN, myrank ! DEBUG
   implicit none
@@ -311,9 +311,8 @@
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
     
-    if(SIGMA_SSF > -1) then
-      ! SIGMA_SSF has been initialised at something else than -1, and thus a source spatially distributed over more than one element was initialised. Because of that, we use this one instead of the basic version over one element only.
-      ! TODO: add a parameter for this option in parfile.
+    if(USE_SPREAD_SSF) then
+      ! Case in which a source spatially distributed over more than one element was initialised.
       do ispec = 1, nspec
         !if(mod(ispec, 100)==0) write(IMAIN, *) '>>>> ispec i j ', ispec!, ' ', i, ' ', j ! DEBUG
         do j = 1, NGLLZ
@@ -329,7 +328,7 @@
         enddo
       enddo
     else
-      ! SIGMA_SSF has been initialised at -1. This corresponds to the basic case in which the source spatial function is distributed on one element only.
+      ! Base case in which the source spatial function is distributed on one element only.
       if(ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
         ! If the source element is acoustic.
         if(is_proc_source(i_source) == 1) then

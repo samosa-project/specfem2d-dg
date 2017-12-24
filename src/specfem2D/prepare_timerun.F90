@@ -71,12 +71,8 @@
   call prepare_timerun_stf()
   
   ! Compute the source spatial function and store it in a variable.
-  ! TODO: add a parameter for this option in parfile.
-  if(.false.) then
-    SIGMA_SSF = 10.; ! Standard deviation of an exponential spatial function, in meters.
+  if(USE_SPREAD_SSF) then
     call prepare_timerun_ssf()
-  else
-    SIGMA_SSF = -1; ! Set this way if this option is not activated. To be modified if a parameter is added in parfile.
   endif
   
   ! prepares noise simulations
@@ -1254,8 +1250,8 @@ subroutine prepare_source_spatial_function_DG
   
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
   use specfem_par, only: coord, ibool_before_perio, IMAIN, ispec_is_acoustic_DG, &
-                         ispec_selected_source, myrank, NSOURCES, nspec, SIGMA_SSF, &
-                         source_spatial_function_DG, source_type, x_source, z_source 
+                         ispec_selected_source, myrank, NSOURCES, nspec, &
+                         source_spatial_function_DG, source_type, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA, x_source, z_source 
   implicit none
   
   ! Local variables.
@@ -1263,13 +1259,9 @@ subroutine prepare_source_spatial_function_DG
   real(kind=CUSTOM_REAL) :: distsqrd
   
   ! Save values.
-  logical :: SAVE_SSF
   character(len=24) :: filename ! 16 for "OUTPUT_FILES/SSF" + N for process numbering.
   
-  SAVE_SSF = .false. ! TODO: Maybe add a parameter to the parfile to enable/disable SSF saving.
-  ! Then, use the Matlab script '/utils_new/show_SSF.m'.
-  
-  if(SAVE_SSF) then
+  if(SPREAD_SSF_SAVE) then
     write(filename, '( "OUTPUT_FILES/SSF", i8.8 )' ) myrank
     open(unit=504,file=filename,status='unknown',action='write', position="append")
   endif
@@ -1292,12 +1284,12 @@ subroutine prepare_source_spatial_function_DG
               ! If the source is an elastic force or an acoustic pressure.
               distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
                          + (coord(2, iglob_unique) - z_source(i_source))**2.
-              source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.))
+              source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
               !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
               !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
             endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
             
-            if(SAVE_SSF) then
+            if(SPREAD_SSF_SAVE) then
               write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
             endif
           enddo ! Enddo on j.
@@ -1305,7 +1297,7 @@ subroutine prepare_source_spatial_function_DG
       enddo ! Enddo on ispec.
     endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
   enddo ! Enddo on i_source.
-  if(SAVE_SSF) then
+  if(SPREAD_SSF_SAVE) then
     close(504)
     if(myrank == 0) then
       write(IMAIN,*) "The spread source spatial function's values at the mesh's points were saved in the OUTPUT_FILES folder. ",&

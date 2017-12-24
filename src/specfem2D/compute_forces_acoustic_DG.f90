@@ -59,7 +59,8 @@
                          !hprime_xx, hprime_zz,  cnu, &
                          !ibool_before_perio, coord, &
                          rhovx_init, rhovz_init, E_init, rho_init, &!T_init
-                         CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG
+                         CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG,&
+                         ABC_STRETCH ! Stretching-based absorbing conditions.
                          
   implicit none
 
@@ -142,11 +143,9 @@
   logical :: ABSORB_BC
   
   ! TEST STRETCH
-  logical :: STRETCHING
   real(kind=CUSTOM_REAL) :: coef_stretch_x_ij, coef_stretch_x_ij_prime, &
                             coef_stretch_z_ij, coef_stretch_z_ij_prime
   real(kind=CUSTOM_REAL) :: viscous_tens_11, viscous_tens_12, viscous_tens_22
-  STRETCHING = .false.
   
   ! for MPI transfer
   MPI_iglob = 1
@@ -231,7 +230,7 @@
           gammaxl = gammax(i, j, ispec)
           gammazl = gammaz(i, j, ispec)
           
-          if(STRETCHING) then
+          if(ABC_STRETCH) then
             ! Here is updated the operator \nabla.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z.
             ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
@@ -255,7 +254,6 @@
           wxl = wxgll(i)
           
           ! Inviscid stress tensor's contributions.
-          ! TODO: rho_DG not hydrostatically constrained, is that deliberate?
           temp_unknown = rhovx_DG(iglob)
           temp_unknown2 = rhovz_DG(iglob)
           
@@ -265,7 +263,6 @@
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + p_DG(iglob)
           else
-            ! TODO: rho_DG not hydrostatically constrained, is that deliberate?
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
           temp_unknown2 = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
@@ -277,7 +274,6 @@
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + p_DG(iglob)
           else
-            ! TODO: rho_DG not hydrostatically constrained, is that deliberate?
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
           
@@ -343,14 +339,12 @@
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_rhovz_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
           else
-            ! TODO: rho_DG hydrostatically constrained, is that deliberate?
             temp_rhovz_gravi(i, j) = -(rho_DG(iglob) - rho_init(iglob)) * potential_dphi_dz_DG(ibool(i, j, ispec)) * jacobianl 
           endif
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_E_gravi(i, j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
           else
-            ! TODO: rho_DG hydrostatically constrained, is that deliberate?
             temp_E_gravi(i, j) = &
                                 -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
@@ -396,7 +390,7 @@
           dot_rhovz(iglob) = dot_rhovz(iglob) + temp_rhovz_gravi(i, j) * wxl * wzl
           dot_E(iglob)     = dot_E(iglob)     + temp_E_gravi(i, j) * wxl * wzl
           
-          if(STRETCHING .and. .false.) then
+          if(ABC_STRETCH .and. .true.) then
             ! Here are added the terms $\int_\Omega (F_i+F_v)\Phi\cdot(\nabla\cdot\Ya) d\Omega$.
             jacobianl = jacobian(i, j, ispec)
             
@@ -601,7 +595,7 @@
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes. We use the Lax-Friedrich flux.
           
-          if(STRETCHING) then
+          if(ABC_STRETCH) then
             call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
             nx = coef_stretch_x_ij * nx
             nz = coef_stretch_z_ij * nz
@@ -828,7 +822,8 @@
                          neighbor_DG, neighbor_DG_corner, normal_DG, normal_DG_corner, &
                          weight_DG, weight_DG_corner, dir_normal_DG, dir_normal_DG_corner, is_corner, cnu, &
                          elastic_tensor, &
-                         rhovx_init, rhovz_init, rho_init, T_init, CONSTRAIN_HYDROSTATIC
+                         rhovx_init, rhovz_init, rho_init, T_init, CONSTRAIN_HYDROSTATIC,&
+                         ABC_STRETCH ! Stretching-based absorbing conditions.
                          
   implicit none
   
@@ -876,10 +871,6 @@
   real(kind=CUSTOM_REAL) :: vx_init, vz_init
   
   integer :: coef_surface
-  
-  ! TEST STRETCH
-  logical :: STRETCHING
-  STRETCHING = .false.
   
   ADD_SURFACE_TERMS = .true. ! TODO: Decide to set a value (.true. or .false.), or to introduce a parameter in the parfile.
   !T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
@@ -1297,7 +1288,7 @@
   ! --------------------------- !
   ! Virtual mesh stretching.    !
   ! --------------------------- !
-  if(STRETCHING) then ! TODO: add a parameter for this option in parfile.
+  if(ABC_STRETCH) then
     ! TODO: Maybe, this has to be put in the developements above rather than "hardcoded" here.
     call virtual_stretch_auxi_visc_tensors_DG(T_DG, V_DG)
   endif
@@ -1350,7 +1341,7 @@
 
   subroutine virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
   
-  use specfem_par, only: ibool_DG, ibool_before_perio, coord
+  use specfem_par, only: ibool_DG, ibool_before_perio, coord, ABC_STRETCH_LBUF
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
   implicit none
@@ -1363,21 +1354,20 @@
   integer iglob
   real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: eps_l, p, q
-  real(kind=CUSTOM_REAL) :: L_buffer, zmax, z, z_l ! Variables used for testing.
+  real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
   
   ! Coefficients for the stretching function.
   eps_l = 1.0d-4
   p = 3.25d0
   q = 1.75d0
   
-  L_buffer = 10. ! Length of the buffer in which the mesh is stretched.
   zmax = 50. ! Domain top coordinate.
   
   iglob = ibool_DG(i, j, ispec)
   coef_stretch_x = ONE ! By default, mesh is not stretched.
   coef_stretch_z = ONE ! By default, mesh is not stretched.
   z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
-  z_l = (1. - ((zmax - z)/L_buffer)) ! Relative buffer coordinate.
+  z_l = (1. - ((zmax - z)/ABC_STRETCH_LBUF)) ! Relative buffer coordinate.
   if(z_l > 0. .AND. z_l <= 1.) then
     !write(*, *) "z", z, "z_l", z_l ! DEBUG
     coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
@@ -1394,7 +1384,7 @@
 
   subroutine virtual_stretch_prime(i, j, ispec, coef_stretch_x_prime, coef_stretch_z_prime)
   
-  use specfem_par, only: ibool_DG, ibool_before_perio, coord
+  use specfem_par, only: ibool_DG, ibool_before_perio, coord, ABC_STRETCH_LBUF
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
   implicit none
@@ -1407,21 +1397,20 @@
   integer iglob
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: eps_l, p, q
-  real(kind=CUSTOM_REAL) :: L_buffer, zmax, z, z_l ! Variables used for testing.
+  real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
   
   ! Coefficients for the stretching function.
   eps_l = 1.0d-4
   p = 3.25d0
   q = 1.75d0
   
-  L_buffer = 10. ! Length of the buffer in which the mesh is stretched.
   zmax = 50. ! Domain top coordinate.
   
   iglob = ibool_DG(i, j, ispec)
   coef_stretch_x_prime = ZERO ! By default, mesh is not stretched.
   coef_stretch_z_prime = ZERO ! By default, mesh is not stretched.
   z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
-  z_l = (1. - ((zmax - z)/L_buffer)) ! Relative buffer coordinate.
+  z_l = (1. - ((zmax - z)/ABC_STRETCH_LBUF)) ! Relative buffer coordinate.
   if(z_l > 0. .AND. z_l <= 1.) then
     !write(*, *) "z", z, "z_l", z_l ! DEBUG
     coef_stretch_z_prime = - (1. - eps_l) * p * q * (1.-z_l)**(p-1.) * (1.-(1.-z_l)**p)**(q-1.) ! Stretching function derivative.

@@ -112,6 +112,15 @@
   ! horizontal periodicity distance for periodic conditions
   double precision :: PERIODIC_HORIZ_DIST
 
+  !---------------------------------------------------------------------
+  ! DG related quantities.
+  !---------------------------------------------------------------------
+  logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH
+  double precision :: ABC_STRETCH_LBUF
+  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
+  double precision :: SPREAD_SSF_SIGMA
+  logical :: REMOVE_STF_INITIAL_DISCONTINUITY
+  
   ! Discontinuous Galerkin method
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
         CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
