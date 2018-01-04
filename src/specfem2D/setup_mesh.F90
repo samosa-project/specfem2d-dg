@@ -895,6 +895,10 @@ subroutine setup_mesh_surface_DG_coupling()
 
 ! periodic conditions: detect common points between left and right edges and replace one of them with the other
   if (ADD_PERIODIC_CONDITIONS) then
+    
+    ! Currently, Stacey absorbing conditions and periodic conditions can coexist, which leads to spurious signals coming from the left boundary.
+    ! TODO: Periodic conditions should disable Stacey conditions on the considered boundaries, or at the very least an error message should be prompted.
+    
     ! user output
     if (myrank == 0) then
       write(IMAIN,*)
