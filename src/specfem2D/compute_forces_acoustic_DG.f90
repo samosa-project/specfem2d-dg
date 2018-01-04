@@ -74,7 +74,6 @@
   
   ! Local variables.
   integer :: ispec,i, j,k, iglob, it_corner
-  integer :: ifirstelem,ilastelem
 
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
         temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
@@ -133,7 +132,7 @@
   
   integer, dimension(nglob_DG) :: MPI_iglob
   
-  real(kind=CUSTOM_REAL) :: flux_rho, flux_rhovx, flux_rhovz, flux_E
+  !real(kind=CUSTOM_REAL) :: flux_rho, flux_rhovx, flux_rhovz, flux_E
   
   ! For better CONSTRAIN_HYDROSTATIC switches.
   integer :: cnst_hdrsttc
@@ -159,9 +158,6 @@
   else
     cnst_hdrsttc=ZERO
   endif
-  
-  ifirstelem = 1
-  ilastelem = nspec
   
   rho_DG   = rho_DG_main
   rhovx_DG = rhovx_DG_main
@@ -212,7 +208,7 @@
     WRITE(*,"(a,e23.16,a)")        "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
   endif
   
-  do ispec = ifirstelem, ilastelem ! Loop over elements.
+  do ispec = 1, nspec ! Loop over elements.
     ! acoustic spectral element
     if (ispec_is_acoustic_DG(ispec)) then !if (ispec_is_acoustic(ispec)) then
       ! --------------------------- !
@@ -345,6 +341,7 @@
             temp_E_gravi(i, j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
           else
+            ! By constraining hydrostaticity, remark that an additional term appears (p_0 \nabla\cdot v'). We add it here despite the fact that it has nothing to do with gravity.
             temp_E_gravi(i, j) = &
                                 -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
@@ -355,8 +352,8 @@
                               * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
           
           ! Memory variable evolution. TODO: Describe more precisely.
-          dot_e1(iglob) = dot_e1(iglob) - (1/tau_sigma(i, j, ispec)) &
-                          *( (1 - (tau_sigma(i, j, ispec)/tau_epsilon(i, j, ispec))) * (dux_dx + duz_dz) + e1_DG(iglob) )
+          dot_e1(iglob) = dot_e1(iglob) - (ONE/tau_sigma(i, j, ispec)) &
+                          *( (ONE - (tau_sigma(i, j, ispec)/tau_epsilon(i, j, ispec))) * (dux_dx + duz_dz) + e1_DG(iglob) )
           
         enddo
       enddo
@@ -404,35 +401,35 @@
             
             call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
             
-            !dot_rho(iglob)   = dot_rho(iglob) + (  rhovx_DG(iglob)*coef_stretch_x_ij_prime &
-            !                                     + rhovz_DG(iglob)*coef_stretch_z_ij_prime &
-            !                                    ) * jacobianl*wxl*wzl
-            dot_rho(iglob)   = dot_rho(iglob) + (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
-            !dot_rho(iglob)   = dot_rho(iglob) + (  rho_DG(iglob)&
-                                                   *veloc_x_DG(iglob)*coef_stretch_x_ij_prime &
-                                                 + (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
-                                                 !+ rho_DG(iglob)&
-                                                   *veloc_x_DG(iglob)*coef_stretch_z_ij_prime &
+            dot_rho(iglob)   = dot_rho(iglob) + (  rhovx_DG(iglob)*coef_stretch_x_ij_prime &
+                                                 + rhovz_DG(iglob)*coef_stretch_z_ij_prime &
                                                 ) * jacobianl*wxl*wzl
-            dot_rhovx(iglob) = dot_rhovx(iglob) + (  (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
-            !dot_rhovx(iglob) = dot_rhovx(iglob) + (  (  rho_DG(iglob)&
-                                                        *veloc_x_DG(iglob)**2 & ! Inviscid tensor, line 1, column 1
+            !dot_rho(iglob)   = dot_rho(iglob) + (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
+            !dot_rho(iglob)   = dot_rho(iglob) + (  rho_DG(iglob)&
+            !                                       *veloc_x_DG(iglob)*coef_stretch_x_ij_prime &
+            !                                     + (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
+            !                                     + rho_DG(iglob)&
+            !                                       *veloc_x_DG(iglob)*coef_stretch_z_ij_prime &
+            !                                    ) * jacobianl*wxl*wzl
+            !dot_rhovx(iglob) = dot_rhovx(iglob) + (  (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
+            dot_rhovx(iglob) = dot_rhovx(iglob) + (  (  rho_DG(iglob)&
+            !                                            *veloc_x_DG(iglob)**2 & ! Inviscid tensor, line 1, column 1
                                                         + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob) & ! Inviscid tensor, line 1, column 1
                                                       - viscous_tens_11 & ! Viscous tensor, line 1, column 1
                                                      ) * coef_stretch_x_ij_prime  & ! End of x contribution.
-                                                   + (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
-                                                   !+ (  rho_DG(iglob)&
+                                                   !+ (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
+                                                   + (  rho_DG(iglob)&
                                                         *veloc_x_DG(iglob)*veloc_z_DG(iglob) & ! Inviscid tensor, line 1, column 2
                                                       - viscous_tens_12 & ! Visous tensor, line 1, column 2
                                                      ) * coef_stretch_z_ij_prime & ! End of z contribution.
                                                   ) * jacobianl*wxl*wzl
-            dot_rhovz(iglob) = dot_rhovz(iglob) + (  (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
-            !dot_rhovz(iglob) = dot_rhovz(iglob) + (  (  rho_DG(iglob)&
+            !dot_rhovz(iglob) = dot_rhovz(iglob) + (  (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
+            dot_rhovz(iglob) = dot_rhovz(iglob) + (  (  rho_DG(iglob)&
                                                         *veloc_x_DG(iglob)*veloc_z_DG(iglob) & ! Inviscid tensor, line 2, column 1
                                                       - viscous_tens_12 & ! Visous tensor, line 2, column 1
                                                      ) * coef_stretch_x_ij_prime & ! End of z contribution.
-                                                   + (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
-                                                   !+ (  rho_DG(iglob)&
+                                                   !+ (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
+                                                   + (  rho_DG(iglob)&
                                                          *veloc_z_DG(iglob)**2  & ! Inviscid tensor
                                                         + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob) & ! Inviscid tensor, line 2, column 2
                                                       - viscous_tens_22 & ! Viscous tensor, line 2, column 2
@@ -626,11 +623,11 @@
                   V_DG(:,:,iglobP), T_DG(:,iglobP), &
                   MPI_iglob, chosen_nxnz_forMPI, dir_normal, nx, nz, weight, timelocal, elastic_tensor)
           
-          ! TODO: None of those following four variables are used later in the code. Decide what to do with them.
-          flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
-          flux_rhovx = (rho_DG_P*veloc_x_DG_P**2 + p_DG_P)*nx + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nz
-          flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
-          flux_E     = veloc_x_DG_P*(E_DG_P + p_DG_P)*nx + veloc_z_DG_P*(E_DG_P + p_DG_P)*nz
+          ! None of the following four variables are used later in the code.
+          !flux_rho   = rho_DG_P*veloc_x_DG_P*nx + rho_DG_P*veloc_z_DG_P*nz
+          !flux_rhovx = (rho_DG_P*veloc_x_DG_P**2 + p_DG_P)*nx + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nz
+          !flux_rhovz = (rho_DG_P*veloc_z_DG_P**2 + p_DG_P)*nz + rho_DG_P*veloc_x_DG_P*veloc_z_DG_P*nx
+          !flux_E     = veloc_x_DG_P*(E_DG_P + p_DG_P)*nx + veloc_z_DG_P*(E_DG_P + p_DG_P)*nz
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = 0.
@@ -829,7 +826,6 @@
   
   ! local parameters
   integer :: ispec,i, j,k, iglob, iglobM, iglobP, it_corner
-  !integer :: ifirstelem,ilastelem
   integer :: i_ex, j_ex, ispec_ex, chosen_nxnz_forMPI, dir_normal
   real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
@@ -901,7 +897,7 @@
         do i = 1, NGLLX
           
           iglob = ibool_DG(i, j, ispec)
-
+          
           jacobianl = jacobian(i, j, ispec)
         
           xixl = xix(i, j, ispec)
