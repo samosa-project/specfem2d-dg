@@ -38,7 +38,7 @@
   use constants,only: IMAIN,NGLLX,NGLLZ,NEDGES
 
   use specfem_par, only : knods,ibool,nglob,nspec,myrank,&
-        link_DG_CG,nglob_DG,ibool_DG,USE_DISCONTINUOUS_METHOD
+        nglob_DG,ibool_DG,USE_DISCONTINUOUS_METHOD
 
   implicit none
 
@@ -265,11 +265,12 @@
           ! Generate numbering for DG simulations
           nglob_DG = nglob_DG + 1
           ibool_DG(i, j, numelem) = nglob_DG
-          link_DG_CG(nglob_DG) = ibool(i, j, numelem)
           !endif
         enddo
       enddo
     enddo
+  else
+        nglob_DG = 1
   endif
   
 ! verification de la coherence de la numerotation generee

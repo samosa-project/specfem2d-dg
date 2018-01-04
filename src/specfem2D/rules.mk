@@ -76,8 +76,6 @@ specfem2D_OBJECTS = \
 	$O/compute_energy.spec.o \
 	$O/compute_forces_acoustic.spec.o \
 	$O/compute_forces_acoustic_backward.spec.o \
-	$O/compute_forces_acoustic_backward_DG.spec.o \
-	$O/compute_forces_acoustic_backward_DG_real.spec.o \
 	$O/compute_forces_acoustic_calling_routine.spec.o \
 	$O/boundary_terms_DG.spec.o \
 	$O/slope_limiter_DG.spec.o \

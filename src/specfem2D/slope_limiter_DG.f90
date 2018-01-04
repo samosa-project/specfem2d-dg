@@ -32,260 +32,6 @@
 !========================================================================
   
 ! ------------------------------------------------------------ !
-! SlopeLimit1_old                                              !
-! ------------------------------------------------------------ !
-! TODO: Description.
-  
-  subroutine SlopeLimit1_old(Q, timelocal, type_var)
-  
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  use specfem_par, only: nspec, nglob_DG, ibool_DG, Vandermonde, invVandermonde, &
-  neighbor_DG, NGLLX, NGLLZ, &!neighbor_DG_corner,is_corner, 
-  max_interface_size, ninterface, NPROC, MPI_transfer, ninterface_acoustic!, myrank!, ibool, ibool_before_perio!, coord, i_stage&
-  !ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner!,ibool_before_perio,
-
-  implicit none 
-
-  integer type_var
-  real(kind=CUSTOM_REAL) timelocal
-  real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
-
-  integer :: iglob, iglob2, ispec, j, k, l, h, prod_ind
-  integer, parameter :: NGLL = NGLLX*NGLLZ
-  real(kind=CUSTOM_REAL) :: vkm1_x,vkp1_x,vkm1_z,vkp1_z!, vkm1_x_save
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: Q, ulimit
-  real(kind=CUSTOM_REAL), dimension(NGLL) :: uh, uavg, uhl, ulimit_temp
-  real(kind=CUSTOM_REAL), dimension(1:nspec,1:NGLL) :: ul
-  real(kind=CUSTOM_REAL), dimension(1:nspec) :: v!, vk
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: v_MPI
-  real(kind=CUSTOM_REAL), dimension(NGLLX*max_interface_size,ninterface) :: buffer_v
-
-  integer :: ipoin,num_interface
-  !logical, dimension(NGLLX, NGLLZ) :: ispec_bound
-  logical ispec_bound_MPI, has_been_activated
-  !real(kind=CUSTOM_REAL), dimension(1:NGLLX,1:NGLLZ) :: val_in_elmnt
-
-  logical :: activate
-
-  ! Parameters
-  real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-
-  has_been_activated = .false.
-
-  ulimit = ZEROl
-  buffer_v = ZEROl
-
-  do ispec=1,nspec
-    uh = ZEROl
-    ! Compute cell averages
-    ! Compute => uh = invV*u
-    do k=1,NGLL
-      prod_ind = 0
-      do j=1,NGLLX
-        do h=1,NGLLZ
-          iglob2 = ibool_DG(j,h,ispec)
-          prod_ind = prod_ind + 1
-          uh(k)  = uh(k) + &
-          invVandermonde(k,prod_ind)*Q(iglob2)
-          ! val_in_elmnt(j,h) = Q(iglob2)
-        enddo
-      enddo
-    enddo
-
-    ! Extract linear polynomial
-    uhl = uh
-    uhl(3:NGLLX) = ZEROl
-    uhl(NGLLX+2:NGLL) = ZEROl
-
-    ul(ispec,:) = ZEROl
-    ! => ul = V*uhl;
-    ! Compute => uavg = V*uh
-    do k=1,NGLL
-      do j=1,NGLL
-        ul(ispec,k)  = ul(ispec,k) + Vandermonde(k,j)*uhl(j)
-      enddo
-    enddo
-
-    ! Remove high order coef (> 0)
-    uh(2:NGLL) = ZEROl
-
-    ! Init
-    uavg = ZEROl
-    ! Compute => uavg = V*uh
-    do k=1,NGLL
-      do j=1,NGLL
-        uavg(k)  = uavg(k) + Vandermonde(k,j)*uh(j)
-      enddo
-    enddo
-    ! Store cell average
-    v(ispec) = uavg(1)
-
-    ! Change Quentin 14 mars 17:16
-    do k=1,NGLLX
-      do l=1,NGLLZ
-        v_MPI(ibool_DG(k,l,ispec)) = v(ispec)
-      enddo
-    enddo
-  enddo ! do ispec=1,NSPEC
-
-  ! find cell averages
-  !vk = v
-
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(v_MPI, buffer_v)
-  endif
-
-  !nb_mod = 0
-  do ispec=1,nspec
-
-    ispec_bound_MPI = .false.
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    !  LEFT NEIGHBOR
-    !
-    ! MPI neighbor
-    ipoin         = -1
-    num_interface = -1
-    if(NPROC > 1) then
-      iglob         = ibool_DG(1,NGLLZ/2,ispec)
-      ipoin         = MPI_transfer(iglob, 1,1)
-      num_interface = MPI_transfer(iglob, 1,2)
-
-      if(ipoin > -1) vkm1_x = buffer_v(ipoin,num_interface)
-    endif
-    if(ipoin == -1 .AND. neighbor_DG(1,NGLLZ/2,ispec,3) == - 1) then
-      ! Test with boundary conditions
-      call boundary_condition_DG(1, NGLLZ/2, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-
-      if(type_var == 1) vkm1_x = rho_DG_P
-      if(type_var == 2) vkm1_x = rhovx_DG_P
-      if(type_var == 3) vkm1_x = rhovz_DG_P
-      if(type_var == 4) vkm1_x = E_DG_P
-
-      ispec_bound_MPI = .true.
-    endif
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    !  RIGHT NEIGHBOR
-    !
-    ! MPI neighbor
-    ipoin         = -1
-    num_interface = -1
-    if(NPROC > 1) then
-      iglob         = ibool_DG(NGLLX,NGLLZ/2,ispec)
-      ipoin         = MPI_transfer(iglob, 1,1)
-      num_interface = MPI_transfer(iglob, 1,2)
-
-      if(ipoin > -1) vkp1_x = buffer_v(ipoin,num_interface)
-    endif
-    if(ipoin == -1 .AND. neighbor_DG(NGLLX,NGLLZ/2,ispec,3) == - 1) then
-      call boundary_condition_DG(NGLLX, NGLLZ/2, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-
-      if(type_var == 1) vkp1_x = rho_DG_P
-      if(type_var == 2) vkp1_x = rhovx_DG_P
-      if(type_var == 3) vkp1_x = rhovz_DG_P
-      if(type_var == 4) vkp1_x = E_DG_P
-
-      ispec_bound_MPI = .true.
-    endif
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    !  BOTTOM NEIGHBOR
-    !
-    ipoin         = -1
-    num_interface = -1
-      if(NPROC > 1) then
-      iglob         = ibool_DG(NGLLX/2, 1, ispec)
-      ipoin         = MPI_transfer(iglob, 1,1)
-      num_interface = MPI_transfer(iglob, 1,2)
-
-      if(ipoin > -1) vkm1_z = buffer_v(ipoin,num_interface)
-    endif
-    if(ipoin == -1 .AND. neighbor_DG(NGLLX/2,1,ispec,3) == - 1) then
-      call boundary_condition_DG(NGLLX/2, 1, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-
-      if(type_var == 1) vkm1_z = rho_DG_P
-      if(type_var == 2) vkm1_z = rhovx_DG_P
-      if(type_var == 3) vkm1_z = rhovz_DG_P
-      if(type_var == 4) vkm1_z = E_DG_P
-
-      ispec_bound_MPI = .true.
-    endif
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    !  TOP NEIGHBOR
-    !
-    ipoin         = -1
-    num_interface = -1
-    if(NPROC > 1) then
-      iglob         = ibool_DG(NGLLX/2, NGLLZ, ispec)
-      ipoin         = MPI_transfer(iglob, 1,1)
-      num_interface = MPI_transfer(iglob, 1,2)
-
-      if(ipoin > -1) then 
-        vkp1_z = buffer_v(ipoin,num_interface)
-      endif
-    endif
-    if(ipoin == -1 .AND. neighbor_DG(NGLLX/2,NGLLZ,ispec,3) == - 1) then
-      call boundary_condition_DG(NGLLX/2, NGLLZ, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-
-      if(type_var == 1) vkp1_z = rho_DG_P
-      if(type_var == 2) vkp1_z = rhovx_DG_P
-      if(type_var == 3) vkp1_z = rhovz_DG_P
-      if(type_var == 4) vkp1_z = E_DG_P
-
-      ispec_bound_MPI = .true.
-    endif
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! NEIGHBOR IN THE MPI DOMAIN
-    !
-
-    if(neighbor_DG(1,NGLLZ/2,ispec,3) > - 1) vkm1_x = v(neighbor_DG(1,NGLLZ/2,ispec,3))
-    if(neighbor_DG(NGLLX,NGLLZ/2,ispec,3) > - 1) vkp1_x = v(neighbor_DG(NGLLX,NGLLZ/2,ispec,3))
-    if(neighbor_DG(NGLLX/2,1,ispec,3) > - 1) vkm1_z = v(neighbor_DG(NGLLX/2,1,ispec,3))
-    if(neighbor_DG(NGLLX/2,NGLLZ,ispec,3) > - 1) vkp1_z = v(neighbor_DG(NGLLX/2,NGLLZ,ispec,3)) !v(neighbor_DG(NGLLX/2,NGLLZ,ispec,3))
-
-    if(.not. ispec_bound_MPI) then
-      ! Compute Limited flux
-      call SlopeLimitLin(ulimit_temp, ispec, ul(ispec,:),v(ispec),&
-                         vkm1_x,vkp1_x,vkm1_z,vkp1_z,activate,type_var)
-    endif
-
-    prod_ind = 0
-    do k=1,NGLLX
-      do l=1,NGLLZ
-        iglob = ibool_DG(k,l,ispec)
-        prod_ind = prod_ind + 1
-        if(.not. activate .OR. ispec_bound_MPI) then
-        !if(.not. activate) then
-          ulimit(iglob) = Q(iglob)
-        else
-          ulimit(iglob) = ulimit_temp(prod_ind)
-          has_been_activated = .true.
-        endif
-      enddo
-    enddo
-  enddo
-
-  if(has_been_activated) stop 'TOTT'!WRITE(*,*) "SLOPE LIMITER HAS BEEN ACTIVATED", timelocal, type_var
-
-  ! Update solution
-  Q(1:nglob_DG) = ulimit(1:nglob_DG)
-   
-  end subroutine SlopeLimit1_old
-
-! ------------------------------------------------------------ !
 ! SlopeLimit1                                                  !
 ! ------------------------------------------------------------ !
 ! TODO: Description.
@@ -295,10 +41,9 @@
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
   use specfem_par, only: nspec, nglob_DG, ibool_DG, Vandermonde, invVandermonde, &
-      neighbor_DG, NGLLX, NGLLZ, &
-      max_interface_size, ninterface, NPROC, MPI_transfer!, &
-      !ibool, i_stage, ibool_before_perio,is_corner, coord,neighbor_DG_corner,myrank
-      !ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner!,ibool_before_perio,
+      neighbor_DG_iface, NGLLX, NGLLZ, &
+      max_interface_size, ninterface, NPROC, MPI_transfer_iface, &
+      ispec_is_acoustic_DG
 
   implicit none 
 
@@ -309,33 +54,22 @@
   
   integer :: iglob, iglob2, ispec, j, k, l, h, prod_ind
   integer, parameter :: NGLL = NGLLX*NGLLZ
-  real(kind=CUSTOM_REAL) :: vkm1_x,vkp1_x,vkm1_z,vkp1_z!, vkm1_x_save
+  real(kind=CUSTOM_REAL) :: vkm1_x,vkp1_x,vkm1_z,vkp1_z
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: Q, ulimit
   real(kind=CUSTOM_REAL), dimension(NGLL) :: uh, uavg, uhl, ulimit_temp
   real(kind=CUSTOM_REAL), dimension(1:nspec,1:NGLL) :: ul
-  real(kind=CUSTOM_REAL), dimension(1:nspec) :: v!, vk
+  real(kind=CUSTOM_REAL), dimension(1:nspec) :: v
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: v_MPI
   real(kind=CUSTOM_REAL), dimension(NGLLX*max_interface_size,ninterface) :: buffer_v
   
-  integer, dimension(nglob_DG) :: MPI_iglob
-  integer :: ipoin,num_interface
-  !logical, dimension(NGLLX, NGLLZ) :: ispec_bound
+  integer :: ipoin,num_interface, count_bound
   logical is_ispec_onbound
-  !real(kind=CUSTOM_REAL), dimension(1:NGLLX,1:NGLLZ) :: val_in_elmnt
   
   logical :: activate, activate_total
   
   ! Parameters
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
   
-  !character(len=100) file_name
-  
-  !write(file_name,"('isMPI_slope_',i3.3,'.txt')") myrank
-! Open output forcing file
-  !open(10,file=file_name,form='formatted')
-
-  MPI_iglob = 1
-
   ulimit = ZEROl
   buffer_v = ZEROl
 
@@ -351,7 +85,6 @@
             prod_ind = prod_ind + 1
             uh(k) = uh(k) + &
                     invVandermonde(k,prod_ind)*Q(iglob2)
-            !val_in_elmnt(j,h) = Q(iglob2)
           enddo
       enddo
     enddo
@@ -383,11 +116,6 @@
     enddo
     ! Store cell average
     v(ispec) = uavg(1)
-    !WRITE(*,*) "maxval/minval", maxval(Vandermonde), minval(Vandermonde), &
-    !     maxval(invVandermonde), minval(invVandermonde)
-    !WRITE(*,*) ispec, "cell average v(ispec)", v(ispec)!, maxval(val_in_elmnt),minval(val_in_elmnt)!, minval(Q(ibool_DG(:,1,ispec))), &
-    !    WRITE(*,*) ispec, "cell average v(ispec)", v(ispec), maxval(Q(ibool_DG(:,1,ispec))), minval(Q(ibool_DG(:,1,ispec))), &
-    !    maxval(Q(ibool_DG(:,5,ispec))), minval(Q(ibool_DG(:,1,ispec)))
     do k=1,NGLLX
       do l=1,NGLLZ
         v_MPI(ibool_DG(k,l,ispec)) = v(ispec)
@@ -396,13 +124,16 @@
   enddo ! do ispec=1,NSPEC
  
   ! find cell averages
-  !vk = v
-
+  if(NPROC > 1) &
   call assemble_MPI_vector_DG(v_MPI, buffer_v)
+
+  ulimit = 1.
 
   activate_total = .false.
   !nb_mod = 0
   do ispec=1,nspec
+  
+    if(.not. ispec_is_acoustic_DG(ispec)) cycle
 
     ! Test with boundary conditions
     call boundary_condition_DG(1, NGLLZ/2, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
@@ -439,6 +170,8 @@
 
     is_ispec_onbound = .true.
 
+    count_bound = 0
+
     ! apply slope limiter to selected elements
     ! Find neighbors
     !vkm1_x = 0.
@@ -447,9 +180,11 @@
     !enddo
     !vkm1_x = Q(ibool_DG(1,NGLLZ/2,ispec))
     !vkm1_x = v(ispec)
-    if(neighbor_DG(1,NGLLZ/2,ispec,3) > - 1) then
-      vkm1_x = v(neighbor_DG(1,NGLLZ/2,ispec,3))
+    !if(neighbor_DG(1,NGLLZ/2,ispec,3) > - 1) then
+    if(neighbor_DG_iface(NGLLX/2,1,ispec,3) > - 1) then
+      vkm1_x = v(neighbor_DG_iface(NGLLX/2,1,ispec,3))
       is_ispec_onbound = .false.
+      count_bound = count_bound + 1
     endif
 
     !vkp1_x = 0.
@@ -458,9 +193,11 @@
     !enddo
     !vkp1_x = Q(ibool_DG(NGLLX,NGLLZ/2,ispec))!v(ispec)
     !vkp1_x = v(ispec)
-    if(neighbor_DG(NGLLX,NGLLZ/2,ispec,3) > - 1) then
-      vkp1_x = v(neighbor_DG(NGLLX,NGLLZ/2,ispec,3))
+    !if(neighbor_DG(NGLLX,NGLLZ/2,ispec,3) > - 1) then
+    if(neighbor_DG_iface(NGLLX/2,2,ispec,3) > - 1) then
+      vkp1_x = v(neighbor_DG_iface(NGLLX/2,2,ispec,3))
       is_ispec_onbound = .false.
+      count_bound = count_bound + 1
     endif
 
     !vkm1_z = 0.
@@ -469,9 +206,11 @@
     !enddo
     !vkm1_z = Q(ibool_DG(NGLLX/2,1,ispec))!v(ispec)
     !vkm1_z = v(ispec)
-    if(neighbor_DG(NGLLX/2,1,ispec,3) > - 1) then
-      vkm1_z = v(neighbor_DG(NGLLX/2,1,ispec,3))
+    !if(neighbor_DG(NGLLX/2,1,ispec,3) > - 1) then
+    if(neighbor_DG_iface(NGLLX/2,3,ispec,3) > - 1) then
+      vkm1_z = v(neighbor_DG_iface(NGLLX/2,3,ispec,3))
       is_ispec_onbound = .false.
+      count_bound = count_bound + 1
     endif
 
     !vkp1_z = 0.
@@ -480,21 +219,28 @@
     !enddo
     !vkp1_z = Q(ibool_DG(NGLLX/2,NGLLZ,ispec))!v(ispec)
     !vkp1_z = v(ispec)
-    if(neighbor_DG(NGLLX/2,NGLLZ,ispec,3) > - 1) then
-      vkp1_z = v(neighbor_DG(NGLLX/2,NGLLZ,ispec,3))
+    !if(neighbor_DG(NGLLX/2,NGLLZ,ispec,3) > - 1) then
+    if(neighbor_DG_iface(NGLLX/2,4,ispec,3) > - 1) then
+      vkp1_z = v(neighbor_DG_iface(NGLLX/2,4,ispec,3))
       is_ispec_onbound = .false.
+      count_bound = count_bound + 1
     endif
-
+    
+    is_ispec_onbound = .true.
+    if(count_bound == 4) is_ispec_onbound = .false.
+    
+    count_bound = 0
     ! Left neighbour.
     ipoin         = -1
     num_interface = -1
     if(NPROC > 1) then
       iglob         = ibool_DG(1,NGLLZ/2,ispec)
-      ipoin         = MPI_transfer(iglob, 1,1)
-      num_interface = MPI_transfer(iglob, 1,2)
+      ipoin         = MPI_transfer_iface(NGLLX/2, 1, ispec, 1)
+      num_interface = MPI_transfer_iface(NGLLX/2, 1, ispec, 2)
       if(ipoin > -1) then
         vkm1_x = buffer_v(ipoin,num_interface)
         is_ispec_onbound = .false.
+        count_bound = count_bound + 1
       endif
     endif
     
@@ -503,11 +249,12 @@
     num_interface = -1
     if(NPROC > 1) then
       iglob         = ibool_DG(NGLLX,NGLLZ/2,ispec)
-      ipoin         = MPI_transfer(iglob, 1,1)
-      num_interface = MPI_transfer(iglob, 1,2)
+      ipoin         = MPI_transfer_iface(NGLLX/2, 2, ispec, 1)
+      num_interface = MPI_transfer_iface(NGLLX/2, 2, ispec, 2)
       if(ipoin > -1) then
         vkp1_x = buffer_v(ipoin,num_interface)
         is_ispec_onbound = .false.
+        count_bound = count_bound + 1
       endif
     endif
     
@@ -516,12 +263,12 @@
     num_interface = -1
     if(NPROC > 1) then
     iglob         = ibool_DG(NGLLX/2, 1, ispec)
-    ipoin         = MPI_transfer(iglob, 1,1)
-    num_interface = MPI_transfer(iglob, 1,2)
-
+    ipoin         = MPI_transfer_iface(NGLLX/2, 3, ispec, 1)
+    num_interface = MPI_transfer_iface(NGLLX/2, 3, ispec, 2)
     if(ipoin > -1) then
         vkm1_z = buffer_v(ipoin,num_interface)
         is_ispec_onbound = .false.
+        count_bound = count_bound + 1
     endif
     endif
     
@@ -530,64 +277,49 @@
     num_interface = -1
     if(NPROC > 1) then
     iglob         = ibool_DG(NGLLX/2, NGLLZ, ispec)
-    ipoin         = MPI_transfer(iglob, 1,1)
-    num_interface = MPI_transfer(iglob, 1,2)
-
+    ipoin         = MPI_transfer_iface(NGLLX/2, 4, ispec, 1)
+    num_interface = MPI_transfer_iface(NGLLX/2, 4, ispec, 2)
     if(ipoin > -1) then 
         vkp1_z = buffer_v(ipoin,num_interface)
         is_ispec_onbound = .false.
+        count_bound = count_bound + 1
     endif
     endif
+    
+    !is_ispec_onbound = .true.
+    if(count_bound == 4) is_ispec_onbound = .false.
 
     ! Compute Limited flux
     activate = .false.
     if(.not. is_ispec_onbound) then
       call SlopeLimitLin(ulimit_temp, ispec, ul(ispec,:),v(ispec),&
                          vkm1_x,vkp1_x,vkm1_z,vkp1_z,activate,type_var)
+    
     endif
 
     if(activate) activate_total = activate
-
-    !if(ispec_bound) &
-    !WRITE(*,*) ">>>>", coord(:,ibool(1,1,ispec)), ispec_bound
 
     prod_ind = 0
     do k=1,NGLLX
       do l=1,NGLLZ
         iglob = ibool_DG(k,l,ispec)
         prod_ind = prod_ind + 1
-        if(.not. is_ispec_onbound) then
+        if(.not. is_ispec_onbound .AND. activate) then
           ulimit(iglob) = ulimit_temp(prod_ind)
         endif
-        !if(ulimit_temp(prod_ind) /= Q(iglob)) &
-        !WRITE(*,*) "DIFF", ulimit_temp(prod_ind), Q(iglob)
-
-        !if(abs(ulimit_temp(prod_ind) - Q(iglob)) < 1.*10**(-3)) ulimit(iglob) = Q(iglob)
 
         ! No slope limiter on the outer boundary
         !if(ispec_bound(k,l))  ulimit(iglob) = Q(iglob)
         if(.not. activate) then
           ulimit(iglob) = Q(iglob)
         endif
-        !if(coord(2,ibool(k,l,ispec)) == 0 .OR. &
-        !     coord(2,ibool(k,l,ispec)) == 1   )  ulimit(iglob) = Q(iglob)
 
-        !if(ispec == 1) WRITE(*,*) "Qispec1", k,l,ispec, Q(iglob),ulimit_temp(prod_ind)
-        !if(abs(Q(iglob)) > 1d-8) then
-        !if(abs(ulimit(iglob)/Q(iglob)) < 0.9999 .OR. abs(ulimit(iglob)/Q(iglob)) > 1.0001) &
-        !        WRITE(*,*) coord(:,ibool_before_perio(k,l,ispec)),ispec,neighbor_DG(k,l,ispec,:),"MEGA DIF :", k,l,ispec, &
-        !        ulimit(iglob), Q(iglob), abs(ulimit(iglob)/Q(iglob)), vkm1_x,vkm1_z, vkp1_x, vkp1_z, v(ispec)
-        !endif
       enddo
     enddo
   enddo
 
   if(activate_total) WRITE(*,*) "SLOPE LIMITER HAS BEEN ACTIVATED", timelocal, type_var
 
-  !close(10)
-  !stop
-  !WRITE(*,*) "MODIFIED : ", nb_mod
-  ! Update solution
   Q(1:nglob_DG) = ulimit(1:nglob_DG)
    
   end subroutine SlopeLimit1
@@ -601,10 +333,9 @@
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
   use specfem_par, only: ibool_before_perio, coord, &
-      xix, xiz, gammax, gammaz, hprime_xx, hprime_zz!, Drx, Drz
+      xix, xiz, gammax, gammaz, hprime_xx, hprime_zz
   implicit none 
 
-  !double precision, dimension(0:NGLOB_DG+1) :: ulimit
   integer, parameter :: NGLL = NGLLX*NGLLZ
   
   real(kind=CUSTOM_REAL), dimension(1:NGLL) :: x0, ul, xl, ux, uz, ulimit
@@ -710,7 +441,7 @@
     minmod(1,1) = minmod(1,1) + (1/NGLLX*NGLLZ)*uz(k)
   enddo
   endif
-  minmod(1,1) = uz(NGLLX*NGLLZ/2)!*(uz(1)+uz(NGLLX*(NGLLZ-1)+1)) :0.5*(uz(1)+uz(NGLLX*(NGLLZ-1)+1))!
+  minmod(1,1) = uz(NGLLX*NGLLZ/2)
   minmod(2,1) = (vkp1_z-v0)/(hz*gradient_factor)
   minmod(3,1) = (v0-vkm1_z)/(hz*gradient_factor)
   
@@ -755,13 +486,11 @@
   
   logical activate
 
-  M_param = MINMOD_FACTOR!0.004!1.
+  M_param = MINMOD_FACTOR
   ! Find regions where limiter is needed
   if(abs(v(1,1)) > M_param*h**2) then
     call minmod_compute(R, v, n, m)
     activate = .true.
-    !WRITE(*,*) ">>>", M_param*h**2, abs(v(1,1))
-    !WRITE(*,*) "ispec modified", ispec, R, v(1,1)
   else
     R = v(1,1)
     activate = .false.

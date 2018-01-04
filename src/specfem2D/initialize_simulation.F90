@@ -98,27 +98,16 @@
   ! Modif DG
   if(USE_DISCONTINUOUS_METHOD) then
           allocate(ibool_DG(NGLLX,NGLLZ,nspec),stat=ier)
-          allocate(weight_DG(NGLLX,NGLLZ,nspec), &
-                weight_DG_corner(NGLLX,NGLLZ,nspec), stat=ier)
-          allocate(dir_normal_DG(NGLLX,NGLLZ,nspec), &
-                dir_normal_DG_corner(NGLLX,NGLLZ,nspec), stat=ier)
-          allocate(link_DG_CG(NGLLX*NGLLZ*nspec),stat=ier)
-          allocate(normal_DG(NGLLX, NGLLZ, nspec, 2), &
-                normal_DG_corner(NGLLX, NGLLZ, nspec, 2), stat=ier)
-          allocate(neighbor_DG(NGLLX, NGLLZ, nspec, 3),stat=ier)
-          allocate(neighbor_DG_corner(NGLLX, NGLLZ, nspec, 3),stat=ier)
           allocate(ispec_is_acoustic_surface(NGLLX,NGLLZ,nspec), &
                 ispec_is_acoustic_forcing(NGLLX,NGLLZ,nspec), &
                 is_corner(NGLLX,NGLLZ), &
                 ispec_is_acoustic_surface_corner(NGLLX,NGLLZ,nspec))!, &
-                !ispec_is_acoustic_coupling(NGLLX,NGLLZ,nspec))
           allocate(ibool_before_perio(NGLLX,NGLLZ,nspec))
           allocate(Vandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
                 invVandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
                 Drx(NGLLX*NGLLZ,NGLLX*NGLLZ), &
                 Drz(NGLLX*NGLLZ,NGLLX*NGLLZ))
-          allocate(elastic_tensor(NGLLX, NGLLZ, nspec, 4), &
-                ispec_is_acoustic_coupling_el(NGLLX,NGLLZ,nspec,3))
+          allocate(ispec_is_acoustic_coupling_el(NGLLX,NGLLZ,nspec,3))
           allocate(ispec_is_acoustic_DG(nspec))
           
           ispec_is_acoustic_DG = .false.

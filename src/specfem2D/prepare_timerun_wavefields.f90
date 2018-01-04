@@ -337,6 +337,11 @@
   allocate(p_DG_init(nglob_DG_loc), T_init(nglob_DG_loc), V_DG(2,2,nglob_DG_loc), T_DG(2,nglob_DG_loc))
   allocate(rmass_inverse_acoustic_DG(nglob_DG_loc))
   
+  rho_DG   = 0.
+  rhovx_DG = 0.
+  rhovz_DG = 0.
+  E_DG     = 0.
+  
   !allocate(this_iglob_is_acous(nglob))
   
   nglob_acoustic_b_DG = 1

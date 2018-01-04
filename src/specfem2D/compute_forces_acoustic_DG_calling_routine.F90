@@ -43,9 +43,6 @@
   implicit none
 
   ! local parameters
-  ! for rk44
-  !double precision :: weight_rk
-  
   real(kind=CUSTOM_REAL) :: timelocal
   
   ! Parameters
@@ -67,8 +64,6 @@
   
   !TEST STRETCHING
   !real(kind=CUSTOM_REAL) :: coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
-  
-  !integer :: i ,j, ispec
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -106,14 +101,6 @@
                tau_sigma(NGLLX, NGLLZ, nspec)) 
     endif
     
-    !rhovx_DG   = ZEROl
-    !rhovz_DG   = ZEROl
-    !rho_DG     = ONEl
-    !gravityext = ZEROl
-    !E_DG = ZEROl
-    !kappa_DG = ZEROl
-    !etaext = ZEROl
-    !muext = ZEROl
     allocate(rhovx_init(nglob_DG), &
              rhovz_init(nglob_DG), &
              E_init(nglob_DG), &
@@ -141,22 +128,21 @@
     p_DG_init  = (gammaext_DG - ONE)*( E_DG &
         - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
-    !endif
+    
+    ! When elastic-DG simulations, p_DG = 0 in elastic elements and 1/p_DG will not be properly defined
+    where(p_DG_init <= 0._CUSTOM_REAL) p_DG_init = 1._CUSTOM_REAL
     
 #ifdef USE_MPI
     if (NPROC > 1 .and. ninterface_acoustic > 0) then
       call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
     endif
 #endif
-    
+
   endif !if(it == 1 .AND. i_stage == 1)
   
   rk4a = real(rk4a_d, kind=CUSTOM_REAL)
   rk4b = real(rk4b_d, kind=CUSTOM_REAL)
   rk4c = real(rk4c_d, kind=CUSTOM_REAL)
-  !rk4a = rk4a_d
-  !rk4b = rk4b_d
-  !rk4c = rk4c_d
   
   timelocal = (it-1)*deltat + rk4c(i_stage)*deltat
   
@@ -306,462 +292,6 @@
   
   end subroutine compute_forces_acoustic_DG_main
 
-! ------------------------------------------------------------ !
-! compute_forces_acoustic_main_backward_DG                     !
-! ------------------------------------------------------------ !
-
-  subroutine compute_forces_acoustic_main_backward_DG()
-  ! TODO: correct with same remarks as in subroutine compute_forces_acoustic_main_DG.
-  
-  use specfem_par
-  use constants, only: rk4a_d, rk4b_d, rk4c_d
-
-  implicit none
-
-  ! local parameters
-  ! for rk44
-  !double precision :: weight_rk
-  
-  real(kind=CUSTOM_REAL) :: timelocal
-  
-  ! Parameters
-  real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
-  
-  real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
-  
-  !integer :: i, j, ispec, numelem
-  
-  real(kind=CUSTOM_REAL), parameter :: threshold = 0.0000001_CUSTOM_REAL
-  !integer :: i ,j, ispec
-  ! checks if anything to do in this slice
-  if (.not. any_acoustic) return
-  ! Intialization
-  if(it == 1 .AND. i_stage == 1) then
-  
-    ! Sloper limiter initialization
-    call setUpVandermonde()
-  
-    resu_rhovx   = ZEROl
-    resu_rhovz   = ZEROl
-    resu_rho     = ZEROl
-    resu_E       = ZEROl
-    dot_rho(:)   = ZEROl
-    dot_rhovx(:) = ZEROl
-    dot_rhovz(:) = ZEROl
-    dot_E(:)     = ZEROl
-    
-    if(.not. trim(MODEL) == 'external') then
-        deallocate(muext, etaext,kappa_DG)
-        allocate(etaext(NGLLX, NGLLZ, nspec), &
-              muext(NGLLX, NGLLZ, nspec), &
-              kappa_DG(NGLLX, NGLLZ, nspec) ) 
-        deallocate(gravityext, windxext, &
-              rhoext, vpext, pext_DG)
-        allocate(gravityext(NGLLX, NGLLZ, nspec), &
-              windxext(NGLLX, NGLLZ, nspec), &
-              rhoext(NGLLX, NGLLZ, nspec), &
-              vpext(NGLLX, NGLLZ, nspec), &
-              pext_DG(NGLLX, NGLLZ, nspec) &
-              )
-    endif
-    
-    !rhovx_DG   = ZEROl
-    !rhovz_DG   = ZEROl
-    !rho_DG     = ONEl
-    !gravityext = ZEROl
-    !E_DG = ZEROl
-    !kappa_DG = ZEROl
-    !etaext = ZEROl
-    !muext = ZEROl
-    
-    call initial_condition_DG_backward()
-    
-    call prepare_MPI_DG()
-    !call prepare_MPI_DG(my_neighbours)
-    
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
-  endif
-#endif
-    
-  endif
-  
-  rk4a = real(rk4a_d, kind=CUSTOM_REAL)
-  rk4b = real(rk4b_d, kind=CUSTOM_REAL)
-  rk4c = real(rk4c_d, kind=CUSTOM_REAL)
-  
-  timelocal = (it-1)*deltat + rk4c(i_stage)*deltat
-  
-  if(myrank == 0) &
-  WRITE(*,*) "iter", it, i_stage, timelocal
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(rho_DG, buffer_DG_rho_P)
-    call assemble_MPI_vector_DG(rhovx_DG, buffer_DG_rhovx_P)
-    call assemble_MPI_vector_DG(rhovz_DG, buffer_DG_rhovz_P)
-    call assemble_MPI_vector_DG(E_DG, buffer_DG_E_P)
-  endif
-#endif
-  
-  call compute_forces_acoustic_DG_backward_real(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
-        dot_rho, dot_rhovx, dot_rhovz, dot_E, &
-        timelocal)
-  
-  !WRITE(*,*) timelocal,"MINMAX >>", myrank,minval(sqrt(rho_DG)), maxval(sqrt(rho_DG))
-        
-  if (time_stepping_scheme == 3) then
-    
-    ! Inverse mass matrix
-    dot_rho(:)   = dot_rho(:) * rmass_inverse_acoustic_DG(:)
-    dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
-    dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
-    dot_E(:)     = dot_E(:) * rmass_inverse_acoustic_DG(:)
-  
-    ! RK5-low dissipation Update
-    resu_rho = rk4a(i_stage)*resu_rho + deltat*dot_rho
-    resu_rhovx = rk4a(i_stage)*resu_rhovx + deltat*dot_rhovx
-    resu_rhovz = rk4a(i_stage)*resu_rhovz + deltat*dot_rhovz
-    resu_E = rk4a(i_stage)*resu_E + deltat*dot_E
-    
-    rho_DG   = rho_DG + rk4b(i_stage)*resu_rho
-    rhovx_DG = rhovx_DG + rk4b(i_stage)*resu_rhovx
-    rhovz_DG = rhovz_DG + rk4b(i_stage)*resu_rhovz
-    E_DG     = E_DG + rk4b(i_stage)*resu_E 
-    
-    ! If we want to compute kernels, we save regularly.
-    if(.false.) then
-      call save_forward_solution()
-    endif
-    
-  endif
-
-  end subroutine compute_forces_acoustic_main_backward_DG
-
-! ------------------------------------------------------------ !
-! compute_forces_acoustic_main_backward_DG_other               !
-! ------------------------------------------------------------ !
-
-  subroutine compute_forces_acoustic_main_backward_DG_other()
-  ! TODO: correct with same remarks as in subroutine compute_forces_acoustic_main_DG.
-
-  use specfem_par
-  use constants, only: rk4a_d, rk4b_d, rk4c_d
-  
-  implicit none
-
-  ! local parameters
-  integer :: it_temp, istage_temp
-  
-  ! Parameters
-  real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
-
-  real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
-  
-  rk4a = real(rk4a_d, kind=CUSTOM_REAL)
-  rk4b = real(rk4b_d, kind=CUSTOM_REAL)
-  rk4c = real(rk4c_d, kind=CUSTOM_REAL)
-
-  ! checks
-  if (SIMULATION_TYPE /= 3 ) return
-
-  ! checks if anything to do in this slice
-  if (.not. any_acoustic) return
-
-  ! timing
-  !if (UNDO_ATTENUATION) then
-  !  ! time increment
-  !  ! example: NSTEP = 800, NT_DUMP_ATTENUATION = 500 -> 1. subset: it_temp = (2-1)*500 + 1 = 501,502,..,800
-  !  !                                                 -> 2. subset: it_temp = (2-2)*500 + 1 = 1,2,..,500
-  !  it_temp = (NSUBSET_ITERATIONS - iteration_on_subset)*NT_DUMP_ATTENUATION + it_of_this_subset
-  !  ! time scheme
-  !  istage_temp = i_stage
-  !else
-    ! time increment
-    !it_temp = NSTEP - it + 1
-    ! time scheme
-    !istage_temp = stage_time_scheme - i_stage + 1
-    
-    ! time increment
-    it_temp = it
-    ! time scheme
-    istage_temp = i_stage
-    
-  !WRITE(*,*) "it/istage", it_temp, istage_temp
-    
-  !endif
-  
-   if(.false.) then
-   
-   !if(it_temp == NSTEP .AND. istage_temp == stage_time_scheme) then
-  if(it_temp == 1 .AND. istage_temp == 1) then
-  
-    resu_b_rhovx = ZEROl
-    resu_b_rhovz = ZEROl
-    resu_b_rho   = ZEROl
-    resu_b_E     = ZEROl
-    
-    b_rho_DG      = ZEROl
-    b_rhovx_DG    = ZEROl
-    b_rhovz_DG    = ZEROl
-    b_E_DG        = ZEROl
-    
-    ! Read forward solution at stations and data (u_obs - u_forward) for adjoint source
-    !call read_source_adj_DG()
-    
-    endif
-
-   b_dot_rho(:)   = ZEROl
-   b_dot_rhovx(:) = ZEROl
-   b_dot_rhovz(:) = ZEROl
-   b_dot_E(:)     = ZEROl
-   
-   ! Source function defined by misfit
-   call compute_add_sources_acoustic_DG_backward(it_temp, &
-        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
-   
-   ! This call makes the compilation under ifort impossible because of some arguments' size mismatch (or so), which makes sense since indeed the arguments in the routine declaration are not corresponding those called to. However, it seems not to bother gfortran.
-   !call compute_forces_acoustic_backward_DG(b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
-   !     rho_DG, rhovx_DG, rhovz_DG, E_DG, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
-   ! Thus, in order for the compilation to work under ifort, we call this one instead. TODO: Check if this makes sense.
-   call compute_forces_acoustic_backward_DG_real(b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
-        rho_DG, rhovx_DG, rhovz_DG, E_DG, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
-   
-     ! assembling potential_dot_dot or b_potential_dot_dot for acoustic elements
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_ac(b_dot_rho)
-    call assemble_MPI_vector_ac(b_dot_rhovx)
-    call assemble_MPI_vector_ac(b_dot_rhovz)
-    call assemble_MPI_vector_ac(b_dot_E)
-  endif
-#endif
-
-  !WRITE(*,*) "1>>>>>>>>>>>",istage_temp, maxval(rmass_inverse_acoustic_DG_b), minval(rmass_inverse_acoustic_DG_b), &
-  !      maxval(b_dot_rho), minval(b_dot_rho), maxval(b_dot_rhovz), minval(b_dot_rhovz)
-
-  ! free surface for an acoustic medium
-  !call enforce_acoustic_free_surface(b_dot_rhovx,b_dot_rhovz,b_dot_E)
-  !call enforce_acoustic_free_surface(b_dot_rhovx,b_dot_rhovz,b_dot_rho)
-
-  !b_dot_rho(:)   = b_dot_rho(:) * rmass_inverse_acoustic_DG_b(:)
-  !b_dot_rhovx(:) = b_dot_rhovx(:) * rmass_inverse_acoustic_DG_b(:)! rmass_inverse_acoustic_DG_b(:)
-  !b_dot_rhovz(:) = b_dot_rhovz(:) * rmass_inverse_acoustic_DG_b(:)!rmass_inverse_acoustic_DG_b(:)
-  !b_dot_E(:)     = b_dot_E(:) * rmass_inverse_acoustic_DG_b(:)
-  
-  b_dot_rho(:)   = b_dot_rho(:) * rmass_inverse_acoustic(:)
-  b_dot_rhovx(:) = b_dot_rhovx(:) * rmass_inverse_acoustic(:)! rmass_inverse_acoustic_DG_b(:)
-  b_dot_rhovz(:) = b_dot_rhovz(:) * rmass_inverse_acoustic(:)!rmass_inverse_acoustic_DG_b(:)
-  b_dot_E(:)     = b_dot_E(:) * rmass_inverse_acoustic(:)
-
-  !WRITE(*,*) "2>>>>>>>>>>>",istage_temp, maxval(rmass_inverse_acoustic_DG_b), minval(rmass_inverse_acoustic_DG_b), &
-    !    maxval(b_dot_rho), minval(b_dot_rho), maxval(b_dot_rhovz), minval(b_dot_rhovz)
-  !if(istage_temp == 2) stop 'KKKK'
-  ! multiply by the inverse of the mass matrix and update velocity
-  if (time_stepping_scheme == 1) then
-    !! DK DK this should be vectorized
-    !b_potential_dot_dot_acoustic(:) = b_potential_dot_dot_acoustic(:) * rmass_inverse_acoustic(:)
-    b_rho_DG(:)   = b_rho_DG(:)   + b_deltatover2 * b_dot_rho(:)
-    b_rhovx_DG(:) = b_rhovx_DG(:) + b_deltatover2 * b_dot_rhovx(:)
-    b_rhovz_DG(:) = b_rhovz_DG(:) + b_deltatover2 * b_dot_rhovz(:)
-    b_E_DG(:)     = b_E_DG(:)     + b_deltatover2 * b_dot_E(:)
-  
-  elseif(time_stepping_scheme == 3) then
-  
-    ! RK5-low dissipation Update
-    resu_b_rho   = rk4a(istage_temp)*resu_b_rho   + deltat*b_dot_rho
-    resu_b_rhovx = rk4a(istage_temp)*resu_b_rhovx + deltat*b_dot_rhovx
-    resu_b_rhovz = rk4a(istage_temp)*resu_b_rhovz + deltat*b_dot_rhovz
-    resu_b_E     = rk4a(istage_temp)*resu_b_E     + deltat*b_dot_E
-    
-    b_rho_DG   = b_rho_DG   + rk4b(istage_temp)*resu_b_rho
-    b_rhovx_DG = b_rhovx_DG + rk4b(istage_temp)*resu_b_rhovx
-    b_rhovz_DG = b_rhovz_DG + rk4b(istage_temp)*resu_b_rhovz
-    b_E_DG     = b_E_DG     + rk4b(istage_temp)*resu_b_E 
-  
-  endif
-   
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   else
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-   if(it == 1 .AND. i_stage == 1) then
-   
-    resu_rhovx = ZEROl
-    resu_rhovz = ZEROl
-    resu_rho   = ZEROl
-    resu_E     = ZEROl
-
-    rho_DG = ZEROl
-    rhovx_DG = ZEROl
-    rhovz_DG   = ZEROl
-    E_DG     = ZEROl
-
-    if(.not. trim(MODEL) == 'external') then
-        deallocate(gravityext, gammaext_DG, windxext, &
-              rhoext, vpext, pext_DG)
-        allocate(gravityext(NGLLX, NGLLZ, nspec), &
-              gammaext_DG(nglob_DG), &
-              windxext(NGLLX, NGLLZ, nspec), &
-              rhoext(NGLLX, NGLLZ, nspec), &
-              vpext(NGLLX, NGLLZ, nspec), &
-              pext_DG(NGLLX, NGLLZ, nspec) &
-              )
-    endif
-
-    call initial_condition_DG_backward()
-
-    call prepare_MPI_DG()
-
-    endif
-
-    dot_rho(:)   = ZEROl
-    dot_rhovx(:) = ZEROl
-    dot_rhovz(:) = ZEROl
-    dot_E(:)    = ZEROl
-   
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(rho_DG, buffer_DG_rho_P)
-    call assemble_MPI_vector_DG(rhovx_DG, buffer_DG_rhovx_P)
-    call assemble_MPI_vector_DG(rhovz_DG, buffer_DG_rhovz_P)
-    call assemble_MPI_vector_DG(E_DG, buffer_DG_E_P)
-  endif
-#endif
-   
-   !call compute_forces_acoustic_DG_backward_real(it_temp, istage_temp, rho_DG, rhovx_DG, rhovz_DG, E_DG, &
-   !     dot_rho, dot_rhovx, dot_rhovz, dot_E)
-  
-  if (time_stepping_scheme == 3) then
-    
-    ! Inverse mass matrix
-    dot_rho(:)   = dot_rho(:) * rmass_inverse_acoustic_DG(:)
-    dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
-    dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
-    dot_E(:)     = dot_E(:) * rmass_inverse_acoustic_DG(:)
-  
-    ! RK5-low dissipation Update
-    resu_rho = rk4a(i_stage)*resu_rho + deltat*dot_rho
-    resu_rhovx = rk4a(i_stage)*resu_rhovx + deltat*dot_rhovx
-    resu_rhovz = rk4a(i_stage)*resu_rhovz + deltat*dot_rhovz
-    resu_E = rk4a(i_stage)*resu_E + deltat*dot_E
-    
-    rho_DG   = rho_DG + rk4b(i_stage)*resu_rho
-    rhovx_DG = rhovx_DG + rk4b(i_stage)*resu_rhovx
-    rhovz_DG = rhovz_DG + rk4b(i_stage)*resu_rhovz
-    E_DG     = E_DG + rk4b(i_stage)*resu_E 
-   
-   
-   endif
-   
-   endif
-   
-  ! Before computing kernel we read the forward solution saved frames
-  !call read_forward_solution(it_temp)
-
-  end subroutine compute_forces_acoustic_main_backward_DG_other
-
-! ------------------------------------------------------------------------------------
-
-  subroutine read_source_adj_DG()
-    
-    use constants,only: CUSTOM_REAL
-    
-    use specfem_par, only: NSTEP,myrank, nrec,&!NSOURCES
-                         source_time_function_rho_DG, source_time_function_E_DG, &
-                         source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
-                         deltat, which_proc_receiver,ispec_is_acoustic, ispec_selected_rec!,is_proc_source, ispec_is_acoustic, ispec_selected_source
-
-    use mpi
-
-    implicit none 
-    
-    include "precision.h"
-    
-    character(len=100) file_name
-    integer :: ok_forward, ok_data, it_tmp, irec, irec_local
-    real(kind=CUSTOM_REAL) :: time, time_data, &
-        !rho_temp, rhovx_temp, rhovz_temp, E_temp, &
-        !rho_temp_data, rhovx_temp_data, rhovz_temp_data, E_temp_data, &
-        veloc_z, veloc_z_data
-    
-   irec_local = 0
-   do irec = 1,nrec
-   
-    ! add the source (only if this proc carries the source)
-    if (myrank == which_proc_receiver(irec)) then
-    
-      irec_local = irec_local + 1
-      
-      if (ispec_is_acoustic(ispec_selected_rec(irec))) then
-    
-    !do i_source = 1,NSOURCES
-    
-    !if(ispec_is_acoustic(ispec_selected_source(i_source))) then
-    
-    ! if this processor core carries the source and the source element is acoustic
-    !if (is_proc_source(i_source) == 1) then
-    
-        !write(file_name,"('solution_forward_',i3.3,'.txt')") irec
-        write(file_name,"('../solution_forward_H15000/AA.S',i3.3,'.BXZ.semd')") irec
-        ! Open forward solution source file
-        open(10,file=file_name, form='formatted',iostat = ok_forward)
-        
-        !write(file_name,"('solution_data_',i3.3,'.txt')") irec
-        write(file_name,"('../solution_forward_H8417/AA.S',i4.4,'.BXZ.semd')") irec
-        ! Open exact solution source file
-        open(11,file=file_name, form='formatted',iostat = ok_data)
-
-        it_tmp = -1
-        ! COUNT NUMBER OF PARAMS (74)
-        do while(ok_forward == 0 .AND. ok_data == 0 .AND. it_tmp <= NSTEP)
-          
-                read(10,*,iostat = ok_forward)  time, veloc_z
-                !        time, rho_temp, rhovx_temp, rhovz_temp, E_temp
-                read(11,*,iostat = ok_data) time_data, veloc_z_data
-                !        time_data, rho_temp_data, rhovx_temp_data, rhovz_temp_data, E_temp_data
-                        
-                it_tmp = NSTEP - INT( time/deltat ) + 1
-                !it_tmp = NSTEP - it + 1
-                
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                !
-                !  DESIGN THE MISFIT HERE
-                !
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                if(it_tmp <= NSTEP) then
-                !adj_sourcearrays_rho_DG(irec_local,it_tmp,1,i,j)   = 0
-                !adj_sourcearrays_rhovx_DG(irec_local,it_tmp,1,i,j) = 0
-                !adj_sourcearrays_rhovz_DG(irec_local,it_tmp,1,i,j) = veloc_z - veloc_z_data
-                !adj_sourcearrays_E_DG(irec_local,it_tmp,1,i,j)     = 0
-                source_time_function_rho_DG(irec, it_tmp, :)   = 0!rho_temp - rho_temp_data
-                source_time_function_rhovx_DG(irec, it_tmp, :) = 0!rhovx_temp - rhovx_temp_data
-                source_time_function_rhovz_DG(irec, it_tmp, :) = veloc_z - veloc_z_data!rhovz_temp - rhovz_temp_data
-                source_time_function_E_DG(irec, it_tmp, :)     = 0!E_temp - E_temp_data
-                endif
-                
-        end do 
-        
-        close(11)
-        
-        close(10)
-    
-    endif !ispec_is_acoustic(ispec_selected_rec(irec))
-    
-    endif !myrank == which_proc_receiver(irec)
-    
-    enddo !irec = 1,nrec
-    
-  end subroutine read_source_adj_DG
-
 ! ------------------------------------------------------------------------------------
 
   subroutine save_forward_solution()
@@ -875,34 +405,35 @@
     
     include "precision.h"
     
-    integer :: iinterface, ipoin, num_interface, iglob, cpt, &
+    integer :: iinterface, ipoin, num_interface, iglob, &
         i, j, ispec, iglob_DG, nb_values, ier
     integer, dimension(nglob_DG, 3) :: link_ij_iglob
     integer, dimension(nglob_DG) :: MPI_iglob
     
-    !integer, dimension(ninterface) :: my_neighbours_loc
-    
-    !integer, dimension(max_ibool_interfaces_size_ac,ninterface_acoustic) :: &
-    !    buffer_recv_faces_vector_DG_i, &
-    !    buffer_send_faces_vector_DG_i, &
-    !    buffer_recv_faces_vector_DG_j, &
-    !    buffer_send_faces_vector_DG_j
-    
-    integer, dimension(NGLLX*max_interface_size,ninterface) :: &
+    double precision, dimension(NGLLX*max_interface_size,ninterface) :: &
         buffer_recv_faces_vector_DG_i, &
         buffer_send_faces_vector_DG_i, &
         buffer_recv_faces_vector_DG_j, &
-        buffer_send_faces_vector_DG_j    
+        buffer_send_faces_vector_DG_j, &
+        buffer_send_faces_vector_DG_i1try, &
+        buffer_recv_faces_vector_DG_i1try, &
+        buffer_send_faces_vector_DG_j1try, &
+        buffer_recv_faces_vector_DG_j1try, &
+        buffer_send_faces_vector_DG_i2try, &
+        buffer_recv_faces_vector_DG_i2try, &
+        buffer_send_faces_vector_DG_j2try, &
+        buffer_recv_faces_vector_DG_j2try
     
-    integer :: i_2, j_2
+    integer :: iface1, iface, neighbor, neighbor_corner, iface_corner, iface1_corner
+   
+    double precision :: coord_i_1, coord_j_1, coord_i_2, coord_j_2, &
+        coord_i_21_try, coord_j_21_try, coord_i_22_try, coord_j_22_try
     
-   ! character(len=100) file_name
-    !write(file_name,"('./boundaries_elastic2_MPI_',i3.3)") myrank
-    ! Open output forcing file
-    !open(100,file=file_name,form='formatted')
-  
-    allocate(MPI_transfer(nglob_DG, 2, 4))
-    !allocate(diag_MPI(max_ibool_interfaces_size_ac,ninterface_acoustic))
+    integer :: i_try, j_try
+    
+    logical :: one_other_node_is_found, one_other_node_is_found_corner
+   
+    allocate(MPI_transfer_iface(NGLLX, 4, nspec,2))
     
     do ispec = 1, nspec
     
@@ -914,16 +445,24 @@
         link_ij_iglob(iglob_DG,1) = i
         link_ij_iglob(iglob_DG,2) = j
         link_ij_iglob(iglob_DG,3) = ispec
+        
+        if((i == 1 .AND. (j == 1 .OR. j == NGLLZ)) .OR. (i == NGLLX .AND. (j == 1 .OR. j == NGLLZ))) &
+                is_corner(i,j) = .true.
     
     enddo
     enddo
     
     enddo
     
-    buffer_recv_faces_vector_DG_i = -1
-    buffer_send_faces_vector_DG_i = -1  
-    buffer_recv_faces_vector_DG_j = -1
-    buffer_send_faces_vector_DG_j = -1   
+    buffer_recv_faces_vector_DG_i = -1.
+    buffer_send_faces_vector_DG_i = -1. 
+    buffer_recv_faces_vector_DG_j = -1.
+    buffer_send_faces_vector_DG_j = -1.   
+    
+    buffer_send_faces_vector_DG_i2try = -1.
+    buffer_send_faces_vector_DG_j2try = -1.
+    buffer_send_faces_vector_DG_i1try = -1.
+    buffer_send_faces_vector_DG_j1try = -1.
     
     ! MPI SEND INFO ABOUT DIAG ELEMENT OR NOT
     do iinterface = 1, ninterface_acoustic_DG
@@ -938,9 +477,48 @@
         
         i = link_ij_iglob(iglob,1)
         j = link_ij_iglob(iglob,2)
+        ispec = link_ij_iglob(iglob,3)
         
-        buffer_send_faces_vector_DG_i(ipoin,iinterface) = i
-        buffer_send_faces_vector_DG_j(ipoin,iinterface) = j
+        buffer_send_faces_vector_DG_i(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
+        buffer_send_faces_vector_DG_j(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
+        ! CORRIGER ICI EN RECUPERANT CORRECTEMENT LE NUMERO DE IFACE ET IFACE1 POUR LES POINTS TRY
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! RECOVER CURRENT ELEMENT PROPERTIES (IFACE1, IFACE)
+        iface1 = link_ijispec_iface(i,j,ispec,1,1)
+        iface1 = iface1 + 1
+        if(iface1 > 5) iface1 = link_ijispec_iface(i,j,ispec,1,1) - 1
+        iface  = link_ijispec_iface(i,j,ispec,2,1)
+        
+        iface1_corner = -1
+        iface_corner  = -1
+        neighbor_corner = -1
+        if(is_corner(i,j) .AND. link_ijispec_iface(i,j,ispec,1,2) > -1) then
+                iface1_corner   = link_ijispec_iface(i,j,ispec,1,2)
+                iface1_corner   = iface1_corner + 1
+                if(iface1_corner > 5) iface1_corner = link_ijispec_iface(i,j,ispec,1,2) - 1
+                iface_corner    = link_ijispec_iface(i,j,ispec,2,2)
+                
+                
+                i     = link_iface_ijispec(iface1_corner, iface_corner, ispec,1)
+                j     = link_iface_ijispec(iface1_corner, iface_corner, ispec,2)
+                buffer_send_faces_vector_DG_i2try(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
+                buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
+                
+        else
+        
+                buffer_send_faces_vector_DG_i2try(ipoin,iinterface) = -1.
+                buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = -1.
+        
+        endif
+        
+        !neighbor = neighbor_DG_iface(iface1,iface,ispec,3)
+        i     = link_iface_ijispec(iface1, iface, ispec,1)
+        j     = link_iface_ijispec(iface1, iface, ispec,2)
+        buffer_send_faces_vector_DG_i1try(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
+        buffer_send_faces_vector_DG_j1try(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
         
     enddo
     
@@ -954,7 +532,7 @@
     nb_values = nibool_interfaces_acoustic_DG(num_interface)
     
     call MPI_ISEND( buffer_send_faces_vector_DG_i(1,iinterface), &
-             nb_values, MPI_INTEGER, &
+             nb_values, MPI_DOUBLE, &
              my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
              tab_requests_send_recv_DG(iinterface), ier)
         
@@ -964,7 +542,7 @@
 
     ! starts a non-blocking receive
     call MPI_IRECV ( buffer_recv_faces_vector_DG_i(1,iinterface), &
-             nb_values, MPI_INTEGER, &
+             nb_values, MPI_DOUBLE, &
              my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
              tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), ier)
      
@@ -973,7 +551,7 @@
     endif
     
     call MPI_ISEND( buffer_send_faces_vector_DG_j(1,iinterface), &
-             nb_values, MPI_INTEGER, &
+             nb_values, MPI_DOUBLE, &
              my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
              tab_requests_send_recv_DG(ninterface_acoustic_DG*2+iinterface), ier)
         
@@ -983,22 +561,95 @@
 
     ! starts a non-blocking receive
     call MPI_IRECV ( buffer_recv_faces_vector_DG_j(1,iinterface), &
-             nb_values, MPI_INTEGER, &
+             nb_values, MPI_DOUBLE, &
              my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
              tab_requests_send_recv_DG(ninterface_acoustic_DG*3+iinterface), ier)
+     
+     if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
+    endif
+             
+    call MPI_ISEND( buffer_send_faces_vector_DG_i1try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*4+iinterface), ier)
+        
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
+    endif
+
+    ! starts a non-blocking receive
+    call MPI_IRECV ( buffer_recv_faces_vector_DG_i1try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*5+iinterface), ier)
      
     if (ier /= MPI_SUCCESS) then
       call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
     endif
     
-    WRITE(*,*) "-------------->", myrank, iinterface, my_neighbours(num_interface), num_interface, nb_values
+    call MPI_ISEND( buffer_send_faces_vector_DG_j1try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*6+iinterface), ier)
+        
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
+    endif
+
+    ! starts a non-blocking receive
+    call MPI_IRECV ( buffer_recv_faces_vector_DG_j1try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*7+iinterface), ier)
+     
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
+    endif
+    
+    call MPI_ISEND( buffer_send_faces_vector_DG_i2try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*8+iinterface), ier)
+        
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
+    endif
+
+    ! starts a non-blocking receive
+    call MPI_IRECV ( buffer_recv_faces_vector_DG_i2try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*9+iinterface), ier)
+     
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
+    endif
+    
+    call MPI_ISEND( buffer_send_faces_vector_DG_j2try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*10+iinterface), ier)
+        
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
+    endif
+
+    ! starts a non-blocking receive
+    call MPI_IRECV ( buffer_recv_faces_vector_DG_j2try(1,iinterface), &
+             nb_values, MPI_DOUBLE, &
+             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+             tab_requests_send_recv_DG(ninterface_acoustic_DG*11+iinterface), ier)
+     
+    if (ier /= MPI_SUCCESS) then
+      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
+    endif
     
     enddo
     
     ! waits for MPI requests to complete (recv)
     ! each wait returns once the specified MPI request completed
-    do iinterface = 1, 4*ninterface_acoustic_DG
-    !do iinterface = 1, ninterface_acoustic_DG
+    do iinterface = 1, 12*ninterface_acoustic_DG
       call MPI_Wait(tab_requests_send_recv_DG(iinterface), &
                   MPI_STATUS_IGNORE, ier)
     
@@ -1006,7 +657,7 @@
       !            MPI_STATUS_IGNORE, ier)
     enddo
     
-    MPI_transfer = -1
+    MPI_transfer_iface = -1
     MPI_iglob    = 0
     
     do iinterface = 1, ninterface_acoustic_DG
@@ -1025,45 +676,81 @@
         j = link_ij_iglob(iglob,2)
         ispec = link_ij_iglob(iglob,3)
         
-        !if(ispec_is_acoustic_coupling_el(i,j,ispec,3) >= 0) then
-        !        WRITE(100,*) coord(:,ibool_before_perio(i, j, ispec))
-        !endif
+        coord_i_2     = buffer_recv_faces_vector_DG_i(ipoin, iinterface)
+        coord_j_2     = buffer_recv_faces_vector_DG_j(ipoin, iinterface)
         
-        i_2     = buffer_recv_faces_vector_DG_i(ipoin, iinterface)
-        j_2     = buffer_recv_faces_vector_DG_j(ipoin, iinterface)
+        coord_i_21_try = buffer_recv_faces_vector_DG_i1try(ipoin, iinterface)
+        coord_j_21_try = buffer_recv_faces_vector_DG_j1try(ipoin, iinterface)
         
-        !WRITE(100,*) myrank,i,j,ispec,coord(:,ibool(i, j, ispec))
+        coord_i_22_try = buffer_recv_faces_vector_DG_i2try(ipoin, iinterface)
+        coord_j_22_try = buffer_recv_faces_vector_DG_j2try(ipoin, iinterface)
         
-        if( (neighbor_DG(i,j,ispec,3) == -1 .OR. &
-                neighbor_DG_corner(i,j,ispec,3) == -1) .AND. (i == i_2 .OR. j == j_2) ) then
+        iface1 = link_ijispec_iface(i,j,ispec,1,1)
+        iface  = link_ijispec_iface(i,j,ispec,2,1)
+        neighbor = neighbor_DG_iface(iface1,iface,ispec,3)
+        iface1_corner = -1
+        iface_corner  = -1
+        neighbor_corner = -1
+        if(is_corner(i,j)) then
+                iface1_corner   = link_ijispec_iface(i,j,ispec,1,2)
+                iface_corner    = link_ijispec_iface(i,j,ispec,2,2)
+                neighbor_corner = neighbor_DG_iface(iface1_corner,iface_corner,ispec,3)
+        endif
         
-        !WRITE(*,*) myrank,"------------>", i,j,ispec,i_2,j_2,coord(:,ibool(i, j, ispec))
-        !WRITE(*,*) "-----", neighbor_DG(i,j,ispec,3), neighbor_DG_corner(i,j,ispec,3)
-        !WRITE(*,*) "***********"
+       one_other_node_is_found = .false.
+       one_other_node_is_found_corner = .false.
+        do iface1 = 1,NGLLX
         
-        MPI_iglob(iglob) = MPI_iglob(iglob) + 1
-        cpt = MPI_iglob(iglob)
-        MPI_transfer(iglob,cpt,1) = ipoin 
-        MPI_transfer(iglob,cpt,2) = num_interface 
+                i_try = link_iface_ijispec(iface1, iface, ispec, 1)
+                j_try = link_iface_ijispec(iface1, iface, ispec, 2)
+                
+                coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
+                coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
+                
+                if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
+                    (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) then
+                        one_other_node_is_found = .true.
+                endif
+                        
+                if(is_corner(i,j)) then
+                i_try = link_iface_ijispec(iface1, iface_corner, ispec, 1)
+                j_try = link_iface_ijispec(iface1, iface_corner, ispec, 2)
+                
+                coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
+                coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
+                
+                if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
+                    (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) &
+                        one_other_node_is_found_corner = .true.
+                
+                endif
+        enddo       
         
-        MPI_transfer(iglob,cpt,3) = i_2
-        MPI_transfer(iglob,cpt,4) = j_2
-       
+        iface1 = link_ijispec_iface(i,j,ispec,1,1)
+        
+        coord_i_1 = coord(1,ibool(i,j,ispec))
+        coord_j_1 = coord(2,ibool(i,j,ispec))
+        
+        if( (neighbor == -1 .OR. neighbor_corner == -1) .AND. &
+                 (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
+                        .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
+
+        
+        if(one_other_node_is_found) then
+        MPI_transfer_iface(iface1,iface,ispec,1) = ipoin 
+        MPI_transfer_iface(iface1,iface,ispec,2) = num_interface 
+        endif
+        
+        if(one_other_node_is_found_corner) then
+        MPI_transfer_iface(iface1_corner,iface_corner,ispec,1) = ipoin 
+        MPI_transfer_iface(iface1_corner,iface_corner,ispec,2) = num_interface
+        endif
+        
        endif
         
     enddo
     
     enddo
-    
-    !do iinterface = 1, ninterface_acoustic_DG
-    !  call MPI_Wait(tab_requests_send_recv_DG(iinterface + 0), &
-    !              MPI_STATUS_IGNORE, ier)
-    !
-    !  call MPI_Wait(tab_requests_send_recv_DG(iinterface + 2*ninterface_acoustic_DG), &
-    !              MPI_STATUS_IGNORE, ier)
-    !enddo
-    
-    !close(100)
     
   end subroutine prepare_MPI_DG
 
@@ -1080,15 +767,13 @@
     call compute_Vander_matrices(NGLLX*NGLLZ,&
        Vandermonde, invVandermonde, Drx, Drz )
        
-       !WRITE(*,*) "maxval Vandermonde", maxval(Vandermonde), minval(Vandermonde)
-       
   end subroutine setUpVandermonde
   
   subroutine compute_Vander_matrices(np,&
        V1D, V1D_inv, Drx, Drz )
 
     use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,GAUSSALPHA,GAUSSBETA
-    use specfem_par,only: xigll, zigll!, hprime_xx, hprime_zz
+    use specfem_par,only: xigll, zigll
 
     implicit none 
 
@@ -1099,39 +784,25 @@
   real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
 
-  !double precision, parameter :: zero=0.d0,one=1.d0,two=2.d0
 
   integer np
-  !real(kind=CUSTOM_REAL), parameter :: threshold = 0.000000001_CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.00001_CUSTOM_REAL
   real(kind=CUSTOM_REAL) V1D(np,np), V1D_inv(np, np),&
-         Drx(np, np), Drz(np, np)!,  diagMass(np,np)!, V1D_der_x(np, np),&
-          !V1D_der_z(np, np), V1D_t(np, np)!, diagMass(np,np)!, R(np, np)
+         Drx(np, np), Drz(np, np)
   double precision, dimension(np,np) :: V1D_d, V1D_inv_d
-  !double precision, dimension(NGLLX) :: hx_d, hprimex_d
-  !double precision, dimension(NGLLZ) :: hz_d, hprimez_d   
-  !real(kind=CUSTOM_REAL), dimension(NGLLX) :: hx, hprimex
-  !real(kind=CUSTOM_REAL), dimension(NGLLZ) :: hz, hprimez  
 
   double precision :: p,pd,pm1,pdm1,pm2,pdm2,p2,pd2
 
   integer i,j,k,errorflag,l,m,n
   
-  !double precision, external :: hgll
-
-  !!!!!!!!!!!!!!!!!!!!!!!
-  !!!! => NEEDS TO BE FINISHED
-  !!!!!!!!!!!!!!!!!!!!!!!
   ! Init
   V1D     = ZEROl
-  !V1D_t   = ZEROl
   V1D_inv = ZEROl
   Drx     = ZEROl
   Drz     = ZEROl
   V1D_d   = 0d0
   
   ! NEW MATRIcES
- ! do k=1,np
  k = 0
   do m = 1,NGLLX
     do n = 1,NGLLZ
@@ -1140,31 +811,14 @@
   do i = 1,NGLLX
     do j = 1,NGLLZ
       l = l + 1
-      !WRITE(*,*) "1*********"
-      !call lagrange_any(xigll(j),NGLLX,xigll,hx_d,hprimex_d)
-      !hx_d(i) = hgll(i-1,xigll(j-1),xigll,NGLLX) !lagrange_deriv_GLL(i1-1,i2-1,xigll,NGLLX)
       call jacobf(p,pd,pm1,pdm1,pm2,pdm2,i-1,GAUSSALPHA,GAUSSBETA,xigll(m))
       call jacobf(p2,pd2,pm1,pdm1,pm2,pdm2,j-1,GAUSSALPHA,GAUSSBETA,zigll(n))
-      !call jacobf(p,pd,pm1,pdm1,pm2,pdm2,m-1,GAUSSALPHA,GAUSSBETA,xigll(i))
-      !call jacobf(p2,pd2,pm1,pdm1,pm2,pdm2,n-1,GAUSSALPHA,GAUSSBETA,zigll(j))
-  
-      !WRITE(*,*) "TEST LAGRANGE h", h(i2)
-      !WRITE(*,*) "TEST LAGRANGE hprime", hprimex_d(i), xigll(j),NGLLX
-      !WRITE(*,*) "TEST LAGRANGE hprime_xx(i2,i1)", hprime_xx(i2,i1)
-      !WRITE(*,*) "*********"
-      !hprimewgll_xx(i2,i1) = wxgll(i2) * hprime_xx(i2,i1)
-      !Drx(k,j) = REAL(hprimex_d(i), kind=CUSTOM_REAL)
-      !V1D(k,j) = REAL(hx_d(i), kind=CUSTOM_REAL)
-      !V1D_der_x(k,l) = REAL(pd, kind=CUSTOM_REAL)
-      !V1D_der_z(k,l) = REAL(pd2, kind=CUSTOM_REAL)
+
       V1D(k,l) = REAL(p*p2, kind=CUSTOM_REAL)
       if(abs(V1D(k,l)) < threshold) V1D(k,l) = ZEROl
-      !WRITE(*,*) "V1D(",k,",",l,") = ", V1D(k,l)
       V1D_d(k,l) = p*p2
-      !V1D_t(l,k) = V1D(k,l)
     enddo
   enddo
-  !enddo
     enddo
   enddo
   
@@ -1176,29 +830,6 @@
     enddo
   enddo
   
-  !do j=1,np
-  !  do i=1,np
-  !      do k=1,np
-  !      Drx(i,j) = Drx(i,j) + V1D_der_x(i,k)*V1D_inv(k,j)
-  !      !WRITE(*,*) "A(",k,",",l,") = ", V1D_der_x(i,k), REAL(V1D_inv(k,j), kind=CUSTOM_REAL)
-  !      Drz(i,j) = Drz(i,j) + V1D_der_z(i,k)*V1D_inv(k,j)
-  !      enddo
-  !     ! WRITE(*,*) "Dr", Dr(i,j) 
-  !  enddo
-  !enddo
-  
-  !TEST INVERSION
-  !R = ZEROl
-  !do k=1,np
-  !      do l=1,np
-  !              do m=1,np
-  !              R(k,l)  = R(k,l) + V1D(k,m)*V1D_inv(m,l)
-  !              enddo
-  !              WRITE(*,*) "R(k,l)",k,l,R(k,l)
-  !    enddo
-  !    
-  !enddo
-
   end subroutine compute_Vander_matrices
 
 ! ------------------------------------------------------------ !

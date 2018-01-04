@@ -252,10 +252,6 @@
         vector_field_element(1,i,j) = (tempx1l*xixl + tempx2l*gammaxl) / rhol        !u_x
         vector_field_element(2,i,j) = (tempx1l*xizl + tempx2l*gammazl) / rhol        !u_z
         
-        !WRITE(*,*) ">>>>", i,j,ispec,vector_field_element(:,i,j)
-        
-        !vector_field_element(2,i,j) = field_acoustic(iglob)
-        
        else
         
         vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))

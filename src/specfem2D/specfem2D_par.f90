@@ -143,22 +143,15 @@ module specfem_par
   real(kind=CUSTOM_REAL) :: MINMOD_FACTOR, SCALE_HEIGHT, gravity_cte_DG, &
         dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
   real(kind=CUSTOM_REAL) :: cp, cnu
-  integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG!, ispec_interfaces_acoustic_DG
+  integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG
   logical, dimension(:), allocatable  :: is_MPI_interface_DG    
-  integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG!, nispec_interfaces_acoustic_DG
+  integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG
   integer :: nglob_DG
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_DG
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_DG
   integer, dimension(:), allocatable  :: tab_requests_send_recv_DG
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: weight_DG, weight_DG_corner
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: dir_normal_DG, dir_normal_DG_corner
   real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind  
-  integer, dimension(:), allocatable :: link_DG_CG, cpt_CG_DG
-  integer, dimension(:,:), allocatable :: link_CG_DG
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: normal_DG, normal_DG_corner
-  integer, dimension(:,:,:,:), allocatable :: neighbor_DG, neighbor_DG_corner
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: elastic_tensor   
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -171,7 +164,7 @@ module specfem_par
   logical, dimension(:,:,:), allocatable :: ispec_is_acoustic_forcing, ispec_is_acoustic_surface, &
                                             ispec_is_acoustic_surface_corner
   logical, dimension(:), allocatable :: ispec_is_acoustic_DG!, ispec_is_acoustic_coupling
-  integer, dimension(:,:,:,:), allocatable :: ispec_is_acoustic_coupling_el
+  integer, dimension(:,:,:,:), allocatable :: ispec_is_acoustic_coupling_el, iface_is_acoustic_coupling_el
   integer, dimension(:), allocatable :: ispec_is_acoustic_coupling_ac
   logical, dimension(:,:), allocatable :: is_corner
 
@@ -186,6 +179,11 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dt_density, dt_rhoenergy, rhoenergy, density_p
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: pext
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rhoveloc_x, resu_rhoveloc_z, resu_density, resu_rhoenergy
+  
+  integer, dimension(:, :, :, :), allocatable ::  link_iface_ijispec, neighbor_DG_iface 
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable ::  nx_iface, nz_iface
+  real(kind=CUSTOM_REAL), dimension(:, :, :), allocatable ::  weight_iface
+  integer, dimension(:, :, :, :, :), allocatable :: link_ijispec_iface
   
   !---------------------------------------------------------------------
   ! for material information
@@ -805,7 +803,7 @@ module specfem_par
   
   integer :: ninterface_acoustic_DG
   integer, dimension(:), allocatable :: inum_interfaces_acoustic_DG
-  integer, dimension(:,:,:), allocatable :: MPI_transfer
+  integer, dimension(:,:,:,:), allocatable :: MPI_transfer_iface
   
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_ac
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_ac

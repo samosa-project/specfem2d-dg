@@ -339,41 +339,118 @@
 
   integer :: i,j,ispec,iglob
   
-  integer :: i2,j2,ispec2,iglob2,it_corner
+  integer :: i2,j2,ispec2,iglob2
+  integer :: i3, iglob3
   logical :: found
-
+  
+  ! MAJOR MODIF
+  integer :: iface, i1face, i1face_try, i2face, iface2, iglob3_try
+  logical :: one_other_is_found
+  
   is_corner = .false.
+  
+  allocate(link_iface_ijispec(NGLLX,4,nspec,2), &
+        neighbor_DG_iface(NGLLX, 4, nspec, 3), &
+        link_ijispec_iface(NGLLX, NGLLZ, nspec, 2, 2))
+  link_ijispec_iface = -1
+  ! Find iface numerotation
+  do ispec = 1,nspec
+  
+      !            4
+      !    |----------------|
+      !    |                |
+      !    |                |
+      ! 1  |                | 2
+      !    |                |
+      !    |                |
+      !    |                |
+      !    |----------------|
+      !            3
+  
+      iface = 1
+      do i = 1,1
+      do j = 1,NGLLZ
+      ! Compute local face number
+      link_iface_ijispec(j,iface,ispec,1) = i
+      link_iface_ijispec(j,iface,ispec,2) = j
+      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+      link_ijispec_iface(i,j,ispec,1,1) = j
+      link_ijispec_iface(i,j,ispec,2,1) = iface
+      else
+      link_ijispec_iface(i,j,ispec,1,2) = j
+      link_ijispec_iface(i,j,ispec,2,2) = iface
+      endif
+      enddo
+      enddo
+      
+      iface = 2
+      do i = NGLLX,NGLLX
+      do j = 1,NGLLZ
+      ! Compute local face number
+      link_iface_ijispec(j,iface,ispec,1) = i
+      link_iface_ijispec(j,iface,ispec,2) = j
+      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+      link_ijispec_iface(i,j,ispec,1,1) = j
+      link_ijispec_iface(i,j,ispec,2,1) = iface
+      else
+      link_ijispec_iface(i,j,ispec,1,2) = j
+      link_ijispec_iface(i,j,ispec,2,2) = iface
+      endif
+      enddo
+      enddo
+      
+      iface = 3
+      do i = 1,NGLLX
+      do j = 1,1
+      ! Compute local face number
+      link_iface_ijispec(i,iface,ispec,1) = i
+      link_iface_ijispec(i,iface,ispec,2) = j
+      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+      link_ijispec_iface(i,j,ispec,1,1) = i
+      link_ijispec_iface(i,j,ispec,2,1) = iface
+      else
+      link_ijispec_iface(i,j,ispec,1,2) = i
+      link_ijispec_iface(i,j,ispec,2,2) = iface
+      endif
+      enddo
+      enddo
+      
+      iface = 4
+      do i = 1,NGLLX
+      do j = NGLLZ,NGLLZ
+      ! Compute local face number
+      link_iface_ijispec(i,iface,ispec,1) = i
+      link_iface_ijispec(i,iface,ispec,2) = j
+      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+      link_ijispec_iface(i,j,ispec,1,1) = i
+      link_ijispec_iface(i,j,ispec,2,1) = iface
+      else
+      link_ijispec_iface(i,j,ispec,1,2) = i
+      link_ijispec_iface(i,j,ispec,2,2) = iface
+      endif
+      enddo
+      enddo
+      
+  enddo
   
   ! Create neighboring elements for DG flux comm. 
    do ispec = 1,nspec
    
-    do j = 1,NGLLZ
-      do i = 1,NGLLX
+     do iface = 1,4
+     
+      do i1face = 1,NGLLX
       
-      ! Setup is_corner table link
-        if( ispec == 1 .AND. (j == 1 .AND. i == 1) &
-                .OR. (j == NGLLZ .AND. i == 1) &
-                .OR. (j == 1 .AND. i == NGLLX) &
-                .OR. (j == NGLLZ .AND. i == NGLLX) ) is_corner(i,j) = .true.
+      i = link_iface_ijispec(i1face,iface,ispec,1)
+      j = link_iface_ijispec(i1face,iface,ispec,2)
       
-      ! Initialization
-      neighbor_DG(i,j,ispec,:)        = -1
-      neighbor_DG_corner(i,j,ispec,:) = -1
+      neighbor_DG_iface(i1face,iface,ispec,:) = -1
       
       ! Skip non acoustic (thus non fluid) elements
       if (.not. ispec_is_acoustic(ispec)) cycle
       if (.not. ispec_is_acoustic_DG(ispec)) cycle
-      
-      ! Ignore interior element nodes
-      if(j > 1 .AND. j < NGLLZ .AND. i > 1 .AND. i < NGLLX) cycle
-      
-      ! If already found neighbor => cycle
-      if(.not. is_corner(i,j) .AND. neighbor_DG(i,j,ispec,1) > -1) cycle
-      
+
       iglob = ibool(i,j,ispec)
-      
       found = .false.
-      it_corner = 0
       ! Find neighbor by going through every mesh node
       do ispec2 = 1,nspec
       
@@ -386,77 +463,50 @@
             ! If we already found the neighbor we exit the loop
             if(found) exit
             
-            do j2 = 1,NGLLZ
+            !do j2 = 1,NGLLZ
+            do iface2 = 1,4
             
               ! If we already found the neighbor we exit the loop
               if(found) exit
               
-              ! If we already found the first corner neighbor we exit the loop
-              if(it_corner == 1) exit
+              do i2face = 1,NGLLX
               
-              do i2 = 1,NGLLX
-              
-              ! Ignore interior element nodes
-              if(j2 > 1 .AND. j2 < NGLLZ .AND. i2 > 1 .AND. i2 < NGLLX) cycle
-              
+              i2 = link_iface_ijispec(i2face,iface2,ispec2,1)
+              j2 = link_iface_ijispec(i2face,iface2,ispec2,2)
               iglob2 = ibool(i2,j2,ispec2)
               
               ! If same coordinates => Neighbor found
-              !if(( coord(1,iglob) == coord(1,iglob2) .AND. coord(2,iglob) == coord(2,iglob2) .AND. &
-              if( iglob == iglob2 .AND. &
-              ! If must not be the opposite corner
-                 (i+i2+j+j2 /= (NGLLX + NGLLZ + 2) .OR. .not. is_corner(i,j)) ) then
-              
-                if(it_corner == 0) then
-                neighbor_DG(i,j,ispec,1) = i2
-                neighbor_DG(i,j,ispec,2) = j2
-                neighbor_DG(i,j,ispec,3) = ispec2
-                
-                !neighbor_DG(i2,j2,ispec2,1) = i
-                !neighbor_DG(i2,j2,ispec2,2) = j
-                !neighbor_DG(i2,j2,ispec2,3) = ispec
-                !if(coord(1,ibool_before_perio(i,j,ispec)) == 10.) then
-                !WRITE(*,*) "CLASSICAL FINDING 1", i, j, ispec, coord(:,ibool_before_perio(i,j,ispec))
-                !WRITE(*,*) "CLASSICAL FINDING 2", i2, j2, ispec2, coord(:,ibool_before_perio(i2,j2,ispec2))
-                !WRITE(*,*) "*************"
-                !endif
-                endif
-                
-                ! If at corner => needs two neighbors
-                if( is_corner(i,j) .AND. it_corner == 0) then
-                
-                        it_corner = 1
+              if( iglob == iglob2 ) then !.AND. &
+                 
+                 i1face_try = i1face + 1
+                 if(i1face == 5) i1face_try = i1face - 1
+                 iglob3_try = ibool(link_iface_ijispec(i1face_try,iface,ispec,1), &
+                        link_iface_ijispec(i1face_try,iface,ispec,2),&
+                        ispec)
                         
-                ! Second corner neighbor
-                elseif(it_corner == 2) then
-                
+                 one_other_is_found = .false.
+                 do i3 = 1,NGLLX
+                 
+                 iglob3 = ibool(link_iface_ijispec(i3,iface2,ispec2,1), &
+                        link_iface_ijispec(i3,iface2,ispec2,2),&
+                        ispec2)
+                 if(iglob3 == iglob3_try) one_other_is_found = .true. 
+                 
+                 enddo
+                 
+                 if(one_other_is_found) then
+                        neighbor_DG_iface(i1face,iface,ispec,1) = i2face
+                        neighbor_DG_iface(i1face,iface,ispec,2) = iface2
+                        neighbor_DG_iface(i1face,iface,ispec,3) = ispec2
                         found = .true.
-                        neighbor_DG_corner(i,j,ispec,1) = i2
-                        neighbor_DG_corner(i,j,ispec,2) = j2
-                        neighbor_DG_corner(i,j,ispec,3) = ispec2
-                        !if(coord(1,ibool_before_perio(i,j,ispec)) == 14000.) then
-                        !WRITE(*,*) "CORNER FINDING 1", i, j, ispec, coord(:,ibool_before_perio(i,j,ispec))
-                        !WRITE(*,*) "CORNER FINDING 2", i2, j2, ispec2, coord(:,ibool_before_perio(i2,j2,ispec2))
-                        !WRITE(*,*) myrank, "neighbor_DG_corner(i,j,ispec,1)", neighbor_DG_corner(i,j,ispec,:), &
-                        !        neighbor_DG(i,j,ispec,:)
-                        !WRITE(*,*) "*************"
-                        !endif
-                        it_corner = 0
-                endif
-                
-                ! Normal interior point
-                if(.not. is_corner(i,j)) found = .true.
-                
-                ! If found a neighbor leave the current loop
-                exit
+                 endif
+                 
               endif
+              
+              
               
               enddo
             enddo
-            
-            ! If we went through all the nodes of the previous element where we found a neighbor
-            ! We notify that the research should continue normally
-            if(it_corner == 1) it_corner = 2
             
       enddo
       
@@ -464,8 +514,6 @@
     enddo
     
   enddo
-  
-  !stop
   
   call setup_mesh_surface_DG()
   
@@ -479,10 +527,10 @@
   subroutine find_DG_acoustic_coupling()
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-  use specfem_par,only: neighbor_DG, ispec_is_acoustic_coupling_ac, ispec_is_acoustic_DG, &
+  use specfem_par,only: neighbor_DG_iface, ispec_is_acoustic_coupling_ac, ispec_is_acoustic_DG, &
         ispec_is_acoustic, nspec, ibool_DG, nglob_DG, &
-        ninterface_acoustic, NPROC, MPI_transfer, &!, &
-        max_interface_size, ninterface,ibool!coord, myranknibool_interfaces_acousticibool_before_perio,myrank, nspec
+        ninterface_acoustic, NPROC, &
+        max_interface_size, ninterface,ibool, MPI_transfer_iface
 
   implicit none
 
@@ -490,14 +538,10 @@
 
   integer :: i, j, ispec
   integer :: neighbor_top, neighbor_bottom, neighbor_left, neighbor_right, &
-        ipoin, num_interface, iglob_top, iglob_bottom, iglob_left, iglob_right
+        ipoin, num_interface
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: vect_ispec_DG, vect_ispec_CG
   real(kind=CUSTOM_REAL), dimension(NGLLX*max_interface_size, ninterface) :: buffer_vect_ispec_DG, &
         buffer_vect_ispec_CG
-   
-   !max_nibool_interfaces = maxval(nibool_interfaces_acoustic(:))
-   !allocate (buffer_vect_ispec_DG(max_nibool_interfaces,ninterface_acoustic), &
-   !     buffer_vect_ispec_CG(max_nibool_interfaces,ninterface_acoustic))
    
    !ispec_is_acoustic_coupling_ac = .false.
    ispec_is_acoustic_coupling_ac = -1
@@ -531,31 +575,28 @@
         
         if(ispec_is_acoustic_DG(ispec)) then
         
-        neighbor_top    = neighbor_DG(NGLLX/2, NGLLZ, ispec, 3)
-        neighbor_bottom = neighbor_DG(NGLLX/2, 1, ispec, 3)
-        neighbor_left   = neighbor_DG(1, NGLLZ/2, ispec, 3)
-        neighbor_right  = neighbor_DG(NGLLX, NGLLZ/2, ispec, 3)
+        neighbor_top    = neighbor_DG_iface(NGLLX/2, 4, ispec, 3)
+        neighbor_bottom = neighbor_DG_iface(NGLLX/2, 3, ispec, 3)
+        neighbor_left   = neighbor_DG_iface(NGLLX/2, 1, ispec, 3)
+        neighbor_right  = neighbor_DG_iface(NGLLX/2, 2, ispec, 3)
         
         ! --------------------------------
         !
         ! TOP NEIGHBOR
         !
         if(neighbor_top > -1) then
-        iglob_top = ibool_DG(NGLLX/2, NGLLZ, ispec)
+        
         ipoin         = -1
         num_interface = -1
         if(NPROC > 1) then
-        ipoin         = MPI_transfer(iglob_top,1,1)
-        num_interface = MPI_transfer(iglob_top,1,2)
+        ipoin         = MPI_transfer_iface(NGLLX/2, 4, ispec, 1)
+        num_interface = MPI_transfer_iface(NGLLX/2, 4, ispec, 2)
         
         if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
-                !ispec_is_acoustic_coupling_ac(:,NGLLZ,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(:,NGLLZ,ispec)) = ibool(i,j,ispec)
-                !neighbor_DG(:, NGLLZ, ispec, :)        = -1
         endif 
         else
         if(ispec_is_acoustic(neighbor_top) .AND. .not. ispec_is_acoustic_DG(neighbor_top)) &
-                !ispec_is_acoustic_coupling_ac(:,NGLLZ,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(:,NGLLZ,ispec)) = ibool(i,j,ispec)
         endif
         
@@ -564,21 +605,17 @@
         ! BOTTOM NEIGHBOR
         !
         if(neighbor_bottom > -1) then
-        iglob_bottom = ibool_DG(NGLLX/2, 1, ispec)
         ipoin         = -1
         num_interface = -1
         if(NPROC > 1) then
-        ipoin         = MPI_transfer(iglob_bottom,1,1)
-        num_interface = MPI_transfer(iglob_bottom,1,2)
+        ipoin         = MPI_transfer_iface(NGLLX/2, 3, ispec, 1)
+        num_interface = MPI_transfer_iface(NGLLX/2, 3, ispec, 2)
         
         if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
-                !ispec_is_acoustic_coupling_ac(:,1,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(:,1,ispec)) = ibool(i,j,ispec)
-                !neighbor_DG(:, 1, ispec, :)        = -1
         endif  
         else
         if(ispec_is_acoustic(neighbor_bottom) .AND. .not. ispec_is_acoustic_DG(neighbor_bottom)) &
-                !ispec_is_acoustic_coupling_ac(:,1,ispec) = .true. 
                 ispec_is_acoustic_coupling_ac(ibool_DG(:,1,ispec)) = ibool(i,j,ispec)
         endif
         
@@ -587,21 +624,17 @@
         ! LEFT NEIGHBOR
         !
         if(neighbor_left > -1) then
-        iglob_left   = ibool_DG(1, NGLLZ/1, ispec)
         ipoin         = -1
         num_interface = -1
         if(NPROC > 1) then
-        ipoin         = MPI_transfer(iglob_left,1,1)
-        num_interface = MPI_transfer(iglob_left,1,2)
+        ipoin         = MPI_transfer_iface(NGLLX/2, 1, ispec, 1)
+        num_interface = MPI_transfer_iface(NGLLX/2, 1, ispec, 2)
         
         if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
-                !ispec_is_acoustic_coupling_ac(1,:,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(1,:,ispec)) = ibool(i,j,ispec)
-                !neighbor_DG(1, :, ispec, :) = -1
         endif   
         else
         if(ispec_is_acoustic(neighbor_left) .AND. .not. ispec_is_acoustic_DG(neighbor_left)) &
-                !ispec_is_acoustic_coupling_ac(1,:,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(1,:,ispec)) = ibool(i,j,ispec)
         endif
         
@@ -610,39 +643,20 @@
         ! RIGHT NEIGHBOR
         !
         if(neighbor_right > -1) then
-        iglob_right  = ibool_DG(NGLLX, NGLLZ/2, ispec)
         ipoin         = -1
         num_interface = -1
         if(NPROC > 1) then
-        ipoin         = MPI_transfer(iglob_right,1,1)
-        num_interface = MPI_transfer(iglob_right,1,2)
+        ipoin         = MPI_transfer_iface(NGLLX/2, 2, ispec, 1)
+        num_interface = MPI_transfer_iface(NGLLX/2, 2, ispec, 2)
         
         if(buffer_vect_ispec_CG(ipoin, num_interface) == 1. .AND. buffer_vect_ispec_DG(ipoin, num_interface) == -1.) &
-                !ispec_is_acoustic_coupling_ac(NGLLX,:,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(NGLLX,:,ispec)) = ibool(i,j,ispec)
-                !neighbor_DG(NGLLX, :, ispec, :)        = -1
         endif 
         else
         if(ispec_is_acoustic(neighbor_right) .AND. .not. ispec_is_acoustic_DG(neighbor_right)) then
-                !ispec_is_acoustic_coupling_ac(NGLLX,:,ispec) = .true.
                 ispec_is_acoustic_coupling_ac(ibool_DG(NGLLX,:,ispec)) = ibool(i,j,ispec)
         endif
         endif  
-        
-        !if(ispec_is_acoustic(neighbor_top) .AND. .not. ispec_is_acoustic_DG(neighbor_top)) then
-        !        ispec_is_acoustic_coupling_ac(:,NGLLZ,ispec) = .true.
-        !endif
-        !if(ispec_is_acoustic(neighbor_bottom) .AND. .not. ispec_is_acoustic_DG(neighbor_bottom)) then
-        !        ispec_is_acoustic_coupling_ac(:,1,ispec) = .true.
-        !endif
-        !if(ispec_is_acoustic(neighbor_left) .AND. .not. ispec_is_acoustic_DG(neighbor_left)) then
-        !        ispec_is_acoustic_coupling_ac(1,:,ispec) = .true.
-        !endif
-        !if(ispec_is_acoustic(neighbor_right) .AND. .not. ispec_is_acoustic_DG(neighbor_right)) then
-        !        ispec_is_acoustic_coupling_ac(NGLLX,:,ispec) = .true.
-        !endif
-        
-       ! WRITE(*,*) myrank,ispec,nspec,">>>", neighbor_top, neighbor_bottom, neighbor_left, neighbor_right
         
         endif !ispec_is_acoustic_DG
        
@@ -658,17 +672,16 @@
   subroutine setup_mesh_surface_DG()
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-  use specfem_par,only: neighbor_DG, neighbor_DG_corner, is_corner, &
+  use specfem_par,only: &
         ACOUSTIC_FORCING, numacforcing, ispec_is_acoustic_forcing, nelem_acforcing, &
         acoustic_surface, ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner, &
-        nelem_acoustic_surface!, &
-        !coord, ibool_before_perio,myrank, nspec
+        nelem_acoustic_surface, link_iface_ijispec, neighbor_dg_iface
 
   implicit none
 
   ! local parameters
 
-  integer :: i, j, ispec, numelem
+  integer :: i, j, iface1, iface, ispec, numelem
   
   !!!!!!!!!!!!!!!!!!!!!!!
    ! Find forcing elements
@@ -677,9 +690,13 @@
    do ispec = 1,nelem_acforcing
    
         numelem = numacforcing(ispec)
-        do i = 1,NGLLX
-        do j = 1,NGLLZ
-                if(neighbor_DG(i,j,numelem,3) == -1) &
+        do iface = 1,4
+        do iface1 = 1,NGLLX
+        
+                i = link_iface_ijispec(iface1,iface,numelem,1)
+                j = link_iface_ijispec(iface1,iface,numelem,2)
+        
+                if(neighbor_DG_iface(iface1,iface,numelem,3) == -1) &
                         ispec_is_acoustic_forcing(i,j,numelem) = .true.
         enddo
         enddo
@@ -694,25 +711,19 @@
    do ispec = 1, nelem_acoustic_surface
         
         numelem = acoustic_surface(1,ispec)
-        !WRITE(*,*) "TEST numelem", numelem
-        do i = 1,NGLLX
-        do j = 1,NGLLZ
+        do iface = 1,4
+        do iface1 = 1,NGLLX
         
-                if(neighbor_DG(i,j,numelem,3) == -1 .AND. &
-                (i == 1 .OR. i == NGLLX .OR. j == 1 .OR. j == NGLLZ)) &!then
-                        ispec_is_acoustic_surface(i,j,numelem) = .true.
-                        !WRITE(*,*) myrank,"BOUNDARY", i, j, numelem, coord(:,ibool_before_perio(i,j,ispec))
-                !endif
-                if(is_corner(i,j) .AND. neighbor_DG_corner(i,j,numelem,3) == -1) &
-                        ispec_is_acoustic_surface_corner(i,j,numelem) = .true.
+                i = link_iface_ijispec(iface1,iface,numelem,1)
+                j = link_iface_ijispec(iface1,iface,numelem,2)
+        
+                if(neighbor_DG_iface(iface1,iface,numelem,3) == -1) ispec_is_acoustic_surface(i,j,numelem) = .true.
+                
         enddo
         enddo
         
    enddo
   
-  !stop
-  !endif
-
   end subroutine setup_mesh_surface_DG
 
 !
@@ -728,8 +739,8 @@ subroutine setup_mesh_surface_DG_coupling()
         ispec_is_acoustic_coupling_el, fluid_solid_elastic_iedge, &
         fluid_solid_acoustic_iedge, ivalue_inverse, jvalue_inverse, &
         ispec_is_acoustic_surface, ispec_is_acoustic_surface_corner, is_corner, &
-        ibool_before_perio, coord!, myrank!, coord_interface, myrank
-        !, coord, ibool_before_perio
+        ibool_before_perio, coord, &
+        link_iface_ijispec, link_ijispec_iface, nspec, iface_is_acoustic_coupling_el
 
   implicit none
   
@@ -738,14 +749,12 @@ subroutine setup_mesh_surface_DG_coupling()
   ! local parameters
 
   integer :: i, j, i_el, j_el, ispec, ipoin1D, ispec_elastic, iedge_elastic, &
-        ispec_acoustic, iedge_acoustic!, ier
+        ispec_acoustic, iedge_acoustic, cpt
+        
+  integer :: iface, iface1, iface_corner, iface1_corner, i_try_1, j_try_1, i_try_2, j_try_2
         
   real(kind=CUSTOM_REAL) :: coord_interface_loc
    
-   !character(len=100) file_name
-  !write(file_name,"('./boundaries_elastic_MPI_',i3.3)") myrank
-  !open(10,file=file_name, form='formatted')
-  
    !!!!!!!!!!!!!!!!!!!!!!!
    ! Find coupling elements
    coord_interface_loc = 10**8
@@ -776,8 +785,6 @@ subroutine setup_mesh_surface_DG_coupling()
         i_el = ivalue_inverse(ipoin1D,iedge_elastic)
         j_el = jvalue_inverse(ipoin1D,iedge_elastic)
         
-        !WRITE(10,*) coord(:,ibool_before_perio(i,j,ispec_acoustic))
-        
         ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,1) = i_el
         ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,2) = j_el
         ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,3) = ispec_elastic
@@ -788,9 +795,90 @@ subroutine setup_mesh_surface_DG_coupling()
         enddo
 
    enddo
+   cpt = 0
    
-   !close(10)
+   allocate(iface_is_acoustic_coupling_el(NGLLX, 4, nspec, 3))
+   iface_is_acoustic_coupling_el = -1
+   ! CHECK FOR CORNER ONLY COUPLING IN UNSTRUCTURED MESHES
+   do ispec = 1,num_fluid_solid_edges
 
+        ! get the edge of the acoustic element
+        ispec_acoustic = fluid_solid_acoustic_ispec(ispec)
+        iedge_acoustic = fluid_solid_acoustic_iedge(ispec)
+        ! get the corresponding edge of the elastic element
+        ispec_elastic = fluid_solid_elastic_ispec(ispec)
+        iedge_elastic = fluid_solid_elastic_iedge(ispec)
+
+        ! implement 1D coupling along the edge
+        do ipoin1D = 1,NGLLX
+
+        ! get point values for the acoustic side
+        i = ivalue(ipoin1D,iedge_acoustic)
+        j = jvalue(ipoin1D,iedge_acoustic)
+   
+        if(((j == 1 .AND. i == 1) &
+                .OR. (j == NGLLZ .AND. i == 1) &
+                .OR. (j == 1 .AND. i == NGLLX) &
+                .OR. (j == NGLLZ .AND. i == NGLLX))) then
+        
+                if(.false.) then
+                iface  = link_ijispec_iface(i, j, ispec_acoustic, 2, 1)
+                iface1 = link_ijispec_iface(i, j, ispec_acoustic, 1, 1) + 1
+                if (iface1 > 5) iface1 = iface1 - 2
+                
+                iface_corner  = link_ijispec_iface(i, j, ispec_acoustic, 2, 2)        
+                iface1_corner = link_ijispec_iface(i, j, ispec_acoustic, 1, 2) + 1
+                if (iface1_corner > 5) iface1_corner = iface1_corner - 2
+
+                i_try_1 = link_iface_ijispec(iface1,iface,ispec_acoustic,1)
+                j_try_1 = link_iface_ijispec(iface1,iface,ispec_acoustic,2)
+                
+                i_try_2 = link_iface_ijispec(iface1_corner,iface_corner,ispec_acoustic,1)
+                j_try_2 = link_iface_ijispec(iface1_corner,iface_corner,ispec_acoustic,2)
+                
+                cpt = cpt + 1
+
+                if(ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,1) > -1 .AND. &
+                        ispec_is_acoustic_coupling_el(i_try_1,j_try_1,ispec_acoustic,1) == -1 .AND. &
+                        ispec_is_acoustic_coupling_el(i_try_2,j_try_2,ispec_acoustic,1) == -1) then
+                        ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,:) = -1
+                endif
+                
+                else
+                
+                
+                iface1 = link_ijispec_iface(i, j, ispec_acoustic, 1, 1) + 1
+                if(iface1 >= 5) iface1 = 3
+                iface         =  link_ijispec_iface(i, j, ispec_acoustic, 2, 1)
+                if(ispec_is_acoustic_coupling_el(&
+                        link_iface_ijispec(iface1,iface,ispec_acoustic,1), &
+                        link_iface_ijispec(iface1,iface,ispec_acoustic,2), &
+                        ispec_acoustic,3) > -1) then
+                iface1 = link_ijispec_iface(i, j, ispec_acoustic, 1, 1)
+                iface_is_acoustic_coupling_el(iface1, iface, ispec_acoustic,:) = &
+                                        ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,:)
+                endif
+                
+                iface1_corner = link_ijispec_iface(i, j, ispec_acoustic, 1, 2) + 1
+                if(iface1_corner >= 5) iface1_corner = 3
+                iface         =  link_ijispec_iface(i, j, ispec_acoustic, 2, 2)
+                if(ispec_is_acoustic_coupling_el(&
+                        link_iface_ijispec(iface1_corner,iface,ispec_acoustic,1), &
+                        link_iface_ijispec(iface1_corner,iface,ispec_acoustic,2), &
+                        ispec_acoustic,3) > -1) then
+                iface1_corner = link_ijispec_iface(i, j, ispec_acoustic, 1, 2)
+                iface_is_acoustic_coupling_el(iface1_corner, iface, ispec_acoustic,:) = &
+                                        ispec_is_acoustic_coupling_el(i,j,ispec_acoustic,:)
+                endif
+                
+                endif
+   
+        endif
+        
+        enddo
+
+   enddo
+   
   end subroutine setup_mesh_surface_DG_coupling
 
 !
@@ -895,10 +983,6 @@ subroutine setup_mesh_surface_DG_coupling()
 
 ! periodic conditions: detect common points between left and right edges and replace one of them with the other
   if (ADD_PERIODIC_CONDITIONS) then
-    
-    ! Currently, Stacey absorbing conditions and periodic conditions can coexist, which leads to spurious signals coming from the left boundary.
-    ! TODO: Periodic conditions should disable Stacey conditions on the considered boundaries, or at the very least an error message should be prompted.
-    
     ! user output
     if (myrank == 0) then
       write(IMAIN,*)

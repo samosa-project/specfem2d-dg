@@ -256,7 +256,7 @@
     if(USE_DISCONTINUOUS_METHOD) then
       ! MODIF DG
       max_ibool_interfaces_size_ac = maxval(nibool_interfaces_acoustic_DG(:))
-      allocate(tab_requests_send_recv_DG(ninterface_acoustic*4))
+      allocate(tab_requests_send_recv_DG(ninterface_acoustic*20))
       allocate(buffer_send_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
       allocate(buffer_recv_faces_vector_DG(max_ibool_interfaces_size_ac,ninterface_acoustic))
     endif

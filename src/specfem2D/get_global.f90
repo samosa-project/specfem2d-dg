@@ -39,8 +39,8 @@
 
   use specfem_par, only : nspec,ibool,copy_ibool_ori,integer_mask_ibool,SAVE_MODEL,myrank, &
         ! MODIF DG
-        link_DG_CG, ibool_DG, ibool_before_perio, integer_mask_ibool_bef, copy_ibool_ori_bef, &
-        cpt_CG_DG, link_CG_DG, nglob, USE_DISCONTINUOUS_METHOD
+        ibool_before_perio, integer_mask_ibool_bef, copy_ibool_ori_bef, &
+        USE_DISCONTINUOUS_METHOD
 
   implicit none
 
@@ -62,12 +62,6 @@
   
   inumber = 0
   inumber_bef = 0
-  
-  if(USE_DISCONTINUOUS_METHOD) then
-  allocate(cpt_CG_DG(nglob))
-  cpt_CG_DG = 0
-  allocate(link_CG_DG(nglob, 4))
-  endif
   
   ! reduce cache misses in all the elements
   ! loop over spectral elements
@@ -99,18 +93,6 @@
       enddo
     enddo
   enddo
-  
-  if(USE_DISCONTINUOUS_METHOD) then
-  do ispec = 1,nspec
-    do j = 1,NGLLZ
-      do i = 1,NGLLX 
-        link_DG_CG(ibool_DG(i,j,ispec)) = ibool(i,j,ispec)
-        cpt_CG_DG(ibool(i,j,ispec)) = cpt_CG_DG(ibool(i,j,ispec)) + 1
-        link_CG_DG(ibool(i,j,ispec),cpt_CG_DG(ibool(i,j,ispec))) = ibool_DG(i,j,ispec)
-      enddo
-    enddo
-  enddo
-  endif
   
   if (trim(SAVE_MODEL) == 'binary') then
     write(outputname,'(a,i6.6,a)') './DATA/proc',myrank,'_NSPEC_ibool.bin'
