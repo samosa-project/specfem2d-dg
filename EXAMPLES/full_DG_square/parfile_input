@@ -108,8 +108,8 @@ surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE
 sound_velocity                  = 340.0          # $c$. Only used if USE_ISOTHERMAL_MODEL==.false. (if set to .true., $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
 wind                            = 0.0            # Horizontal wind. [m.s^(-1)].
 gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true..
-dynamic_viscosity               = 1.25d-5#0.0            # $\mu$, dynamic viscosity. [kg.s^(-1).m^(-1)]. Choose 1.25d-5 for dry air at 20 °C.
-thermal_conductivity            = 0.025#0.0            # $\kappa$, thermal conductivity. [kg.m.s^(-3).K^(-1)]. Choose 0.025 for dry air at 20 °C.
+dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. [kg.s^(-1).m^(-1)]. Choose 1.25d-5 for dry air at 20 °C.
+thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. [kg.m.s^(-3).K^(-1)]. Choose 0.025 for dry air at 20 °C.
 tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. [s].
 tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. [s].
 constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 1005 for dry air between -40 and 40 °C.
