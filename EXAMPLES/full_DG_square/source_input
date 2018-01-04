@@ -17,4 +17,4 @@ anglesource                     = 0.0d0      # Only for a force. Angle of the so
 Mxx                             = 0.0d0      # Only for moment tensor source. Mxx component.
 Mzz                             = 0.0d0      # Only for moment tensor source. Mzz component.
 Mxz                             = 0.0d0      # Only for moment tensor source. Mxz component.
-factor                          = 127.530d0  # Amplification factor.
+factor                          = 1.d2  # Amplification factor.

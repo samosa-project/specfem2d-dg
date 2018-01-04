@@ -34,24 +34,32 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_KappaON/');
 
 % Mars Gravity Wave.
-fig_title = strcat('Mars Gravity Wave Simulation');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave/test_RAPHAEL'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9078210_spread_source/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081352_spread_cut_source/');
-root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091089_new_coupling/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravity_wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
+% fig_title = strcat('Mars Gravity Wave Simulation');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave/test_RAPHAEL'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9078210_spread_source/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081352_spread_cut_source/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091089_new_coupling/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_552471_atmo_only/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_552455_factor0p1/');
 
 % Seismic Hammer.
 % fig_title = strcat('Seismic Hammer Simulation (New Model)');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloon_experiment_Nevada_2017/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
+
+% Tests.
+fig_title = 'Full DG Square';
+root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -59,7 +67,7 @@ root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_mars_gravi
 type_display = 2; % Should be the same as the seismotype variable in parfile.
 
 % Unknown:
-% Supposition: for stations in DG zones, pressure is saved in BXZ files. TODO: Check that.
+% For type_display==2 and stations in DG zones, pressure is saved both in BXX and BXZ files.
 % unknown = 'BXX';
 unknown = 'BXZ';
 
@@ -77,7 +85,7 @@ pos_sources = [0, 0]; % Allocate a row for the first source's position.
 % fid = fopen([root_dir, '/DATA/SOURCE']);
 fid = fopen([output_files_dir, 'SOURCE']);
 if(fid==-1)
-  error(strcat("Cannot open SOURCE file in ", output_files_dir))
+  error(strcat("Cannot open SOURCE file in ", output_files_dir, '(',[output_files_dir, 'SOURCE'],').'))
 end
 line = 0; xfound = 0; zfound = 0;
 while(line ~= -1)
@@ -98,8 +106,16 @@ while(line ~= -1)
 end
 fclose('all');
 
-% Load stations data.
-A = importdata(strcat(root_dir, '/DATA/STATIONS'));
+% Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
+try
+  A = importdata(strcat(output_files_dir, 'STATIONS'));
+catch
+  try
+    A = importdata(strcat(root_dir, '/DATA/STATIONS'));
+  catch
+    error('Cannot find STATIONS file.');
+  end
+end
 pos_stations = [A.data(:, 1) A.data(:, 2)];
 xstattab = pos_stations(:, 1);
 ystattab = pos_stations(:, 2);
@@ -163,7 +179,6 @@ for istat = 1 : nstat
     % Original SPECFEM2D's sismogram is displacement.
     extension = "semd"; % Because original SPECFEM2D's sismogram is displacement.
     % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
-    unknown = 'BXZ'; unknown_name = 'Vertical {displacement (m), velocity (m/s)}'; % We want the Z component.
     if(strcmp(unknown,'BXZ'))
       unknown_name = 'Vertical {displacement (m), velocity (m/s)}';
     elseif(strcmp(unknown,'BXX'))

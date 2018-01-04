@@ -96,49 +96,49 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-REMOVE_DG_FLUID_TO_SOLID        = .false.
+REMOVE_DG_FLUID_TO_SOLID        = .false.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
-CONSTRAIN_HYDROSTATIC           = .true.
+CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydrostatic state. Causes the pressure output to be in perturbation only.
 
 # Fluid model
 USE_ISOTHERMAL_MODEL            = .false.
-SCALE_HEIGHT                    = 10000.         # Scale height for exponential decrease of density. [m]. Only used if USE_ISOTHERMAL_MODEL is true.
-surface_density                 = 1.4d0          # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL is set to true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL is set to false, $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 340.0d0        # $c$. Only used if USE_ISOTHERMAL_MODEL is set to false (if set to true, $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
-wind                            = 0.0d0          # Horizontal wind. [m.s^(-1)].
-gravity                         = 9.81d0         # Only used if USE_ISOTHERMAL_MODEL is set to .true..
-dynamic_viscosity               = 1.0d-8         # $\mu$.
-thermal_conductivity            = 0.0d0          # $\kappa$.
-tau_epsilon                     = 1.0d0
-tau_sigma                       = 1.0d0
-constant_p                      = 7/2.0d0
-constant_v                      = 5/2.0d0
+SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. [m].
+surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL==true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
+sound_velocity                  = 340.0          # $c$. Only used if USE_ISOTHERMAL_MODEL==.false. (if set to .true., $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
+wind                            = 0.0            # Horizontal wind. [m.s^(-1)].
+gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true..
+dynamic_viscosity               = 1.25d-5#0.0            # $\mu$, dynamic viscosity. [kg.s^(-1).m^(-1)]. Choose 1.25d-5 for dry air at 20 °C.
+thermal_conductivity            = 0.025#0.0            # $\kappa$, thermal conductivity. [kg.m.s^(-3).K^(-1)]. Choose 0.025 for dry air at 20 °C.
+tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. [s].
+tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. [s].
+constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 1005 for dry air between -40 and 40 °C.
+constant_v                      = 717.3447537473 # $c_v$, isochoric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 717.3447537473 for dry air between -40 and 25 °C (in order to have gamma=1.401) or 717.8571428571 for dry air between 25 and 40 °C (in order to have gamma=1.400).
 
 # ID of the DG region (refering to "Velocity and Density Models" below).
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = 304.0d0        # Only used if USE_ISOTHERMAL_MODEL is set to .true..
+coord_interface                 = 304.0          # Only used if USE_ISOTHERMAL_MODEL==.true.. z-coordinate of the fluid-solid interface, in order not to interfere with the vertical scaling.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
 TYPE_SOURCE_DG                  = 3
 
 # Absorbing boundary conditions.
-ABC_STRETCH_TOP    = .false. # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_LEFT   = .false. # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_BOTTOM = .false. # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_RIGHT  = .false. # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_LBUF = 20. # Length of the buffer used for the buffer-based stretching method.
+ABC_STRETCH_TOP    = .false.                     # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_LEFT   = .false.                     # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_BOTTOM = .false.                     # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_RIGHT  = .false.                     # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_LBUF = 20.                           # Only used if ABC_STRETCH_TOP==.true. or ABC_STRETCH_LEFT==.true. or ABC_STRETCH_BOTTOM==.true. or ABC_STRETCH_RIGHT==.true.. Length of the buffer used for the buffer-based stretching method.
 
 # Source spatial function.
-USE_SPREAD_SSF   = .false. # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used.
-SPREAD_SSF_SAVE  = .false. # Only used if USE_SPREAD_SSF is set to .true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
-SPREAD_SSF_SIGMA = 1.0d0 # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
+USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used.
+SPREAD_SSF_SAVE  = .false.                       # Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
+SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
 
 # Source time function.
-REMOVE_STF_INITIAL_DISCONTINUITY=.false.
+REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BETTER_PRESSURE==.false. and time_function_type==3 (see source_input). Analytically removes the discontinuity introduced at initial time (since Gaussians have non-compact support). Alternatively, leave this to .false. and set USER_T0 to a better value (see below).
 
 # Bottom forcing function
 # 0: none
@@ -200,7 +200,7 @@ COMPUTE_INTEGRATED_ENERGY_FIELD = .false.
 # This corresponds to the quantity of time to simulate before the earliest source's spike. The earliest source's spike is always assumed to be at t=0. Hence the simulation will always begin at "negative times".
 # If set to zero, the solver will automatically compute a value (originally 1.20 * T0 where T0 is the fundamental period of the earliest source, see "set_source_parameters.f90") and use it. If set to a value lesser than the solver's computed one, an error message will occur and the solver will stop. If set to a value greater than the solver's computed one, the solver will use the user's one.
 # If you do not know what you are doing, leave this to zero.
-# For time_function_type=3 and USE_TRICK_FOR_BETTER_PRESSURE=.false., a discontinuity at initial time is introduced (since Gaussians have non-compact support). In order for this discontinuity to be of order of magnitude 10^(-r), choose USER_T0=((r*ln(10)+ln(factor))/(pi^2*f^2))^0.5, where factor is the amplification factor, and f is the fundamental frequency.
+# For time_function_type==3 (see source_input) and USE_TRICK_FOR_BETTER_PRESSURE=.false., a discontinuity at initial time is introduced (since Gaussians have non-compact support). In order for this discontinuity to be of order of magnitude 10^(-r), choose USER_T0=((r*ln(10)+ln(factor))/(pi^2*f^2))^0.5, where factor is the amplification factor, and f is the fundamental frequency.
 USER_T0                         = 0.0d0
 
 # Seismogram formats.
@@ -373,7 +373,7 @@ imagetype_JPEG                  = 4              #    display 1=displ_Ux 2=displ
                                                  # DG display 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=pressure 5=Energy 6=Temperature 7=Density 8=sqrt(rho)*veloc_Ux 9=sqrt(rho)*veloc_Uz 10=none
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
-CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE is set to .true..
+CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
 DRAW_SOURCES_AND_RECEIVERS      = .true.         # Display sources as orange crosses and receivers as green squares?
 DRAW_WATER_IN_BLUE              = .true.         # display acoustic layers as constant blue in JPEG images, because they likely correspond to water in the case of ocean acoustics or in the case of offshore oil industry experiments (if off, display them as greyscale, as for elastic or poroelastic elements, for instance for acoustic-only oil industry models of solid media)
