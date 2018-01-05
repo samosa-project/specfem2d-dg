@@ -480,7 +480,6 @@
   e1_DG_P = ZERO
   
   exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
-  MPI_change_cpt = .false.
   
   if(neighbor(3) == -1) then
     ! --------------------------- !
@@ -815,9 +814,9 @@
     ispec_ac = neighbor(3)
 
     iglob = ibool(i_ac,j_ac,ispec_ac)!ibool(i, j, ispec)
-    if(.false.) then
-      WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k ! DEBUG
-    endif
+    !if(.false.) then ! DEBUG
+    !  WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
+    !endif
     ! Only for density
     call boundary_condition_DG(i_ac, j_ac, ispec_ac, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
     veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)

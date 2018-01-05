@@ -2,7 +2,7 @@
 # git useful commands.        #
 ###############################
 
-1) Ignore binary modifications. Move to "./specfem-dg", and execute:
+*) Ignore binary modifications. Move to "./specfem-dg", and execute:
 
 git update-index --assume-unchanged ./bin/!(*.*)
 
@@ -22,10 +22,18 @@ git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/d
 
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/scotch/!(*.*)
 
-2) List assume-unchanged files:
+*) List assume-unchanged files:
 
 git ls-files -v | grep -e "^[a-z]"
 
-3) Undo assume-unchanged (thanks to https://stackoverflow.com/a/34554391):
+*) Undo assume-unchanged (thanks to https://stackoverflow.com/a/34554391):
 
 git ls-files -v | grep -e "^[a-z]" | cut -c 3- | tr '\012' '\000' | xargs -0 git update-index --no-assume-unchanged
+
+*) Fetch repository branch.
+
+git fetch origin
+
+*) Pull repository branch.
+
+git pull

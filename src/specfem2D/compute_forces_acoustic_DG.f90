@@ -122,7 +122,7 @@
   real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E
   logical :: ABSORB_BC
 
-   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
+  integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   
   ! TEST STRETCH
   real(kind=CUSTOM_REAL) :: coef_stretch_x_ij, coef_stretch_x_ij_prime, &
@@ -431,9 +431,6 @@
         enddo
       enddo
       
-      it_corner = 0
-      MPI_change_cpt = .false.
-      
       ! --------------------------- !
       ! Second set of loops: add    !
       ! fluxes between elements,    !
@@ -674,6 +671,7 @@
   logical :: exact_interface_flux
   integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
+  integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
 
   ! Jacobian matrix and determinant
   real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl
