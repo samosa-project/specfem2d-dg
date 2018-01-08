@@ -1,4 +1,6 @@
-#source 1.  The components of a moment tensor source must be given in N.m, not in dyne.cm as in the DATA/CMTSOLUTION source file of the 3D version of the code.
+# Remark: the components of a moment tensor source must be given in N.m, not in dyne.cm as in the DATA/CMTSOLUTION source file of the 3D version of the code.
+
+# Source 1. ###################
 
 source_surf                     = .false.    # Source at the surface? If set to false, source is inside the medium.
 xs                              = 0.0d0      # Source x location (m).
@@ -17,4 +19,4 @@ anglesource                     = 0.0d0      # Only for a force. Angle of the so
 Mxx                             = 0.0d0      # Only for moment tensor source. Mxx component.
 Mzz                             = 0.0d0      # Only for moment tensor source. Mzz component.
 Mxz                             = 0.0d0      # Only for moment tensor source. Mxz component.
-factor                          = 1.d2  # Amplification factor.
+factor                          = 1.d6       # Amplification factor.

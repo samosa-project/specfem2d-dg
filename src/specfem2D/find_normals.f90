@@ -94,18 +94,14 @@
     mid(4,:) = 0.5d0*DBLE(pos(4,:) + pos(2,:))
   
   !  EDGE ORIENTATION FINDING
-
     do iface = 1,4
-    
-    iglob_first = ibool(link_iface_ijispec(1,iface,numelem,1),link_iface_ijispec(1,iface,numelem,2),numelem)
-    iglob_last  = ibool(link_iface_ijispec(NGLLX,iface,numelem,1),link_iface_ijispec(NGLLX,iface,numelem,2),numelem)
-    
-    mid_iface(:) = 0.5d0*DBLE(coord(:,iglob_first) + coord(:,iglob_last))
-    vd_iface(:)  = coord(:,iglob_first) - coord(:,iglob_last)
-    vd_iface(:)  = vd_iface(:)/sqrt(vd_iface(1)**2 + vd_iface(2)**2)
-    
-    do iface1 = 1,NGLLX
-    
+      iglob_first = ibool(link_iface_ijispec(1,iface,numelem,1),link_iface_ijispec(1,iface,numelem,2),numelem)
+      iglob_last  = ibool(link_iface_ijispec(NGLLX,iface,numelem,1),link_iface_ijispec(NGLLX,iface,numelem,2),numelem)
+      
+      mid_iface(:) = 0.5d0*DBLE(coord(:,iglob_first) + coord(:,iglob_last))
+      vd_iface(:)  = coord(:,iglob_first) - coord(:,iglob_last)
+      vd_iface(:)  = vd_iface(:)/sqrt(vd_iface(1)**2 + vd_iface(2)**2)
+      do iface1 = 1,NGLLX
         i = link_iface_ijispec(iface1,iface,numelem,1)
         j = link_iface_ijispec(iface1,iface,numelem,2)
         
@@ -130,24 +126,22 @@
         prod2 = nx2*vd_iface(1) + nz2*vd_iface(2)
         
         if(abs(prod1) < abs(prod2)) then
-                nx = nx1
-                nz = nz1
-                jacobian1D = jacobian1D_1
-                weight     = jacobian1D*wxgll(i)
-                
-                ! BIG MODIF INSTEAD OF  
-                nx = -vd_iface(2)
-                nz = vd_iface(1)
-                
+          nx = nx1
+          nz = nz1
+          jacobian1D = jacobian1D_1
+          weight     = jacobian1D*wxgll(i)
+          
+          ! BIG MODIF INSTEAD OF  
+          nx = -vd_iface(2)
+          nz = vd_iface(1)
         else
-                nx = nx2
-                nz = nz2
-                jacobian1D = jacobian1D_2
-                weight     = jacobian1D*wzgll(j)
-                
-                nx = -vd_iface(2)
-                nz = vd_iface(1)
-                
+          nx = nx2
+          nz = nz2
+          jacobian1D = jacobian1D_2
+          weight     = jacobian1D*wzgll(j)
+          
+          nx = -vd_iface(2)
+          nz = vd_iface(1)
         endif
         
         ! Remove small values
@@ -188,17 +182,16 @@
         ! If point inside the convex shape => take the normal in the opposite direction
         ! to get a normal pointing outside
         if(sign_cond1 + sign_cond2 + sign_cond3 + sign_cond4 >= 4d0) then
-                nx = -nx
-                nz = -nz
+          nx = -nx
+          nz = -nz
         endif
         
         nx_iface(iface,numelem) = real(nx, kind=CUSTOM_REAL)
         nz_iface(iface,numelem) = real(nz, kind=CUSTOM_REAL)
         weight_iface(iface1,iface,numelem) = real(weight, kind=CUSTOM_REAL)
         
-    enddo !iface1
+      enddo !iface1
     enddo !numelem
-    
   enddo !ispec
   
   do numelem = 1,nspec

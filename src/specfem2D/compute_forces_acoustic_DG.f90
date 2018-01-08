@@ -56,7 +56,8 @@
                          CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
                          ABC_STRETCH &! Stretching-based absorbing conditions.
-                         , coord, ibool_before_perio
+                         , coord, ibool_before_perio&
+                         ,cnu
                          
   implicit none
 
@@ -210,7 +211,7 @@
           gammazl = gammaz(i, j, ispec)
           
           if(ABC_STRETCH) then
-            ! Here is updated the operator \nabla.
+            ! Here is updated the operator \nabla and the jacobian.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z.
             ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
@@ -223,6 +224,7 @@
             xizl = coef_stretch_z_ij * xizl
             gammaxl = coef_stretch_x_ij * gammaxl
             gammazl = coef_stretch_z_ij * gammazl
+            jacobianl = coef_stretch_x_ij*coef_stretch_z_ij*jacobianl
             
             if(.false. .and. myrank==0 .and. coef_stretch_z_ij/=1.) then ! DEBUG
               write(*,*) 'aftR', xixl, xizl, coef_stretch_x_ij, coef_stretch_z_ij
@@ -340,7 +342,7 @@
           endif
           
           ! When using a virtual stretching method, more terms appear ($\Sigma\cdot(\nabla\cdot\Ya)$). Add them here despite the fact that they have nothing to do with gravity.
-          if(ABC_STRETCH .and. .true.) then
+          if(ABC_STRETCH .and. .false.) then
             viscous_tens_11 =   TWO*muext(i, j, ispec)*dux_dx & ! Viscous tensor, line 1, column 1, term 1
                               + (etaext(i, j, ispec)-(TWO/3.)*muext(i, j, ispec)) & ! Viscous tensor, line 1, column 1, term 2 (1 of 2)
                                 * (dux_dx+duz_dz) ! Viscous tensor, line 1, column 1, term 2 (2 of 2)
@@ -467,9 +469,6 @@
           j = link_iface_ijispec(iface1,iface,ispec,2)
           
           ! Step 1: prepare the normals' parameters (nx, nz, weight, etc.).
-          
-          ! TODO: Maybe, put all that follows (before "Step 2") inside the else block of the previous if(is_corner(i, j)) block.
-          
           ! Interior point
           iglobM = ibool_DG(i, j, ispec)
           
@@ -479,20 +478,19 @@
           weight = weight_iface(iface1,iface, ispec)
           neighbor = -1
           if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
-          iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
-          iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
-          ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
-          
-          neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
-          neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
-          neighbor(3) = ispec_neighbor
+            iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
+            iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
+            ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
+            neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
+            neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
+            neighbor(3) = ispec_neighbor
           endif
-          ! Step 2: knowing the normals' parameters, compute now the fluxes. We use the Lax-Friedrich flux.
           
+          ! Step 2: knowing the normals' parameters, compute now the fluxes.
           !TEST STRETCH
           nx_unit=nx
           nz_unit=nz
-          if(ABC_STRETCH) then
+          if(ABC_STRETCH .and. .false.) then
             call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
             nx = coef_stretch_x_ij * nx
             nz = coef_stretch_z_ij * nz
@@ -511,7 +509,7 @@
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           endif
           
-          exact_interface_flux = .false. ! Reset this variable to .false. in case it does not get assigned during the call to compute_interface_unknowns.
+          exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
           call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                   Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
@@ -521,9 +519,34 @@
                   V_DG(:,:,iglobM), T_DG(:,iglobM), &
                   rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
                   V_DG(:,:,iglobP), T_DG(:,iglobP), &
-                  !nx, nz, weight, timelocal, iface1, iface)
+                  nx, nz, weight, timelocal, iface1, iface)
                   !TEST STRETCH
-                  nx_unit, nz_unit, weight, timelocal, iface1, iface)
+                  !nx_unit, nz_unit, weight, timelocal, iface1, iface)
+          ! DEBUG
+          if(.false.) then
+            exact_interface_flux = .true.
+            gamma_P = gammaext_DG(iglobP)
+            rho_DG_P     = rho_DG(iglobP)
+            E_DG_P       = E_DG(iglobP)
+            rhovx_DG_P   = rhovx_DG(iglobP)
+            rhovz_DG_P   = rhovz_DG(iglobP)
+            veloc_x_DG_P = rhovx_DG(iglobP)/rho_DG(iglobP)
+            veloc_z_DG_P = rhovz_DG(iglobP)/rho_DG(iglobP)
+            p_DG_P       = (gamma_P - ONE)*( E_DG_P &
+                           - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
+            if(muext(i, j, ispec) > 0 .OR. &
+               etaext(i, j, ispec) > 0 .OR. &
+               kappa_DG(i, j, ispec) > 0) then
+              ! Viscosity  
+              Vxx_DG_P = V_DG(1, 1,iglobP)
+              Vzz_DG_P = V_DG(2, 2,iglobP)
+              Vxz_DG_P = V_DG(1, 2,iglobP)
+              Vzx_DG_P = V_DG(2, 1,iglobP)
+              Tx_DG_P = T_DG(1,iglobP)
+              Tz_DG_P = T_DG(2,iglobP)
+            endif
+            T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/(cnu)
+          endif
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = 0.
@@ -533,11 +556,11 @@
           !veloc_n_P = sqrt(veloc_x_DG_P**2 + veloc_z_DG_P**2) !DEBUG
           
           !GOODVERSION
-          !veloc_n_M = abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz)
-          !veloc_n_P = abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz)
-          !TEST STRETCH
-          veloc_n_M = abs(veloc_x_DG(iglobM)*nx_unit + veloc_z_DG(iglobM)*nz_unit)
-          veloc_n_P = abs(veloc_x_DG_P*nx_unit + veloc_z_DG_P*nz_unit)
+          veloc_n_M = abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz)
+          veloc_n_P = abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz)
+          !TEST STRETCH: use unit normal because we might be interested by the conventionnal fluid speed rather than the artificial one
+          !veloc_n_M = abs(veloc_x_DG(iglobM)*nx_unit + veloc_z_DG(iglobM)*nz_unit)
+          !veloc_n_P = abs(veloc_x_DG_P*nx_unit + veloc_z_DG_P*nz_unit)
           
           lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
                         veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
@@ -966,8 +989,7 @@
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           endif
           
-          exact_interface_flux = .false.  ! Reset this variable to .false. in case it does not get assigned during the call to compute_interface_unknowns.
-          ! Get the interface unknowns in order to compute the fluxes.
+          exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
           call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                   Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
@@ -1109,15 +1131,24 @@
   ! Local
   integer iglob
   real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: eps_l, p, q
+  real(kind=CUSTOM_REAL) :: eps_l, p, q ! Ouloulou stretching.
+  real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
+  real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
   real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
   
   ! Coefficients for the stretching function.
+  ! ouloulou stretching
   eps_l = 1.0d-4
   p = 3.25d0
   q = 1.75d0
+  ! Arina's damping coefficients.
+  C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
+  C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
+  ! Richards' damping coefficients.
+  beta = 2.0d0 ! 4 in Richards' paper.
+  sigma_max = -1.0d0
   
-  zmax = 50. ! Domain top coordinate.
+  zmax = 20. ! Domain top coordinate.
   
   iglob = ibool_DG(i, j, ispec)
   coef_stretch_x = ONE ! By default, mesh is not stretched.
@@ -1126,8 +1157,12 @@
   z_l = (1. - ((zmax - z)/ABC_STRETCH_LBUF)) ! Relative buffer coordinate.
   if(z_l > 0. .AND. z_l <= 1.) then
     !write(*, *) "z", z, "z_l", z_l ! DEBUG
-    coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
+    !coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
     !coef_stretch_z = 1. - 1.*z_l ! Stretching function.
+    ! Arina's damping.
+    !coef_stretch_z = (1.0d0 - C_1*z_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(z_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
+    ! Richards' damping.
+    coef_stretch_z = 1.0d0 + sigma_max * z_l ** beta
     !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
   endif
   

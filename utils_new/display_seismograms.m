@@ -59,7 +59,8 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 
 % Tests.
 fig_title = 'Full DG Square';
-root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
