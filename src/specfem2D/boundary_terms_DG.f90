@@ -945,11 +945,11 @@
   integer :: i, j, ispec, ifirstelem, ilastelem, ibool
   
   ! Domain-related quantities.
-  L_buffer_absorb = 5.0d0 ! Length of the buffer in which the solution is damped.
+  L_buffer_absorb = 10.0d0 ! Length of the buffer in which the solution is damped.
   zmax            = 20.0d0
   
   ! Arina's damping coefficients.
-  C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
+  C_1 = 0.1d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
   C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
   ! Richards' damping coefficients.
   beta = 4.0d0 ! 4 in Richards' paper.
@@ -976,10 +976,10 @@
           
           if(z_l > 0.0d0 .AND. z_l <= 1.0d0) then
             ! Arina's damping.
-            !sigma = (1.0d0 - C_1*z_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(z_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
+            sigma = (1.0d0 - C_1*z_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(z_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
             ! Richards' damping.
-            sigma = 1.0d0 + sigma_max * z_l ** beta
-            ! ouloulou stretching
+            !sigma = 1.0d0 + sigma_max * z_l ** beta
+            ! Arina's stretching
             !sigma = 1. - (1. - 1.d-4) * (1. - (1. - z_l)**3.25)**1.75
             
             ! Note: sigma is a function that goes gradually from 1 to 0 in the buffer.

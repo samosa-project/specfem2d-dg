@@ -224,6 +224,8 @@
             xizl = coef_stretch_z_ij * xizl
             gammaxl = coef_stretch_x_ij * gammaxl
             gammazl = coef_stretch_z_ij * gammazl
+            ! Add jacobian of stretching into the integrand (artifically).
+            ! TODO: Do that more clearly.
             jacobianl = coef_stretch_x_ij*coef_stretch_z_ij*jacobianl
             
             if(.false. .and. myrank==0 .and. coef_stretch_z_ij/=1.) then ! DEBUG
@@ -484,6 +486,13 @@
             neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
             neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
             neighbor(3) = ispec_neighbor
+          endif
+          
+          if(ABC_STRETCH) then
+            ! Add jacobian of stretching into the integrand (artifically).
+            ! TODO: Do that more clearly.
+            call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
+            weight=coef_stretch_x_ij*coef_stretch_z_ij*weight
           endif
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes.
@@ -803,7 +812,7 @@
           wxl = wxgll(i)
           
           if(ADD_SURFACE_TERMS) then
-            ! In that case, compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k as:
+            ! In that case, we want to compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k as:
             ! - \int_{\Omega^k} T\nabla\Phi d\Omega^k + \int_{\partial\Omega^k} T\Phi n d\Gamma^k.
             ! Here, prepare the components which will be later used to compute the "- \int_{\Omega^k} T\nabla\Phi d\Omega^k" part.
             
@@ -841,7 +850,7 @@
               temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init) ) 
             endif
           else
-            ! In that case, compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k directly as it.
+            ! In that case, we want to compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k directly as it.
             dux_dxi    = ZERO
             dux_dgamma = ZERO
             duz_dxi    = ZERO
@@ -975,13 +984,12 @@
           weight = weight_iface(iface1,iface, ispec)
           neighbor = -1
           if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
-          iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
-          iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
-          ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
-          
-          neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
-          neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
-          neighbor(3) = ispec_neighbor
+            iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
+            iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
+            ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
+            neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
+            neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
+            neighbor(3) = ispec_neighbor
           endif
           
           iglobP = 1
@@ -1131,14 +1139,14 @@
   ! Local
   integer iglob
   real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: eps_l, p, q ! Ouloulou stretching.
+  real(kind=CUSTOM_REAL) :: eps_l, p, q ! Arina's stretching.
   real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
   real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
   real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
   
   ! Coefficients for the stretching function.
-  ! ouloulou stretching
-  eps_l = 1.0d-4
+  ! Arina's stretching
+  eps_l = 1.0d-4 ! 1.d-4 in Arina's paper.
   p = 3.25d0
   q = 1.75d0
   ! Arina's damping coefficients.
@@ -1156,13 +1164,18 @@
   z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
   z_l = (1. - ((zmax - z)/ABC_STRETCH_LBUF)) ! Relative buffer coordinate.
   if(z_l > 0. .AND. z_l <= 1.) then
+    ! Note: new expressions can be implemented here. Some compatibility conditions should be respected. The function has be 1 when z_l==0. The derivative of the function should be 0 when z_l==0 and when z_l==1.
     !write(*, *) "z", z, "z_l", z_l ! DEBUG
-    !coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
+    !coef_stretch_z = 1. + z_l**2.! Stretching function.
+    !coef_stretch_z = 1. + 5.*z_l**2.*(z_l-1.)**2.! Stretching function.
+    !coef_stretch_z = 1. + 1. - (1. - eps_l) * (1. - z_l**p)**q! Stretching function.
     !coef_stretch_z = 1. - 1.*z_l ! Stretching function.
+    ! Arina's stretching.
+    coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
     ! Arina's damping.
     !coef_stretch_z = (1.0d0 - C_1*z_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(z_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
     ! Richards' damping.
-    coef_stretch_z = 1.0d0 + sigma_max * z_l ** beta
+    !coef_stretch_z = 1.0d0 + sigma_max * z_l ** beta
     !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
   endif
   
@@ -1190,6 +1203,8 @@
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: eps_l, p, q
   real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
+  
+  stop 'should not be called'
   
   ! Coefficients for the stretching function.
   eps_l = 1.0d-4

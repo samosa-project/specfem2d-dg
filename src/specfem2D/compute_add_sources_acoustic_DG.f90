@@ -289,7 +289,8 @@
                          ibool_DG, &
                          coord,  &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
-                         USE_SPREAD_SSF, nspec, source_spatial_function_DG!, & ! For sources spatially distributed over more than one element.
+                         USE_SPREAD_SSF, nspec, source_spatial_function_DG &
+                         ,ABC_STRETCH!, & ! For sources spatially distributed over more than one element.
                          !nglob, &
                          !IMAIN, myrank ! DEBUG
   implicit none
@@ -307,6 +308,9 @@
   
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   
+  ! TEST STRETCH
+  real(kind=CUSTOM_REAL) :: coef_stretch_x_ij, coef_stretch_z_ij
+  
   !do ispec = ifirstelem,ilastelem
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
@@ -321,6 +325,14 @@
             iglob = ibool_DG(i, j, ispec)
             temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_timerun.f90" for the subroutine initialising the vector "source_spatial_function_DG".
             jacobianl = jacobian(i, j, ispec)
+            
+            if(ABC_STRETCH) then
+              call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
+              ! Add jacobian of stretching into the integrand (artifically).
+              ! TODO: Do that more clearly.
+              jacobianl = coef_stretch_x_ij*coef_stretch_z_ij*jacobianl
+            endif
+            
             wzl = real(wzgll(j), kind=CUSTOM_REAL)
             wxl = real(wxgll(i), kind=CUSTOM_REAL)
             variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
