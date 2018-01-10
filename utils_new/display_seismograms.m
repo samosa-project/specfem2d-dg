@@ -58,9 +58,10 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Tests.
-fig_title = 'Full DG Square';
+fig_title = 'test';
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -72,9 +73,6 @@ type_display = 2; % Should be the same as the seismotype variable in parfile.
 % unknown = 'BXX';
 unknown = 'BXZ';
 
-% Sub-sample of records.
-nsub = 10;
-
 % close all; % Close all figure. Comment this to keep them.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,17 +80,20 @@ nsub = 10;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if(not(strcmp(output_files_dir(end),'/'))); folder=[folder,'/']; end;
 % Load sources' positions.
-pos_sources = [0, 0]; % Allocate a row for the first source's position.
+pos_sources = [inf, inf]; % Allocate a row for the first source's position.
 % fid = fopen([root_dir, '/DATA/SOURCE']);
 fid = fopen([output_files_dir, 'SOURCE']);
 if(fid==-1)
   error(strcat("Cannot open SOURCE file in ", output_files_dir, '(',[output_files_dir, 'SOURCE'],').'))
 end
-line = 0; xfound = 0; zfound = 0;
-while(line ~= -1)
+line = 0; xfound = 0; zfound = 0; stop=0;
+while(stop==0)
   % TODO: Loop on source number.
   line = fgetl(fid);
-  if line ~= -1 % This if is oddly needed, because the 'while' loop doesn't seem to stop even if line==-1, thus leading to an error when trying to use 'regexprep'.
+  if length(line)>0
+    if(line==-1)
+      stop=1;
+    end
     line = regexprep(regexprep(line, ' +', ' '),'^ ',''); % Remove multiple spaces, and then eventually remove space if it there is one as first character.
     if strcmp(line(1:2), 'xs')
       xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *','')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
@@ -203,6 +204,8 @@ for istat = 1 : nstat
   file = strcat(output_files_dir, 'AA.', A.textdata(istat_glob, 1), '.', unknown, '.', extension);
   data = load(file{1});
   nt = max(size(data));
+  % Sub-sample of records.
+  nsub = ceil(nt/1000);
   nd = max(size(data(1:nsub:nt, 1)));
   % Recover time/amplitude data.
   % Ztime(istat,1:nt) = data(1:nsub:nt,1)';

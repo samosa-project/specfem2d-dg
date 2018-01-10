@@ -56,8 +56,7 @@
                          CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
                          ABC_STRETCH &! Stretching-based absorbing conditions.
-                         , coord, ibool_before_perio&
-                         ,cnu
+                         , coord, ibool_before_perio!,cnu
                          
   implicit none
 
@@ -76,7 +75,8 @@
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
         temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
         temp_E_1, temp_E_2, &
-        temp_rho_gravi, temp_rhovx_gravi, temp_rhovz_gravi, temp_E_gravi!, temp_e1
+        !temp_rho_gravi, &
+        temp_rhovx_gravi, temp_rhovz_gravi, temp_E_gravi!, temp_e1
 
   ! Jacobian matrix and determinant
   real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl
@@ -91,7 +91,8 @@
         ! TEST
         gamma_P
     
-  real(kind=CUSTOM_REAL) :: dT_dx, dT_dz, veloc_n_M, veloc_n_P
+  real(kind=CUSTOM_REAL) :: dT_dx, dT_dz
+  !real(kind=CUSTOM_REAL) :: veloc_n_M, veloc_n_P
         
   integer :: iglobM, iglobP
   
@@ -202,9 +203,7 @@
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
-          
           jacobianl = jacobian(i, j, ispec)
-          
           xixl = xix(i, j, ispec)
           xizl = xiz(i, j, ispec)
           gammaxl = gammax(i, j, ispec)
@@ -215,11 +214,6 @@
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z.
             ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
-            
-            if(.false. .and. myrank==0 .and. coef_stretch_z_ij/=1.) then ! DEBUG
-              write(*,*) 'b4', xixl, xizl, coef_stretch_x_ij, coef_stretch_z_ij
-            endif
-            
             xixl = coef_stretch_x_ij * xixl
             xizl = coef_stretch_z_ij * xizl
             gammaxl = coef_stretch_x_ij * gammaxl
@@ -227,10 +221,6 @@
             ! Add jacobian of stretching into the integrand (artifically).
             ! TODO: Do that more clearly.
             jacobianl = coef_stretch_x_ij*coef_stretch_z_ij*jacobianl
-            
-            if(.false. .and. myrank==0 .and. coef_stretch_z_ij/=1.) then ! DEBUG
-              write(*,*) 'aftR', xixl, xizl, coef_stretch_x_ij, coef_stretch_z_ij
-            endif
           endif
           
           wzl = wzgll(j)
@@ -317,7 +307,7 @@
           
           
           ! Gravity contributions (separated from the rest).
-          temp_rho_gravi(i, j) = ZERO
+          !temp_rho_gravi(i, j) = ZERO ! Save one operation.
           temp_rhovx_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_rhovz_gravi(i, j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
@@ -383,9 +373,9 @@
                                               ) * jacobianl*wxl*wzl
             endif
             
-            temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + (  rhovx_DG(iglob)*coef_stretch_x_ij_prime &
-                                                           + rhovz_DG(iglob)*coef_stretch_z_ij_prime &
-                                                          ) * jacobianl
+            !temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + (  rhovx_DG(iglob)*coef_stretch_x_ij_prime &
+            !                                               + rhovz_DG(iglob)*coef_stretch_z_ij_prime &
+            !                                              ) * jacobianl
             temp_rhovx_gravi(i, j) = temp_rhovx_gravi(i, j) + (  (  rho_DG(iglob)&
                                                                     *veloc_x_DG(iglob)**2 & ! Inviscid tensor, line 1, column 1
                                                                     + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob) & ! Inviscid tensor, line 1, column 1
@@ -451,7 +441,7 @@
           
           ! Gravity terms.
           ! TODO: consider renaming the "temp_*_gravi" variables since some contain terms which are not related to gravity.
-          dot_rho(iglob)   = dot_rho(iglob)   + temp_rho_gravi(i, j) * wxl * wzl
+          !dot_rho(iglob)   = dot_rho(iglob)   + temp_rho_gravi(i, j) * wxl * wzl ! Save one operation.
           dot_rhovx(iglob) = dot_rhovx(iglob) + temp_rhovx_gravi(i, j) * wxl * wzl
           dot_rhovz(iglob) = dot_rhovz(iglob) + temp_rhovz_gravi(i, j) * wxl * wzl
           dot_E(iglob)     = dot_E(iglob)     + temp_E_gravi(i, j) * wxl * wzl
@@ -466,7 +456,6 @@
       ! --------------------------- !
       do  iface = 1, 4 
        do  iface1 = 1, NGLLX
-       
           i = link_iface_ijispec(iface1,iface,ispec,1)
           j = link_iface_ijispec(iface1,iface,ispec,2)
           
@@ -531,31 +520,6 @@
                   nx, nz, weight, timelocal, iface1, iface)
                   !TEST STRETCH
                   !nx_unit, nz_unit, weight, timelocal, iface1, iface)
-          ! DEBUG
-          if(.false.) then
-            exact_interface_flux = .true.
-            gamma_P = gammaext_DG(iglobP)
-            rho_DG_P     = rho_DG(iglobP)
-            E_DG_P       = E_DG(iglobP)
-            rhovx_DG_P   = rhovx_DG(iglobP)
-            rhovz_DG_P   = rhovz_DG(iglobP)
-            veloc_x_DG_P = rhovx_DG(iglobP)/rho_DG(iglobP)
-            veloc_z_DG_P = rhovz_DG(iglobP)/rho_DG(iglobP)
-            p_DG_P       = (gamma_P - ONE)*( E_DG_P &
-                           - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
-            if(muext(i, j, ispec) > 0 .OR. &
-               etaext(i, j, ispec) > 0 .OR. &
-               kappa_DG(i, j, ispec) > 0) then
-              ! Viscosity  
-              Vxx_DG_P = V_DG(1, 1,iglobP)
-              Vzz_DG_P = V_DG(2, 2,iglobP)
-              Vxz_DG_P = V_DG(1, 2,iglobP)
-              Vzx_DG_P = V_DG(2, 1,iglobP)
-              Tx_DG_P = T_DG(1,iglobP)
-              Tz_DG_P = T_DG(2,iglobP)
-            endif
-            T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/(cnu)
-          endif
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = 0.
@@ -565,14 +529,19 @@
           !veloc_n_P = sqrt(veloc_x_DG_P**2 + veloc_z_DG_P**2) !DEBUG
           
           !GOODVERSION
-          veloc_n_M = abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz)
-          veloc_n_P = abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz)
+          !veloc_n_M = abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz)
+          !veloc_n_P = abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz)
           !TEST STRETCH: use unit normal because we might be interested by the conventionnal fluid speed rather than the artificial one
           !veloc_n_M = abs(veloc_x_DG(iglobM)*nx_unit + veloc_z_DG(iglobM)*nz_unit)
           !veloc_n_P = abs(veloc_x_DG_P*nx_unit + veloc_z_DG_P*nz_unit)
           
-          lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
-                        veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
+          ! Save some operations.
+          !lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
+          !              veloc_n_P + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)) )
+          lambda = max(abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz) &
+                       + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
+                       abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
+                       + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))
           
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).
           dux_dx = ZERO
@@ -584,25 +553,26 @@
           if(muext(i, j, ispec) > 0 .OR. &
              etaext(i, j, ispec) > 0 .OR. &
              kappa_DG(i, j, ispec)  > 0) then
-            dux_dx = 0.5*(V_DG(1, 1, iglobM) + Vxx_DG_P)
-            dux_dz = 0.5*(V_DG(1, 2, iglobM) + Vxz_DG_P)
-            duz_dx = 0.5*(V_DG(2, 1, iglobM) + Vzx_DG_P)
-            duz_dz = 0.5*(V_DG(2, 2, iglobM) + Vzz_DG_P)
-            dT_dx = 0.5*(T_DG(1, iglobM) + Tx_DG_P)
-            dT_dz = 0.5*(T_DG(2, iglobM) + Tz_DG_P)
+            dux_dx = HALF*(V_DG(1, 1, iglobM) + Vxx_DG_P)
+            dux_dz = HALF*(V_DG(1, 2, iglobM) + Vxz_DG_P)
+            duz_dx = HALF*(V_DG(2, 1, iglobM) + Vzx_DG_P)
+            duz_dz = HALF*(V_DG(2, 2, iglobM) + Vzz_DG_P)
+            dT_dx = HALF*(T_DG(1, iglobM) + Tx_DG_P)
+            dT_dz = HALF*(T_DG(2, iglobM) + Tz_DG_P)
           endif
           
           ! Mass conservation equation's contributions (which are fully inviscid).
-          temp_unknown_M  = rhovx_DG(iglobM)
-          temp_unknown_P  = rhovx_DG_P
-          temp_unknown2_M = rhovz_DG(iglobM)
-          temp_unknown2_P = rhovz_DG_P
+          !temp_unknown_M  = rhovx_DG(iglobM)
+          !temp_unknown_P  = rhovx_DG_P
+          !temp_unknown2_M = rhovz_DG(iglobM)
+          !temp_unknown2_P = rhovz_DG_P
           ! Dot product.
-          flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations].
+          flux_n = (rhovx_DG(iglobM)+rhovx_DG_P)*nx + (rhovz_DG(iglobM)+rhovz_DG_P)*nz
+          !flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations].
           jump   = rho_DG(iglobM) - rho_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
-            jump = 0.
+            jump = ZERO
           endif
           dot_rho(iglobM) = dot_rho(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
@@ -623,7 +593,7 @@
           jump   = rhovx_DG(iglobM) - rhovx_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
-            jump = 0.
+            jump = ZERO
           endif
           dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
 
@@ -655,7 +625,7 @@
           jump   = rhovz_DG(iglobM) - rhovz_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
-            jump = 0.
+            jump = ZERO
           endif
           dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
@@ -689,7 +659,7 @@
           jump   = E_DG(iglobM) - E_DG_P
           ! Add flux' contribution.
           if(exact_interface_flux) then
-            jump = 0.
+            jump = ZERO
           endif
           dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
@@ -709,6 +679,7 @@
 ! compute_viscous_tensors                                      !
 ! ------------------------------------------------------------ !
 ! Computes the values of the auxiliary viscous tensors \mathcal{T} and \mathcal{V} at every GLL point of the mesh.
+! See doi:10.1016/j.jcp.2007.12.009, section 4.3.2.
    
   subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
@@ -769,9 +740,10 @@
   logical :: ADD_SURFACE_TERMS
   real(kind=CUSTOM_REAL) :: vx_init, vz_init
   
-  integer :: coef_surface
+!  integer :: coef_surface
   
   ADD_SURFACE_TERMS = .true. ! TODO: Decide to set a value (.true. or .false.), or to introduce a parameter in the parfile.
+  
   !T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
   
   MPI_iglob = 1
@@ -795,14 +767,10 @@
       ! --------------------------- !
       ! Volume terms.               !
       ! --------------------------- !
-      
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          
           iglob = ibool_DG(i, j, ispec)
-
           jacobianl = jacobian(i, j, ispec)
-        
           xixl = xix(i, j, ispec)
           xizl = xiz(i, j, ispec)
           gammaxl = gammax(i, j, ispec)
@@ -814,14 +782,26 @@
           if(ADD_SURFACE_TERMS) then
             ! In that case, we want to compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k as:
             ! - \int_{\Omega^k} T\nabla\Phi d\Omega^k + \int_{\partial\Omega^k} T\Phi n d\Gamma^k.
-            ! Here, prepare the components which will be later used to compute the "- \int_{\Omega^k} T\nabla\Phi d\Omega^k" part.
+            ! The idea is to store in:
+            !   grad_Tx,
+            !   grad_Tz,
+            !   grad_Vxx,
+            !   grad_Vxz,
+            !   grad_Vzx,
+            !   grad_Vzz
+            ! the values of the approximated integrals:
+            !  $\int \partial_xT\Phi_x d\Omega^k$,
+            !  $\int \partial_zT\Phi_z d\Omega^k$,
+            !  $\int \partial_xVx\Phi_x d\Omega^k$,
+            !  etc.
+            ! and "desintegrate" those values by multiplying the obtained vector by the inverse mass matrix. As explained before, the integrals are computed by using the divergence theorem and taking into account the surface terms.
             
             ! Viscous stress tensors
             if(.not. CONSTRAIN_HYDROSTATIC) then
               temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * T(iglob)) 
               temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * T(iglob)) 
-              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * veloc_x_DG(iglob) )
-              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * veloc_x_DG(iglob) )
+              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * veloc_x_DG(iglob))
+              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * veloc_x_DG(iglob))
               temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * veloc_z_DG(iglob)) 
               temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * veloc_z_DG(iglob)) 
               
@@ -835,22 +815,36 @@
               vx_init = rhovx_init(iglob)/rho_init(iglob)
               vz_init = rhovz_init(iglob)/rho_init(iglob)
               
-              temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)) ) 
-              temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)) ) 
-              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init) )
-              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob) - vx_init) )
-              temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init) ) 
-              temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init) ) 
+              temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)))
+              temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)))
+              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init))
+              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob) - vx_init))
+              temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init))
+              temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init))
               
-              temp_Tx_2(i, j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)) ) 
-              temp_Tz_2(i, j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)) ) 
-              temp_Vxx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init) ) 
-              temp_Vxz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob) - vx_init) ) 
-              temp_Vzx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init) ) 
-              temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init) ) 
+              temp_Tx_2(i, j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)))
+              temp_Tz_2(i, j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)))
+              temp_Vxx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init))
+              temp_Vxz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob) - vx_init))
+              temp_Vzx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init))
+              temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init))
             endif
           else
             ! In that case, we want to compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k directly as it.
+            ! The idea is to store in:
+            !   grad_Tx,
+            !   grad_Tz,
+            !   grad_Vxx,
+            !   grad_Vxz,
+            !   grad_Vzx,
+            !   grad_Vzz
+            ! the actual values of the quantities:
+            !   \partial_xT,
+            !   \partial_zT,
+            !   \partial_xVx,
+            !   etc.
+            ! which is immediate through the SEM formulation.
+            
             dux_dxi    = ZERO
             dux_dgamma = ZERO
             duz_dxi    = ZERO
@@ -914,147 +908,139 @@
         enddo
       enddo
       
-      coef_surface = 0
       if(ADD_SURFACE_TERMS) then
-        coef_surface = NGLLZ
-      endif
-      do j = 1, coef_surface
-        do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
-          ! along x direction and z direction
-          ! and assemble the contributions
-          do k = 1, NGLLX
-            grad_Tx(iglob) = grad_Tx(iglob) - &
-                             (temp_Tx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                             temp_Tx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
-            grad_Tz(iglob) = grad_Tz(iglob) - &
-                             (temp_Tz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                             temp_Tz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
-            grad_Vxx(iglob) = grad_Vxx(iglob) - &
-                              (temp_Vxx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                              temp_Vxx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
-            grad_Vxz(iglob) = grad_Vxz(iglob) - &
-                              (temp_Vxz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                              temp_Vxz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
-            grad_Vzx(iglob) = grad_Vzx(iglob) - &
-                              (temp_Vzx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                              temp_Vzx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
-            grad_Vzz(iglob) = grad_Vzz(iglob) - &
-                              (temp_Vzz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                              temp_Vzz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            iglob = ibool_DG(i, j, ispec)
+            ! along x direction and z direction
+            ! and assemble the contributions
+            do k = 1, NGLLX
+              grad_Tx(iglob) = grad_Tx(iglob) - &
+                               (temp_Tx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                               temp_Tx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+              grad_Tz(iglob) = grad_Tz(iglob) - &
+                               (temp_Tz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                               temp_Tz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+              grad_Vxx(iglob) = grad_Vxx(iglob) - &
+                                (temp_Vxx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_Vxx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+              grad_Vxz(iglob) = grad_Vxz(iglob) - &
+                                (temp_Vxz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_Vxz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+              grad_Vzx(iglob) = grad_Vzx(iglob) - &
+                                (temp_Vzx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_Vzx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+              grad_Vzz(iglob) = grad_Vzz(iglob) - &
+                                (temp_Vzz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_Vzz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+            enddo
           enddo
         enddo
-      enddo
-        
+          
       ! --------------------------- !
       ! Interface terms.            !
       ! --------------------------- !
-        
-      coef_surface = 0
-      if(ADD_SURFACE_TERMS) then
-        coef_surface = NGLLZ
-      endif
-      
-      do  iface = 1, 4 
-       do  iface1 = 1, NGLLX
-       
-          i = link_iface_ijispec(iface1,iface,ispec,1)
-          j = link_iface_ijispec(iface1,iface,ispec,2)
+        do  iface = 1, 4 
+         do  iface1 = 1, NGLLX
+         
+            i = link_iface_ijispec(iface1,iface,ispec,1)
+            j = link_iface_ijispec(iface1,iface,ispec,2)
 
-          ! Interior point
-          iglobM = ibool_DG(i, j, ispec)
-          
-          rho_DG_P     = ZERO
-          rhovx_DG_P   = ZERO
-          rhovz_DG_P   = ZERO
-          E_DG_P       = ZERO
-          veloc_x_DG_P = ZERO
-          veloc_z_DG_P = ZERO
-          p_DG_P       = ZERO
-          T_P          = ZERO
-          Vxx_DG_P     = ZERO
-          Vzz_DG_P     = ZERO
-          Vzx_DG_P     = ZERO
-          Vxz_DG_P     = ZERO
-          
-          ! TEST WITH IFACE FORMULATION
-          nx     = nx_iface(iface, ispec)
-          nz     = nz_iface(iface, ispec)
-          
-          weight = weight_iface(iface1,iface, ispec)
-          neighbor = -1
-          if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
-            iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
-            iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
-            ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
-            neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
-            neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
-            neighbor(3) = ispec_neighbor
-          endif
-          
-          iglobP = 1
-          if(neighbor(1) > -1) then
-            iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
-          endif
-          
-          exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
-          call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
-                  rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
-                  Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
-                  neighbor,&
-                  exact_interface_flux, &
-                  rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
-                  V_DG(:,:,iglobM), T_DG(:,iglobM), &
-                  rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
-                  V_DG(:,:,iglobP), T_DG(:,iglobP), &
-                  nx, nz, weight, timelocal,iface1, iface)
+            ! Interior point
+            iglobM = ibool_DG(i, j, ispec)
+            
+            rho_DG_P     = ZERO
+            rhovx_DG_P   = ZERO
+            rhovz_DG_P   = ZERO
+            E_DG_P       = ZERO
+            veloc_x_DG_P = ZERO
+            veloc_z_DG_P = ZERO
+            p_DG_P       = ZERO
+            T_P          = ZERO
+            Vxx_DG_P     = ZERO
+            Vzz_DG_P     = ZERO
+            Vzx_DG_P     = ZERO
+            Vxz_DG_P     = ZERO
+            
+            ! TEST WITH IFACE FORMULATION
+            nx     = nx_iface(iface, ispec)
+            nz     = nz_iface(iface, ispec)
+            
+            weight = weight_iface(iface1,iface, ispec)
+            neighbor = -1
+            if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
+              iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
+              iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
+              ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
+              neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
+              neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
+              neighbor(3) = ispec_neighbor
+            endif
+            
+            iglobP = 1
+            if(neighbor(1) > -1) then
+              iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
+            endif
+            
+            exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
+            call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
+                    rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
+                    Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
+                    neighbor,&
+                    exact_interface_flux, &
+                    rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
+                    V_DG(:,:,iglobM), T_DG(:,iglobM), &
+                    rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
+                    V_DG(:,:,iglobP), T_DG(:,iglobP), &
+                    nx, nz, weight, timelocal,iface1, iface)
 
-          vx_init = rhovx_init(iglobM)/rho_init(iglobM)
-          vz_init = rhovz_init(iglobM)/rho_init(iglobM)
+            vx_init = rhovx_init(iglobM)/rho_init(iglobM)
+            vz_init = rhovz_init(iglobM)/rho_init(iglobM)
 
-          ! Dot product.
-          flux_x = T(iglobM) + T_P
-          if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*T_init(iglobM)
-          flux_n = flux_x*nx
-          grad_Tx(iglobM) = grad_Tx(iglobM) + weight*flux_n*HALF
-          
-          ! Dot product.
-          flux_z = T(iglobM) + T_P 
-          if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
-          flux_n = flux_z*nz
-          grad_Tz(iglobM) = grad_Tz(iglobM) + weight*flux_n*HALF
-          
-          ! Dot product.
-          flux_x = veloc_x_DG(iglobM) + veloc_x_DG_P 
-          if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vx_init
-          flux_n = flux_x*nx
-          grad_Vxx(iglobM) = grad_Vxx(iglobM) + weight*flux_n*HALF
-          
-          ! Dot product.
-          flux_z = veloc_x_DG(iglobM) + veloc_x_DG_P 
-          if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
-          flux_n = flux_z*nz
-          grad_Vxz(iglobM) = grad_Vxz(iglobM) + weight*flux_n*HALF
-          
-          ! Dot product.
-          flux_x = veloc_z_DG(iglobM) + veloc_z_DG_P 
-          if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
-          flux_n = flux_x*nx
-          grad_Vzx(iglobM) = grad_Vzx(iglobM) + weight*flux_n*HALF
-          
-          ! Dot product.
-          flux_z = veloc_z_DG(iglobM) + veloc_z_DG_P 
-          if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
-          flux_n = flux_z*nz
-          grad_Vzz(iglobM) = grad_Vzz(iglobM) + weight*flux_n*HALF
-          
+            ! Dot product.
+            flux_x = T(iglobM) + T_P
+            if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*T_init(iglobM)
+            flux_n = flux_x*nx
+            grad_Tx(iglobM) = grad_Tx(iglobM) + weight*flux_n*HALF
+            
+            ! Dot product.
+            flux_z = T(iglobM) + T_P
+            if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
+            flux_n = flux_z*nz
+            grad_Tz(iglobM) = grad_Tz(iglobM) + weight*flux_n*HALF
+            
+            ! Dot product.
+            flux_x = veloc_x_DG(iglobM) + veloc_x_DG_P
+            if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vx_init
+            flux_n = flux_x*nx
+            grad_Vxx(iglobM) = grad_Vxx(iglobM) + weight*flux_n*HALF
+            
+            ! Dot product.
+            flux_z = veloc_x_DG(iglobM) + veloc_x_DG_P
+            if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
+            flux_n = flux_z*nz
+            grad_Vxz(iglobM) = grad_Vxz(iglobM) + weight*flux_n*HALF
+            
+            ! Dot product.
+            flux_x = veloc_z_DG(iglobM) + veloc_z_DG_P
+            if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
+            flux_n = flux_x*nx
+            grad_Vzx(iglobM) = grad_Vzx(iglobM) + weight*flux_n*HALF
+            
+            ! Dot product.
+            flux_z = veloc_z_DG(iglobM) + veloc_z_DG_P
+            if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
+            flux_n = flux_z*nz
+            grad_Vzz(iglobM) = grad_Vzz(iglobM) + weight*flux_n*HALF
+            
+          enddo
         enddo
-      enddo
+      endif ! Endif on ADD_SURFACE_TERMS.
     endif ! End of test if acoustic element.
   enddo ! End of loop over elements.
   
   if(ADD_SURFACE_TERMS) then
-    ! TODO: Explain why only if ADD_SURFACE_TERMS == .true..
+    ! "Desintegrate".
     grad_Tx(:)  = grad_Tx(:) * rmass_inverse_acoustic_DG(:)
     grad_Tz(:)  = grad_Tz(:) * rmass_inverse_acoustic_DG(:)
     grad_Vxx(:) = grad_Vxx(:) * rmass_inverse_acoustic_DG(:)

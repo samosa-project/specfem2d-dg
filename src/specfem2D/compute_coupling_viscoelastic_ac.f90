@@ -234,16 +234,17 @@
         iglob_DG = ibool_DG(i,j,ispec_acoustic)
         veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
         veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
-        pressure = (gammaext_DG(iglob_DG) - 1.)*( E_DG(iglob_DG) &
+        pressure = (gammaext_DG(iglob_DG) - ONE)*( E_DG(iglob_DG) &
           - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
         pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
         ! Set elastic acceleration.
         accel_elastic(1,iglob) = accel_elastic(1,iglob) &
-          - weight*( nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
-          + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
+          + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
+                    + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
         accel_elastic(2,iglob) = accel_elastic(2,iglob) &
-          - weight*( nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) &
-          + nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) )!- weight*nz*pressure
+          + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
+                    + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )!- weight*nz*pressure
+        ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
         ! Version 2.
         !if(.false.) then
         !accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
