@@ -24,8 +24,6 @@
     ldd --version
   If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
   
-  Get back to "./specfem-dg". Try again:
-    ./config_scotch.sh
   Error "/usr/bin/ld: cannot find -lz": install the "zlib-dev" package.
   
   If the scripts fails again, contact the SPECFEM-DG support.

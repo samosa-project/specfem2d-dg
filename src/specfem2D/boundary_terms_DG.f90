@@ -422,8 +422,6 @@
                          
   implicit none
   
-  ! TODO: Why not loading it from specfem_par? All calls seem to use the one loaded from specfem_par.
-  
   integer, intent(in) :: i, j, ispec, iface1, iface
   
   integer, dimension(3), intent(in) :: neighbor
@@ -461,6 +459,8 @@
   deltaZ1, deltaZ2star, p_n, a_n, alpha0
   
   iglobM = ibool_DG(i, j, ispec)
+  
+  if(.false.) weight=1. ! Horrible hack to get rid of the warning "Warning: Unused dummy argument 'weight'". I'm sorry. TODO: Remove weight from arguments in all calls to compute_interface_unknowns.
   
   ! Deduce velocities from momenta and density (the two latter being constitutive variables, and thus passed to the routine as input parameters).
   veloc_x_DG_iM = rhovx_DG_iM/rho_DG_iM
