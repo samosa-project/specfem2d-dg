@@ -72,7 +72,8 @@
   ! collects total on all processes
   call sum_all_all_i(npgeo, npgeo_glob)
 
-  zmax_color_image = zmin_color_image + 1.05d0 * (zmax_color_image - zmin_color_image)
+  ! TODO: Why ?
+  !zmax_color_image = zmin_color_image + 1.05d0 * (zmax_color_image - zmin_color_image)
 
   ! compute number of pixels in the horizontal direction based on typical number
   ! of spectral elements in a given direction (may give bad results for very elongated models)
@@ -122,7 +123,9 @@
   use constants,only: IMAIN,HUGEVAL,NGLLX,NGLLZ
 
   use specfem_par, only : myrank,coord,coorg,nspec,knods,ibool, &
-                          NSOURCES,nrec,x_source,z_source,st_xval,st_zval
+                          NSOURCES,nrec,x_source,z_source,st_xval,st_zval,&
+                          ABC_STRETCH_LBUF, iy_image_color_bottom_buffer, iy_image_color_top_buffer,&
+                          ABC_STRETCH, ix_image_color_left_buffer, ix_image_color_right_buffer
 
 
   use specfem_par_movie,only: NX_IMAGE_color,NZ_IMAGE_color, &
@@ -251,6 +254,14 @@
       if (iy_image_color_receiver(i) > NZ_IMAGE_color) iy_image_color_receiver(i) = NZ_IMAGE_color
     enddo
 
+  endif
+  
+  ! Absorbing buffers.
+  if(ABC_STRETCH) then
+    ix_image_color_left_buffer   = int(ABC_STRETCH_LBUF/size_pixel_horizontal) + 1
+    ix_image_color_right_buffer  = int((xmax_color_image-ABC_STRETCH_LBUF-xmin_color_image)/size_pixel_horizontal) + 1
+    iy_image_color_bottom_buffer = int(ABC_STRETCH_LBUF/size_pixel_vertical) + 1
+    iy_image_color_top_buffer    = int((zmax_color_image-ABC_STRETCH_LBUF-zmin_color_image)/size_pixel_vertical) + 1
   endif
 
   end subroutine prepare_color_image_pixels

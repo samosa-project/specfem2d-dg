@@ -104,8 +104,8 @@ CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydros
 # Fluid model
 USE_ISOTHERMAL_MODEL            = .false.
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. [m].
-surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL==true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 340.0          # $c$. Only used if USE_ISOTHERMAL_MODEL==.false. (if set to .true., $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
+surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
+sound_velocity                  = 340.0          # $c$.
 wind                            = 0.0            # Horizontal wind. [m.s^(-1)].
 gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true..
 dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. [kg.s^(-1).m^(-1)]. Choose 1.25d-5 for dry air at 20 °C.

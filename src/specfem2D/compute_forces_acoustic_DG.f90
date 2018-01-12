@@ -55,7 +55,7 @@
                          rhovx_init, rhovz_init, E_init, rho_init, &
                          CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
-                         ABC_STRETCH &! Stretching-based absorbing conditions.
+                         ABC_STRETCH, stretching_ya &! Stretching-based absorbing conditions.
                          , coord, ibool_before_perio!,cnu
                          
   implicit none
@@ -69,7 +69,7 @@
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   
   ! Local variables.
-  integer :: ispec,i, j,k, iglob
+  integer :: ispec,i, j,k, iglob, iglob_unique
   integer :: ifirstelem,ilastelem
 
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
@@ -128,8 +128,8 @@
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   
   ! TEST STRETCH
-  real(kind=CUSTOM_REAL) :: coef_stretch_x_ij, coef_stretch_x_ij_prime, &
-                            coef_stretch_z_ij, coef_stretch_z_ij_prime
+  real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
+  real(kind=CUSTOM_REAL) :: ya_x_l_prime, ya_z_l_prime
   real(kind=CUSTOM_REAL) :: viscous_tens_11, viscous_tens_12, viscous_tens_22
   real(kind=CUSTOM_REAL) :: nx_unit, nz_unit
   
@@ -213,14 +213,23 @@
             ! Here is updated the operator \nabla and the jacobian.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z.
             ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
-            call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
-            xixl = coef_stretch_x_ij * xixl
-            xizl = coef_stretch_z_ij * xizl
-            gammaxl = coef_stretch_x_ij * gammaxl
-            gammazl = coef_stretch_z_ij * gammazl
+            !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+            
+            if(.false. .and. .not. ya_z_l==stretching_ya(2, ibool_before_perio(i, j, ispec))&
+               .and. it<5 .and. i==3 .and. j==3 .and. ispec>1550 .and. ispec<1560) then
+              write(*,*) ya_z_l, stretching_ya(2, ibool_before_perio(i, j, ispec)), ispec, i, j, iglob
+            endif
+            
+            iglob_unique = ibool_before_perio(i, j, ispec);
+            ya_x_l=stretching_ya(1, iglob_unique)
+            ya_z_l=stretching_ya(2, iglob_unique)
+            xixl = ya_x_l * xixl
+            xizl = ya_z_l * xizl
+            gammaxl = ya_x_l * gammaxl
+            gammazl = ya_z_l * gammazl
             ! Add jacobian of stretching into the integrand (artifically).
             ! TODO: Do that more clearly.
-            jacobianl = coef_stretch_x_ij*coef_stretch_z_ij*jacobianl
+            jacobianl = ya_x_l*ya_z_l*jacobianl
           endif
           
           wzl = wzgll(j)
@@ -343,15 +352,15 @@
                               + (etaext(i, j, ispec)-(TWO/3.)*muext(i, j, ispec)) & ! Viscous tensor, line 2, column 2, term 2 (1 of 2)
                                 * (dux_dx+duz_dz) ! Viscous tensor, line 2, column 2, term 2 (2 of 2)
             
-            call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
+            call virtual_stretch_prime(i, j, ispec, ya_x_l_prime, ya_z_l_prime)
             
             if(.false. .and. i==3 .and. j==3 &
                .and. abs(coord(1, ibool_before_perio(i, j, ispec)))<5.&
                .and. abs(coord(2, ibool_before_perio(i, j, ispec))-21.)<2.) then
               write(*,*) 'omegalul', coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)) &
-                         , coef_stretch_x_ij_prime, coef_stretch_z_ij_prime &
-                         , ((rhovx_DG(iglob)*coef_stretch_x_ij_prime&
-                             +rhovz_DG(iglob)*coef_stretch_z_ij_prime&
+                         , ya_x_l_prime, ya_z_l_prime &
+                         , ((rhovx_DG(iglob)*ya_x_l_prime&
+                             +rhovz_DG(iglob)*ya_z_l_prime&
                             )* jacobianl*wxl*wzl)&
                          , rhovx_DG(iglob), rhovz_DG(iglob)
             endif
@@ -359,54 +368,54 @@
                .and. abs(coord(1, ibool_before_perio(i, j, ispec)))<5.&
                .and. abs(coord(2, ibool_before_perio(i, j, ispec))-21.)<2.) then
               write(*,*) 'omegalul', coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)) &
-                         , coef_stretch_x_ij_prime, coef_stretch_z_ij_prime &
+                         , ya_x_l_prime, ya_z_l_prime &
                          , (  (   (  E_DG(iglob) + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob)&
                                                       + viscous_tens_11 &
                                                      ) * veloc_x_DG(iglob) &
                                                    + ( viscous_tens_12 ) * veloc_z_DG(iglob) &
-                                                 ) * coef_stretch_x_ij_prime & ! End of z contribution.
+                                                 ) * ya_x_l_prime & ! End of z contribution.
                                                + (   (  E_DG(iglob) + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob)&
                                                       + viscous_tens_22 &
                                                      ) * veloc_z_DG(iglob) &
                                                    + ( viscous_tens_12 ) * veloc_x_DG(iglob) &
-                                                 ) * coef_stretch_z_ij_prime  & ! End of x contribution.
+                                                 ) * ya_z_l_prime  & ! End of x contribution.
                                               ) * jacobianl*wxl*wzl
             endif
             
-            !temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + (  rhovx_DG(iglob)*coef_stretch_x_ij_prime &
-            !                                               + rhovz_DG(iglob)*coef_stretch_z_ij_prime &
+            !temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + (  rhovx_DG(iglob)*ya_x_l_prime &
+            !                                               + rhovz_DG(iglob)*ya_z_l_prime &
             !                                              ) * jacobianl
             temp_rhovx_gravi(i, j) = temp_rhovx_gravi(i, j) + (  (  rho_DG(iglob)&
                                                                     *veloc_x_DG(iglob)**2 & ! Inviscid tensor, line 1, column 1
                                                                     + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob) & ! Inviscid tensor, line 1, column 1
                                                                   - viscous_tens_11 & ! Viscous tensor, line 1, column 1
-                                                                 ) * coef_stretch_x_ij_prime  & ! End of x contribution.
+                                                                 ) * ya_x_l_prime  & ! End of x contribution.
                                                                + (  rho_DG(iglob)&
                                                                     *veloc_x_DG(iglob)*veloc_z_DG(iglob) & ! Inviscid tensor, line 1, column 2
                                                                   - viscous_tens_12 & ! Visous tensor, line 1, column 2
-                                                                 ) * coef_stretch_z_ij_prime & ! End of z contribution.
+                                                                 ) * ya_z_l_prime & ! End of z contribution.
                                                               ) * jacobianl
             temp_rhovz_gravi(i, j) = temp_rhovz_gravi(i, j) + (  (  rho_DG(iglob)&
                                                                     *veloc_x_DG(iglob)*veloc_z_DG(iglob) & ! Inviscid tensor, line 2, column 1
                                                                   - viscous_tens_12 & ! Visous tensor, line 2, column 1
-                                                                 ) * coef_stretch_x_ij_prime & ! End of z contribution.
+                                                                 ) * ya_x_l_prime & ! End of z contribution.
                                                                !+ (  (rho_DG(iglob)-cnst_hdrsttc*rho_init(iglob))&
                                                                + (  rho_DG(iglob)&
                                                                      *veloc_z_DG(iglob)**2  & ! Inviscid tensor
                                                                     + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob) & ! Inviscid tensor, line 2, column 2
                                                                   - viscous_tens_22 & ! Viscous tensor, line 2, column 2
-                                                                 ) * coef_stretch_z_ij_prime  & ! End of x contribution.
+                                                                 ) * ya_z_l_prime  & ! End of x contribution.
                                                               ) * jacobianl
             temp_E_gravi(i, j) = temp_E_gravi(i, j) + (  (   (  E_DG(iglob) + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob)&
                                                               + viscous_tens_11 &
                                                              ) * veloc_x_DG(iglob) &
                                                            + ( viscous_tens_12 ) * veloc_z_DG(iglob) &
-                                                         ) * coef_stretch_x_ij_prime & ! End of z contribution.
+                                                         ) * ya_x_l_prime & ! End of z contribution.
                                                        + (   ( viscous_tens_12 ) * veloc_x_DG(iglob) &
                                                            + (  E_DG(iglob) + p_DG(iglob)-cnst_hdrsttc*p_DG_init(iglob)&
                                                               + viscous_tens_22 &
                                                              ) * veloc_z_DG(iglob) &
-                                                         ) * coef_stretch_z_ij_prime  & ! End of x contribution.
+                                                         ) * ya_z_l_prime  & ! End of x contribution.
                                                       ) * jacobianl
           endif
           
@@ -480,8 +489,9 @@
           if(ABC_STRETCH) then
             ! Add jacobian of stretching into the integrand (artifically).
             ! TODO: Do that more clearly.
-            call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
-            weight=coef_stretch_x_ij*coef_stretch_z_ij*weight
+            !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+            iglob_unique=ibool_before_perio(i, j, ispec)
+            weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
           endif
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes.
@@ -489,9 +499,9 @@
           nx_unit=nx
           nz_unit=nz
           if(ABC_STRETCH .and. .false.) then
-            call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
-            nx = coef_stretch_x_ij * nx
-            nz = coef_stretch_z_ij * nz
+            call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+            nx = ya_x_l * nx
+            nz = ya_z_l * nz
           endif
           
           rho_DG_P     = ZERO
@@ -681,7 +691,7 @@
 ! Computes the values of the auxiliary viscous tensors \mathcal{T} and \mathcal{V} at every GLL point of the mesh.
 ! See doi:10.1016/j.jcp.2007.12.009, section 4.3.2.
    
-  subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
+subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
 ! ?? compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
   
@@ -693,14 +703,15 @@
                          hprimewgll_zz, hprimewgll_xx, &
                          hprime_xx, hprime_zz, rmass_inverse_acoustic_DG, &
                          cnu, &
+                         ibool_before_perio,&
                          rhovx_init, rhovz_init, rho_init, T_init, CONSTRAIN_HYDROSTATIC, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
-                         ABC_STRETCH ! Stretching-based absorbing conditions.
+                         ABC_STRETCH,stretching_ya ! Stretching-based absorbing conditions.
                          
   implicit none
   
   ! local parameters
-  integer :: ispec,i, j,k, iglob, iglobM, iglobP
+  integer :: ispec,i, j,k, iglob, iglobM, iglobP, iglob_unique
   real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
@@ -739,6 +750,7 @@
   
   logical :: ADD_SURFACE_TERMS
   real(kind=CUSTOM_REAL) :: vx_init, vz_init
+  real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
   
 !  integer :: coef_surface
   
@@ -775,6 +787,20 @@
           xizl = xiz(i, j, ispec)
           gammaxl = gammax(i, j, ispec)
           gammazl = gammaz(i, j, ispec)
+          
+          if(ABC_STRETCH) then
+            !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+            iglob_unique=ibool_before_perio(i, j, ispec)
+            ya_x_l=stretching_ya(1, iglob_unique)
+            ya_z_l=stretching_ya(2, iglob_unique)
+            xixl = ya_x_l * xixl
+            xizl = ya_z_l * xizl
+            gammaxl = ya_x_l * gammaxl
+            gammazl = ya_z_l * gammazl
+            ! Add jacobian of stretching into the integrand (artifically).
+            ! TODO: Do that more clearly.
+            jacobianl = ya_x_l*ya_z_l*jacobianl
+          endif
           
           wzl = wzgll(j)
           wxl = wxgll(i)
@@ -976,6 +1002,14 @@
               neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
               neighbor(3) = ispec_neighbor
             endif
+          
+            if(ABC_STRETCH) then
+              ! Add jacobian of stretching into the integrand (artifically).
+              ! TODO: Do that more clearly.
+              !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+              iglob_unique=ibool_before_perio(i, j, ispec)
+              weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
+            endif
             
             iglobP = 1
             if(neighbor(1) > -1) then
@@ -1056,159 +1090,4 @@
   V_DG(1, 2, :) = grad_Vxz
   V_DG(2, 1, :) = grad_Vzx
   V_DG(2, 2, :) = grad_Vzz
-  
-  ! --------------------------- !
-  ! Virtual mesh stretching.    !
-  ! --------------------------- !
-  if(ABC_STRETCH) then
-    ! TODO: Maybe, this has to be put in the developements above rather than "hardcoded" here.
-    call virtual_stretch_auxi_visc_tensors_DG(T_DG, V_DG)
-  endif
-  
-  end subroutine compute_viscous_tensors
-
-! ------------------------------------------------------------ !
-! virtual_stretch_auxi_visc_tensors_DG                         !
-! ------------------------------------------------------------ !
-! TODO: This is a test routine.
-! Multiplies the terms in the auxiliary viscous tensors \mathcal{T} and \mathcal{V} by the corresponding stretching functions. The stretching consists in replacing the derivatives \partial_x and \partial_z by R_x\partial_x and R_y\partial_y.
-! TODO: Instead of recomputing the coefficients at each iteration, a 2 * nglob_DG matrix containing them for all mesh points can be computed and stored before execution, and called to here.
-
-  subroutine virtual_stretch_auxi_visc_tensors_DG(T_DG, V_DG)
-
-  use specfem_par, only: ispec_is_acoustic, nspec, nglob_DG, ibool_DG
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  implicit none
-  
-  ! Input/Output
-  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(inout) :: V_DG
-  real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(inout) :: T_DG
-  
-  ! Local
-  integer :: i, j, ispec, iglob
-  real(kind=CUSTOM_REAL) :: coef_stretch_x, coef_stretch_z
-  
-  do ispec = 1, nspec
-    if (ispec_is_acoustic(ispec)) then
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
-          call virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z) ! Get coef_stretch_x and coef_stretch_z based on the element's coordinates.
-          T_DG(1, iglob) = coef_stretch_x * T_DG(1, iglob)
-          T_DG(2, iglob) = coef_stretch_z * T_DG(2, iglob)
-          V_DG(1, :, iglob) = coef_stretch_x * V_DG(1, :, iglob)
-          V_DG(2, :, iglob) = coef_stretch_z * V_DG(2, :, iglob)
-        enddo
-      enddo
-     endif
-   enddo
-  end subroutine virtual_stretch_auxi_visc_tensors_DG
-
-! ------------------------------------------------------------ !
-! virtual_stretch                                              !
-! ------------------------------------------------------------ !
-! Computes the value of the stretching coefficients.
-! TODO: Instead of a function to be called, build a vector that will only need to be computed once and to which simple and less expensive memory calls can be made.
-
-  subroutine virtual_stretch(i, j, ispec, coef_stretch_x, coef_stretch_z)
-  
-  use specfem_par, only: ibool_DG, ibool_before_perio, coord, ABC_STRETCH_LBUF
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  implicit none
-  
-  ! Input/Output
-  integer, intent(in) :: i, j, ispec
-  real(kind=CUSTOM_REAL), intent(out) :: coef_stretch_x, coef_stretch_z
-  
-  ! Local
-  integer iglob
-  real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: eps_l, p, q ! Arina's stretching.
-  real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
-  real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
-  real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
-  
-  ! Coefficients for the stretching function.
-  ! Arina's stretching
-  eps_l = 1.0d-4 ! 1.d-4 in Arina's paper.
-  p = 3.25d0
-  q = 1.75d0
-  ! Arina's damping coefficients.
-  C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
-  C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
-  ! Richards' damping coefficients.
-  beta = 2.0d0 ! 4 in Richards' paper.
-  sigma_max = -1.0d0
-  
-  zmax = 20. ! Domain top coordinate.
-  
-  iglob = ibool_DG(i, j, ispec)
-  coef_stretch_x = ONE ! By default, mesh is not stretched.
-  coef_stretch_z = ONE ! By default, mesh is not stretched.
-  z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
-  z_l = (1. - ((zmax - z)/ABC_STRETCH_LBUF)) ! Relative buffer coordinate.
-  if(z_l > 0. .AND. z_l <= 1.) then
-    ! Note: new expressions can be implemented here. Some compatibility conditions should be respected. The function has be 1 when z_l==0. The derivative of the function should be 0 when z_l==0 and when z_l==1.
-    !write(*, *) "z", z, "z_l", z_l ! DEBUG
-    !coef_stretch_z = 1. + z_l**2.! Stretching function.
-    !coef_stretch_z = 1. + 5.*z_l**2.*(z_l-1.)**2.! Stretching function.
-    !coef_stretch_z = 1. + 1. - (1. - eps_l) * (1. - z_l**p)**q! Stretching function.
-    !coef_stretch_z = 1. - 1.*z_l ! Stretching function.
-    ! Arina's stretching.
-    coef_stretch_z = 1. - (1. - eps_l) * (1. - (1. - z_l)**p)**q ! Stretching function.
-    ! Arina's damping.
-    !coef_stretch_z = (1.0d0 - C_1*z_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(z_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
-    ! Richards' damping.
-    !coef_stretch_z = 1.0d0 + sigma_max * z_l ** beta
-    !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
-  endif
-  
-  end subroutine virtual_stretch
-
-! ------------------------------------------------------------ !
-! virtual_stretch_prime                                        !
-! ------------------------------------------------------------ !
-! Computes the value of the derivative of the stretching coefficients.
-! TODO: Instead of a function to be called, build a vector that will only need to be computed once and to which simple and less expensive memory calls can be made.
-
-  subroutine virtual_stretch_prime(i, j, ispec, coef_stretch_x_prime, coef_stretch_z_prime)
-  
-  use specfem_par, only: ibool_DG, ibool_before_perio, coord, ABC_STRETCH_LBUF
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  implicit none
-  
-  ! Input/Output
-  integer, intent(in) :: i, j, ispec
-  real(kind=CUSTOM_REAL), intent(out) :: coef_stretch_x_prime, coef_stretch_z_prime
-  
-  ! Local
-  integer iglob
-  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: eps_l, p, q
-  real(kind=CUSTOM_REAL) :: zmax, z, z_l ! Variables used for testing.
-  
-  stop 'should not be called'
-  
-  ! Coefficients for the stretching function.
-  eps_l = 1.0d-4
-  p = 3.25d0
-  q = 1.75d0
-  
-  zmax = 50. ! Domain top coordinate.
-  
-  iglob = ibool_DG(i, j, ispec)
-  coef_stretch_x_prime = ZERO ! By default, mesh is not stretched.
-  coef_stretch_z_prime = ZERO ! By default, mesh is not stretched.
-  z = coord(2, ibool_before_perio(i, j, ispec)) ! Absolute coordinate.
-  z_l = (1. - ((zmax - z)/ABC_STRETCH_LBUF)) ! Relative buffer coordinate.
-  if(z_l > 0. .AND. z_l <= 1.) then
-    !write(*, *) "z", z, "z_l", z_l ! DEBUG
-    coef_stretch_z_prime = - (1. - eps_l) * p * q * (1.-z_l)**(p-1.) * (1.-(1.-z_l)**p)**(q-1.) ! Stretching function derivative.
-    !coef_stretch_z_prime = -1. ! Stretching function derivative.
-    !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
-  endif
-  
-  end subroutine virtual_stretch_prime
+end subroutine compute_viscous_tensors

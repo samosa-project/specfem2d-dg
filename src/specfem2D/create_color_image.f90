@@ -39,7 +39,10 @@
 
   use constants,only: TINYVAL,TINYVAL_DG,HUGEVAL,STABILITY_THRESHOLD
 
-  use specfem_par, only: myrank,it,NSOURCES,P_SV,nrec
+  use specfem_par, only: myrank,it,NSOURCES,P_SV,nrec,&
+                         ABC_STRETCH, ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
+                         iy_image_color_bottom_buffer, iy_image_color_top_buffer,&
+                         ix_image_color_left_buffer, ix_image_color_right_buffer
 
   use specfem_par_movie,only: image_color_data,iglob_image_color,NX_IMAGE_color,NZ_IMAGE_color, &
     isnapshot_number,cutsnaps,image_color_vp_display, &
@@ -254,14 +257,14 @@
   if (DRAW_SOURCES_AND_RECEIVERS) then
   ! Draw position of the sources and receivers.
 ! draw position of the sources with orange crosses
+    ! Orange.
+    R = 255
+    G = 157
+    B = 0
     do i = 1, NSOURCES
 ! avoid edge effects for source or receiver symbols that can be partly outside of the image
       do iy = max(iy_image_color_source(i) - half_width_cross,1), min(iy_image_color_source(i) + half_width_cross, NZ_IMAGE_color)
         do ix = max(ix_image_color_source(i) - thickness_cross,1), min(ix_image_color_source(i) + thickness_cross, NX_IMAGE_color)
-          ! Orange.
-          R = 255
-          G = 157
-          B = 0
           ! For JPEG.
           JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
           JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
@@ -271,10 +274,6 @@
 ! avoid edge effects for source or receiver symbols that can be partly outside of the image
       do iy = max(iy_image_color_source(i) - thickness_cross,1), min(iy_image_color_source(i) + thickness_cross, NZ_IMAGE_color)
         do ix = max(ix_image_color_source(i) - half_width_cross,1), min(ix_image_color_source(i) + half_width_cross, NX_IMAGE_color)
-          ! Orange.
-          R = 255
-          G = 157
-          B = 0
           ! For JPEG.
           JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
           JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
@@ -284,22 +283,58 @@
     enddo
 
 ! draw position of the receivers with green squares
+    ! Dark green.
+    R = 30
+    G = 180
+    B = 60
     do i = 1, nrec
 ! avoid edge effects for source or receiver symbols that can be partly outside of the image
       do iy = max(iy_image_color_receiver(i) - half_size_square,1), &
                min(iy_image_color_receiver(i) + half_size_square,NZ_IMAGE_color)
         do ix = max(ix_image_color_receiver(i) - half_size_square,1), &
                  min(ix_image_color_receiver(i) + half_size_square,NX_IMAGE_color)
-          ! Dark green.
-          R = 30
-          G = 180
-          B = 60
           ! For JPEG.
           JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
           JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
           JPEG_raw_image(3, ix, NZ_IMAGE_color-iy+1) = char(B)
         enddo
       enddo
+    enddo
+  endif
+  
+  ! Draw lines to mark the beginning of absorbing buffers.
+  if(ABC_STRETCH) then
+    ! Horrible fushia.
+    R = 255
+    G = 122
+    B = 224
+    do iy=1,NZ_IMAGE_color
+      if(ABC_STRETCH_LEFT) then
+        ix=ix_image_color_left_buffer
+        JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
+        JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
+        JPEG_raw_image(3, ix, NZ_IMAGE_color-iy+1) = char(B)
+      endif
+      if(ABC_STRETCH_RIGHT) then
+        ix=ix_image_color_right_buffer
+        JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
+        JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
+        JPEG_raw_image(3, ix, NZ_IMAGE_color-iy+1) = char(B)
+      endif
+    enddo
+    do ix=1,NX_IMAGE_color
+      if(ABC_STRETCH_TOP) then
+        iy=iy_image_color_top_buffer
+        JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
+        JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
+        JPEG_raw_image(3, ix, NZ_IMAGE_color-iy+1) = char(B)
+      endif
+      if(ABC_STRETCH_BOTTOM) then
+        iy=iy_image_color_bottom_buffer
+        JPEG_raw_image(1, ix, NZ_IMAGE_color-iy+1) = char(R)
+        JPEG_raw_image(2, ix, NZ_IMAGE_color-iy+1) = char(G)
+        JPEG_raw_image(3, ix, NZ_IMAGE_color-iy+1) = char(B)
+      endif
     enddo
   endif
 

@@ -178,8 +178,9 @@
   
   integer :: i, j, ispec
   
-  real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P, timelocal
+  real(kind=CUSTOM_REAL) :: timelocal
+  real(kind=CUSTOM_REAL), intent(out) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
+      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
   
   ! Parameters
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
@@ -917,98 +918,3 @@
   ! (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
   
   end subroutine compute_interface_unknowns
-
-! ------------------------------------------------------------ !
-! damp_solution_DG                                             !
-! ------------------------------------------------------------ !
-! TODO: This is a test routine.
-
-  subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
-
-  use specfem_par, only: ispec_is_acoustic, nspec, coord, ibool_DG, nglob_DG, &
-        ibool_before_perio
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  implicit none
-  
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
-  
-  ! Local
-  real(kind=CUSTOM_REAL) :: L_buffer_absorb, z, sigma, zmax, z_l
-  ! Arina's damping coefficients.
-  real(kind=CUSTOM_REAL) :: C_1, C_2
-  ! Richards' damping coefficients.
-  real(kind=CUSTOM_REAL) :: beta, sigma_max
-  
-  real(kind=CUSTOM_REAL) :: timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-                            veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
-  integer :: i, j, ispec, ifirstelem, ilastelem, ibool
-  
-  ! Domain-related quantities.
-  L_buffer_absorb = 10.0d0 ! Length of the buffer in which the solution is damped.
-  zmax            = 20.0d0
-  
-  ! Arina's damping coefficients.
-  C_1 = 0.1d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
-  C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
-  ! Richards' damping coefficients.
-  beta = 4.0d0 ! 4 in Richards' paper.
-  sigma_max = -1.0d0
-  
-  ifirstelem = 1
-  ilastelem = nspec
-  
-  do ispec = ifirstelem, ilastelem
-    if (ispec_is_acoustic(ispec)) then
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          ibool = ibool_DG(i, j, ispec)
-          
-          ! Absolute vertical position of the GLL point.
-          z = coord(2, ibool_before_perio(i, j, ispec))
-          ! Relative vertical position of the GLL point with respect to:
-          ! 1) the upper limit of the simulated domain, and
-          ! 2) the wanted buffer length.
-          ! z_l = 1 on the outer limit of the buffer, z_l = 0 at the inner limit of the buffer, z_l > 1 outside domain, and z_l < 0 inside the domain (before the buffer).
-          z_l = (1.0d0 - ((zmax - z)/L_buffer_absorb))
-          
-          !sigma = sigma_max*(abs( 1. - (z - L_buffer_absorb)/L_buffer_absorb ))**beta
-          
-          if(z_l > 0.0d0 .AND. z_l <= 1.0d0) then
-            ! Arina's damping.
-            sigma = (1.0d0 - C_1*z_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(z_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
-            ! Richards' damping.
-            !sigma = 1.0d0 + sigma_max * z_l ** beta
-            ! Arina's stretching
-            !sigma = 1. - (1. - 1.d-4) * (1. - (1. - z_l)**3.25)**1.75
-            
-            ! Note: sigma is a function that goes gradually from 1 to 0 in the buffer.
-            
-            call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-                    veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-            
-            !WRITE(*, *) timelocal, z,z_l,abs(z - zmax),abs(z - zmax)/L_buffer_absorb,&
-            ! sigma!, rho_DG(ibool) , rho_DG_P, sigma*( rho_DG(ibool) -  rho_DG_P), &
-                   ! rho_DG(ibool) - sigma*( rho_DG(ibool) -  rho_DG_P) ! DEBUG
-             
-            !if(sigma <= 1.0d-4) WRITE(*, *) sigma, z_l, (1-exp(C_2*(z_l)**2.0d0))/(1-exp(C_2)) ! DEBUG
-            
-            ! 1st approach (set only the perturbation to zero).
-            ! For a variable v: v_{tot} = v_{init} + v'. Then do:
-            ! v_{tot}^{n+1} = v_{init} + sigma * (v_{tot, computed} - v_{init})
-            rho_DG(ibool)   = rho_DG_P + sigma*( rho_DG(ibool) - rho_DG_P)
-            rhovx_DG(ibool) = rhovx_DG_P + sigma*( rhovx_DG(ibool) - rhovx_DG_P)
-            rhovz_DG(ibool) = rhovz_DG_P + sigma*( rhovz_DG(ibool) - rhovz_DG_P)
-            E_DG(ibool)     = E_DG_P + sigma*( E_DG(ibool) - E_DG_P)
-            
-            ! 2nd approach (do not use since in particular it sets rho to zero, which is not physically acceptable).
-            !rho_DG(ibool)   = rho_DG(ibool) * sigma
-            !rhovx_DG(ibool) = rhovx_DG(ibool) * sigma
-            !rhovz_DG(ibool) = rhovz_DG(ibool) * sigma
-            !E_DG(ibool)     = E_DG(ibool) * sigma
-          endif
-        enddo
-      enddo
-     endif
-   enddo
-  end subroutine damp_solution_DG

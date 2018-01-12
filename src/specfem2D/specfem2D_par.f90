@@ -75,11 +75,19 @@ module specfem_par
   !---------------------------------------------------------------------
   ! DG related quantities.
   !---------------------------------------------------------------------
-  logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH
-  real(kind=CUSTOM_REAL) :: ABC_STRETCH_LBUF
+  logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH ! Self-explanatory.
+  real(kind=CUSTOM_REAL) :: ABC_STRETCH_LBUF ! Length of the stretching buffer.
+  
+  integer :: iy_image_color_bottom_buffer, iy_image_color_top_buffer, ix_image_color_left_buffer, ix_image_color_right_buffer ! Location of lines marking the beginnings of the buffers.
+  
   logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
   real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
+  
   logical :: REMOVE_STF_INITIAL_DISCONTINUITY
+  
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
+    stretching_ya ! Array of stretching values (2 or 3 dimensions).
+  
   
   ! Switches (variables' names are self-explanatory).
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &

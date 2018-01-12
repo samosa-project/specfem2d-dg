@@ -60,16 +60,16 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % Tests.
 fig_title = 'test';
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
-%   2 = velocity for non-DG and pressure for DG.
+%   2 = velocity for non-DG and pressure perturbation (Pa) for DG.
 type_display = 2; % Should be the same as the seismotype variable in parfile.
 
 % Unknown:
-% For type_display==2 and stations in DG zones, pressure is saved both in BXX and BXZ files.
+% For type_display==2 and stations in DG zones, pressure perturbation (Pa) is saved both in BXX and BXZ files.
 % unknown = 'BXX';
 unknown = 'BXZ';
 
@@ -137,7 +137,11 @@ end
 format shortG;
 [(1:size(pos_stations, 1)); pos_stations';dist_to_sources']
 format compact;
-istattab = input(['  Stations to display (Matlab format, eg. [1, 4, 7] or 1:20) > ']);
+display_or_load=-1;
+while(not(display_or_load==0 || display_or_load==1))
+  display_or_load=input('  Display (0) or load only (1)? > ');
+end
+istattab = input(['  Stations (Matlab format, eg. [1, 4, 7] or 1:20)? > ']);
 nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -160,8 +164,9 @@ nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Plot.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure();
-hold on;
+if(display_or_load==0)
+  figure(); hold on;
+end
 
 % Loop on sismograms.
 max_ylim_plus=-Inf;
@@ -182,9 +187,9 @@ for istat = 1 : nstat
     extension = "semd"; % Because original SPECFEM2D's sismogram is displacement.
     % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
     if(strcmp(unknown,'BXZ'))
-      unknown_name = 'Vertical {displacement (m), velocity (m/s)}';
+      unknown_name = 'vertical {displacement (m), velocity (m/s)}';
     elseif(strcmp(unknown,'BXX'))
-      unknown_name = 'Horizontal {displacement (m), velocity (m/s)}';
+      unknown_name = 'horizontal {displacement (m), velocity (m/s)}';
     else
       error("The variable 'unknown' has a non-standard value.");
     end
@@ -192,9 +197,9 @@ for istat = 1 : nstat
     % Original SPECFEM2D's sismogram is velocity.
     extension = "semv"; % Because original SPECFEM2D's sismogram is velocity.
     if(strcmp(unknown,'BXZ'))
-      unknown_name = '{Vertical velocity (m/s), Pressure}';
+      unknown_name = '{vertical velocity (m/s), pressure perturbation (Pa)}';
     elseif(strcmp(unknown,'BXX'))
-      unknown_name = '{Horizontal velocity (m/s), Pressure}';
+      unknown_name = '{horizontal velocity (m/s), pressure perturbation (Pa)}';
     else
       error("The variable 'unknown' has a non-standard value.");
     end
@@ -216,51 +221,61 @@ for istat = 1 : nstat
   Zamp(istat, 1:nd) = data(1:nsub:nt, 2)';
 
   % Display.
-  ax(istat) = subplot(nstat, 1, istat); plot(Ztime(1, :), Zamp(istat, :));
+  if(display_or_load==0) % If display.
+    ax(istat) = subplot(nstat, 1, istat); plot(Ztime(1, :), Zamp(istat, :));
 
-  % Cosmetics.
-  if (istat == 1)
-    title(fig_title)
-  end
-  if (istat == nstat)
-    xlabel('Time (s)')
-  end
-  if (istat ~= nstat)
-    set(gca, 'xticklabel', []);
-  end
-  if (istat == round(nstat / 2))
-    ylabel(unknown_name);
-  end
-  xlim([Ztime(1, 1), Ztime(1, end)]);
+    % Cosmetics.
+    if (istat == 1)
+      title(fig_title)
+    end
+    if (istat == nstat)
+      xlabel('time (s)')
+    end
+    if (istat ~= nstat)
+      set(gca, 'xticklabel', []);
+    end
+    if (istat == round(nstat / 2))
+      ylabel(unknown_name);
+    end
+    xlim([Ztime(1, 1), Ztime(1, end)]);
 
-  legend(strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
+    legend(strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
 
-  hold on;
-  
-  ax=gca;
-  if(ax.YLim(1)<min_ylim_minus)
-    min_ylim_minus=ax.YLim(1);
-  end
-  if(ax.YLim(2)>max_ylim_plus)
-    max_ylim_plus=ax.YLim(2);
+    hold on;
+
+    ax=gca;
+    if(ax.YLim(1)<min_ylim_minus)
+      min_ylim_minus=ax.YLim(1);
+    end
+    if(ax.YLim(2)>max_ylim_plus)
+      max_ylim_plus=ax.YLim(2);
+    end
+  else % Load only.
+    % Nothing to do.
   end
 end
-linkaxes(ax, 'x');
-%tightfig;
+if(display_or_load==0)
+  linkaxes(ax, 'x');
+  %tightfig;
 
-if(nstat>1)
-  normalise_ylims=-1;
-  while(not(normalise_ylims==0 || normalise_ylims==1))
-    normalise_ylims=input('  Normalise y-scale? (0 for no, 1 for yes) > ');
-  end
-  if(normalise_ylims)
-    f=gcf;
-    for i=1:length(f.Children)
-      if(strcmp(f.Children(i).Type,'axes'))
-        f.Children(i).YLim=[min_ylim_minus, max_ylim_plus];
+  if(nstat>1)
+    normalise_ylims=-1;
+    while(not(normalise_ylims==0 || normalise_ylims==1))
+      normalise_ylims=input('  Normalise y-scale? (0 for no, 1 for yes) > ');
+    end
+    if(normalise_ylims)
+      f=gcf;
+      for i=1:length(f.Children)
+        if(strcmp(f.Children(i).Type,'axes'))
+          f.Children(i).YLim=[min_ylim_minus, max_ylim_plus];
+        end
       end
     end
   end
+  f=gcf; figure(f.Number);
+else
+  disp("  Data loaded. [id, station]:");
+  [(1:length(istattab))',istattab']
+  disp(strcat("  Example: Data of station ",num2str(istattab(1))," are in         Zamp(",num2str(1),", :)."));
+  disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :)."));
 end
-f=gcf; figure(f.Number);
-figure(1);

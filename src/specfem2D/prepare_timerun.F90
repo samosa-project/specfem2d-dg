@@ -39,6 +39,8 @@
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
 
   implicit none
+  
+  integer ispec,i,j,iglob_unique
 
   ! Test compatibility with axisymmetric formulation
   if (AXISYM) call check_compatibility_axisym()
@@ -73,6 +75,26 @@
   ! Compute the source spatial function and store it in a variable.
   if(USE_SPREAD_SSF) then
     call prepare_timerun_ssf()
+  endif
+  
+  ! Compute the stretching values and store them in correspongding variables.
+  if(ABC_STRETCH) then
+    call prepare_stretching()
+    
+    !DEBUG
+    if(myrank==1 .and. .false.) then
+      open(unit=1000,file="OUTPUT_FILES/testYA",status='unknown',action='write', position="append")
+      do ispec = 1, nspec
+        do i = 1, NGLLX
+          do j = 1, NGLLZ
+            iglob_unique = ibool_before_perio(i, j, ispec)
+            write(1000,*) coord(1, iglob_unique), coord(2, iglob_unique), &
+                          stretching_ya(1, iglob_unique), stretching_ya(2, iglob_unique)
+          enddo
+        enddo
+      enddo
+      close(1000)
+    endif
   endif
   
   ! prepares noise simulations
@@ -1186,6 +1208,7 @@
 ! Allocates and prepares a vector containing the values of the source spatial function.
 subroutine prepare_timerun_ssf()
   
+  use constants, only: ZERO
   use specfem_par
 
   implicit none
@@ -1215,7 +1238,7 @@ subroutine prepare_timerun_ssf()
       ! TODO: Implement a less cumbersome way of storing the values. Indeed, many values far away from the source will be negligible in this array.
       ! For example, instead of storing values over all the points, build the list of indices which associated points have a non-negligible value (value greater than a given threshold), and store only the values of the source spatial function at those points.
       allocate(source_spatial_function_DG(NSOURCES, nglob))
-      source_spatial_function_DG(:, :) = 0._CUSTOM_REAL
+      source_spatial_function_DG(:, :) = ZERO
       call prepare_source_spatial_function_DG() ! Compute the SSF array.
       !if(.false.) then ! DEBUG
       !  !write(*, *) ">  proc", myrank, "initialfield", initialfield
@@ -1244,7 +1267,6 @@ end subroutine prepare_timerun_ssf
 ! prepare_source_spatial_function_DG                           !
 ! ------------------------------------------------------------ !
 ! Compute values of the source spatial function at all points.
-! TODO: Correct the issue which appear for runs with multiple process (it seems only process 0 has values correctly initialised). Note: with only one process, everything works fine.
 
 subroutine prepare_source_spatial_function_DG
   
@@ -1277,23 +1299,25 @@ subroutine prepare_source_spatial_function_DG
       ! The central point of the source is indeed in a DG element.
       ! TODO: More cases may exist where the use of a spread source spatial function has to be discarded. Identify those and produce relevant tests and error messages.
       do ispec = 1, nspec
-        do i = 1, NGLLX
-          do j = 1, NGLLZ
-            iglob_unique = ibool_before_perio(i, j, ispec)
-            if(source_type(i_source) == 1) then
-              ! If the source is an elastic force or an acoustic pressure.
-              distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
-                         + (coord(2, iglob_unique) - z_source(i_source))**2.
-              source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
-              !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
-              !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
-            endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
-            
-            if(SPREAD_SSF_SAVE) then
-              write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
-            endif
-          enddo ! Enddo on j.
-        enddo ! Enddo on i.
+        if(ispec_is_acoustic_DG(ispec)) then
+          do i = 1, NGLLX
+            do j = 1, NGLLZ
+              iglob_unique = ibool_before_perio(i, j, ispec)
+              if(source_type(i_source) == 1) then
+                ! If the source is an elastic force or an acoustic pressure.
+                distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
+                           + (coord(2, iglob_unique) - z_source(i_source))**2.
+                source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
+                !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
+                !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
+              endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
+              
+              if(SPREAD_SSF_SAVE) then
+                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
+              endif
+            enddo ! Enddo on j.
+          enddo ! Enddo on i.
+        endif ! Endif on ispec_is_acoustic_DG(ispec).
       enddo ! Enddo on ispec.
     endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
   enddo ! Enddo on i_source.
@@ -1306,6 +1330,155 @@ subroutine prepare_source_spatial_function_DG
     endif
   endif
 end subroutine prepare_source_spatial_function_DG
+
+! ------------------------------------------------------------ !
+! prepare_stretching                                           !
+! ------------------------------------------------------------ !
+! TODO: Description.
+
+subroutine prepare_stretching()
+  
+  use specfem_par, only: coord, ibool_before_perio,&
+                         myrank, nglob,nspec,&
+                         ispec_is_acoustic_DG,&
+                         ADD_PERIODIC_CONDITIONS, &
+                         ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM, &
+                         ABC_STRETCH_LBUF, &
+                         stretching_ya,any_elastic
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+
+  implicit none
+  
+  ! Local
+  integer iglob_unique,ispec,i,j
+  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: xmin_local, xmax_local, zmin_local, zmax_local, &
+                            xmin, xmax, zmin, zmax
+  real(kind=CUSTOM_REAL) :: x,z
+  real(kind=CUSTOM_REAL) :: r_l ! Relative buffer coordinate (which is equal to 0 at beginning of buffer, and to 1 at the end).
+  
+  ! Error checking.
+  if(myrank==0 .and. ADD_PERIODIC_CONDITIONS .and. (ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT)) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot use (horizontal) both *"
+    write(*,*) "* periodic boundary conditions *"
+    write(*,*) "* and stretching BC on one or  *"
+    write(*,*) "* both lateral boundaries.     *"
+    write(*,*) "********************************"
+    stop
+  endif
+  ! TODO: Check that the user did not ask for a bottom buffer if they have an elastic medium under the acoustic medium.
+  ! Quick hack, assuming the elastic media is always under the acoustic media.
+  if(myrank==0 .and. any_elastic .and. ABC_STRETCH_BOTTOM) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot use stretching on the *"
+    write(*,*) "* bottom boundary if there is  *"
+    write(*,*) "* an elastic media.            *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  allocate(stretching_ya(2,nglob)) ! Two-dimensionnal stretching. Change it to 3 for 3D.
+  stretching_ya(:, :) = ONE ! By default, mesh is not stretched.
+  
+  ! Determine mesh's min/max coordinates and collect them.
+  xmin_local = minval(coord(1,:))
+  xmax_local = maxval(coord(1,:))
+  zmin_local = minval(coord(2,:))
+  zmax_local = maxval(coord(2,:))
+  call min_all_all_dp(xmin_local, xmin)
+  call max_all_all_dp(xmax_local, xmax)
+  call min_all_all_dp(zmin_local, zmin)
+  call max_all_all_dp(zmax_local, zmax)
+  do ispec = 1, nspec
+    if(ispec_is_acoustic_DG(ispec)) then
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          iglob_unique = ibool_before_perio(i, j, ispec)
+          x=coord(1, iglob_unique)
+          z=coord(2, iglob_unique)
+          if(     (ABC_STRETCH_LEFT   .and. x < xmin+ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
+             .or. (ABC_STRETCH_RIGHT  .and. x > xmax-ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+             .or. (ABC_STRETCH_BOTTOM .and. z < zmin+ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
+             .or. (ABC_STRETCH_TOP    .and. z > zmax-ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+            
+            if(ABC_STRETCH_LEFT) then
+              r_l = ONE - (coord(1, iglob_unique) - xmin)/ABC_STRETCH_LBUF
+              if(r_l > ZERO .AND. r_l <= ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
+            endif
+            if(ABC_STRETCH_RIGHT) then
+              r_l = (coord(1, iglob_unique) - xmax)/ABC_STRETCH_LBUF + ONE
+              if(r_l > ZERO .AND. r_l <= ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
+            endif
+            if(ABC_STRETCH_BOTTOM) then
+              r_l = ONE - (coord(2, iglob_unique) - zmin)/ABC_STRETCH_LBUF
+              if(r_l > ZERO .AND. r_l <= ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
+            endif
+            if(ABC_STRETCH_TOP) then
+              r_l = (coord(2, iglob_unique) - zmax)/ABC_STRETCH_LBUF + ONE
+              if(r_l > ZERO .AND. r_l <= ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
+            endif
+          endif
+        enddo
+      enddo
+    endif
+  enddo
+  call synchronize_all()
+end subroutine prepare_stretching
+
+! ------------------------------------------------------------ !
+! stretching_function                                          !
+! ------------------------------------------------------------ !
+! Implementation of ya(x). For now, no distinction has to be made in each direction.
+! New expressions can be implemented here. Some compatibility conditions should be respected. The function has be 1 when r_l==0. The derivative of the function should be 0 when r_l==0 and when r_l==1.
+! r_l is the relative coordinate in the buffer, going from 0 at its beginning to 1 at its end.
+! ya contains the computed value.
+
+subroutine stretching_function(r_l, ya)
+  use constants,only: CUSTOM_REAL
+  
+  implicit none
+  
+  ! Input/output.
+  real(kind=CUSTOM_REAL), intent(in):: r_l
+  real(kind=CUSTOM_REAL), intent(out):: ya
+  
+  ! Local
+  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: eps_l, p, q ! Arina's stretching.
+  real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
+  real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
+  
+  ! Coefficients for the stretching function.
+  ! Arina's stretching
+  eps_l = 1.0d-4 ! 1.d-4 in Arina's paper.
+  p = 3.25d0
+  q = 1.75d0
+  ! Arina's damping coefficients.
+  C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
+  C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
+  ! Richards' damping coefficients.
+  beta = 2.0d0 ! 4 in Richards' paper.
+  sigma_max = -1.0d0
+  
+  !coef_stretch_z = 1. + r_l**2.! Stretching function.
+  !coef_stretch_z = 1. + 5.*r_l**2.*(r_l-1.)**2.! Stretching function.
+  !coef_stretch_z = 1. + 1. - (1. - eps_l) * (1. - r_l**p)**q! Stretching function.
+  !coef_stretch_z = 1. - 1.*r_l ! Stretching function.
+  ! Arina's stretching.
+  ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.
+  !stretching_ya(2,iglob_unique) = r_l
+  ! Arina's damping.
+  !coef_stretch_z = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
+  ! Richards' damping.
+  !coef_stretch_z = 1.0d0 + sigma_max * r_l ** beta
+  !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
+end subroutine stretching_function
 
 ! ------------------------------------------------------------ !
 ! prepare_timerun_stf                                          !
