@@ -909,10 +909,21 @@ subroutine setup_mesh_surface_DG_coupling()
   zmax_local = maxval(coord(2,:))
 
   ! collect min/max
-  call min_all_all_dp(xmin_local, xmin)
-  call max_all_all_dp(xmax_local, xmax)
-  call min_all_all_dp(zmin_local, zmin)
-  call max_all_all_dp(zmax_local, zmax)
+  !call min_all_all_dp(xmin_local, xmin)
+  !call max_all_all_dp(xmax_local, xmax)
+  !call min_all_all_dp(zmin_local, zmin)
+  !call max_all_all_dp(zmax_local, zmax)
+
+  ! collect min/max and store into global variable
+  call min_all_all_dp(xmin_local, mesh_xmin)
+  call max_all_all_dp(xmax_local, mesh_xmax)
+  call min_all_all_dp(zmin_local, mesh_zmin)
+  call max_all_all_dp(zmax_local, mesh_zmax)
+  ! Quick and least intrusive hack since only xmin, xmax, zmin, zmax variables are used after this point. Ideally, replace xmin by mesh_xmin, etc.
+  xmin=mesh_xmin
+  xmax=mesh_xmax
+  zmin=mesh_zmin
+  zmax=mesh_zmax
 
   ! user output
   if (myrank == 0) then

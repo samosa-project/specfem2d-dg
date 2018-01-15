@@ -55,8 +55,11 @@
                          rhovx_init, rhovz_init, E_init, rho_init, &
                          CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
-                         ABC_STRETCH, stretching_ya &! Stretching-based absorbing conditions.
-                         , coord, ibool_before_perio!,cnu
+                         ABC_STRETCH, stretching_ya, &! Stretching-based absorbing conditions.
+                         ABC_STRETCH_LBUF,&
+                         ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
+                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
+                         coord, ibool_before_perio!,cnu
                          
   implicit none
 
@@ -75,7 +78,7 @@
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
         temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
         temp_E_1, temp_E_2, &
-        !temp_rho_gravi, &
+        temp_rho_gravi, &
         temp_rhovx_gravi, temp_rhovz_gravi, temp_E_gravi!, temp_e1
 
   ! Jacobian matrix and determinant
@@ -132,6 +135,7 @@
   real(kind=CUSTOM_REAL) :: ya_x_l_prime, ya_z_l_prime
   real(kind=CUSTOM_REAL) :: viscous_tens_11, viscous_tens_12, viscous_tens_22
   real(kind=CUSTOM_REAL) :: nx_unit, nz_unit
+  real(kind=CUSTOM_REAL) :: x,z
   
   ! For more convinient CONSTRAIN_HYDROSTATIC switches.
   ! TODO: Replace the CONSTRAIN_HYDROSTATIC switches using this variable.
@@ -215,7 +219,7 @@
             ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
             
-            if(.false. .and. .not. ya_z_l==stretching_ya(2, ibool_before_perio(i, j, ispec))&
+            if(.false. .and. .not. ya_z_l==stretching_ya(2, ibool_before_perio(i, j, ispec))& ! DEBUG
                .and. it<5 .and. i==3 .and. j==3 .and. ispec>1550 .and. ispec<1560) then
               write(*,*) ya_z_l, stretching_ya(2, ibool_before_perio(i, j, ispec)), ispec, i, j, iglob
             endif
@@ -340,6 +344,41 @@
           ! By constraining hydrostaticity, remark that an additional term appears ($p_0 \nabla\cdot v'$). Add it here despite the fact that it has nothing to do with gravity.
           if(CONSTRAIN_HYDROSTATIC) then
             temp_E_gravi(i, j) = temp_E_gravi(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)*jacobianl
+          endif
+          
+          ! TEST ARTIFICIAL ADVECTION
+          if(.false.) then
+            x=coord(1, ibool_before_perio(i, j, ispec))
+            z=coord(2, ibool_before_perio(i, j, ispec))
+            if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
+               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+               .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
+               .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+              !temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rho_DG(iglob)
+              !temp_rhovx_gravi(i, j) = temp_rhovx_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovx_DG(iglob)
+              !temp_rhovz_gravi(i, j) = temp_rhovz_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovz_DG(iglob)
+              !temp_E_gravi(i, j) = temp_E_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*E_DG(iglob)
+              temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + 10.*rho_DG(iglob)
+              temp_rhovx_gravi(i, j) = temp_rhovx_gravi(i, j) + 10.*rhovx_DG(iglob)
+              temp_rhovz_gravi(i, j) = temp_rhovz_gravi(i, j) + 10.*rhovz_DG(iglob)
+              temp_E_gravi(i, j) = temp_E_gravi(i, j) + 10.*E_DG(iglob)
+            endif
+          endif
+          ! TEST PRIORI DAMPING
+          if(.false.) then
+            x=coord(1, ibool_before_perio(i, j, ispec))
+            z=coord(2, ibool_before_perio(i, j, ispec))
+            if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
+               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+               .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
+               .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+              !call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
+              !        veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
+              !temp_rho_gravi(i, j) = temp_rho_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*1.*( rho_DG(iglob) - rho_DG_P)
+              !temp_rhovx_gravi(i, j) = temp_rhovx_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*1.*( rhovx_DG(iglob) - rhovx_DG_P)
+              !temp_rhovz_gravi(i, j) = temp_rhovz_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*1.*( rhovz_DG(iglob) - rhovz_DG_P)
+              !temp_E_gravi(i, j) = temp_E_gravi(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*1.*( E_DG(iglob) - E_DG_P)
+            endif
           endif
           
           ! When using a virtual stretching method, more terms appear ($\Sigma\cdot(\nabla\cdot\Ya)$). Add them here despite the fact that they have nothing to do with gravity.

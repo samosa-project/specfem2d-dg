@@ -71,7 +71,12 @@ module specfem_par
 
   ! external mesh files
   logical :: read_external_mesh
-
+  
+  !---------------------------------------------------------------------
+  ! Mesh.
+  !---------------------------------------------------------------------
+  real(kind=CUSTOM_REAL) :: mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
+  
   !---------------------------------------------------------------------
   ! DG related quantities.
   !---------------------------------------------------------------------
@@ -437,6 +442,8 @@ module specfem_par
   ! Lagrange interpolators at sources
   double precision, dimension(:), allocatable :: hxis,hgammas,hpxis,hpgammas
   double precision, dimension(:,:), allocatable :: hxis_store,hgammas_store
+
+  
 
   !---------------------------------------------------------------------
   ! AXISYM parameters

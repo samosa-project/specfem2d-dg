@@ -110,7 +110,6 @@
     do i_stage = 1, stage_time_scheme
       ! Updates wavefields using Newmark time scheme.
       call update_displacement_scheme()
-    
       ! Acoustic domains.
       if (ACOUSTIC_SIMULATION) then
         if (.not. GPU_MODE) then

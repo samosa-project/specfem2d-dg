@@ -194,7 +194,7 @@
   ! Forcing
   real(kind=CUSTOM_REAL) :: to, perio, lambdo, xo
   
-  real(kind=CUSTOM_REAL) :: mu_visco, eta_visco
+  !real(kind=CUSTOM_REAL) :: mu_visco, eta_visco
   ! Hydrostatic solution
   !real(kind=CUSTOM_REAL) :: RR, p0, rho0
   ! Density current
@@ -257,10 +257,10 @@
       !cp = 29 !7!1010!7/2 ! DEBUG
       !cnu = 20.8 !5!718!5/2 ! DEBUG
       gammaext_DG(ibool_DG(i, j, ispec)) = cp/cnu!1.33076167! 1.4!gamma_euler
-      mu_visco  = dynamic_viscosity_cte_DG!1.092656e-05
-      eta_visco = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG!2.67e-05
-      muext(i, j, ispec) = mu_visco
-      etaext(i, j, ispec) = eta_visco
+      !mu_visco  = dynamic_viscosity_cte_DG!1.092656e-05
+      !eta_visco = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG!2.67e-05
+      muext(i, j, ispec) = dynamic_viscosity_cte_DG!1.092656e-05
+      etaext(i, j, ispec) = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG!2.67e-05
       !kappa_DG(i, j, ispec) = 0.0
       kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG!0.!0.05!4.79046750E-04
       tau_epsilon(i, j, ispec) = tau_eps_cte_DG!1 !1.5!2.!1.5
@@ -294,6 +294,10 @@
     veloc_x_DG_P = wind ! Read horizontal wind, from specfem2_par. TODO: why not windxext(i, j, ispec) as above?
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
   endif
+  
+  !call change_visco(i, j, ispec,&
+  !                  real(coord(1, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL),&
+  !                  real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
   
   ! --------------------------- !
   ! Rayleigh-Taylor instability !
