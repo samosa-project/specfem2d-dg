@@ -295,9 +295,12 @@
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
   endif
   
-  !call change_visco(i, j, ispec,&
-  !                  real(coord(1, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL),&
-  !                  real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
+  ! TEST VISCOSITY
+  if(.false.) then
+    call change_visco(i, j, ispec,&
+                      real(coord(1, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL),&
+                      real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
+  endif
   
   ! --------------------------- !
   ! Rayleigh-Taylor instability !

@@ -82,16 +82,29 @@ module specfem_par
   !---------------------------------------------------------------------
   logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH ! Self-explanatory.
   real(kind=CUSTOM_REAL) :: ABC_STRETCH_LBUF ! Length of the stretching buffer.
-  
   integer :: iy_image_color_bottom_buffer, iy_image_color_top_buffer, ix_image_color_left_buffer, ix_image_color_right_buffer ! Location of lines marking the beginnings of the buffers.
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
+    stretching_ya ! Array of stretching values (2 or 3 dimensions).
+  
+  !integer(4), dimension (:), allocatable :: stretching_buffer ! Stretching buffers codes, binary.
+  ! Least significant bit (LSB, ---*) is for top buffer, 2nd LSB (--*-) for left buffer, 3rd LSB (-*--) for bottom buffer, 4th LSB (*---) for right buffer. Examples:
+  !  0:=0000 for non-stretched.
+  !  1:=0001 for top buffer only.
+  !  2:=0010 for left buffer only.
+  !  3:=0011 for top-left buffer.
+  !  4:=0100 for bottom buffer only.
+  !  5:=0101 for bottom-left buffer.
+  !  6:=0110 should not happen (top AND bottom buffer).
+  !  7:=0111 should not happen (top-left AND bottom-left buffer).
+  !  8:=1000 for right buffer only.
+  !  9:=1001 for top-right buffer.
+  ! 10:=1010 for bottom-right buffer.
+  ! 11-15 should not happen (all cases covered).
   
   logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
   real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
   
   logical :: REMOVE_STF_INITIAL_DISCONTINUITY
-  
-  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
-    stretching_ya ! Array of stretching values (2 or 3 dimensions).
   
   
   ! Switches (variables' names are self-explanatory).

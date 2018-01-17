@@ -189,7 +189,7 @@ subsamp_seismos                 = 1
 # so far, this option can only be used if all the receivers are in acoustic elements
 USE_TRICK_FOR_BETTER_PRESSURE   = .false.
 
-# Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway.
+# Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway. A good rule of thumb would be NSTEP = (f0 * dt * Np)^(-1) in order to have Np points per period, where f0 is the fundamental frequency of the source time function.
 NSTEP_BETWEEN_OUTPUT_SEISMOS    = 25
 
 # Compute the field int_0^t v^2 dt for a set of GLL points and write it to file. Use

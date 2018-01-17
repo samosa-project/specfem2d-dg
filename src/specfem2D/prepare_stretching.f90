@@ -37,21 +37,21 @@
 ! TODO: Description.
 
 subroutine prepare_stretching()
-  use specfem_par, only: coord, ibool_before_perio,&
+  use specfem_par, only: coord, ibool_before_perio,&!ibool_DG,&
                          myrank, nglob,nspec,&
                          ispec_is_acoustic_DG,&
                          ADD_PERIODIC_CONDITIONS, &
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM, &
                          ABC_STRETCH_LBUF, &
                          stretching_ya,any_elastic,&
-                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
+                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax!,stretching_buffer
   
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
   implicit none
   
   ! Local
-  integer iglob_unique,ispec,i,j
+  integer iglob_unique,ispec,i,j!,iglob
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   !real(kind=CUSTOM_REAL) :: mesh_xmin_local, mesh_xmax_local, mesh_zmin_local, mesh_zmax_local, &
@@ -87,12 +87,15 @@ subroutine prepare_stretching()
   endif
   
   allocate(stretching_ya(2,nglob)) ! Two-dimensionnal stretching. Change it to 3 for 3D.
+  !allocate(stretching_buffer(nglob)) ! Stretching buffers code: -1 outside buffers, 1 in top buffer, 2 in left buffer, 3 in bottom buffer, 4 in right buffer.
   stretching_ya(:, :) = ONE ! By default, mesh is not stretched.
+  !stretching_buffer(:) = 0 ! By default, mesh is not stretched.
   
   do ispec = 1, nspec
     if(ispec_is_acoustic_DG(ispec)) then
       do j = 1, NGLLZ
         do i = 1, NGLLX
+          !iglob = ibool_DG(i, j, ispec)
           iglob_unique = ibool_before_perio(i, j, ispec)
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
@@ -101,21 +104,25 @@ subroutine prepare_stretching()
              .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
              .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
             
+            if(ABC_STRETCH_TOP) then
+              r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
+              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
+              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 0) ! Set 1st LSB to 1.
+            endif
             if(ABC_STRETCH_LEFT) then
               r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LBUF
-              call stretching_function(r_l, stretching_ya(1, iglob_unique))
-            endif
-            if(ABC_STRETCH_RIGHT) then
-              r_l = (x - mesh_xmax)/ABC_STRETCH_LBUF + ONE
-              call stretching_function(r_l, stretching_ya(1, iglob_unique))
+              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
+              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 1) ! Set 2nd LSB to 1.
             endif
             if(ABC_STRETCH_BOTTOM) then
               r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_LBUF
-              call stretching_function(r_l, stretching_ya(2, iglob_unique))
+              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
+              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 2) ! Set 3rd LSB to 1.
             endif
-            if(ABC_STRETCH_TOP) then
-              r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
-              call stretching_function(r_l, stretching_ya(2, iglob_unique))
+            if(ABC_STRETCH_RIGHT) then
+              r_l = (x - mesh_xmax)/ABC_STRETCH_LBUF + ONE
+              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
+              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 3) ! Set 4th LSB to 1.
             endif
           endif ! Endif.
         enddo ! Enddo on i.
@@ -145,33 +152,15 @@ subroutine stretching_function(r_l, ya)
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: eps_l, p, q ! Arina's stretching.
-  real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
-  real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  eps_l = 1.0d-4 ! 1.d-4 in Arina's paper.
+  eps_l = 1.0d-4!0.2!0.3!1.0d-4 ! 1.d-4 in Arina's paper.
   p = 3.25d0
-  q = 1.75d0
-  ! Arina's damping coefficients.
-  C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
-  C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
-  ! Richards' damping coefficients.
-  beta = 2.0d0 ! 4 in Richards' paper.
-  sigma_max = -1.0d0
+  q = 1.75!8.!5.!1.75d0
   
-  !coef_stretch_z = 1. + r_l**2.! Stretching function.
-  !coef_stretch_z = 1. + 5.*r_l**2.*(r_l-1.)**2.! Stretching function.
-  !coef_stretch_z = 1. + 1. - (1. - eps_l) * (1. - r_l**p)**q! Stretching function.
-  !coef_stretch_z = 1. - 1.*r_l ! Stretching function.
   ! Arina's stretching.
   ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.
-  !stretching_ya(2,iglob_unique) = r_l
-  ! Arina's damping.
-  !coef_stretch_z = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
-  ! Richards' damping.
-  !coef_stretch_z = 1.0d0 + sigma_max * r_l ** beta
-  !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
 end subroutine stretching_function
 
 ! ------------------------------------------------------------ !
@@ -202,7 +191,7 @@ subroutine change_visco(i, j, ispec, x, z)
   ! TEST VISCO
   if(ABC_STRETCH_TOP) then
     r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
-    if(r_l>ZERO .and. r_l<ONE)then
+    if(r_l>ZERO .and. r_l<=ONE)then
       muext(i, j, ispec) = 1.25d-5+100.*r_l**2.
       etaext(i, j, ispec) = (4./3.)*muext(i, j, ispec)
       !write(*,*) z, muext(i,j,ispec)
@@ -261,19 +250,19 @@ subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
             ! Load damping value.
             if(ABC_STRETCH_LEFT) then
               r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LBUF
-              call damp_function(r_l, sigma)
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             if(ABC_STRETCH_RIGHT) then
               r_l = (x - mesh_xmax)/ABC_STRETCH_LBUF + ONE
-              call damp_function(r_l, sigma)
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             if(ABC_STRETCH_BOTTOM) then
               r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_LBUF
-              call damp_function(r_l, sigma)
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             if(ABC_STRETCH_TOP) then
               r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
-              call damp_function(r_l, sigma)
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             ! Load quiet state.
             call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
@@ -298,32 +287,20 @@ subroutine damp_function(r_l, sigma)
   real(kind=CUSTOM_REAL), intent(out):: sigma
   ! Local
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: eps_l, p, q ! Arina's stretching.
   real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
   real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
   
   ! Coefficients for the stretching function.
-  ! Arina's stretching
-  eps_l = 1.0d-4 ! 1.d-4 in Arina's paper.
-  p = 3.25d0
-  q = 1.75d0
   ! Arina's damping coefficients.
   C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
   C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
   ! Richards' damping coefficients.
-  beta = 2.0d0 ! 4 in Richards' paper.
+  beta = 4.!3.0d0 ! 4 in Richards' paper.
   sigma_max = -1.0d0
   
-  !coef_stretch_z = 1. + r_l**2.! Stretching function.
-  !coef_stretch_z = 1. + 5.*r_l**2.*(r_l-1.)**2.! Stretching function.
-  !coef_stretch_z = 1. + 1. - (1. - eps_l) * (1. - r_l**p)**q! Stretching function.
-  !coef_stretch_z = 1. - 1.*r_l ! Stretching function.
-  ! Arina's stretching.
-  !ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.
-  !stretching_ya(2,iglob_unique) = r_l
   ! Arina's damping.
-  sigma = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
+  !sigma = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
   ! Richards' damping.
-  !coef_stretch_z = 1.0d0 + sigma_max * r_l ** beta
+  sigma = 1.0d0 + sigma_max * r_l ** beta
   !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
 end subroutine damp_function

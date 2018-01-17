@@ -146,8 +146,8 @@ subroutine prepare_source_spatial_function_DG
               if(.false.) then
                 !distsqrd = (coord(2, iglob_unique) - z_source(i_source))**2. ! Horizontal plane wave.
                 !source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.5)
-                distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(20.)*coord(1, iglob_unique))**2. ! Oblique plane wave.
-                source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.5)
+                distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(3.1415/20.)*coord(1, iglob_unique))**2. ! Oblique plane wave.
+                source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.1)
               endif
               
               if(SPREAD_SSF_SAVE) then

@@ -205,8 +205,8 @@
     rho_DG   = rho_DG + rk4b(i_stage)*resu_rho
     rhovx_DG = rhovx_DG + rk4b(i_stage)*resu_rhovx
     rhovz_DG = rhovz_DG + rk4b(i_stage)*resu_rhovz
-    E_DG     = E_DG + rk4b(i_stage)*resu_E 
-    e1_DG    = e1_DG + rk4b(i_stage)*resu_e1 
+    E_DG     = E_DG + rk4b(i_stage)*resu_E
+    e1_DG    = e1_DG + rk4b(i_stage)*resu_e1
     
     ! If we want to compute kernels we save regularly.
     if(.false.) then
@@ -282,10 +282,7 @@
     endif
   endif
   
-  ! --------------------------- !
-  ! Damp solution in a buffer   !
-  ! zone.                       !
-  ! --------------------------- !
+  ! TEST POSTERIORI DAMPING
   !call damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See 'prepare_stretching.f90'.
   
   end subroutine compute_forces_acoustic_DG_main
