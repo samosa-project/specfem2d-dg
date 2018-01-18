@@ -1056,14 +1056,14 @@ subroutine setup_mesh_surface_DG_coupling()
       write(IMAIN,*) 'start detecting points for periodic boundary conditions '// &
                      '(the current algorithm can be slow and could be improved)...'
     endif
-
+    
     counter = 0
     do iglob = 1,NGLOB-1
       !find = .false.
       do iglob2 = iglob + 1,NGLOB
         ! check if the two points have the exact same Z coordinate
         if (abs(coord(2,iglob2) - coord(2,iglob)) < xtol) then
-         ! find = .true.
+          ! find = .true.
           ! if so, check if their X coordinate differs by exactly the periodicity distance
           if (abs(abs(coord(1,iglob2) - coord(1,iglob)) - PERIODIC_HORIZ_DIST) < xtol) then
             ! if so, they are the same point, thus replace the highest value of ibool with the lowest
@@ -1084,11 +1084,11 @@ subroutine setup_mesh_surface_DG_coupling()
       enddo
      ! if(find) exit
     enddo
-
+    
     if (myrank == 0) write(IMAIN,*) 'done detecting points for periodic boundary conditions.'
-
+    
     if (counter > 0) write(IMAIN,*) 'implemented periodic conditions on ',counter,' grid points on proc ',myrank
-
+    
   endif ! of if (ADD_PERIODIC_CONDITIONS)
   
   end subroutine setup_mesh_periodic_edges

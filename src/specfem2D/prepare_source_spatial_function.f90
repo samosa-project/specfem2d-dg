@@ -143,11 +143,16 @@ subroutine prepare_source_spatial_function_DG
               endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
               
               ! Plane waves tests.
-              if(.false.) then
+              if(.true.) then
                 !distsqrd = (coord(2, iglob_unique) - z_source(i_source))**2. ! Horizontal plane wave.
                 !source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.5)
-                distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(3.1415/20.)*coord(1, iglob_unique))**2. ! Oblique plane wave.
-                source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.1)
+                distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(3.1415*(0.25))*(coord(1, iglob_unique)-0.))**2. ! Oblique plane wave.
+                !distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(0.)*(coord(1, iglob_unique)-0.))**2. ! Horizontal plane wave.
+                if(abs(coord(2, iglob_unique))<15. .and. abs(coord(1, iglob_unique))<35.) then
+                  source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.1)
+                else
+                  source_spatial_function_DG(i_source, iglob_unique) = 0.
+                endif
               endif
               
               if(SPREAD_SSF_SAVE) then

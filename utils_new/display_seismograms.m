@@ -34,7 +34,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_KappaON/');
 
 % Mars Gravity Wave.
-fig_title = strcat('Mars Gravity Wave Simulation');
+% fig_title = strcat('Mars Gravity Wave Simulation');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
@@ -48,7 +48,7 @@ fig_title = strcat('Mars Gravity Wave Simulation');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_552471_atmo_only/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_552455_factor0p1/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_557219_long/');
-root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_558183_Gderiv/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_558183_Gderiv/');
 
 % Seismic Hammer.
 % fig_title = strcat('Seismic Hammer Simulation (New Model)');
@@ -60,9 +60,9 @@ root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; o
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Tests.
-% fig_title = 'test';
+fig_title = 'test';
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 
 % Quantity to display:

@@ -52,7 +52,9 @@
                          rmemory_sfb_potential_ddot_acoustic_LDDRK,i_stage,stage_time_scheme, &
                          ! MODIF DG
                          ibool_DG, E_DG, rho_DG, rhovx_DG, rhovz_DG, p_DG_init, gammaext_DG, i_stage, &
-                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD
+                         REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD,&
+                         ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
+                         ABC_STRETCH_RIGHT, ABC_STRETCH_LBUF, mesh_xmin, mesh_xmax
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
@@ -70,6 +72,8 @@
                       A0,A1,A2,A3,A4,bb_1,coef0_1,coef1_1,coef2_1,bb_2,coef0_2,coef1_2,coef2_2
 
   real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
+  
+  real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
 
   ! loop on all the coupling edges
   do inum = 1,num_fluid_solid_edges
@@ -228,49 +232,36 @@
 
       endif
       
+      
+      
       if(USE_DISCONTINUOUS_METHOD .and. .not. REMOVE_DG_FLUID_TO_SOLID) then
-        ! If DG is used for the acoustic part, and the influence of the fluid on the solid is not removed.
-        ! Get fluid variables (from DG formulation).
-        iglob_DG = ibool_DG(i,j,ispec_acoustic)
-        veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
-        veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
-        pressure = (gammaext_DG(iglob_DG) - ONE)*( E_DG(iglob_DG) &
-          - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
-        pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
-        ! Set elastic acceleration.
-        accel_elastic(1,iglob) = accel_elastic(1,iglob) &
-          + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
-                    + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
-        accel_elastic(2,iglob) = accel_elastic(2,iglob) &
-          + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
-                    + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )!- weight*nz*pressure
-        ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
-        ! Version 2.
-        !if(.false.) then
-        !accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
-        !                         - weight*(  nx*(  0.5*(pressure-elastic_tensor(ii2,jj2,ispec_elastic,1)) &
-        !                                         + 0.5*rho_DG(iglob_DG)*veloc_x**2) &
-        !                                   + nz*0.5*rho_DG(iglob_DG)*veloc_x*veloc_z ) &
-        !                         + weight*0.5*elastic_tensor(ii2,jj2,ispec_elastic,2)*nz
-        !accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
-        !                         - weight*(  nz*(  0.5*(pressure-elastic_tensor(ii2,jj2,ispec_elastic,4)) &
-        !                                         + 0.5*rho_DG(iglob_DG)*veloc_z**2) &
-        !                                   + nx*0.5*rho_DG(iglob_DG)*veloc_x*veloc_z ) &
-        !                         + weight*0.5*elastic_tensor(ii2,jj2,ispec_elastic,3)*nx
-        !endif
-        ! Version 2, better format.
-        !if(.false.) then
-        !accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
-        !                         - 0.5*weight*(  nx*(  pressure + rho_DG(iglob_DG)*veloc_x**2 &
-        !                                             - elastic_tensor(ii2,jj2,ispec_elastic,1)) &
-        !                                       + nz*(  rho_DG(iglob_DG)*veloc_x*veloc_z &
-        !                                             - elastic_tensor(ii2,jj2,ispec_elastic,2)))
-        !accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
-        !                         - 0.5*weight*(  nx*(  rho_DG(iglob_DG)*veloc_x*veloc_z &
-        !                                             - elastic_tensor(ii2,jj2,ispec_elastic,3)) &
-        !                                       + nz*(  pressure + rho_DG(iglob_DG)*veloc_z**2 &
-        !                                             - elastic_tensor(ii2,jj2,ispec_elastic,4)))
-        !endif
+        ! DEACTIVATE COUPLING IN BUFFER ZONES.
+        x = coord(1, ibool_before_perio(i, j, ispec_acoustic))
+        if(ABC_STRETCH .and. &
+           (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
+             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+           ) &
+          ) then
+          ! Do nothing. This completely deactivates coupling in the horizontal buffers.
+          ! TODO: A better method is to be preferred.
+        else
+          ! If DG is used for the acoustic part, and the influence of the fluid on the solid is not removed.
+          ! Get fluid variables (from DG formulation).
+          iglob_DG = ibool_DG(i,j,ispec_acoustic)
+          veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
+          veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
+          pressure = (gammaext_DG(iglob_DG) - ONE)*( E_DG(iglob_DG) &
+            - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
+          pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
+          ! Set elastic acceleration.
+          accel_elastic(1,iglob) = accel_elastic(1,iglob) &
+            + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
+                      + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
+          accel_elastic(2,iglob) = accel_elastic(2,iglob) &
+            + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
+                      + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )!- weight*nz*pressure
+          ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
+        endif ! Endif on ABC_STRETCH.
       else
         ! Classic SPECFEM coupling.
         accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*pressure

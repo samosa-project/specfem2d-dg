@@ -425,7 +425,9 @@
                          buffer_DG_gamma_P, coord,  &
                          rho_init, rhovx_init, rhovz_init, E_init, &
                          potential_dot_dot_acoustic, &
-                         veloc_vector_acoustic_DG_coupling, MPI_transfer_iface
+                         veloc_vector_acoustic_DG_coupling, MPI_transfer_iface,&
+                         ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
+                         ABC_STRETCH_RIGHT, ABC_STRETCH_LBUF, mesh_xmin, mesh_xmax
                          
   implicit none
   
@@ -459,6 +461,8 @@
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
+  
+  real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
   
   ! Characteristic based BC
   real(kind=CUSTOM_REAL) :: p_b, rho_b, s_b, rho_inf, v_b_x, v_b_z, c_b, un_b, &
@@ -620,35 +624,46 @@
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
-      rho_DG_P = rho_DG_iM 
+      rho_DG_P = rho_DG_iM
+      
+      ! DEACTIVATE COUPLING IN BUFFER ZONES.
+      x = coord(1, ibool_before_perio(i, j, ispec))
+      if(ABC_STRETCH .and. &
+         (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
+           .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+         ) &
+        ) then
+        ! Do nothing. veloc_x_DG_P stays veloc_x_DG_P and veloc_z_DG_P stays veloc_z_DG_P. This completely deactivates coupling in the horizontal buffers.
+        ! TODO: A better method is to be preferred.
+      else
+        ! Elastic velocities
+        veloc_x = veloc_elastic(1, iglob)
+        veloc_z = veloc_elastic(2, iglob)
 
-      ! Elastic velocities
-      veloc_x = veloc_elastic(1, iglob)
-      veloc_z = veloc_elastic(2, iglob)
+        ! Tangential vector
+        ! Since only bottom topography nz > 0
+        tx = -nz
+        tz =  nx
+        
+        ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
+        normal_v     = (veloc_x*nx + veloc_z*nz)
+        tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
+        !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) 
+        !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz
+        !tangential_v    = (veloc_x*tx + veloc_z*tz) 
 
-      ! Tangential vector
-      ! Since only bottom topography nz > 0
-      tx = -nz
-      tz =  nx
+        ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
+        trans_boundary(1, 1) =  tz
+        trans_boundary(1, 2) = -nz
+        trans_boundary(2, 1) = -tx
+        trans_boundary(2, 2) =  nx
+        trans_boundary = trans_boundary/(nx * tz - tx * nz)
 
-      ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-      normal_v     = (veloc_x*nx + veloc_z*nz)
-      tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
-      !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) 
-      !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz
-      !tangential_v    = (veloc_x*tx + veloc_z*tz) 
-
-      ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
-      trans_boundary(1, 1) =  tz
-      trans_boundary(1, 2) = -nz
-      trans_boundary(2, 1) = -tx
-      trans_boundary(2, 2) =  nx
-      trans_boundary = trans_boundary/(nx * tz - tx * nz)
-
-      ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-      veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-      veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
-
+        ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
+        veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+        veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      endif
+      
       ! No stress continuity.
       p_DG_P = p_DG_iM
 
@@ -883,7 +898,7 @@
     rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
 
     T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
-  
+    
   else
     ! --------------------------- !
     ! neighbor(3) != -1,          !

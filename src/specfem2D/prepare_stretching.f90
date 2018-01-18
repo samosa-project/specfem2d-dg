@@ -155,13 +155,40 @@ subroutine stretching_function(r_l, ya)
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  eps_l = 1.0d-4!0.2!0.3!1.0d-4 ! 1.d-4 in Arina's paper.
+  eps_l = 0.2!1.0d-4!0.2!0.3!1.0d-4 ! 1.d-4 in Arina's paper.
   p = 3.25d0
-  q = 1.75!8.!5.!1.75d0
+  q = 6.!1.75!1.75!8.!5.!1.75d0
   
   ! Arina's stretching.
   ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.
+  !ya=ONE
 end subroutine stretching_function
+
+subroutine damp_function(r_l, sigma)
+  use constants,only: CUSTOM_REAL
+  implicit none  
+  ! Input/output.
+  real(kind=CUSTOM_REAL), intent(in):: r_l
+  real(kind=CUSTOM_REAL), intent(out):: sigma
+  ! Local
+  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
+  real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
+  
+  ! Coefficients for the stretching function.
+  ! Arina's damping coefficients.
+  C_1 = 0.08!0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
+  C_2 = 13.!6.!10.!13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
+  ! Richards' damping coefficients.
+  beta = 4.!3.0d0 ! 4 in Richards' paper.
+  sigma_max = -1.0d0
+  
+  ! Arina's damping.
+  sigma = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
+  ! Richards' damping.
+  !sigma = 1.0d0 + sigma_max * r_l ** beta
+  !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
+end subroutine damp_function
 
 ! ------------------------------------------------------------ !
 ! change_visco                                                 !
@@ -192,7 +219,7 @@ subroutine change_visco(i, j, ispec, x, z)
   if(ABC_STRETCH_TOP) then
     r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
     if(r_l>ZERO .and. r_l<=ONE)then
-      muext(i, j, ispec) = 1.25d-5+100.*r_l**2.
+      muext(i, j, ispec) = 1.25d-5*(1.+1000.*r_l**2.)
       etaext(i, j, ispec) = (4./3.)*muext(i, j, ispec)
       !write(*,*) z, muext(i,j,ispec)
     endif
@@ -278,29 +305,3 @@ subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
     endif
   enddo
 end subroutine damp_solution_DG
-
-subroutine damp_function(r_l, sigma)
-  use constants,only: CUSTOM_REAL
-  implicit none  
-  ! Input/output.
-  real(kind=CUSTOM_REAL), intent(in):: r_l
-  real(kind=CUSTOM_REAL), intent(out):: sigma
-  ! Local
-  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: C_1, C_2 ! Arina's damping.
-  real(kind=CUSTOM_REAL) :: beta, sigma_max ! Richards' damping.
-  
-  ! Coefficients for the stretching function.
-  ! Arina's damping coefficients.
-  C_1 = 0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
-  C_2 = 13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
-  ! Richards' damping coefficients.
-  beta = 4.!3.0d0 ! 4 in Richards' paper.
-  sigma_max = -1.0d0
-  
-  ! Arina's damping.
-  !sigma = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
-  ! Richards' damping.
-  sigma = 1.0d0 + sigma_max * r_l ** beta
-  !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
-end subroutine damp_function
