@@ -72,13 +72,54 @@
   ! compute the source time function and stores it in a text file
   call prepare_timerun_stf()
   
+  if(REMOVE_STF_INITIAL_DISCONTINUITY .and. (.not. USE_TRICK_FOR_BETTER_PRESSURE) .and. myrank==0) then
+    write(*,*) "********************************"
+    write(*,*) "*         INFORMATION          *"
+    write(*,*) "********************************"
+    write(*,*) "* If one source has            *"
+    write(*,*) "* time_function_type==3, its   *"
+    write(*,*) "* initial discontinuity was    *"
+    write(*,*) "* removed. See                 *"
+    write(*,*) "* 'prepare_source_time_function.f90'."
+    write(*,*) "********************************"
+    call flush_IMAIN()
+  endif
+  
   ! Compute the source spatial function and store it in a variable.
   if(USE_SPREAD_SSF) then
+    if (myrank==0) then
+      write(IMAIN,*) 'Preparing source spatial function in DG elements.'
+      call flush_IMAIN()
+    endif
     call prepare_timerun_ssf()
   endif
   
   ! Compute the stretching values and store them in correspongding variables.
   if(ABC_STRETCH) then
+    if(myrank==0) then
+      write(IMAIN,*) 'Preparing stretching absorbing boundary conditions for the DG elements.'
+      if(ABC_STRETCH_TOP) then
+        write(IMAIN,*) "ABC on top?   ", ABC_STRETCH_TOP, "(", ABC_STRETCH_TOP_LBUF, ")"
+      else
+        write(IMAIN,*) "ABC on top?   ", ABC_STRETCH_TOP
+      endif
+      if(ABC_STRETCH_LEFT) then
+        write(IMAIN,*) "       left?  ", ABC_STRETCH_LEFT, "(", ABC_STRETCH_LEFT_LBUF, ")"
+      else
+        write(IMAIN,*) "       left?  ", ABC_STRETCH_LEFT
+      endif
+      if(ABC_STRETCH_BOTTOM) then
+        write(IMAIN,*) "       bottom?", ABC_STRETCH_BOTTOM, "(", ABC_STRETCH_BOTTOM_LBUF, ")"
+      else
+        write(IMAIN,*) "       bottom?", ABC_STRETCH_BOTTOM
+      endif
+      if(ABC_STRETCH_RIGHT) then
+        write(IMAIN,*) "       right? ", ABC_STRETCH_RIGHT, "(", ABC_STRETCH_RIGHT_LBUF, ")"
+      else
+        write(IMAIN,*) "       right? ", ABC_STRETCH_RIGHT
+      endif
+      call flush_IMAIN()
+    endif
     call prepare_stretching()
     
     !DEBUG
@@ -87,7 +128,7 @@
       do ispec = 1, nspec
         do i = 1, NGLLX
           do j = 1, NGLLZ
-            if(i==3 .and. j==3 .and. coord(2, iglob_unique)>mesh_zmax - 1.5*ABC_STRETCH_LBUF) then
+            if(i==3 .and. j==3 .and. coord(2, iglob_unique)>mesh_zmax - 1.5*ABC_STRETCH_TOP_LBUF) then
               !iglob_unique = ibool_before_perio(i, j, ispec)
               !write(1000,*) coord(1, iglob_unique), coord(2, iglob_unique), &
               !              stretching_ya(1, iglob_unique), stretching_ya(2, iglob_unique)
@@ -112,7 +153,7 @@
   !-------------------------------------------------------------
 
   ! creates a Gnuplot script to display the energy curve in log scale
-  if (output_energy .and. myrank == 0) then
+  if (output_energy .and. myrank==0) then
     close(IOUT_ENERGY)
     open(unit=IOUT_ENERGY,file='OUTPUT_FILES/plot_energy.gnu',status='unknown',action='write')
     write(IOUT_ENERGY,*) 'set term wxt'
@@ -130,16 +171,22 @@
   endif
 
   ! open the file in which we will store the energy curve
-  if (output_energy .and. myrank == 0) open(unit=IOUT_ENERGY,file='OUTPUT_FILES/energy.dat',status='unknown',action='write')
+  if (output_energy .and. myrank==0) open(unit=IOUT_ENERGY,file='OUTPUT_FILES/energy.dat',status='unknown',action='write')
 
   ! Modif DG
-  if(USE_DISCONTINUOUS_METHOD) call find_normals()
+  if(USE_DISCONTINUOUS_METHOD) then
+    if (myrank==0) then
+      write(IMAIN,*) 'Preparing normal vectors for DG simulations.'
+      call flush_IMAIN()
+    endif
+    call find_normals()
+  endif
 
   ! synchronizes all processes
   call synchronize_all()
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) ""
     write(IMAIN,*) "done, preparation successful"
     write(IMAIN,*) ""
@@ -232,7 +279,7 @@
   integer, dimension(:, :, :), allocatable :: ibool_outer,ibool_inner
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) 'Preparing mass matrices'
     call flush_IMAIN()
   endif
@@ -505,7 +552,7 @@
   if (.not. (output_color_image .or. output_postscript_snapshot)) return
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) 'Preparing image coloring'
     call flush_IMAIN()
   endif
@@ -513,7 +560,7 @@
   ! for color images
   if (output_color_image) then
     ! user output
-    if (myrank == 0) then
+    if (myrank==0) then
       write(IMAIN,*) '  allocating color image arrays'
       call flush_IMAIN()
     endif
@@ -562,7 +609,7 @@
     call MPI_GATHER( nb_pixel_loc, 1, MPI_INTEGER, nb_pixel_per_proc(1), &
                     1, MPI_INTEGER, 0, MPI_COMM_WORLD, ier)
 
-    if (myrank == 0) then
+    if (myrank==0) then
       allocate(num_pixel_recv(maxval(nb_pixel_per_proc(:)),NPROC))
       allocate(data_pixel_recv(maxval(nb_pixel_per_proc(:))))
       allocate(data_pixel_recv_ij(maxval(nb_pixel_per_proc(:))))
@@ -571,7 +618,7 @@
     allocate(data_pixel_send(nb_pixel_loc))
     allocate(data_pixel_send_ij(nb_pixel_loc))
     if (NPROC > 1) then
-       if (myrank == 0) then
+       if (myrank==0) then
 
           do iproc = 1, NPROC-1
 
@@ -600,7 +647,7 @@
 #endif
 
     ! user output
-    if (myrank == 0) then
+    if (myrank==0) then
       write(IMAIN,*) '  done locating all the pixels of color images'
       call flush_IMAIN()
     endif
@@ -616,7 +663,7 @@
   ! postscript output
   if (output_postscript_snapshot) then
     ! user output
-    if (myrank == 0) then
+    if (myrank==0) then
       write(IMAIN,*) '  allocating postscript image arrays'
       call flush_IMAIN()
     endif
@@ -783,7 +830,7 @@
   if (.not. (SAVE_FORWARD .or. SIMULATION_TYPE == 3)) return
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) 'Preparing forward/adjoint simulation'
     call flush_IMAIN()
   endif
@@ -794,7 +841,7 @@
   ! Absorbing boundaries
   if (anyabs .and. STACEY_BOUNDARY_CONDITIONS) then
     ! user output
-    if (myrank == 0) then
+    if (myrank==0) then
       write(IMAIN,*) '  using Stacey boundary arrays'
       call flush_IMAIN()
     endif
@@ -819,7 +866,7 @@
   if (any_poroelastic .and. (SAVE_FORWARD .or. SIMULATION_TYPE == 3)) then
     if (USE_PORO_VISCOUS_DAMPING) then
       ! user output
-      if (myrank == 0) then
+      if (myrank==0) then
         write(IMAIN,*) '  using viscous damping arrays for poroelastic domain'
         call flush_IMAIN()
       endif
@@ -888,7 +935,7 @@
   if (SIMULATION_TYPE /= 3) return
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) '  initializing adjoint sensitivity kernels'
     call flush_IMAIN()
   endif
@@ -1138,7 +1185,7 @@
   if (.not. initialfield) return
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) 'Preparing initial field for plane wave source'
     call flush_IMAIN()
   endif
@@ -1186,7 +1233,7 @@
       deallocate(right_bound)
       deallocate(bot_bound)
 
-      if (myrank == 0) then
+      if (myrank==0) then
         write(IMAIN,*)  '***********'
         write(IMAIN,*)  'done calculating the initial wave field'
         write(IMAIN,*)  '***********'
@@ -1195,7 +1242,7 @@
 
     endif ! beyond critical angle
 
-    if (myrank == 0) then
+    if (myrank==0) then
       write(IMAIN,*) 'Max norm of initial elastic displacement = ', &
                       maxval(sqrt(displ_elastic(1,:)**2 + displ_elastic(2,:)**2))
       call flush_IMAIN()
@@ -1217,7 +1264,7 @@
 
   if (.not. initialfield) then
     ! user output
-    if (myrank == 0) then
+    if (myrank==0) then
       write(IMAIN,*) 'Preparing source time function'
       call flush_IMAIN()
     endif
@@ -1276,7 +1323,7 @@
   if (NOISE_TOMOGRAPHY <= 0) return
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) 'Preparing noise arrays'
     call flush_IMAIN()
   endif
@@ -1291,7 +1338,7 @@
   if (ier /= 0) stop 'Error allocating noise arrays'
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) '  reading noise parameters'
     call flush_IMAIN()
   endif
@@ -1403,7 +1450,7 @@
   double precision :: mul_unrelaxed_elastic,lambdal_unrelaxed_elastic
 
   ! user output
-  if (myrank == 0) then
+  if (myrank==0) then
     write(IMAIN,*) 'Preparing attenuation'
     call flush_IMAIN()
   endif

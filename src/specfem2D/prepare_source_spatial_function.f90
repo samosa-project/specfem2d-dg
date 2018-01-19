@@ -42,8 +42,6 @@ subroutine prepare_timerun_ssf()
   use specfem_par
 
   implicit none
-  
-  !integer :: ig, i, j, ispec ! DEBUG
 
   if(initialfield) then
     ! One uses an initialfield. Thus, do a dummy allocation.
@@ -53,16 +51,28 @@ subroutine prepare_timerun_ssf()
     if(.not. any_acoustic_DG) then
       ! No DG elements exist, ignore call and inform user.
       if(myrank == 0) then
-        write(IMAIN,*) 'No DG elements exist, spread source spatial function(s) cannot be implemented. ',&
-                       'The classical spatial source function(s) will be used.'
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* No DG elements exist, spread *"
+        write(*,*) "* source spatial function(s)   *"
+        write(*,*) "* cannot be implemented. The   *"
+        write(*,*) "* classical spatial source     *"
+        write(*,*) "* function(s) will be used.    *"
+        write(*,*) "********************************"
         call flush_IMAIN()
       endif
     else
       ! DG elements exist.
       if(myrank == 0) then
-        write(IMAIN,*) 'Spread source spatial function(s) is (are) being initialised over the DG elements.'
-        write(IMAIN,*) 'WARNING: THIS KIND OF SOURCE HAS TO BE TUNED NOT TO GENERATE SPURIOUS DISCONTINUITIES, ',&
-                       'USE AT YOUR OWN RISK.'
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* This kind of source has to   *"
+        write(*,*) "* be tuned not to generate     *"
+        write(*,*) "* spurious discontinuities.    *"
+        write(*,*) "* Use at your own risk.        *"
+        write(*,*) "********************************"
         call flush_IMAIN()
       endif
       ! TODO: Implement a less cumbersome way of storing the values. Indeed, many values far away from the source will be negligible in this array.
@@ -70,22 +80,6 @@ subroutine prepare_timerun_ssf()
       allocate(source_spatial_function_DG(NSOURCES, nglob))
       source_spatial_function_DG(:, :) = ZERO
       call prepare_source_spatial_function_DG() ! Compute the SSF array.
-      !if(.false.) then ! DEBUG
-      !  !write(*, *) ">  proc", myrank, "initialfield", initialfield
-      !  !write(*, *) source_spatial_function_DG ! DEBUG
-      !  !write(*, *) 'ouloulou nspec', nspec, 'nglob_DG', nglob_DG, "nglob", nglob ! DEBUG
-      !  do ispec = 1, nspec
-      !    do i = 1, NGLLX
-      !      do j = 1, NGLLZ
-      !        ig = ibool_before_perio(i, j, ispec)
-      !        if(.false. .and. source_spatial_function_DG(1, ig)>9.5d-1) &
-      !          write(*, *) ">  proc", myrank, "ig", ig,&
-      !                      "xy", coord(1, ig), coord(2, ig), &
-      !                      "ssf", source_spatial_function_DG(1, ig) ! DEBUG
-      !      enddo
-      !    enddo
-      !  enddo
-      !endif ! Endif on DEBUG.
     endif ! Endif on any_acoustic_DG.
   endif ! Endif on initialfield.
   
@@ -99,7 +93,6 @@ end subroutine prepare_timerun_ssf
 ! Compute values of the source spatial function at all points.
 
 subroutine prepare_source_spatial_function_DG
-  
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
   use specfem_par, only: coord, ibool_before_perio, IMAIN, ispec_is_acoustic_DG, &
                          ispec_selected_source, myrank, NSOURCES, nspec, &
@@ -109,9 +102,7 @@ subroutine prepare_source_spatial_function_DG
   ! Local variables.
   integer :: i_source, iglob_unique, ispec, i, j
   real(kind=CUSTOM_REAL) :: distsqrd
-  
-  ! Save values.
-  character(len=24) :: filename ! 16 for "OUTPUT_FILES/SSF" + N for process numbering.
+  character(len=24) :: filename ! Used for saving values. Length: 16 for "OUTPUT_FILES/SSF" + N for process numbering.
   
   if(SPREAD_SSF_SAVE) then
     write(filename, '( "OUTPUT_FILES/SSF", i8.8 )' ) myrank
@@ -121,8 +112,19 @@ subroutine prepare_source_spatial_function_DG
     if(.not. ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
       ! The central point of the source is not in a DG element, ignore call and inform user.
       if(myrank == 0) then
-        write(IMAIN,*) 'The central point of the source ', i_source, ' is not in a DG element, a spread source spatial function ',&
-                       'cannot be implemented. A classical spatial source function will be used.'
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* The central point of the     *"
+        write(*,*) "* source                       *"
+        write(*,*) "* ", i_source
+        write(*,*) "* is not in a DG element, a    *"
+        write(*,*) "* spread source spatial        *"
+        write(*,*) "* function cannot be           *"
+        write(*,*) "* implemented. A classical     *"
+        write(*,*) "* spatial source function will *"
+        write(*,*) "* be used.                     *"
+        write(*,*) "********************************"
         call flush_IMAIN()
       endif
     else
@@ -143,7 +145,7 @@ subroutine prepare_source_spatial_function_DG
               endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
               
               ! Plane waves tests.
-              if(.true.) then
+              if(.false.) then
                 !distsqrd = (coord(2, iglob_unique) - z_source(i_source))**2. ! Horizontal plane wave.
                 !source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.5)
                 distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(3.1415*(0.25))*(coord(1, iglob_unique)-0.))**2. ! Oblique plane wave.
@@ -167,8 +169,17 @@ subroutine prepare_source_spatial_function_DG
   if(SPREAD_SSF_SAVE) then
     close(504)
     if(myrank == 0) then
-      write(IMAIN,*) "The spread source spatial function's values at the mesh's points were saved in the OUTPUT_FILES folder. ",&
-                     "Use the Matlab script '/utils_new/show_SSF.m' to plot."
+      write(*,*) "********************************"
+      write(*,*) "*         INFORMATION          *"
+      write(*,*) "********************************"
+      write(*,*) "* The spread source spatial    *"
+      write(*,*) "* function's values at the     *"
+      write(*,*) "* mesh's points were saved in  *"
+      write(*,*) "* the OUTPUT_FILES folder. Use *"
+      write(*,*) "* the Matlab script            *"
+      write(*,*) "* '/utils_new/show_SSF.m' to   *"
+      write(*,*) "* plot.                        *"
+      write(*,*) "********************************"
       call flush_IMAIN()
     endif
   endif

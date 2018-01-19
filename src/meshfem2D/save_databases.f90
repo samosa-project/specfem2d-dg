@@ -375,8 +375,16 @@
   write(15,*) ABC_STRETCH_RIGHT
   write(15,*) 'ABC_STRETCH'
   write(15,*) ABC_STRETCH
-  write(15,*) 'ABC_STRETCH_LBUF'
-  write(15,*) ABC_STRETCH_LBUF
+  
+  write(15,*) 'ABC_STRETCH_TOP_LBUF'
+  write(15,*) ABC_STRETCH_TOP_LBUF
+  write(15,*) 'ABC_STRETCH_LEFT_LBUF'
+  write(15,*) ABC_STRETCH_LEFT_LBUF
+  write(15,*) 'ABC_STRETCH_BOTTOM_LBUF'
+  write(15,*) ABC_STRETCH_BOTTOM_LBUF
+  write(15,*) 'ABC_STRETCH_RIGHT_LBUF'
+  write(15,*) ABC_STRETCH_RIGHT_LBUF
+  
   write(15,*) 'USE_SPREAD_SSF'
   write(15,*) USE_SPREAD_SSF
   write(15,*) 'SPREAD_SSF_SAVE'

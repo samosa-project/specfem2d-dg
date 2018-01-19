@@ -87,6 +87,7 @@
 ! ------------------------------------------------------------ !
 ! recompute_density                                            !
 ! ------------------------------------------------------------ !
+! TODO: Description.
   
   subroutine recompute_density()
 
@@ -226,23 +227,19 @@
     !p_DG_P       = rho_DG_P * gravityext(i, j, ispec) * Htabext_DG(ibool_DG(i, j, ispec)) ! Hydrostaticity: impose p = \rho * g * H, where the RHS is gotten from the external model data file.
     veloc_x_DG_P = windxext(i, j, ispec) ! Read horizontal wind.
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
-
     if(timelocal == 0) then
       !gravityext(i, j, ispec) = G!9.831
-      !gammaext_DG(ibool_DG(i, j, ispec))   = 1.4!(rho_DG_P/p_DG_P)*(vpext(i, j, ispec)**2)!gamma_euler!
-      !muext(i, j, ispec)  = 1.0d-05
-      !etaext(i, j, ispec)  = (4/3)*muext(i, j, ispec)
+      !gammaext_DG(ibool_DG(i, j, ispec)) = 1.4!(rho_DG_P/p_DG_P)*(vpext(i, j, ispec)**2)!gamma_euler!
+      !muext(i, j, ispec) = 1.0d-05
+      !etaext(i, j, ispec) = (4/3)*muext(i, j, ispec)
       !kappa_DG(i, j, ispec) = 0.025!kappa_DG(i, j, ispec) / 10.!0.2
       !cp = 7/2
       !cnu = 5/2
-
       !tau_epsilon(i, j, ispec) = 1.
-      !tau_sigma(i, j, ispec)   = 1.!0.4013
-
+      !tau_sigma(i, j, ispec) = 1.!0.4013
       potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
     endif
-  
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
     ! Set gravity, viscosity coefficients, relaxation times, and gravity potential (Phi) derivatives.
@@ -253,18 +250,12 @@
       if(USE_ISOTHERMAL_MODEL) then
         gravityext(i, j, ispec) = real(gravity_cte_DG, kind=CUSTOM_REAL)
       endif
-      !WRITE(*,*) ">>>", gravity_cte_DG, gravityext(i, j, ispec), abs(real(gravity_cte_DG, kind=CUSTOM_REAL)- gravityext(i, j, ispec)) ! DEBUG
-      !cp = 29 !7!1010!7/2 ! DEBUG
-      !cnu = 20.8 !5!718!5/2 ! DEBUG
-      gammaext_DG(ibool_DG(i, j, ispec)) = cp/cnu!1.33076167! 1.4!gamma_euler
-      !mu_visco  = dynamic_viscosity_cte_DG!1.092656e-05
-      !eta_visco = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG!2.67e-05
-      muext(i, j, ispec) = dynamic_viscosity_cte_DG!1.092656e-05
-      etaext(i, j, ispec) = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG!2.67e-05
-      !kappa_DG(i, j, ispec) = 0.0
-      kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG!0.!0.05!4.79046750E-04
-      tau_epsilon(i, j, ispec) = tau_eps_cte_DG!1 !1.5!2.!1.5
-      tau_sigma(i, j, ispec)   = tau_sig_cte_DG!1 !1.!1./(8*PI**2)!0.025!1
+      gammaext_DG(ibool_DG(i, j, ispec)) = cp/cnu
+      muext(i, j, ispec) = dynamic_viscosity_cte_DG
+      etaext(i, j, ispec) = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG
+      kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG
+      tau_epsilon(i, j, ispec) = tau_eps_cte_DG
+      tau_sigma(i, j, ispec)   = tau_sig_cte_DG
       
       potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
@@ -295,7 +286,7 @@
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
   endif
   
-  ! TEST VISCOSITY
+  ! TEST VISCOSITY in top buffer
   if(.false.) then
     call change_visco(i, j, ispec,&
                       real(coord(1, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL),&
@@ -398,6 +389,7 @@
 ! Variables ending in "_P" (for "plus") are output-intended and are the sought values, or exterior values.
 ! Variables ending in "_iM" (for "minus") are input-intended and should correspond to the interior values.
 ! Variables ending in "_iP" are input-intended, and correspond to the exterior values, if known. Remark that those variables are only used if neighbor(3) != -1.
+! Variable "exact_interface_flux" is output-intended. If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
  
   subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                 rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
@@ -427,7 +419,8 @@
                          potential_dot_dot_acoustic, &
                          veloc_vector_acoustic_DG_coupling, MPI_transfer_iface,&
                          ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
-                         ABC_STRETCH_RIGHT, ABC_STRETCH_LBUF, mesh_xmin, mesh_xmax
+                         ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF,&
+                         mesh_xmin, mesh_xmax
                          
   implicit none
   
@@ -436,23 +429,23 @@
   integer, dimension(3), intent(in) :: neighbor
   
   real(kind=CUSTOM_REAL), intent(out) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
-        E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
-        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P
+                                         E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
+                                         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P
         
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
         
   logical, intent(out) :: exact_interface_flux
   
   real(kind=CUSTOM_REAL) :: tx, tz, normal_v, tangential_v, &
-        nx, nz, veloc_x, veloc_z, weight, &
-        veloc_x_DG_iM, veloc_z_DG_iM, p_DG_iM, gamma_P, e1_DG_P
+                            nx, nz, veloc_x, veloc_z, weight, &
+                            veloc_x_DG_iM, veloc_z_DG_iM, p_DG_iM, gamma_P, e1_DG_P
         
   real(kind=CUSTOM_REAL), intent(in) :: rho_DG_iM, E_DG_iM, rhovx_DG_iM, rhovz_DG_iM, &
-                rho_DG_iP, E_DG_iP, rhovx_DG_iP, rhovz_DG_iP
+                                        rho_DG_iP, E_DG_iP, rhovx_DG_iP, rhovz_DG_iP
   real(kind=CUSTOM_REAL), dimension(2), intent(in) :: T_DG_iP, T_DG_iM
   real(kind=CUSTOM_REAL), dimension(2, 2), intent(in) :: V_DG_iP, V_DG_iM
-        
-  ! Local variables     
+  
+  ! Local variables.
   integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
   real(kind=CUSTOM_REAL), dimension(2, 2) :: trans_boundary
   
@@ -466,8 +459,8 @@
   
   ! Characteristic based BC
   real(kind=CUSTOM_REAL) :: p_b, rho_b, s_b, rho_inf, v_b_x, v_b_z, c_b, un_b, &
-  rlambda_max, rlambda_min, c_in, c_inf, un_in, un_inf, &
-  deltaZ1, deltaZ2star, p_n, a_n, alpha0
+                            rlambda_max, rlambda_min, c_in, c_inf, un_in, un_inf, &
+                            deltaZ1, deltaZ2star, p_n, a_n, alpha0
   
   iglobM = ibool_DG(i, j, ispec)
   
@@ -491,11 +484,11 @@
   
   e1_DG_P = ZERO
   
-  exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
+  exact_interface_flux = .false.
   
-  if(neighbor(3) == -1) then
+  if(neighbor(3) == -1 ) then
     ! --------------------------- !
-    ! neighbor(3) == -1.          !
+    ! neighbor(3) == -1           !
     ! --------------------------- !
     
     ipoin         = -1
@@ -507,7 +500,7 @@
     
     if(ipoin > -1) then
       ! --------------------------- !
-      ! neighbor(3) == -1,          !
+      ! neighbor(3) == -1           !
       !   not diagonal corner       !
       !   element and not outside   !
       !   element.                  !
@@ -521,7 +514,7 @@
         ! TODO: Decide what to do with this case (we are in a 'if(.false.)').
         
         ! We already know the "real" flux at boundary.
-        exact_interface_flux = .true. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
+        exact_interface_flux = .true.
 
         ! Coordinates of elastic element
         iglob = ibool(i, j, ispec)
@@ -600,19 +593,25 @@
                     
     elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
       ! --------------------------- !
-      ! neighbor(3) == -1,          !
-      !   acoustic forcing.         !
+      ! neighbor(3) == -1           !
+      !   acoustic forcing          !
       ! --------------------------- !
-      stop 'ACOUSTIC_FORCING obsolete for DG simulations'
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* ACOUSTIC_FORCING obsolete    *"
+      write(*,*) "* for DG simulations.          *"
+      write(*,*) "********************************"
+      stop
          
     elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
       ! --------------------------- !
-      ! neighbor(3) == -1,          !
-      !   elastic coupling.         !
+      ! neighbor(3) == -1           !
+      !   elastic coupling          !
       ! --------------------------- !
       ! TODO: Clean up all this part.
       
-      exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
+      exact_interface_flux = .false.
 
       ! Coordinates of elastic element
       i_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 1)
@@ -626,41 +625,54 @@
 
       rho_DG_P = rho_DG_iM
       
-      ! DEACTIVATE COUPLING IN BUFFER ZONES.
+      ! Get elastic medium velocities.
+      veloc_x = veloc_elastic(1, iglob)
+      veloc_z = veloc_elastic(2, iglob)
+      ! Tangential vector. It is assumed that we only have the elastic media under the DG medium, hence we always have nz>=0.
+      tx = -nz
+      tz =  nx
+      ! Get the normal velocity of the solid perturbation (normal continuity) and the tangential velocity of the fluid flow (free slip).
+      normal_v     = (veloc_x*nx + veloc_z*nz)
+      tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
+      !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) ! DEBUG
+      !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz ! DEBUG
+      !tangential_v    = (veloc_x*tx + veloc_z*tz) ! DEBUG
+      ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
+      trans_boundary(1, 1) =  tz
+      trans_boundary(1, 2) = -nz
+      trans_boundary(2, 1) = -tx
+      trans_boundary(2, 2) =  nx
+      trans_boundary = trans_boundary/(nx * tz - tx * nz)
+      
+      ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES.
       x = coord(1, ibool_before_perio(i, j, ispec))
       if(ABC_STRETCH .and. &
-         (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
-           .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+         (     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+          .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
          ) &
         ) then
-        ! Do nothing. veloc_x_DG_P stays veloc_x_DG_P and veloc_z_DG_P stays veloc_z_DG_P. This completely deactivates coupling in the horizontal buffers.
-        ! TODO: A better method is to be preferred.
-      else
-        ! Elastic velocities
-        veloc_x = veloc_elastic(1, iglob)
-        veloc_z = veloc_elastic(2, iglob)
-
-        ! Tangential vector
-        ! Since only bottom topography nz > 0
-        tx = -nz
-        tz =  nx
         
-        ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-        normal_v     = (veloc_x*nx + veloc_z*nz)
-        tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
-        !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) 
-        !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz
-        !tangential_v    = (veloc_x*tx + veloc_z*tz) 
-
-        ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
-        trans_boundary(1, 1) =  tz
-        trans_boundary(1, 2) = -nz
-        trans_boundary(2, 1) = -tx
-        trans_boundary(2, 2) =  nx
-        trans_boundary = trans_boundary/(nx * tz - tx * nz)
-
+        if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+        if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+        
+        if(x<0.1 .and. .false.) then !DEBUG
+          write(*,*) x, 'b4:', veloc_x_DG_P
+        endif
+        
         ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-        veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+        veloc_x_DG_P = x*(trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v)&
+                       +(1.-x)*veloc_x_DG_P
+        veloc_z_DG_P = x*(trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v)&
+                       +(1.-x)*veloc_z_DG_P
+        ! This gradually deactivates coupling in the horizontal buffers.
+        ! TODO: This is a hack. A better method is to be preferred.
+        
+        if(x<0.1 .and. .false.) then !DEBUG
+          write(*,*) x, 'aftR:', veloc_x_DG_P, x, (1.-x)
+        endif
+      else
+        ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
+        veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       endif
       
@@ -679,18 +691,18 @@
 
     else
       ! --------------------------- !
-      ! neighbor(3) == -1,          !
+      ! neighbor(3) == -1           !
       !   classical boundary        !
-      !   conditions.               !
+      !   conditions                !
       ! --------------------------- !
     
-      exact_interface_flux = .false. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
+      exact_interface_flux = .false.
 
       ! Get "background" (or "far-field", or "unperturbed") values.
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
       
-      ! Set the velocity. --------- !
+      ! Set the velocity.
       ! Convert the velocity components from mesh coordinates to normal/tangential coordinates.
       ! This is more practical to set the boundary conditions.
       ! The setting of the boundary conditions is thus made here.
@@ -714,55 +726,46 @@
       veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
       veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       
-      ! Set the energy. ----------- !
+      ! Deduce energy.
       E_DG_P = p_DG_P/(gammaext_DG(iglobM) - ONE) &
                + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
       
-      ! Set the momenta. ---------- !
+      ! Deduce momenta.
       rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
       rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
       
-      
-      ! TODO: Decide what to do with those cases below.
-      ! Those are test cases, intended to test characteristic-based boundary conditions.
+      ! The cases below are test cases, intended to test characteristic-based boundary conditions.
+      ! TODO: Decide what to do with those.
       if(coord(2, ibool(i, j, ispec)) == 20000. .AND. .false.) then
         ! --------------------------- !
-        ! neighbor(3) == -1,          !
+        ! neighbor(3) == -1           !
         !   classical boundary        !
         !   conditions,               !
         !     characteristic based BC,!
         !     top boundary.           !
         ! --------------------------- !
-        
         un_in       = veloc_x_DG_iM*nx + veloc_z_DG_iM*nz
         un_inf      = veloc_x_DG_P*nx  + veloc_z_DG_P*nz
         c_in        = sqrt(gammaext_DG(iglobM)*p_DG_iM/rho_DG_iM)
         c_inf       = sqrt(gammaext_DG(iglobM)*p_DG_P/rho_DG_P)
-        
         rlambda_max = un_in  - 2.*c_in/(gammaext_DG(iglobM) - 1.)
         rlambda_min = un_inf + 2.*c_inf/(gammaext_DG(iglobM) - 1.)
-        
         un_b = (rlambda_min + rlambda_max)/2.
         c_b  = (gammaext_DG(iglobM) - 1.)*(rlambda_min - rlambda_max)/4.
-        
         ! Boudnary values for velocity
         v_b_x  = veloc_x_DG_P + ( un_b - un_inf )*nx
         v_b_z  = veloc_z_DG_P + ( un_b - un_inf )*nz
-        
         rho_inf = rho_DG_P
         s_b = (c_in**2)/( gammaext_DG(iglobM)*(rho_DG_iM**(gammaext_DG(iglobM) - 1.)) )
-        
         ! Boundary values for density and pressure
         rho_b = ((c_b**2)/(gammaext_DG(iglobM)*s_b))**(1/(gammaext_DG(iglobM)-1.))
         p_b    = rho_b*(c_b**2)/gammaext_DG(iglobM)
-        
         rho_DG_P      = -rho_DG_iM + rho_b
         veloc_x_DG_P  = v_b_x!veloc_x_DG_P -2.*( normal_v + veloc_x_DG_P*nx + veloc_z_DG_P*nz )*nx
         veloc_z_DG_P  = v_b_z!veloc_z_DG_P -2.*( normal_v + veloc_x_DG_P*nx + veloc_z_DG_P*nz )*nz
         p_DG_P = p_b
         E_DG_P = p_DG_P/(gammaext_DG(iglobM) - ONE) &
                 + rho_DG_P*HALF*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
-        
         rhovx_DG_P   = -rhovx_DG_iM + 2.*rho_DG_P*veloc_x_DG_P
         rhovz_DG_P   = -rhovz_DG_iM + 2.*rho_DG_P*veloc_z_DG_P
         rho_DG_P     = -rho_DG_iM + 2.*rho_DG_P
@@ -772,13 +775,12 @@
       endif
       if(coord(2, ibool(i, j, ispec)) == 0. .AND. .false.) then
         ! --------------------------- !
-        ! neighbor(3) == -1,          !
+        ! neighbor(3) == -1           !
         !   classical boundary        !
         !   conditions,               !
         !     characteristic based BC,!
         !     bottom boundary.        !
         ! --------------------------- !
-        
         p_n = (gammaext_DG(iglobM) - ONE)*( E_init(iglobM) &
                 - (HALF/rho_init(iglobM))*( rhovx_init(iglobM)**2 + rhovz_init(iglobM)**2 ) )
         a_n = sqrt(gammaext_DG(iglobM)*p_n/rho_init(iglobM))
@@ -786,33 +788,27 @@
                 - rho_init(iglobM)*a_n&
                         *((veloc_x_DG_iM - rhovx_init(iglobM)/rho_init(iglobM))*nx &
                                 +(veloc_z_DG_iM-rhovz_init(iglobM)/rho_init(iglobM))*nz)
-
         deltaZ2star = (p_DG_iM - p_n) &
            + rho_init(iglobM)*a_n*((veloc_x_DG_iM - rhovx_init(iglobM)/rho_init(iglobM))*nx &
                                  + (veloc_z_DG_iM-rhovz_init(iglobM)/rho_init(iglobM))*nz)
-
        ! rho_DG_P = rho_DG_iM
-        alpha0 = 0.0001          
-        
+        alpha0 = 0.0001
         p_DG_P = p_n - (alpha0*deltaZ1 + deltaZ2star)/2
-        
         normal_v     = ((rhovx_init(iglobM)/rho_init(iglobM))*nx+(rhovz_init(iglobM)/rho_init(iglobM))*nz) &
                 - (alpha0*deltaZ1 - deltaZ2star)/(2.*a_n*rho_init(iglobM))
         tangential_v = 0.
-
         ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
         trans_boundary(1, 1) =  tz
         trans_boundary(1, 2) = -nz
         trans_boundary(2, 1) = -tx
         trans_boundary(2, 2) =  nx
         trans_boundary = trans_boundary/(nx * tz - tx * nz)
-
         ! From free slip and normal velocity continuity
         veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v  
       endif
       
-      ! Set the temperature. ------ !
+      ! Deduce temperature.
       T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/(cnu)
       !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu) ! DEBUG
       !Tx_DG_P = -T_DG_iM(1) ! DEBUG
@@ -824,18 +820,12 @@
     !   acoustic coupling.        !
     ! --------------------------- !
     ! TODO: Decide what to do with this case.
-
     !!elseif(.false.) then
-
-    !!WRITE(*,*) ">>>>>>>>>>>> TOTO" ! DEBUG
-
-    exact_interface_flux = .true. ! If set to .true., an exact flux formula will be used. If set to .false., the Lax-Friedrich approximation for the flux will be used.
-
+    exact_interface_flux = .true.
     ! Coordinates of elastic element
     i_ac     = neighbor(1)
     j_ac     = neighbor(2)
     ispec_ac = neighbor(3)
-
     iglob = ibool(i_ac,j_ac,ispec_ac)!ibool(i, j, ispec)
     !if(.false.) then ! DEBUG
     !  WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
@@ -843,17 +833,13 @@
     ! Only for density
     call boundary_condition_DG(i_ac, j_ac, ispec_ac, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
     veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-
     !!rho_DG_P = rho_DG_iM
-
     !!duz_dxi    = ZERO
     !!duz_dgamma = ZERO
-
     !!xixl = xix(i_ac,j_ac,ispec_ac)
     !!xizl = xiz(i_ac,j_ac,ispec_ac)
     !!gammaxl = gammax(i_ac,j_ac,ispec_ac)
     !!gammazl = gammaz(i_ac,j_ac,ispec_ac)
-
     ! first double loop over GLL points to compute and store gradients
     ! we can merge the two loops because NGLLX == NGLLZ
     !do k = 1, NGLLX
@@ -862,43 +848,32 @@
     !         duz_dgamma = duz_dgamma &
     !                 + potential_dot_acoustic(ibool(i_ac,k,ispec_ac)) * real(hprime_zz(j_ac,k), kind=CUSTOM_REAL)
     !enddo
-
     !!! Derivatives of potential.
     !!veloc_x = ( duz_dxi * xixl + duz_dgamma * gammaxl )
     !!veloc_z = ( duz_dxi * xizl + duz_dgamma * gammazl )
-
     veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
     veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
-
     ! Tangential vector, since only bottom topography nz > 0.
     tx = -nz
     tz =  nx
-
     ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
     normal_v     = veloc_x*nx + veloc_x*nz
     tangential_v = veloc_x*tx + veloc_x*tz
-
     ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
     trans_boundary(1, 1) =  tz
     trans_boundary(1, 2) = -nz
     trans_boundary(2, 1) = -tx
     trans_boundary(2, 2) =  nx
     trans_boundary = trans_boundary/(nx * tz - tx * nz)
-
     ! From free slip and normal velocity continuity
     veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
     veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
-
     ! From traction continuity
     p_DG_P = p_DG_init(iglobM) - potential_dot_dot_acoustic(iglob)
-
     E_DG_P       = p_DG_P/(gammaext_DG(iglobM) - 1.) + HALF*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
-
     rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
     rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
-
     T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
-    
   else
     ! --------------------------- !
     ! neighbor(3) != -1,          !
@@ -906,29 +881,25 @@
     !   thus values are known.    !
     ! --------------------------- !
     iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
-    
     gamma_P = gammaext_DG(iglobP)
-    
     rho_DG_P     = rho_DG_iP
     E_DG_P       = E_DG_iP
     rhovx_DG_P   = rhovx_DG_iP
     rhovz_DG_P   = rhovz_DG_iP
-    
     veloc_x_DG_P = rhovx_DG_P/rho_DG_P
     veloc_z_DG_P = rhovz_DG_P/rho_DG_P
     p_DG_P       = (gamma_P - ONE)*( E_DG_P &
                    - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
-    
     if(muext(i, j, ispec) > 0 .OR. &
        etaext(i, j, ispec) > 0 .OR. &
        kappa_DG(i, j, ispec) > 0) then
       ! Viscosity  
-      Vxx_DG_P = V_DG_iP(1, 1)!,iglobP)
-      Vzz_DG_P = V_DG_iP(2, 2)!,iglobP)
-      Vxz_DG_P = V_DG_iP(1, 2)!,iglobP)
-      Vzx_DG_P = V_DG_iP(2, 1)!,iglobP)
-      Tx_DG_P = T_DG_iP(1)!,iglobP)
-      Tz_DG_P = T_DG_iP(2)!,iglobP)
+      Vxx_DG_P = V_DG_iP(1, 1)
+      Vzz_DG_P = V_DG_iP(2, 2)
+      Vxz_DG_P = V_DG_iP(1, 2)
+      Vzx_DG_P = V_DG_iP(2, 1)
+      Tx_DG_P = T_DG_iP(1)
+      Tz_DG_P = T_DG_iP(2)
     endif
     T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/(cnu)
   endif

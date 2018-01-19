@@ -229,7 +229,10 @@
   ABC_STRETCH_LEFT   = .false.
   ABC_STRETCH_BOTTOM = .false.
   ABC_STRETCH_RIGHT  = .false.
-  ABC_STRETCH_LBUF   = 0.
+  ABC_STRETCH_TOP_LBUF    = 0.
+  ABC_STRETCH_LEFT_LBUF   = 0.
+  ABC_STRETCH_BOTTOM_LBUF = 0.
+  ABC_STRETCH_RIGHT_LBUF  = 0.
   USE_SPREAD_SSF   = .false.
   SPREAD_SSF_SAVE  = .false.
   SPREAD_SSF_SIGMA = 1.
@@ -245,7 +248,10 @@
   call read_value_logical_p(ABC_STRETCH_RIGHT, 'solver.ABC_STRETCH_RIGHT')
   !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_RIGHT in Par_file'
   ABC_STRETCH = (ABC_STRETCH_TOP .or. ABC_STRETCH_LEFT .or. ABC_STRETCH_BOTTOM .or. ABC_STRETCH_RIGHT)
-  call read_value_double_precision_p(ABC_STRETCH_LBUF, 'solver.ABC_STRETCH_LBUF')
+  call read_value_double_precision_p(ABC_STRETCH_TOP_LBUF, 'solver.ABC_STRETCH_TOP_LBUF')
+  call read_value_double_precision_p(ABC_STRETCH_LEFT_LBUF, 'solver.ABC_STRETCH_LEFT_LBUF')
+  call read_value_double_precision_p(ABC_STRETCH_BOTTOM_LBUF, 'solver.ABC_STRETCH_BOTTOM_LBUF')
+  call read_value_double_precision_p(ABC_STRETCH_RIGHT_LBUF, 'solver.ABC_STRETCH_RIGHT_LBUF')
   !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LBUF in Par_file'
   call read_value_logical_p(USE_SPREAD_SSF, 'solver.USE_SPREAD_SSF')
   !if (err_occurred() /= 0) stop 'error reading parameter USE_SPREAD_SSF in Par_file'
@@ -259,6 +265,7 @@
   !TEST READING NEW PARAMETERS
   if(.false.) then
     write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
+    write(*,*) ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
     write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA
     write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
   endif
@@ -768,6 +775,33 @@
   case default
     stop 'Bad value: SAVE_MODEL'
   end select
+  
+  
+  
+  if(ABC_STRETCH .and. (     ABC_STRETCH_TOP_LBUF<=0. .or. ABC_STRETCH_LEFT_LBUF<=0. &
+                        .or. ABC_STRETCH_RIGHT_LBUF<=0. .or. ABC_STRETCH_BOTTOM_LBUF<=0.)) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* The stretching absorbing     *"
+    write(*,*) "* boundary conditions are      *"
+    write(*,*) "* activated, but one of the    *"
+    write(*,*) "* buffers has non-positive     *"
+    write(*,*) "* length.                      *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  if(USE_SPREAD_SSF .and. SPREAD_SSF_SIGMA<=0.) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* The spread source spatial    *"
+    write(*,*) "* function is activated, but   *"
+    write(*,*) "* SPREAD_SSF_SIGMA<=0.         *"
+    write(*,*) "********************************"
+    stop
+  endif
 
   end subroutine check_parameters
 

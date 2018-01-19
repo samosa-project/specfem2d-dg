@@ -317,8 +317,16 @@
   read(IIN,*) ABC_STRETCH_RIGHT
   read(IIN,"(a80)") datlin
   read(IIN,*) ABC_STRETCH
+  
   read(IIN,"(a80)") datlin
-  read(IIN,*) ABC_STRETCH_LBUF
+  read(IIN,*) ABC_STRETCH_TOP_LBUF
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_LEFT_LBUF
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_BOTTOM_LBUF
+  read(IIN,"(a80)") datlin
+  read(IIN,*) ABC_STRETCH_RIGHT_LBUF
+  
   read(IIN,"(a80)") datlin
   read(IIN,*) USE_SPREAD_SSF
   read(IIN,"(a80)") datlin

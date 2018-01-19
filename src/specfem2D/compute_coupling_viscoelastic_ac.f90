@@ -54,24 +54,23 @@
                          ibool_DG, E_DG, rho_DG, rhovx_DG, rhovz_DG, p_DG_init, gammaext_DG, i_stage, &
                          REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD,&
                          ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
-                         ABC_STRETCH_RIGHT, ABC_STRETCH_LBUF, mesh_xmin, mesh_xmax
+                         ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF,&
+                         mesh_xmin, mesh_xmax
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
-                K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
+                         K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
 
   implicit none
 
-  !local variable
+  ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
   integer :: inum,ispec_acoustic,ispec_elastic,iedge_acoustic,iedge_elastic,ipoin1D,i,j,iglob,ii2,jj2,&
              ispec_PML,CPML_region_local,singularity_type, &
-             ! MODIF DG
              iglob_DG
   real(kind=CUSTOM_REAL) :: pressure,xxi,zxi,xgamma,zgamma,jacobian1D,nx,nz,weight,veloc_x,veloc_z
   real(kind=CUSTOM_REAL), dimension(NGLJ,NGLLZ) :: r_xiplus1
   double precision :: kappa_x,kappa_z,d_x,d_z,alpha_x,alpha_z,beta_x,beta_z,&
                       A0,A1,A2,A3,A4,bb_1,coef0_1,coef1_1,coef2_1,bb_2,coef0_2,coef1_2,coef2_2
-
-  real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
   
   real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
 
@@ -232,36 +231,38 @@
 
       endif
       
-      
-      
       if(USE_DISCONTINUOUS_METHOD .and. .not. REMOVE_DG_FLUID_TO_SOLID) then
-        ! DEACTIVATE COUPLING IN BUFFER ZONES.
+        ! If DG is used for the acoustic part, and the influence of the fluid on the solid is not removed.
+        ! Get fluid variables (from DG formulation).
+        iglob_DG = ibool_DG(i,j,ispec_acoustic)
+        veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
+        veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
+        pressure = (gammaext_DG(iglob_DG) - ONE)*( E_DG(iglob_DG) &
+          - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
+        pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
+        ! Set elastic acceleration.
+        
+        ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES.
         x = coord(1, ibool_before_perio(i, j, ispec_acoustic))
         if(ABC_STRETCH .and. &
-           (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
-             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
+           (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
            ) &
           ) then
-          ! Do nothing. This completely deactivates coupling in the horizontal buffers.
-          ! TODO: A better method is to be preferred.
-        else
-          ! If DG is used for the acoustic part, and the influence of the fluid on the solid is not removed.
-          ! Get fluid variables (from DG formulation).
-          iglob_DG = ibool_DG(i,j,ispec_acoustic)
-          veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
-          veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
-          pressure = (gammaext_DG(iglob_DG) - ONE)*( E_DG(iglob_DG) &
-            - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
-          pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
-          ! Set elastic acceleration.
-          accel_elastic(1,iglob) = accel_elastic(1,iglob) &
-            + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
-                      + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
-          accel_elastic(2,iglob) = accel_elastic(2,iglob) &
-            + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
-                      + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )!- weight*nz*pressure
-          ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
+          if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+          if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+          weight = weight*x
+          ! This gradually deactivates coupling in the horizontal buffers.
+          ! TODO: This is a hack. A better method is to be preferred.
         endif ! Endif on ABC_STRETCH.
+        
+        accel_elastic(1,iglob) = accel_elastic(1,iglob) &
+          + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
+                    + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
+        accel_elastic(2,iglob) = accel_elastic(2,iglob) &
+          + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
+                    + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )
+        ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
       else
         ! Classic SPECFEM coupling.
         accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*pressure

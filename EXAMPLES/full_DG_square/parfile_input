@@ -126,11 +126,14 @@ coord_interface                 = 304.0          # Only used if USE_ISOTHERMAL_M
 TYPE_SOURCE_DG                  = 3
 
 # Absorbing boundary conditions.
-ABC_STRETCH_TOP    = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_LEFT   = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_BOTTOM = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_RIGHT  = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_LBUF = 20.                           # Only used if ABC_STRETCH_TOP==.true. or ABC_STRETCH_LEFT==.true. or ABC_STRETCH_BOTTOM==.true. or ABC_STRETCH_RIGHT==.true.. Length of the buffer used for the buffer-based stretching method.
+ABC_STRETCH_TOP         = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_LEFT        = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_BOTTOM      = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_RIGHT       = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_TOP_LBUF    = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
+ABC_STRETCH_LEFT_LBUF   = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
+ABC_STRETCH_BOTTOM_LBUF = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
+ABC_STRETCH_RIGHT_LBUF  = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
 
 # Source spatial function.
 USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used.

@@ -36,7 +36,7 @@
 ! ------------------------------------------------------------ !
 ! TODO: Description.
 
-  subroutine iterate_time()
+subroutine iterate_time()
 
 #ifdef USE_MPI
   use mpi
@@ -48,17 +48,13 @@
 
   implicit none
 
-  ! local parameters
+  ! Local variables.
   integer :: ier
-
-  ! time
   character(len=8) :: datein
   character(len=10) :: timein
   character(len=5) :: zone
   integer, dimension(8) :: time_values
   integer :: year,mon,day,hr,minutes,timestamp
-
-  !integer :: i, j, ispec!, numelem
 
   if (myrank == 0) write(IMAIN,400) ! Write = T i m e  e v o l u t i o n  l o o p =
 !
@@ -209,7 +205,7 @@
   ! Formats.
   400 format(/1x,41('=')/,' =  T i m e  e v o l u t i o n  l o o p  ='/1x,41('=')/)
 
-  end subroutine iterate_time
+end subroutine iterate_time
 
 ! ------------------------------------------------------------ !
 ! it_transfer_from_GPU                                         !

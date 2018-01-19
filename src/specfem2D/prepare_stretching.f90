@@ -42,7 +42,7 @@ subroutine prepare_stretching()
                          ispec_is_acoustic_DG,&
                          ADD_PERIODIC_CONDITIONS, &
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM, &
-                         ABC_STRETCH_LBUF, &
+                         ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF, &
                          stretching_ya,any_elastic,&
                          mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax!,stretching_buffer
   
@@ -61,6 +61,34 @@ subroutine prepare_stretching()
   
   ! Error checking.
   if(myrank==0) then
+    if(ABC_STRETCH_LEFT_LBUF+ABC_STRETCH_RIGHT_LBUF>=mesh_xmax-mesh_xmin) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Sum of left and right        *"
+      write(*,*) "* stretching ABC buffer        *"
+      write(*,*) "* lengths must be lesser than  *"
+      write(*,*) "* the mesh's horizontal size:  *"
+      write(*,*) "*  left buffer length :  ", ABC_STRETCH_LEFT_LBUF
+      write(*,*) "*  right buffer length : ", ABC_STRETCH_RIGHT_LBUF
+      write(*,*) "*  horizontal size:      ", mesh_xmax-mesh_xmin
+      write(*,*) "********************************"
+      stop
+    endif
+    if(ABC_STRETCH_TOP_LBUF+ABC_STRETCH_BOTTOM_LBUF>=mesh_zmax-mesh_zmin) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Sum of left and right        *"
+      write(*,*) "* stretching ABC buffer        *"
+      write(*,*) "* lengths must be lesser than  *"
+      write(*,*) "* the mesh's horizontal size:  *"
+      write(*,*) "*  top buffer length :    ", ABC_STRETCH_TOP_LBUF
+      write(*,*) "*  bottom buffer length : ", ABC_STRETCH_BOTTOM_LBUF
+      write(*,*) "*  vertical size:         ", mesh_zmax-mesh_zmin
+      write(*,*) "********************************"
+      stop
+    endif
     if(ADD_PERIODIC_CONDITIONS .and. (ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT)) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
@@ -86,6 +114,23 @@ subroutine prepare_stretching()
     endif
   endif
   
+  ! Warnings and general user outputs.
+  if(myrank==0) then
+    if(any_elastic) then
+      write(*,*) "********************************"
+      write(*,*) "*           WARNING            *"
+      write(*,*) "********************************"
+      write(*,*) "* Stretching absorbing         *"
+      write(*,*) "* boundary conditions are      *"
+      write(*,*) "* activated and an elastic     *"
+      write(*,*) "* media is present.            *"
+      write(*,*) "* Implementation is            *"
+      write(*,*) "* approximate, be careful.     *"
+      write(*,*) "********************************"
+    endif
+    call flush_IMAIN()
+  endif
+  
   allocate(stretching_ya(2,nglob)) ! Two-dimensionnal stretching. Change it to 3 for 3D.
   !allocate(stretching_buffer(nglob)) ! Stretching buffers code: -1 outside buffers, 1 in top buffer, 2 in left buffer, 3 in bottom buffer, 4 in right buffer.
   stretching_ya(:, :) = ONE ! By default, mesh is not stretched.
@@ -99,28 +144,28 @@ subroutine prepare_stretching()
           iglob_unique = ibool_before_perio(i, j, ispec)
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
-          if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
-             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
-             .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
-             .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+          if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
+             .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
+             .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
             
             if(ABC_STRETCH_TOP) then
-              r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
+              r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
               if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
               !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 0) ! Set 1st LSB to 1.
             endif
             if(ABC_STRETCH_LEFT) then
-              r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LBUF
+              r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
               if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
               !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 1) ! Set 2nd LSB to 1.
             endif
             if(ABC_STRETCH_BOTTOM) then
-              r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_LBUF
+              r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
               if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
               !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 2) ! Set 3rd LSB to 1.
             endif
             if(ABC_STRETCH_RIGHT) then
-              r_l = (x - mesh_xmax)/ABC_STRETCH_LBUF + ONE
+              r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
               if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
               !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 3) ! Set 4th LSB to 1.
             endif
@@ -164,6 +209,11 @@ subroutine stretching_function(r_l, ya)
   !ya=ONE
 end subroutine stretching_function
 
+! ------------------------------------------------------------ !
+! damp_function                                                !
+! ------------------------------------------------------------ !
+! TODO: Description.
+
 subroutine damp_function(r_l, sigma)
   use constants,only: CUSTOM_REAL
   implicit none  
@@ -187,7 +237,6 @@ subroutine damp_function(r_l, sigma)
   sigma = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
   ! Richards' damping.
   !sigma = 1.0d0 + sigma_max * r_l ** beta
-  !write(*, *) "z", z, "coef_stretch_z", coef_stretch_z ! DEBUG
 end subroutine damp_function
 
 ! ------------------------------------------------------------ !
@@ -200,7 +249,7 @@ subroutine change_visco(i, j, ispec, x, z)
   
   use specfem_par, only: etaext, muext,&
                          !ABC_STRETCH,&
-                         ABC_STRETCH_TOP, ABC_STRETCH_LBUF,&
+                         ABC_STRETCH_TOP, ABC_STRETCH_TOP_LBUF,&
                          !mesh_xmin, mesh_xmax, mesh_zmin,&
                          mesh_zmax
 
@@ -217,7 +266,7 @@ subroutine change_visco(i, j, ispec, x, z)
             
   ! TEST VISCO
   if(ABC_STRETCH_TOP) then
-    r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
+    r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
     if(r_l>ZERO .and. r_l<=ONE)then
       muext(i, j, ispec) = 1.25d-5*(1.+1000.*r_l**2.)
       etaext(i, j, ispec) = (4./3.)*muext(i, j, ispec)
@@ -230,12 +279,13 @@ end subroutine change_visco
 ! ------------------------------------------------------------ !
 ! damp_solution_DG                                             !
 ! ------------------------------------------------------------ !
-! TODO: This is a test routine.
+! TODO: Description.
 
 subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
 
   use specfem_par, only: nspec, coord, ibool_DG, nglob_DG, &
-        ibool_before_perio,ABC_STRETCH_LBUF,&
+        ibool_before_perio,&
+        ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF,&
         ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
         ispec_is_acoustic_DG,&
         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
@@ -268,27 +318,27 @@ subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
           iglob = ibool_DG(i, j, ispec)
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
-          if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
-             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
-             .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
-             .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+          if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
+             .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
+             .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
             
             sigma = ONE ! In case something bad happens.
             ! Load damping value.
             if(ABC_STRETCH_LEFT) then
-              r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LBUF
+              r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             if(ABC_STRETCH_RIGHT) then
-              r_l = (x - mesh_xmax)/ABC_STRETCH_LBUF + ONE
+              r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             if(ABC_STRETCH_BOTTOM) then
-              r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_LBUF
+              r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             if(ABC_STRETCH_TOP) then
-              r_l = (z - mesh_zmax)/ABC_STRETCH_LBUF + ONE
+              r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             ! Load quiet state.

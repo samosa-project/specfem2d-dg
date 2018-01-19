@@ -116,7 +116,7 @@
   ! DG related quantities.
   !---------------------------------------------------------------------
   logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH
-  double precision :: ABC_STRETCH_LBUF
+  double precision :: ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
   logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
   double precision :: SPREAD_SSF_SIGMA
   logical :: REMOVE_STF_INITIAL_DISCONTINUITY

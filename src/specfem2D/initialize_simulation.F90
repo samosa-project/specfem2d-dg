@@ -95,22 +95,27 @@
   allocate(ibool(NGLLX,NGLLZ,nspec),stat=ier)
   if (ier /= 0) stop 'Error allocating ibool array'
   
-  ! Modif DG
+  ! Discontinuous Galerkin method.
   if(USE_DISCONTINUOUS_METHOD) then
-          allocate(ibool_DG(NGLLX,NGLLZ,nspec),stat=ier)
-          allocate(ispec_is_acoustic_surface(NGLLX,NGLLZ,nspec), &
-                ispec_is_acoustic_forcing(NGLLX,NGLLZ,nspec), &
-                is_corner(NGLLX,NGLLZ), &
-                ispec_is_acoustic_surface_corner(NGLLX,NGLLZ,nspec))!, &
-          allocate(ibool_before_perio(NGLLX,NGLLZ,nspec))
-          allocate(Vandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
-                invVandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
-                Drx(NGLLX*NGLLZ,NGLLX*NGLLZ), &
-                Drz(NGLLX*NGLLZ,NGLLX*NGLLZ))
-          allocate(ispec_is_acoustic_coupling_el(NGLLX,NGLLZ,nspec,3))
-          allocate(ispec_is_acoustic_DG(nspec))
-          
-          ispec_is_acoustic_DG = .false.
+    allocate(ibool_DG(NGLLX,NGLLZ,nspec), stat=ier)
+    if(ier /= 0) stop 'Error allocating ibool_DG array.'
+    allocate(ispec_is_acoustic_surface(NGLLX,NGLLZ,nspec), &
+             ispec_is_acoustic_forcing(NGLLX,NGLLZ,nspec), &
+             is_corner(NGLLX,NGLLZ), &
+             ispec_is_acoustic_surface_corner(NGLLX,NGLLZ,nspec), stat=ier)
+    if(ier /= 0) stop 'Error allocating some DG array (see initialize_simulation.F90).'
+    allocate(ibool_before_perio(NGLLX,NGLLZ,nspec), stat=ier)
+    if(ier /= 0) stop 'Error allocating ibool_before_perio array.'
+    allocate(Vandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
+             invVandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
+             Drx(NGLLX*NGLLZ,NGLLX*NGLLZ), &
+             Drz(NGLLX*NGLLZ,NGLLX*NGLLZ), stat=ier)
+    if(ier /= 0) stop 'Error allocating some DG array (see initialize_simulation.F90).'
+    allocate(ispec_is_acoustic_coupling_el(NGLLX,NGLLZ,nspec,3), stat=ier)
+    if(ier /= 0) stop 'Error allocating ispec_is_acoustic_coupling_el array.'
+    allocate(ispec_is_acoustic_DG(nspec), stat=ier)
+    if(ier /= 0) stop 'Error allocating ispec_is_acoustic_DG array.'
+    ispec_is_acoustic_DG = .false.
   endif
   
   ! mesh arrays

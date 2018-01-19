@@ -38,8 +38,8 @@
 ! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
 
   subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, &
-        T_DG_main, V_DG_main, e1_DG, &
-        dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, timelocal)
+                                        T_DG_main, V_DG_main, e1_DG, &
+                                        dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, timelocal)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
 
@@ -56,84 +56,61 @@
                          CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
                          ABC_STRETCH, stretching_ya, &!stretching_buffer,&! Stretching-based absorbing conditions.
-                         ABC_STRETCH_LBUF,&
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
+                         ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF, ABC_STRETCH_TOP_LBUF, ABC_STRETCH_BOTTOM_LBUF,&
                          mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
                          coord, ibool_before_perio!,cnu
                          
   implicit none
 
+  ! Input/output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, e1_DG
   real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(in) :: T_DG_main
   real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(in) :: V_DG_main
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
-  real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
-  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   
   ! Local variables.
-  integer :: ispec,i, j,k, iglob, iglob_unique
-  integer :: ifirstelem,ilastelem
-
-  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_rho_1, temp_rho_2, &
-        temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
-        temp_E_1, temp_E_2, &
-        temp_nondiv_rho, &
-        temp_nondiv_rhovx, temp_nondiv_rhovz, temp_nondiv_E!, temp_e1
-
-  ! Jacobian matrix and determinant
-  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl
-
-  real(kind=CUSTOM_REAL) :: lambda, nx, nz, weight, &
-        temp_unknown_M, temp_unknown_P, temp_unknown2_M, temp_unknown2_P, &
-        temp_unknown, temp_unknown2, &
-        flux_n, jump, &
-        rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, &
-        E_DG_P, p_DG_P, rhovx_DG_P, rhovz_DG_P, timelocal, &
-        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vxz_DG_P, Vzx_DG_P, T_P, &
-        ! TEST
-        gamma_P,&
-        e1_DG_P
-    
-  real(kind=CUSTOM_REAL) :: dT_dx, dT_dz
-  !real(kind=CUSTOM_REAL) :: veloc_n_M, veloc_n_P
-        
-  integer :: iglobM, iglobP
-  
-  integer, dimension(3) :: neighbor
-  
-  ! Local
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, p_DG
-  
-  ! Viscosity
-  real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz
-  real(kind=CUSTOM_REAL) :: wxl, wzl
-  
-  ! Parameters
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
-  
-  real(kind=CUSTOM_REAL), parameter :: threshold = 0.000000001_CUSTOM_REAL
-  
-  ! Temporary
-  logical, parameter :: ONLY_PERTURBATION = .false.
-  
+  !real(kind=CUSTOM_REAL), parameter :: threshold = 0.000000001_CUSTOM_REAL ! Unused.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
+  real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
+  real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
+  integer :: ispec, i, j, k, iglob, iglob_unique
+  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: temp_rho_1, temp_rho_2, &
+                                                     temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
+                                                     temp_E_1, temp_E_2, &
+                                                     temp_nondiv_rho, &
+                                                     temp_nondiv_rhovx, temp_nondiv_rhovz, temp_nondiv_E!, temp_e1
+  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl ! Jacobian matrix and determinant.
+  real(kind=CUSTOM_REAL) :: lambda, nx, nz, weight, &
+                            temp_unknown_M, temp_unknown_P, temp_unknown2_M, temp_unknown2_P, &
+                            temp_unknown, temp_unknown2, &
+                            flux_n, jump, &
+                            rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, &
+                            E_DG_P, p_DG_P, rhovx_DG_P, rhovz_DG_P, timelocal, &
+                            Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vxz_DG_P, Vzx_DG_P, T_P, &
+                            ! TEST
+                            gamma_P,&
+                            e1_DG_P
+  real(kind=CUSTOM_REAL) :: dT_dx, dT_dz
+  !real(kind=CUSTOM_REAL) :: veloc_n_M, veloc_n_P
+  integer :: iglobM, iglobP
+  integer, dimension(3) :: neighbor
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, p_DG
+  real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz ! Viscosity
+  real(kind=CUSTOM_REAL) :: wxl, wzl ! Integration weigths.
   logical :: exact_interface_flux
-  
-  ! For better CONSTRAIN_HYDROSTATIC switches.
-  integer :: cnst_hdrsttc
-  
-  ! TEST ABSORB
-  real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E
-  logical :: ABSORB_BC
-
+  integer :: cnst_hdrsttc ! For computationnaly better CONSTRAIN_HYDROSTATIC switches.
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
+  real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
-  ! TEST STRETCH
-  real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
-  real(kind=CUSTOM_REAL) :: x,z
+  ! TESTS
+  real(kind=CUSTOM_REAL) :: x,z ! Artifical advection and a priori damping.
+  real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E ! ABSORB
+  logical :: ABSORB_BC ! ABSORB
   
   ! For more convinient CONSTRAIN_HYDROSTATIC switches.
   ! TODO: Replace the CONSTRAIN_HYDROSTATIC switches using this variable.
@@ -142,9 +119,6 @@
   else
     cnst_hdrsttc=ZERO
   endif
-  
-  ifirstelem = 1
-  ilastelem = nspec
   
   rho_DG   = rho_DG_main
   rhovx_DG = rhovx_DG_main
@@ -195,7 +169,7 @@
     WRITE(*,"(a,e23.16,a)")        "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
   endif
   
-  do ispec = ifirstelem, ilastelem ! Loop over elements.
+  do ispec = 1, nspec ! Loop over elements.
     ! acoustic spectral element
     if (ispec_is_acoustic_DG(ispec)) then !if (ispec_is_acoustic(ispec)) then
       ! --------------------------- !
@@ -217,12 +191,6 @@
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z.
             ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
-            
-            if(.false. .and. .not. ya_z_l==stretching_ya(2, ibool_before_perio(i, j, ispec))& ! DEBUG
-               .and. it<5 .and. i==3 .and. j==3 .and. ispec>1550 .and. ispec<1560) then
-              write(*,*) ya_z_l, stretching_ya(2, ibool_before_perio(i, j, ispec)), ispec, i, j, iglob
-            endif
-            
             iglob_unique = ibool_before_perio(i, j, ispec);
             ya_x_l=stretching_ya(1, iglob_unique)
             ya_z_l=stretching_ya(2, iglob_unique)
@@ -345,14 +313,14 @@
             temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)*jacobianl
           endif
           
-          ! TEST ARTIFICIAL ADVECTION
+          ! TEST ARTIFICIAL ADVECTION on top buffer
           if(.false.) then
             x=coord(1, ibool_before_perio(i, j, ispec))
             z=coord(2, ibool_before_perio(i, j, ispec))
-            if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
-               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
-               .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
-               .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+            if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
+               .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
+               .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
               !temp_nondiv_rho(i, j) = temp_nondiv_rho(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rho_DG(iglob)
               !temp_nondiv_rhovx(i, j) = temp_nondiv_rhovx(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovx_DG(iglob)
               !temp_nondiv_rhovz(i, j) = temp_nondiv_rhovz(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovz_DG(iglob)
@@ -363,27 +331,27 @@
               temp_nondiv_E(i, j) = temp_nondiv_E(i, j) + 10.*E_DG(iglob)
             endif
           endif
-          ! TEST PRIORI DAMPING
+          ! TEST PRIORI DAMPING on top buffer
           if(.false.) then
             x=coord(1, ibool_before_perio(i, j, ispec))
             z=coord(2, ibool_before_perio(i, j, ispec))
-            if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LBUF) & ! left stretching and in left buffer zone
-               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_LBUF) & ! right stretching and in right buffer zone
-               .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_LBUF) & ! bottom stretching and in bottom buffer zone
-               .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_LBUF)) then ! top stretching and in top buffer zone
+            if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
+               .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
+               .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
               call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                       veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
               
               if(ABC_STRETCH_TOP) then
-                if((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE>ZERO .and. (z-mesh_zmax)/ABC_STRETCH_LBUF+ONE<=ONE) then
+                if((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE>ZERO .and. (z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE<=ONE) then
                   temp_nondiv_rho(i, j) = temp_nondiv_rho(i, j)&
-                                         + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*10.*( rho_DG(iglob) - rho_DG_P)
+                                         + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( rho_DG(iglob) - rho_DG_P)
                   temp_nondiv_rhovx(i, j) = temp_nondiv_rhovx(i, j)&
-                                           + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*10.*( rhovx_DG(iglob) - rhovx_DG_P)
+                                           + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( rhovx_DG(iglob) - rhovx_DG_P)
                   temp_nondiv_rhovz(i, j) = temp_nondiv_rhovz(i, j)&
-                                           + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*10.*( rhovz_DG(iglob) - rhovz_DG_P)
+                                           + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( rhovz_DG(iglob) - rhovz_DG_P)
                   temp_nondiv_E(i, j) = temp_nondiv_E(i, j)&
-                                       + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)**2.*10.*( E_DG(iglob) - E_DG_P)
+                                       + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( E_DG(iglob) - E_DG_P)
                 endif
               endif
             endif
@@ -494,10 +462,6 @@
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = 0.
           jump   = 0.
-          !gamma_P = gammaext_DG(iglobM) ! DEBUG
-          !veloc_n_M = sqrt(veloc_x_DG(iglobM)**2 + veloc_z_DG(iglobM)**2) !DEBUG
-          !veloc_n_P = sqrt(veloc_x_DG_P**2 + veloc_z_DG_P**2) !DEBUG
-          
           !veloc_n_M = abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz)
           !veloc_n_P = abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz)
           ! Save some operations.

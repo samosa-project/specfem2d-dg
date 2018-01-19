@@ -35,18 +35,14 @@
 ! ------------------------------------------------------------ !
 ! prepare_source_time_function                                 !
 ! ------------------------------------------------------------ !
+! Prepares source_time_function array.
 
-  subroutine prepare_source_time_function()
-
-  ! prepares source_time_function array
-
+subroutine prepare_source_time_function()
   use constants,only: IMAIN,ZERO,ONE,TWO,HALF,PI,QUARTER,SOURCE_DECAY_MIMIC_TRIANGLE
-
   use specfem_par, only: AXISYM,NSTEP,NSOURCES,source_time_function, &
                          time_function_type,name_of_source_file,burst_band_width,f0_source,tshift_src,factor, &
                          aval,t0,nb_proc_source,deltat,stage_time_scheme,C_LDDRK,is_proc_source, &
                          USE_TRICK_FOR_BETTER_PRESSURE,myrank, USE_SPREAD_SSF, REMOVE_STF_INITIAL_DISCONTINUITY
-
   implicit none
 
   ! local parameters

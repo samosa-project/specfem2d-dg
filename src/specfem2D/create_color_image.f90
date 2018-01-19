@@ -42,7 +42,8 @@
   use specfem_par, only: myrank,it,NSOURCES,P_SV,nrec,&
                          ABC_STRETCH, ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
                          iy_image_color_bottom_buffer, iy_image_color_top_buffer,&
-                         ix_image_color_left_buffer, ix_image_color_right_buffer
+                         ix_image_color_left_buffer, ix_image_color_right_buffer,&
+                         NSTEP
 
   use specfem_par_movie,only: image_color_data,iglob_image_color,NX_IMAGE_color,NZ_IMAGE_color, &
     isnapshot_number,cutsnaps,image_color_vp_display, &
@@ -87,11 +88,22 @@
 
 ! open the image file
 ! slightly change the beginning of the file name depending if we use the time step of the image number, to avoid confusion
-  if (USE_SNAPSHOT_NUMBER_IN_FILENAME) then
-    isnapshot_number = isnapshot_number + 1
-    write(filename,"('OUTPUT_FILES/img',i7.7,'.jpg')") isnapshot_number
+
+  if(int(log10(real(NSTEP))+1)<7) then
+    ! Quick hack: if the total number of steps is > 10^7, prepare wider filenames. This can probably be done more smartly, but this is all we need for now.
+    if (USE_SNAPSHOT_NUMBER_IN_FILENAME) then
+      isnapshot_number = isnapshot_number + 1
+      write(filename,"('OUTPUT_FILES/img',i7.7,'.jpg')") isnapshot_number
+    else
+      write(filename,"('OUTPUT_FILES/image',i7.7,'.jpg')") it
+    endif
   else
-    write(filename,"('OUTPUT_FILES/image',i7.7,'.jpg')") it
+    if (USE_SNAPSHOT_NUMBER_IN_FILENAME) then
+      isnapshot_number = isnapshot_number + 1
+      write(filename,"('OUTPUT_FILES/img',i14.14,'.jpg')") isnapshot_number
+    else
+      write(filename,"('OUTPUT_FILES/image',i14.14,'.jpg')") it
+    endif
   endif
 
   ! Compute maximum amplitude.

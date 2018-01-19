@@ -278,8 +278,10 @@
 ! ------------------------------------------------------------ !
 ! compute_add_sources_acoustic_DG_spread                       !
 ! ------------------------------------------------------------ !
+! Adds sources contributions to the constitutive variable of interest.
+! Variable "variable_DG" is input/output-intended: it corresponds to the variable to which add source terms.
   
-  subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
+subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
 
   use constants,only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
 
@@ -289,29 +291,22 @@
                          ibool_DG, &
                          coord,  &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
-                         USE_SPREAD_SSF, nspec, source_spatial_function_DG &
-                         ,ABC_STRETCH,stretching_ya!, & ! For sources spatially distributed over more than one element.
-                         !nglob, &
-                         !IMAIN, myrank ! DEBUG
+                         USE_SPREAD_SSF, nspec, source_spatial_function_DG, &
+                         ABC_STRETCH, stretching_ya
   implicit none
 
-  real(kind=CUSTOM_REAL), dimension(nglob_DG),intent(inout) :: variable_DG
+  ! Input/output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: variable_DG
   integer, intent(in) :: it, i_stage
   
   ! Local variables.
   real(kind=CUSTOM_REAL) :: x, y, r, accuracy, sigma, dist_min, dist, temp_source
   real(kind=CUSTOM_REAL), dimension(2) :: X1, X2, X3, X4, X0
   real(kind=CUSTOM_REAL), dimension(4, 2) :: Xc
-  
   real(kind=CUSTOM_REAL) :: jacobianl, wxl, wzl
   integer :: i, j, i_source, ispec, iglob, iglob_unique
-  
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   
-  ! TEST STRETCH
-  !real(kind=CUSTOM_REAL) :: coef_stretch_x_ij, coef_stretch_z_ij
-  
-  !do ispec = ifirstelem,ilastelem
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
     
@@ -319,7 +314,6 @@
       ! Case in which a source spatially distributed over more than one element was initialised.
       do ispec = 1, nspec
         if(ispec_is_acoustic_DG(ispec)) then
-          !if(mod(ispec, 100)==0) write(IMAIN, *) '>>>> ispec i j ', ispec!, ' ', i, ' ', j ! DEBUG
           do j = 1, NGLLZ
             do i = 1, NGLLX
               iglob_unique = ibool_before_perio(i, j, ispec)
@@ -372,7 +366,6 @@
               endif
             enddo
             sigma = dist_min/sqrt(accuracy*log(10.))
-            !write(*, *) 'ouloulou SIGMA', sigma !DEBUG
             
             ! At each GLL point of the source element, add to the variable (variable_DG) the value of the source function.
             do j = 1, NGLLZ
@@ -382,12 +375,10 @@
                 y = coord(2, ibool_before_perio(i, j, ispec))
                 r = sqrt( (x - X0(1))**2 + (y - X0(2))**2 )
                 temp_source = stf * exp(-(r/sigma)**2) ! See "prepare_source_time_function.f90" for the subroutine initialising the vector "source_time_function".
-                
                 jacobianl = jacobian(i, j, ispec)
                 wzl = real(wzgll(j), kind=CUSTOM_REAL)
                 wxl = real(wxgll(i), kind=CUSTOM_REAL)
                 variable_DG(iglob) = variable_DG(iglob) + temp_source * wxl * wzl * jacobianl
-                !WRITE(*,*) ">>>>", temp_source, wxl * wzl * jacobianl ! DEBUG
               enddo
             enddo
             
@@ -396,7 +387,5 @@
         endif ! Endif on is_proc_source
       endif ! Endif on ispec_is_acoustic_DG.
     endif ! Endif on SIGMA_SSF.
-  enddo
-
-  end subroutine compute_add_sources_acoustic_DG_spread
-
+  enddo ! Enddo on i_source.
+end subroutine compute_add_sources_acoustic_DG_spread

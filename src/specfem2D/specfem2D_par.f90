@@ -80,12 +80,14 @@ module specfem_par
   !---------------------------------------------------------------------
   ! DG related quantities.
   !---------------------------------------------------------------------
+  ! Stretching absorbing boundary conditions.
   logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH ! Self-explanatory.
-  real(kind=CUSTOM_REAL) :: ABC_STRETCH_LBUF ! Length of the stretching buffer.
+  real(kind=CUSTOM_REAL) :: ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF ! Length of the stretching buffers.
   integer :: iy_image_color_bottom_buffer, iy_image_color_top_buffer, ix_image_color_left_buffer, ix_image_color_right_buffer ! Location of lines marking the beginnings of the buffers.
   real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
     stretching_ya ! Array of stretching values (2 or 3 dimensions).
   
+  ! Code for buffers, to be implemented later.
   !integer(4), dimension (:), allocatable :: stretching_buffer ! Stretching buffers codes, binary.
   ! Least significant bit (LSB, ---*) is for top buffer, 2nd LSB (--*-) for left buffer, 3rd LSB (-*--) for bottom buffer, 4th LSB (*---) for right buffer. Examples:
   !  0:=0000 for non-stretched.
@@ -100,13 +102,7 @@ module specfem_par
   !  9:=1001 for top-right buffer.
   ! 10:=1010 for bottom-right buffer.
   ! 11-15 should not happen (all cases covered).
-  
-  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
-  real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
-  
-  logical :: REMOVE_STF_INITIAL_DISCONTINUITY
-  
-  
+    
   ! Switches (variables' names are self-explanatory).
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
              CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
@@ -124,14 +120,16 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: V_DG
   ! "Time derivatives" of the constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
-  
   ! Variables to store numerical time scheme temporary results.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1
-  
   ! Backward simulation constitutive variables and their "time derivatives".
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
                                                        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E, &
                                                        resu_b_rho, resu_b_rhovx, resu_b_rhovz, resu_b_E
+  
+  ! Inverse mass matrices (forward and backward simulations)
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, &
+                                                       rmass_inverse_acoustic_DG_b
   
   ! Source type (more precisely, this encodes on which Navier-Stokes equation(s) the source(s) is (are) to be used).
   integer :: TYPE_SOURCE_DG
@@ -139,14 +137,13 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: &
         source_time_function_rho_DG, source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
         source_time_function_E_DG
-  
+  ! Self-explanatory switch from parameter file.
+  logical :: REMOVE_STF_INITIAL_DISCONTINUITY
   ! Sources spatially distributed over more than one element.
+  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
+  real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
   real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
     source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
-  
-  ! Inverse mass matrices (forward and backward simulations)
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, &
-                                                       rmass_inverse_acoustic_DG_b
 
   ! MPI: Transfers' buffers.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P
@@ -155,37 +152,46 @@ module specfem_par
                                                           ! TEST
                                                           buffer_DG_gamma_P, buffer_DG_e1_P
   
+  ! Fluid parameters from external file.
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG
+  ! Fluid parameters from parameter file.
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: kappa_DG, tau_sigma, tau_epsilon
+  real(kind=CUSTOM_REAL) :: SCALE_HEIGHT, gravity_cte_DG, &
+                            dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
+  ! Isobaric and isochoric specific heat capacities from parameter file.
+  real(kind=CUSTOM_REAL) :: cp, cnu
+  
+  ! Slope limiter paramater from parameter file.
+  real(kind=CUSTOM_REAL) :: MINMOD_FACTOR
+  ! Vandermonde matrices.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
+  
   ! TODO: Explain those variables.
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG, &
-        kappa_DG, tau_sigma, tau_epsilon
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: QKappa_attenuationext,Qmu_attenuationext
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: error
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG, save_pressure
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: save_pressure
   real(kind=CUSTOM_REAL) :: coord_interface
   !logical, dimension(:), allocatable :: this_iglob_is_acous
   integer :: TYPE_FORCING, id_region_DG
   real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time 
-  real(kind=CUSTOM_REAL) :: MINMOD_FACTOR, SCALE_HEIGHT, gravity_cte_DG, &
-        dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
-  real(kind=CUSTOM_REAL) :: cp, cnu
   integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG
   logical, dimension(:), allocatable  :: is_MPI_interface_DG    
   integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG
-  integer :: nglob_DG
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_DG
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_DG
   integer, dimension(:), allocatable  :: tab_requests_send_recv_DG
   real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind  
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
+  ! Number of DG points (spatial duplicates included).
+  integer :: nglob_DG
   ! Indices' mappings. Usually from (i, j, ispec) to iglob.
-  integer, dimension(:,:,:), allocatable :: ibool_DG ! TODO: Explain better.
-  integer, dimension(:,:,:), allocatable :: ibool_before_perio ! TODO: Explain better.
-  
+  integer, dimension(:,:,:), allocatable :: ibool_DG ! Same as ibool (see below, "for SEM discretization of the model"), but takes into account duplicate points (ibool gives them with the same number)
+  integer, dimension(:,:,:), allocatable :: ibool_before_perio ! Same as ibool (see below, "for SEM discretization of the model"), but with points on the periodic boundaries not merged.
   ! Characterise whether the element and/or point is something or not. TODO: Explain each better.
   logical, dimension(:,:,:), allocatable :: ispec_is_acoustic_forcing, ispec_is_acoustic_surface, &
                                             ispec_is_acoustic_surface_corner

@@ -34,36 +34,26 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_DG_main                              !
 ! ------------------------------------------------------------ !
+! TODO: Description.
 
-  subroutine compute_forces_acoustic_DG_main()
+subroutine compute_forces_acoustic_DG_main()
 
   use specfem_par
   use constants, only: rk4a_d, rk4b_d, rk4c_d
 
   implicit none
 
-  ! local parameters
-  real(kind=CUSTOM_REAL) :: timelocal
-  
-  ! Parameters
+  ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
-  
-  real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
-  
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x
-  
-  !integer :: i, j, ispec, numelem
-  
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.0000001_CUSTOM_REAL
-  
+  real(kind=CUSTOM_REAL) :: timelocal
+  real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x
   integer :: i,j,ispec
-  
-  !TEST STRETCHING
-  !real(kind=CUSTOM_REAL) :: coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -283,9 +273,21 @@
   endif
   
   ! TEST POSTERIORI DAMPING
-  !call damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See 'prepare_stretching.f90'.
+  if(.false.) then
+    if(myrank==0) then
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* A posteriori damping of the  *"
+        write(*,*) "* solution activated. Solution *"
+        write(*,*) "* is being damped in the       *"
+        write(*,*) "* absorbing buffers.           *"
+        write(*,*) "********************************"
+    endif
+    call damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See 'prepare_stretching.f90'.
+  endif
   
-  end subroutine compute_forces_acoustic_DG_main
+end subroutine compute_forces_acoustic_DG_main
 
 ! ------------------------------------------------------------------------------------
 
@@ -385,10 +387,12 @@
 
   end subroutine read_forward_solution
 
-! ------------------------------------------------------------------------------------
+! ------------------------------------------------------------ !
+! prepare_MPI_DG                                               !
+! ------------------------------------------------------------ !
+! TODO: Description.
 
-  !subroutine prepare_MPI_DG(my_neighbours_loc)
-  subroutine prepare_MPI_DG()
+subroutine prepare_MPI_DG()
     
     use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
     
@@ -747,50 +751,50 @@
     
     enddo
     
-  end subroutine prepare_MPI_DG
+end subroutine prepare_MPI_DG
 
-  ! Setup Vandermonde matrices and derivation matrix for slope limiter
-  ! purposes
-  subroutine setUpVandermonde()
-    
-    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-    
-    use specfem_par,only: Vandermonde, invVandermonde, Drx, Drz
+! ------------------------------------------------------------ !
+! setUpVandermonde                                             !
+! ------------------------------------------------------------ !
+! Setup Vandermonde matrices and derivation matrix for slope limiter purposes.
 
-    implicit none 
-    
+subroutine setUpVandermonde()
+    use constants, only: CUSTOM_REAL,NGLLX,NGLLZ
+    use specfem_par, only: Vandermonde, invVandermonde, Drx, Drz
+    implicit none
     call compute_Vander_matrices(NGLLX*NGLLZ,&
-       Vandermonde, invVandermonde, Drx, Drz )
-       
-  end subroutine setUpVandermonde
+                                 Vandermonde, invVandermonde, Drx, Drz )
+end subroutine setUpVandermonde
+
+! ------------------------------------------------------------ !
+! compute_Vander_matrices                                      !
+! ------------------------------------------------------------ !
+! TODO: Description.
+
+subroutine compute_Vander_matrices(np, V1D, V1D_inv, Drx, Drz)
   
-  subroutine compute_Vander_matrices(np,&
-       V1D, V1D_inv, Drx, Drz )
-
-    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,GAUSSALPHA,GAUSSBETA
-    use specfem_par,only: xigll, zigll
-
-    implicit none 
-
-  ! Parameters
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,GAUSSALPHA,GAUSSBETA
+  use specfem_par,only: xigll, zigll
+  
+  implicit none
+  
+  ! Input/output.
+  integer np
+  real(kind=CUSTOM_REAL) V1D(np,np), V1D_inv(np, np),&
+                         Drx(np, np), Drz(np, np)
+  
+  ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
-
-
-  integer np
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.00001_CUSTOM_REAL
-  real(kind=CUSTOM_REAL) V1D(np,np), V1D_inv(np, np),&
-         Drx(np, np), Drz(np, np)
-  double precision, dimension(np,np) :: V1D_d, V1D_inv_d
-
-  double precision :: p,pd,pm1,pdm1,pm2,pdm2,p2,pd2
-
-  integer i,j,k,errorflag,l,m,n
+  double precision, dimension(np, np) :: V1D_d, V1D_inv_d
+  double precision :: p, pd, pm1, pdm1, pm2, pdm2, p2, pd2
+  integer i, j, k, errorflag, l, m, n
   
-  ! Init
+  ! Initialise.
   V1D     = ZEROl
   V1D_inv = ZEROl
   Drx     = ZEROl
@@ -798,7 +802,7 @@
   V1D_d   = 0d0
   
   ! NEW MATRIcES
- k = 0
+  k = 0
   do m = 1,NGLLX
     do n = 1,NGLLZ
     k = k+1
@@ -825,7 +829,7 @@
     enddo
   enddo
   
-  end subroutine compute_Vander_matrices
+end subroutine compute_Vander_matrices
 
 ! ------------------------------------------------------------ !
 ! FINDInv                                                      !

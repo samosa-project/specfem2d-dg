@@ -31,9 +31,12 @@
 !
 !========================================================================
 
-  subroutine find_normals()
+! ------------------------------------------------------------ !
+! find_normals                                                 !
+! ------------------------------------------------------------ !
+! Find normal vectors for every edge.
 
-! find normal at each edge
+subroutine find_normals()
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
@@ -45,41 +48,34 @@
 
   implicit none
   
+  ! Local variables.
   integer :: i, j, numelem
   double precision :: sign_cond1, sign_cond2, sign_cond3, sign_cond4
   double precision :: test_node_x, test_node_z
   double precision :: xxi, zxi, xgamma, zgamma, &
-        jacobian1D_1, jacobian1D_2, jacobian1D, &
-        nx1, nz1, nx2, nz2, nx, nz, weight, coef
+                      jacobian1D_1, jacobian1D_2, jacobian1D, &
+                      nx1, nz1, nx2, nz2, nx, nz, weight, coef
   double precision :: cond_1, cond_2, prod1, prod2
   double precision, dimension(4,2) :: pos, vd, mid
-  integer, dimension(NGLLX,NGLLZ,nspec) :: ibool
- 
+  integer, dimension(NGLLX, NGLLZ, nspec) :: ibool
   real(kind=CUSTOM_REAL) :: nx_neighbor, nz_neighbor
-  
   integer :: iface, iglob_first, iglob_last, iface1
   double precision, dimension(2) :: mid_iface, vd_iface
   
   allocate(nx_iface(4,nspec), nz_iface(4,nspec), weight_iface(NGLLX,4,nspec))
- 
-  ! For normal computation => use old ibool before periodic cond was applied
-  ibool = ibool_before_perio
- 
-  WRITE(*,*) "-- compute normals for DG simulations"
- 
-! Temporary way to find orientation
-  do numelem = 1,nspec
   
-    ! Skip non acoustic (thus non fluid) elements
-    if (.not. ispec_is_acoustic(numelem)) cycle
+  ibool = ibool_before_perio ! For normal computation => use old ibool before periodic cond was applied
+  
+  do numelem = 1,nspec
+    if (.not. ispec_is_acoustic(numelem)) cycle ! Skip non acoustic (thus non fluid) elements.
     
-    ! Find corner location
+    ! Find corner location.
     pos(1,:) = coord(:,ibool(1,1,numelem))
     pos(2,:) = coord(:,ibool(NGLLX,1,numelem))
     pos(3,:) = coord(:,ibool(1,NGLLZ,numelem))
     pos(4,:) = coord(:,ibool(NGLLX,NGLLZ,numelem)) 
     
-    ! Direction vector of each faces
+    ! Direction vector of each faces.
     vd(1,:)  = pos(1,:) - pos(2,:)
     vd(1,:)  = vd(1,:)/sqrt(vd(1,1)**2 + vd(1,2)**2 )
     mid(1,:) = 0.5d0*DBLE(pos(1,:) + pos(2,:))
@@ -93,15 +89,15 @@
     vd(4,:)  = vd(4,:)/sqrt(vd(4,1)**2 + vd(4,2)**2 )
     mid(4,:) = 0.5d0*DBLE(pos(4,:) + pos(2,:))
   
-  !  EDGE ORIENTATION FINDING
-    do iface = 1,4
+    ! Edge orientation finding.
+    do iface = 1, 4
       iglob_first = ibool(link_iface_ijispec(1,iface,numelem,1),link_iface_ijispec(1,iface,numelem,2),numelem)
       iglob_last  = ibool(link_iface_ijispec(NGLLX,iface,numelem,1),link_iface_ijispec(NGLLX,iface,numelem,2),numelem)
       
       mid_iface(:) = 0.5d0*DBLE(coord(:,iglob_first) + coord(:,iglob_last))
       vd_iface(:)  = coord(:,iglob_first) - coord(:,iglob_last)
       vd_iface(:)  = vd_iface(:)/sqrt(vd_iface(1)**2 + vd_iface(2)**2)
-      do iface1 = 1,NGLLX
+      do iface1 = 1, NGLLX
         i = link_iface_ijispec(iface1,iface,numelem,1)
         j = link_iface_ijispec(iface1,iface,numelem,2)
         
@@ -190,36 +186,23 @@
         nz_iface(iface,numelem) = real(nz, kind=CUSTOM_REAL)
         weight_iface(iface1,iface,numelem) = real(weight, kind=CUSTOM_REAL)
         
-      enddo !iface1
-    enddo !numelem
-  enddo !ispec
+      enddo ! Enddo on iface1.
+    enddo ! Enddo on iface.
+  enddo ! Enddo on numelem.
   
   do numelem = 1,nspec
-  
-    ! Skip non acoustic (thus non fluid) elements
-    if (.not. ispec_is_acoustic(numelem)) cycle
-    
+    if (.not. ispec_is_acoustic(numelem)) cycle ! Skip non acoustic (thus non fluid) elements.
     do iface = 1,4
-    
-    do iface1 = 1,NGLLX
-    
+      do iface1 = 1,NGLLX
         i = link_iface_ijispec(iface1,iface,numelem,1)
         j = link_iface_ijispec(iface1,iface,numelem,2)
-        
         nx = nx_iface(iface,numelem)
         nz = nz_iface(iface,numelem)
-        
         if(neighbor_DG_iface(iface1,iface,numelem,1) > -1) then
-        
-        nx_neighbor = nx_iface( neighbor_DG_iface(iface1,iface,numelem,2), neighbor_DG_iface(iface1,iface,numelem,3) )
-        nz_neighbor = nz_iface( neighbor_DG_iface(iface1,iface,numelem,2), neighbor_DG_iface(iface1,iface,numelem,3) )
-        
+          nx_neighbor = nx_iface( neighbor_DG_iface(iface1,iface,numelem,2), neighbor_DG_iface(iface1,iface,numelem,3) )
+          nz_neighbor = nz_iface( neighbor_DG_iface(iface1,iface,numelem,2), neighbor_DG_iface(iface1,iface,numelem,3) )
         endif
-    
-    enddo
-    
-    enddo
-    
-  enddo
-  
-  end subroutine find_normals
+      enddo ! Enddo on iface1.
+    enddo ! Enddo on iface.
+  enddo ! Enddo on numelem.
+end subroutine find_normals

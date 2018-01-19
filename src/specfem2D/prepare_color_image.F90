@@ -124,7 +124,8 @@
 
   use specfem_par, only : myrank,coord,coorg,nspec,knods,ibool, &
                           NSOURCES,nrec,x_source,z_source,st_xval,st_zval,&
-                          ABC_STRETCH_LBUF, iy_image_color_bottom_buffer, iy_image_color_top_buffer,&
+                          ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF,&
+                          iy_image_color_bottom_buffer, iy_image_color_top_buffer,&
                           ABC_STRETCH, ix_image_color_left_buffer, ix_image_color_right_buffer
 
 
@@ -258,10 +259,10 @@
   
   ! Absorbing buffers.
   if(ABC_STRETCH) then
-    ix_image_color_left_buffer   = int(ABC_STRETCH_LBUF/size_pixel_horizontal) + 1
-    ix_image_color_right_buffer  = int((xmax_color_image-ABC_STRETCH_LBUF-xmin_color_image)/size_pixel_horizontal) + 1
-    iy_image_color_bottom_buffer = int(ABC_STRETCH_LBUF/size_pixel_vertical) + 1
-    iy_image_color_top_buffer    = int((zmax_color_image-ABC_STRETCH_LBUF-zmin_color_image)/size_pixel_vertical) + 1
+    ix_image_color_left_buffer   = int(ABC_STRETCH_LEFT_LBUF/size_pixel_horizontal) + 1
+    ix_image_color_right_buffer  = int((xmax_color_image-ABC_STRETCH_RIGHT_LBUF-xmin_color_image)/size_pixel_horizontal) + 1
+    iy_image_color_bottom_buffer = int(ABC_STRETCH_BOTTOM_LBUF/size_pixel_vertical) + 1
+    iy_image_color_top_buffer    = int((zmax_color_image-ABC_STRETCH_TOP_LBUF-zmin_color_image)/size_pixel_vertical) + 1
   endif
 
   end subroutine prepare_color_image_pixels
