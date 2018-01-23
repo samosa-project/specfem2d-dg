@@ -40,7 +40,7 @@ DATAFILE = "Earth/wrapper/msisehwm_model_output"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fid = fopen(DATAFILE);
 if(fid==-1)
-  error(strcat("Cannot open file in ", DATAFILE,').'))
+  error(strcat("Cannot open file ", DATAFILE,').'))
 end
 stop=0;
 while(stop==0)

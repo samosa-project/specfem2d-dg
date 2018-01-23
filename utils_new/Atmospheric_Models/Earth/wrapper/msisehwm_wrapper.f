@@ -1,10 +1,15 @@
+C Authors:       X. Bonnin, R. F. Garcia, L. Martire.
+C Description:   TODO.
+C Last modified: See file metadata.
+C Usage:         N/A.
+C Notes:         N/A.
+
 C Compilation line:
 C gfortran -o msisehwm msisehwm_wrapper.f msisehwm_wrapper_sub.for
 
 C ****************************************************************
 C * compute_msise_winds_v3.                                      *
 C ****************************************************************
-
       program compute_msise_winds_v3
 
       implicit none
@@ -48,8 +53,8 @@ C ****************************************************************
       character*37 directory
       character*33 folder
       character*70 location
-c The sizes of folder and evename are depending on the event name,
-c that's why they have to be changed for each event
+c     The sizes of folder and evename are depending on the event name,
+c     that's why they have to be changed for each event.
       
       real*4 time(itop),D(itop),lati(itop),lon(itop),R(itop)
       real*4 WS(2,itop)
@@ -62,27 +67,9 @@ c that's why they have to be changed for each event
       integer numargs, iarg
       character(len=50), dimension(:), allocatable :: args
 
-C ****************************************************************
-C * Parameters.                                                  *
-C ****************************************************************
-C     Minimum and maximum wanted altitudes (in [m]).
-      ALTMIN=0.
-      ALTMAX=500000.
-C     Number of samples.
-      NSAMPLES=500
-C Latitude.
-      latmod=36.529998
-C Longitude.
-      lonmod=158.690000
-C Years since 2000 (because of msise00)
-      year=11
-C Days since the beginning of the year 2000.
-      day=69
-C Seconds since the beginning of day (in UTC).
-      SEC=28059.996
-C Output file name.
-      filename='msisehwm_model_output'
-      
+C     ****************************************************************
+C     * Parameters.                                                  *
+C     ****************************************************************
       numargs = command_argument_count()
       if(numargs>0) then
         if(.not. numargs==9) then
@@ -107,23 +94,40 @@ C Output file name.
       else
         write(*, *) 'No arguments passed, those in the source code',
      &              ' will be used.'
+C       Minimum and maximum wanted altitudes (in [m]).
+        ALTMIN=0.
+        ALTMAX=500000.
+C       Number of samples.
+        NSAMPLES=500
+C       Latitude.
+        latmod=36.529998
+C       Longitude.
+        lonmod=158.690000
+C       Years since 2000 (because of msise00)
+        year=11
+C       Days since the beginning of the year 2000.
+        day=69
+C       Seconds since the beginning of day (in UTC).
+        SEC=28059.996
+C       Output file name.
+        filename='msisehwm_model_output'
       endif
 
-C ****************************************************************
-C * Constants.                                                   *
-C ****************************************************************
-C Pi.
+C     ****************************************************************
+C     * Constants.                                                   *
+C     ****************************************************************
+C     Pi.
       PI=ACOS(-1.)
-C Earth and Atmosphere parameters.
+C     Earth and Atmosphere parameters.
       GMass=(6.67e-11)*(5.97219e+24)
       radius=6371010.0
-C Flattening of Earth deduced from the WGS84 value of 1/f. Used to compute the geodetic latitude (GLAT).
-      f=1/298.257223563
-C 81-day average of F10.7 flux (centered on the day of the event).
+C     Flattening of Earth deduced from the WGS84 value of 1/f. Used to compute the geodetic latitude (GLAT).
+      f=1./298.257223563
+C     81-day average of F10.7 flux (centered on the day of the event).
       F107A=106.7160
-C Daily F10.7 flux for previous day.
-      F107=131
-C Magnetic index (daily, for the last 24 hours).
+C     Daily F10.7 flux for previous day.
+      F107=131.
+C     Magnetic index (daily, for the last 24 hours).
 C   - or when SW(9)=-1. it is an array containing :
 C     (1) Daily AP
 C     (2) 3 HR AP index for current time
@@ -135,14 +139,13 @@ C                 to current time
 C     (7) Average of eight 3 HR AP indexes from 36 to 57 HRS prior
 C                 to current time
       AP=37
-C To change the values of F107, F107A and Ap, watch the website:
-C http://www.swpc.noaa.gov/alerts/solar_indices.html
+C     To change the values of F107, F107A and Ap, watch the website:
+C     http://www.swpc.noaa.gov/alerts/solar_indices.html
 
-C ****************************************************************
-C * Thermodynamic coefficients for species referenced in MSISE   *
-C ****************************************************************
-
-C He (http://webbook.nist.gov/cgi/cbook.cgi?ID=C7440597&Units=SI&Mask=1#Thermo-Gas)
+C     ****************************************************************
+C     * Thermodynamic coefficients for species referenced in MSISE   *
+C     ****************************************************************
+C     He (http://webbook.nist.gov/cgi/cbook.cgi?ID=C7440597&Units=SI&Mask=1#Thermo-Gas)
       ispec=1
       molarmass(ispec)=4.0
       ntrange(ispec)=1
@@ -154,7 +157,7 @@ C He (http://webbook.nist.gov/cgi/cbook.cgi?ID=C7440597&Units=SI&Mask=1#Thermo-G
       Cpcoefs(4,ispec,1)=1.525102e-10
       Cpcoefs(5,ispec,1)=3.196347e-11
 
-C N2 (http://webbook.nist.gov/cgi/cbook.cgi?Name=N2&Units=SI&cTG=on#Thermo-Gas)
+C     N2 (http://webbook.nist.gov/cgi/cbook.cgi?Name=N2&Units=SI&cTG=on#Thermo-Gas)
       ispec=3
       molarmass(ispec)=28.0
       ntrange(ispec)=3
@@ -180,7 +183,7 @@ C N2 (http://webbook.nist.gov/cgi/cbook.cgi?Name=N2&Units=SI&cTG=on#Thermo-Gas)
       Cpcoefs(4,ispec,3)=0.014662
       Cpcoefs(5,ispec,3)=-4.553760
 
-C O2 (http://webbook.nist.gov/cgi/cbook.cgi?Name=O2&Units=SI&cTG=on#Thermo-Gas)
+C     O2 (http://webbook.nist.gov/cgi/cbook.cgi?Name=O2&Units=SI&cTG=on#Thermo-Gas)
       ispec=4
       molarmass(ispec)=32.0
       ntrange(ispec)=3
@@ -206,7 +209,7 @@ C O2 (http://webbook.nist.gov/cgi/cbook.cgi?Name=O2&Units=SI&cTG=on#Thermo-Gas)
       Cpcoefs(4,ispec,3)=0.146449
       Cpcoefs(5,ispec,3)=9.245722
 
-C Ar (http://webbook.nist.gov/cgi/cbook.cgi?Name=Ar&Units=SI&cTG=on#Thermo-Gas)
+C     Ar (http://webbook.nist.gov/cgi/cbook.cgi?Name=Ar&Units=SI&cTG=on#Thermo-Gas)
       ispec=5
       molarmass(ispec)=40.0
       ntrange(ispec)=1
@@ -218,7 +221,7 @@ C Ar (http://webbook.nist.gov/cgi/cbook.cgi?Name=Ar&Units=SI&cTG=on#Thermo-Gas)
       Cpcoefs(4,ispec,1)=1.092131e-8
       Cpcoefs(5,ispec,1)=-3.661371e-8
 
-C N (http://webbook.nist.gov/cgi/cbook.cgi?ID=C17778880&Units=SI&Mask=1#Thermo-Gas)
+C     N (http://webbook.nist.gov/cgi/cbook.cgi?ID=C17778880&Units=SI&Mask=1#Thermo-Gas)
       ispec=8
       molarmass(ispec)=14.0
       ntrange(ispec)=1
@@ -230,7 +233,7 @@ C N (http://webbook.nist.gov/cgi/cbook.cgi?ID=C17778880&Units=SI&Mask=1#Thermo-G
       Cpcoefs(4,ispec,1)=0.024685
       Cpcoefs(5,ispec,1)=-0.025678
 
-C Reordering.
+C     Reordering.
       nbspec=5
       indspec(1)=1
       indspec(2)=3
@@ -238,10 +241,10 @@ C Reordering.
       indspec(4)=5
       indspec(5)=8
 
-C ****************************************************************
-C * Creation of the atmosphere and wind model.                   *
-C ****************************************************************
-C IYD like this because format needed in calls to GTD7 and to GWS5 (YYDDD).
+C     ****************************************************************
+C     * Creation of the atmosphere and wind model.                   *
+C     ****************************************************************
+C     IYD like this because format needed in calls to GTD7 and to GWS5 (YYDDD).
       IYD=year*1000.0+day
       GLAT=atan(tan(latmod*PI/180.0)/((1-f)*(1-f)))*180/PI
       if(lonmod.lt.0.0) then
@@ -249,7 +252,7 @@ C IYD like this because format needed in calls to GTD7 and to GWS5 (YYDDD).
       else
         GLONG=lonmod
       endif
-C Solar local time.
+C     Solar local time.
       STL=SEC/3600+GLONG/15
       if(STL.gt.24.0) then
         STL=STL-24.0
@@ -259,8 +262,8 @@ C     Activate SI units output for GTD7.
 C     CALL METERS(.TRUE.)
 
 C     Open output file.
-      open(2012,file=filename,form='formatted')
-C     Write information about run.
+      open(2012, file=filename, form='formatted')
+C     Write information about model.
       write(2012,*) 'year', (2000+year), 'day', day, 'seconds', SEC,
      &              'lat', latmod, 'lon', lonmod
       write(2012,*) 'IYD', IYD, 'SEC', SEC, 'GLAT', GLAT, 'GLON',
@@ -366,9 +369,9 @@ C * Subroutines for computation of attenuation and of some other *
 C * parameters.                                                  *
 C ****************************************************************
 
-C ****************************************************************
-C * alclass                                                      *
-C ****************************************************************
+C     ****************************************************************
+C     * alclass                                                      *
+C     ****************************************************************
       function alclass(f,rho,v,MU,K,gamma)
 c     - X. Bonnin - 18/07/03
 c     - 'alclass' calculates the term of
@@ -392,9 +395,9 @@ c     alclass in Np/m
      *   *((4.0/3.0)*MU+(gamma-1.0)*K/(gamma*Cv))
       end
       
-C ****************************************************************
-C * MUvolclass                                                   *
-C ****************************************************************
+C     ****************************************************************
+C     * MUvolclass                                                   *
+C     ****************************************************************
       function MUvolclass(MU,K,gamma)
 c     - X. Bonnin - 18/07/03
 c     - 'alclass' calculates the term of
@@ -417,9 +420,9 @@ c     MUvolclass in Pa.s
       MUvolclass=((4.0/3.0)*MU+(gamma-1.0)*K/(gamma*Cv))
       end
       
-C ****************************************************************
-C * MU                                                           *
-C ****************************************************************
+C     ****************************************************************
+C     * MU                                                           *
+C     ****************************************************************
       function MU(rho,P,T,gamma)
 c     - X. Bonnin - 18/07/03
 c     - 'MU' calculates the coefficient of viscosity of Earth atmosphere (N2 approximation
@@ -456,9 +459,9 @@ c     MU in kg/(m*s) or Pa.s
       MU=(2.0/3.0)*L*rho*c*sqrt(2.0/(PI*Kap))
       end
       
-C ****************************************************************
-C * Kappa                                                        *
-C ****************************************************************
+C     ****************************************************************
+C     * Kappa                                                        *
+C     ****************************************************************
       function Kappa(rho,P,T)
 c     - X. Bonnin - 18/07/03
 c     -'K' calculates the thermal conductivity in Earth atmosphere
