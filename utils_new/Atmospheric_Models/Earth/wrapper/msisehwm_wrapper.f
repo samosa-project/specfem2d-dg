@@ -22,7 +22,7 @@ C ****************************************************************
       character*50 filename,filewind
 
       real*4 z(imax),rhoat(imax),v(imax),T(imax),P(imax)
-      real*4 Wind(2,imax),Windshift(2)
+      real*4 Wind(3,imax),Windshift(2)
       real*4 MUtab(imax),MUvoltab(imax),Kappatab(imax)
       real*4 Gravity(imax),Nsqtab(imax),Htab(imax)
       real*4 Cpcoefs(5,9,3),tminrange(9,3),tmaxrange(9,3)
@@ -66,15 +66,17 @@ c     that's why they have to be changed for each event.
       
       integer numargs, iarg
       character(len=50), dimension(:), allocatable :: args
+      real*4 wind_projection
 
 C     ****************************************************************
 C     * Parameters.                                                  *
 C     ****************************************************************
       numargs = command_argument_count()
       if(numargs>0) then
-        if(.not. numargs==9) then
-          write(*,*) '9 and only 9 arguments should be given (ALTMIN ',
-     &         'ALTMAX NSAMPLES latmod lonmod year day SEC filename).'
+        if(.not. numargs==10) then
+          write(*,*) '10 and only 10 arguments should be given ',
+     &         '(ALTMIN ALTMAX NSAMPLES latmod lonmod year day SEC ',
+     1         'filename wind_projection).'
           stop
         endif
         allocate(args(numargs))
@@ -90,6 +92,8 @@ C     ****************************************************************
         read(args(7), *) day
         read(args(8), *) SEC
         read(args(9), *) filename
+        read(args(10), *) wind_projection
+        NSAMPLES = NSAMPLES - 1
         write(*, *) 'Arguments assigned.'
       else
         write(*, *) 'No arguments passed, those in the source code',
@@ -111,8 +115,9 @@ C       Seconds since the beginning of day (in UTC).
         SEC=28059.996
 C       Output file name.
         filename='msisehwm_model_output'
+C       Wind projection angle (in degrees). 0 is forward zonal (positive eastward). 90 is forward meridional (positive northward). 180 is backwards zonal (positive westward). 270 is backward meriodional (positive southward).
+        wind_projection=0.
       endif
-
 C     ****************************************************************
 C     * Constants.                                                   *
 C     ****************************************************************
@@ -141,7 +146,7 @@ C                 to current time
       AP=37
 C     To change the values of F107, F107A and Ap, watch the website:
 C     http://www.swpc.noaa.gov/alerts/solar_indices.html
-
+      
 C     ****************************************************************
 C     * Thermodynamic coefficients for species referenced in MSISE   *
 C     ****************************************************************
@@ -326,6 +331,9 @@ C       Sound velocity. [m.s^(-1)].
 C       Meridional (1) and zonal (2) winds. [m.s^(-1)].
         Wind(1,iz)=W(1)
         Wind(2,iz)=W(2)	
+C       Projected wind.
+        Wind(3,iz)=cos(wind_projection*PI/180.)*W(2)+
+     &             sin(wind_projection*PI/180.)*W(1)
 C       Thermal conductivity. [kg.m.s^(-3).K^(-1)].
         Kappatab(iz)=Kappa(rhoat(iz),P(iz),T(iz))
 C       Dynamic viscosity. [Pa.s]=[kg.s^(-1).m^(-1)].
@@ -338,7 +346,8 @@ C     Print column headers to file.
       write(2012,*) 'z[m] rho[kg.m^(-3)] T[K] c[m/s] p[Pa] H[m] ',
      &              'g[m.s^(-2)] N^2[1/s] kappa[kg.m.s^(-3).K^(-1)] ',
      &              'mu[kg.s^(-1).m^(-1)] mu_vol[kg.s^(-1).m^(-1)] ',
-     &              'w_M[m/s] w_Z[m/s] c_p[J/mol*K] c_v[J/mol*K] gamma'
+     &              'w_M[m/s] w_Z[m/s] w_P[m/s] c_p[J/mol*K] ',
+     &              'c_v[J/mol*K] gamma'
 
 C     Second loop for gravity related parameters and printing to file.
       do iz=1, NSAMPLES+1
@@ -358,7 +367,7 @@ C       Print to file.
         write(2012,*) z(iz),rhoat(iz),T(iz),v(iz),P(iz),
      &                Htab(iz),Gravity(iz),Nsqtab(iz),
      &                Kappatab(iz),MUtab(iz),MUvoltab(iz),
-     &                Wind(1,iz),Wind(2,iz),
+     &                Wind(1,iz),Wind(2,iz),Wind(3,iz),
      &                Cp(iz),Cv(iz),gammatab(iz)
       enddo
       close(2012)

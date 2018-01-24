@@ -80,7 +80,7 @@ subroutine compute_forces_acoustic_DG_main()
     allocate(save_pressure(nglob_DG))
     save_pressure = ZEROl
     
-    if(.not. trim(MODEL) == 'external') then
+    if(.not. assign_external_model) then
       deallocate(gravityext, muext, etaext, kappa_DG, &
                  tau_epsilon, tau_sigma)
       allocate(gravityext(NGLLX, NGLLZ, nspec), &
@@ -107,7 +107,7 @@ subroutine compute_forces_acoustic_DG_main()
     !stop
     T_DG = ZEROl
     V_DG = ZEROl
-
+    
     call initial_condition_DG()
 
     !if(timelocal == 0) then

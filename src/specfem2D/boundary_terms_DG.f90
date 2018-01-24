@@ -166,14 +166,15 @@
 
   use constants,only: CUSTOM_REAL, gamma_euler, PI
 
-  use specfem_par, only: ibool_before_perio, ibool_DG, coord, MODEL, &
+  use specfem_par, only: ibool_before_perio, ibool_DG, coord, &
         rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
         etaext, muext, coord_interface, kappa_DG, cp, cnu, &
         tau_epsilon, tau_sigma, &
         gravity_cte_DG, dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_eps_cte_DG, tau_sig_cte_DG, SCALE_HEIGHT, &
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
         surface_density, sound_velocity, wind, TYPE_FORCING, &
-        forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period
+        forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
+        assign_external_model
 
   implicit none
   
@@ -220,7 +221,7 @@
   z = real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
   z = z - coord_interface
   
-  if(trim(MODEL) == 'external') then
+  if(assign_external_model) then
     ! If an external model data file is given for initial conditions, use it.
     rho_DG_P     = rhoext(i, j, ispec)
     p_DG_P       = pext_DG(i, j, ispec)

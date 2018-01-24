@@ -3,7 +3,7 @@
 % Description:   TODO.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         N/A.
+% Notes:         analyse_atmospheric_model.m should have been ran before.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Integrate Pressure.         %

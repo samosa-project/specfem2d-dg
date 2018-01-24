@@ -49,7 +49,9 @@
     MODEL,ATTENUATION_VISCOELASTIC_SOLID,P_SV,&
     tomo_material,myrank, &
     ! MODIF DG
-    windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, USE_DISCONTINUOUS_METHOD
+    windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, USE_DISCONTINUOUS_METHOD,&
+    !TEST
+    ibool_before_perio
 
   implicit none
 
@@ -209,12 +211,30 @@
                                c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,nspec,nglob, &
                                ! MODIF DG
                                windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG)
+  
+  else if (trim(MODEL)=='external_DG') then
+    call define_external_model_DG_only()
+    
+    if(.false.) then ! DEBUG
+      open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
+      do ispec = 1,nspec
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
+                         rhoext(i, j, ispec)
+          enddo
+        enddo
+      enddo
+      close(504)
+      ! Matlab one-liner plot:
+      ! a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_model/OUTPUT_FILES/TESTMODEL"); x=a(:,1); z=a(:,2); d=a(:,3);plot(z,d);
+    endif
 
   else if (trim(MODEL)=='tomo') then
     call define_external_model_from_tomo_file()
   endif
 
-  if (trim(MODEL)=='external' .or. trim(MODEL)=='tomo') then
+  if (trim(MODEL)=='external' .or. trim(MODEL)=='tomo' .or. trim(MODEL)=='external_DG') then
 
     ! check that the external model that has just been defined makes sense
     do ispec = 1,nspec

@@ -177,7 +177,7 @@
   cutsnaps = cutsnaps / 100.d0
 
   ! sets model flag
-  if (trim(MODEL) == 'default') then
+  if(trim(MODEL) == 'default') then
     assign_external_model = .false.
   else
     assign_external_model = .true.

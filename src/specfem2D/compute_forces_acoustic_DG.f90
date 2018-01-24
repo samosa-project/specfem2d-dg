@@ -141,7 +141,7 @@
   veloc_z_DG = rhovz_DG/rho_DG
   p_DG       = (gammaext_DG - ONE)*( E_DG &
                - (HALF)*rho_DG*( veloc_x_DG**2 + veloc_z_DG**2 ) )
-        
+  
   ! Initialisation.
   dot_rho   = ZERO
   dot_rhovx = ZERO
@@ -207,6 +207,7 @@
           wxl = wxgll(i)
           
           ! Inviscid stress tensor's contributions.
+          
           temp_unknown = rhovx_DG(iglob)
           temp_unknown2 = rhovz_DG(iglob)
           
@@ -287,7 +288,7 @@
           
           
           ! Gravity contributions (separated from the rest).
-          !temp_nondiv_rho(i, j) = ZERO ! Save one operation.
+          temp_nondiv_rho(i, j) = ZERO
           temp_nondiv_rhovx(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_nondiv_rhovz(i, j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl

@@ -55,11 +55,12 @@ P_SV                            = .true.
 GPU_MODE                        = .false.
 
 # Available models.
-#   default: define model using nbmodels below
-#   ascii: read model from ascii database file
-#   binary: read model from binary database file
-#   external: define model using define_external_model subroutine
-#   legacy: read model from model_velocity.dat_input
+#   default:     define model using nbmodels below.
+#   ascii:       read model from ascii database file.
+#   binary:      read model from binary database file.
+#   external:    define model using 'define_external_model' subroutine.
+#   legacy:      read model from 'model_velocity.dat_input'.
+#   external_DG: read DG model from 'atmospheric_model.dat' (generated with 'utils_new/Atmospheric_Models/Earth/wrapper/msisehwm'), and other models with "Velocity and Density Models" below.
 MODEL                           = default
 
 # Output the model with the requested type, does not save if turn to default
@@ -101,7 +102,7 @@ USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
 CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydrostatic state. Causes the pressure output to be in perturbation only.
 
-# Fluid model
+# Fluid model (if MODEL\='external').
 USE_ISOTHERMAL_MODEL            = .false.
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. [m].
 surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
@@ -119,7 +120,7 @@ constant_v                      = 717.3447537473 # $c_v$, isochoric specific hea
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = 304.0          # Only used if USE_ISOTHERMAL_MODEL==.true.. z-coordinate of the fluid-solid interface, in order not to interfere with the vertical scaling.
+coord_interface                 = 304.0          # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
