@@ -1431,147 +1431,175 @@
   end subroutine define_external_model_atmos_tabular_gravitoacoustic
 
 ! ------------------------------------------------------------ !
-! define_external_model_DG_only                                !
+! external_model_DG_only_find_nblines                          !
 ! ------------------------------------------------------------ !
-! Defines model from a vertical model file, but only for DG elements.
+! TODO: Description.
 
-subroutine define_external_model_DG_only()
-
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
-  use specfem_par,only: nglob_DG, ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
-        poroelastcoef,density,kmato, ispec_is_acoustic_DG, ispec_is_elastic,&
-        mesh_zmax,tau_sigma, tau_epsilon,&
-        rhoext,vpext,vsext,&
-        QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext,&
-        nspec,coord,ibool,&
-        windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
-        c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext ! solid-related, to be removed
-
+subroutine external_model_DG_only_find_nblines(nlines_header, nlines_model)
+  
+  use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+  
   implicit none
   
+  ! Input/output.
+  integer, intent(out) :: nlines_header, nlines_model
+  
   ! Local variables.
-  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HUGEVAL = 9999._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: z_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: density_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: vp_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gravity_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: Nsq_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: wx_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: wz_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: eta_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: mu_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: p_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: Htab_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: kappa_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: cp_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: cv_model
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gamma_model
-  integer :: i, j, ispec, ii, nlines_file, nlines_model, io, nbheader, iline, ptglob
-  real(kind=CUSTOM_REAL) dummy ! Dummy real for reading parameters which we do not care about.
-  double precision :: z, frac, tmp1, pii, piim1, piim2, piip1!,gamma_temp,gamma_temp_prev,x,max_z
+  integer nlines_file, io
   
-  ! TODO: Find a way of discriminating this automatically.
-  nbheader=3; ! Number of header lines in model file.
-  
-  ! Count lines in file.
+  nlines_header=3; ! Number of header lines in model file. ! TODO: Find a way of discriminating this automatically.
   nlines_file = 0
-  OPEN(100, file='./atmospheric_model.dat')
+  OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
   DO
     READ(100,*,iostat=io)
     IF (io/=0) EXIT
     nlines_file = nlines_file+1
   ENDDO 
   CLOSE(100)
-  nlines_model=nlines_file-nbheader
+  nlines_model=nlines_file-nlines_header
+end subroutine external_model_DG_only_find_nblines
+
+! ------------------------------------------------------------ !
+! define_external_model_DG_only                                !
+! ------------------------------------------------------------ !
+! Defines model from a vertical model file, but only for DG elements.
+
+subroutine define_external_model_DG_only(nlines_header, nlines_model)
+
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
+  use specfem_par,only: ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
+        poroelastcoef,density,kmato, ispec_is_elastic,ispec_is_acoustic_DG,&
+        mesh_zmax,tau_sigma, tau_epsilon,&
+        rhoext,vpext,vsext,&
+        QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext,&
+        nspec,coord,ibool,myrank,&
+        windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
+        QKappa_attenuation,Qmu_attenuation,anisotropy,&
+        c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
+        EXTERNAL_DG_ONLY_MODEL_FILENAME
   
-  allocate(z_model(nlines_model),density_model(nlines_model),vp_model(nlines_model),&
-           gravity_model(nlines_model),Nsq_model(nlines_model),wx_model(nlines_model),&
-           wz_model(nlines_model),eta_model(nlines_model),mu_model(nlines_model),&
-           p_model(nlines_model),Htab_model(nlines_model),kappa_model(nlines_model),&
-           cp_model(nlines_model),cv_model(nlines_model),gamma_model(nlines_model))
-  allocate(Htabext_DG(nglob_DG))
+  implicit none
   
-  ! Read and store values.
-  OPEN(100, file='./atmospheric_model.dat')
+  ! Input/output.
+  integer, intent(in) :: nlines_header, nlines_model
+  
+  ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HUGEVAL = 9999._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: z_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: density_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: vp_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: gravity_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: Nsq_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: wx_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: wz_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: eta_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: mu_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: p_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: Htab_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: kappa_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: cp_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: cv_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: gamma_model
+  integer :: i, j, ispec, ii, io, indglob_DG
+  real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3 ! Dummy reals for reading parameters which we do not care about.
+  double precision :: z, frac, tmp1, pii, piim1, piim2, piip1!,gamma_temp,gamma_temp_prev,x,max_z
+  
+  z_model=ZERO
+  density_model=ZERO
+  vp_model=ZERO
+  gravity_model=ZERO
+  Nsq_model=ZERO
+  wx_model=ZERO
+  wz_model=ZERO
+  eta_model=ZERO
+  mu_model=ZERO
+  p_model=ZERO
+  Htab_model=ZERO
+  kappa_model=ZERO
+  cp_model=ZERO
+  cv_model=ZERO
+  gamma_model=ZERO
+  
+  ! Read and store values of model.
+  OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
   i=1
-  iline=1
-  DO
-    if(iline<=nbheader) then
-      ! Read and skip in header.
-      READ(100,*,iostat=io)
-    else
-      ! Read values.
-      i=iline-nbheader
-      ! tmp1 = Temperature
-      read(100,*,iostat=io) z_model(i),density_model(i),tmp1,&
-                            vp_model(i),p_model(i),Htab_model(i),&
-                            gravity_model(i),Nsq_model(i),&
-                            kappa_model(i),mu_model(i),eta_model(i),&
-                            dummy, dummy, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
-      IF(io/=0) EXIT
-      if(.false.) then ! DEBUG
-        write(*,*) 'z_model(i),density_model(i),tmp1',&
-                   'vp_model(i),p_model(i),Htab_model(i)',&
-                   'gravity_model(i),Nsq_model(i)',&
-                   'kappa_model(i),mu_model(i),eta_model(i)',&
-                   'dummy, dummy, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)'
-        write(*,*) z_model(i),density_model(i),tmp1,&
-                   vp_model(i),p_model(i),Htab_model(i),&
-                   gravity_model(i),Nsq_model(i),&
-                   kappa_model(i),mu_model(i),eta_model(i),&
-                   dummy, dummy, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
-      endif
+  DO i=1,nlines_header
+    ! Read and skip in header.
+    READ(100,*,iostat=io)
+  enddo
+  do i=1,nlines_model
+    ! Read values.
+    ! tmp1 = Temperature
+    read(100,*,iostat=io) z_model(i),density_model(i),tmp1,&
+                          vp_model(i),p_model(i),Htab_model(i),&
+                          gravity_model(i),Nsq_model(i),&
+                          kappa_model(i),mu_model(i),dummy1,&
+                          dummy2,dummy3,wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
+    eta_model(i) = (2./3.) * mu_model(i)
+    IF(io/=0) EXIT
+    if(.false.) then ! DEBUG
+      write(*,*) 'z_model(i),density_model(i),tmp1',&
+                 'vp_model(i),p_model(i),Htab_model(i)',&
+                 'gravity_model(i),Nsq_model(i)',&
+                 'kappa_model(i),mu_model(i),dummy1,',&
+                 'dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)'
+      write(*,*) z_model(i),density_model(i),tmp1,&
+                 vp_model(i),p_model(i),Htab_model(i),&
+                 gravity_model(i),Nsq_model(i),&
+                 kappa_model(i),mu_model(i),dummy1,&
+                 dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
     endif
-    iline=iline+1
   ENDDO 
   CLOSE(100)
   
   ! Quickly check values of the model.
-  if(mesh_zmax-coord_interface>z_model(nlines_model)-z_model(1)) then
-    write(*,*) "********************************"
-    write(*,*) "*           WARNING            *"
-    write(*,*) "********************************"
-    write(*,*) "* The mesh vertically spans    *"
-    write(*,*) "* more than the model gives.   *"
-    write(*,*) "* In other words, the          *"
-    write(*,*) "* atmospheric part of the mesh *"
-    write(*,*) "* is thicker than what is      *"
-    write(*,*) "* given in the model file.     *"
-    write(*,*) "*  mesh z_max:             ", mesh_zmax
-    write(*,*) "*  mesh altitude 0:        ", coord_interface
-    write(*,*) "*  mesh vertical span:     ", mesh_zmax-coord_interface
-    write(*,*) "*  model lowest altitude:  ", z_model(1)
-    write(*,*) "*  model highest altitude: ", z_model(nlines_model)
-    write(*,*) "*  model vertical span:    ", z_model(nlines_model)-z_model(1)
-    write(*,*) "* Interpolation could work,    *"
-    write(*,*) "* but be careful. See          *"
-    write(*,*) "* 'define_external_model.f90'. *"
-    write(*,*) "********************************"
-  endif
-  if(z_model(nlines_model)-z_model(1)>10.*(mesh_zmax-coord_interface)) then
-    write(*,*) "********************************"
-    write(*,*) "*           WARNING            *"
-    write(*,*) "********************************"
-    write(*,*) "* The model gives more than 10 *"
-    write(*,*) "* times as much as the mesh    *"
-    write(*,*) "* vertically spans. Consider   *"
-    write(*,*) "* generating a model over a    *"
-    write(*,*) "* smaller vertical span.       *"
-    write(*,*) "*  mesh z_max:             ", mesh_zmax
-    write(*,*) "*  mesh altitude 0:        ", coord_interface
-    write(*,*) "*  mesh vertical span:     ", mesh_zmax-coord_interface
-    write(*,*) "*  model lowest altitude:  ", z_model(1)
-    write(*,*) "*  model highest altitude: ", z_model(nlines_model)
-    write(*,*) "*  model vertical span:    ", z_model(nlines_model)-z_model(1)
-    write(*,*) "* If the vertical step of the  *"
-    write(*,*) "* model is not small enough,   *"
-    write(*,*) "* interpolation could lead to  *"
-    write(*,*) "* absurd values. This could    *"
-    write(*,*) "* work, but be careful. See    *"
-    write(*,*) "* 'define_external_model.f90'. *"
-    write(*,*) "********************************"
+  if(myrank==0) then
+    if(mesh_zmax-coord_interface>z_model(nlines_model)-z_model(1)) then
+      write(*,*) "********************************"
+      write(*,*) "*           WARNING            *"
+      write(*,*) "********************************"
+      write(*,*) "* The mesh vertically spans    *"
+      write(*,*) "* more than the model gives.   *"
+      write(*,*) "* In other words, the          *"
+      write(*,*) "* atmospheric part of the mesh *"
+      write(*,*) "* is thicker than what is      *"
+      write(*,*) "* given in the model file.     *"
+      write(*,*) "*  mesh z_max:             ", mesh_zmax
+      write(*,*) "*  mesh altitude 0:        ", coord_interface
+      write(*,*) "*  mesh vertical span:     ", mesh_zmax-coord_interface
+      write(*,*) "*  model lowest altitude:  ", z_model(1)
+      write(*,*) "*  model highest altitude: ", z_model(nlines_model)
+      write(*,*) "*  model vertical span:    ", z_model(nlines_model)-z_model(1)
+      write(*,*) "* Interpolation could work,    *"
+      write(*,*) "* but be careful. See          *"
+      write(*,*) "* 'define_external_model.f90'. *"
+      write(*,*) "********************************"
+    endif
+    if(z_model(nlines_model)-z_model(1)>10.*(mesh_zmax-coord_interface)) then
+      write(*,*) "********************************"
+      write(*,*) "*           WARNING            *"
+      write(*,*) "********************************"
+      write(*,*) "* The model gives more than 10 *"
+      write(*,*) "* times as much as the mesh    *"
+      write(*,*) "* vertically spans. Consider   *"
+      write(*,*) "* generating a model over a    *"
+      write(*,*) "* smaller vertical span.       *"
+      write(*,*) "*  mesh z_max:             ", mesh_zmax
+      write(*,*) "*  mesh altitude 0:        ", coord_interface
+      write(*,*) "*  mesh vertical span:     ", mesh_zmax-coord_interface
+      write(*,*) "*  model lowest altitude:  ", z_model(1)
+      write(*,*) "*  model highest altitude: ", z_model(nlines_model)
+      write(*,*) "*  model vertical span:    ", z_model(nlines_model)-z_model(1)
+      write(*,*) "* If the vertical step of the  *"
+      write(*,*) "* model is not small enough,   *"
+      write(*,*) "* interpolation could lead to  *"
+      write(*,*) "* absurd values. This could    *"
+      write(*,*) "* work, but be careful. See    *"
+      write(*,*) "* 'define_external_model.f90'. *"
+      write(*,*) "********************************"
+    endif
   endif
   if(minval(density_model)<=ZERO) then
     write(*,*) "********************************"
@@ -1604,86 +1632,108 @@ subroutine define_external_model_DG_only()
   ! Relaxation deactivated.
   tau_sigma = ONE
   tau_epsilon = ONE
-  write(*,*) "********************************"
-  write(*,*) "*           WARNING            *"
-  write(*,*) "********************************"
-  write(*,*) "* The support for atmospheric  *"
-  write(*,*) "* relaxation when using        *"
-  write(*,*) "* external DG models is not    *"
-  write(*,*) "* implemented yet. Relaxation  *"
-  write(*,*) "* is deactivated by setting    *"
-  write(*,*) "* both relaxation times to 1.  *"
-  write(*,*) "* See                          *"
-  write(*,*) "* 'define_external_model.f90'. *"
-  write(*,*) "********************************"
-  
-  ! No vertical wind.
-  windzext = 0
+  if(myrank==0) then
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* The support for atmospheric  *"
+    write(*,*) "* relaxation when using        *"
+    write(*,*) "* external DG models is not    *"
+    write(*,*) "* implemented yet. Relaxation  *"
+    write(*,*) "* is deactivated by setting    *"
+    write(*,*) "* both relaxation times to 1.  *"
+    write(*,*) "* See                          *"
+    write(*,*) "* 'define_external_model.f90'. *"
+    write(*,*) "********************************"
+  endif
   
   ! TODO: Correctly affect those variables.
-  windxext = 0
   cp = cp_model(1)
   cnu = cv_model(1)
-  c11ext(:,:,:) = ZERO
-  c13ext(:,:,:) = ZERO
-  c15ext(:,:,:) = ZERO
-  c33ext(:,:,:) = ZERO
-  c35ext(:,:,:) = ZERO
-  c55ext(:,:,:) = ZERO
-  c12ext(:,:,:) = ZERO
-  c23ext(:,:,:) = ZERO
-  c25ext(:,:,:) = ZERO
-  write(*,*) "********************************"
-  write(*,*) "*           WARNING            *"
-  write(*,*) "********************************"
-  write(*,*) "* The support for the solid    *"
-  write(*,*) "* media when using external DG *"
-  write(*,*) "* models is not fully          *"
-  write(*,*) "* implemented yet. A basic     *"
-  write(*,*) "* solid media model is         *"
-  write(*,*) "* hardcoded in                 *"
-  write(*,*) "* 'define_external_model.f90', *"
-  write(*,*) "* use at your own risk for     *"
-  write(*,*) "* now.                         *"
-  write(*,*) "********************************"
+  
+  rhoext = ZERO
+  vpext = ZERO
+  vsext = ZERO
+  QKappa_attenuationext = ZERO
+  Qmu_attenuationext = ZERO
+  c11ext = ZERO
+  c13ext = ZERO
+  c15ext = ZERO
+  c33ext = ZERO
+  c35ext = ZERO
+  c55ext = ZERO
+  c12ext = ZERO
+  c23ext = ZERO
+  c25ext = ZERO
+  gravityext = ZERO
+  windxext = ZERO
+  windzext = ZERO
+  pext_DG = ZERO
+  gammaext_DG = ZERO
+  Htabext_DG = ZERO
+  etaext = ZERO
+  muext = ZERO
+  kappa_DG = ZERO
   
   do ispec = 1, nspec
-    if (.not. ispec_is_acoustic_DG(ispec)) cycle ! Skip non-DG elements.
-    do j = 1, NGLLZ
-      do i = 1, NGLLX
-        ptglob = ibool_DG(i, j, ispec)
-        
-        z = coord(2, ibool(i, j, ispec)) ! Get z-coordinate of GLL point.
-        z = z - coord_interface ! Get altitude of GLL point.
-        
-        ! Find first index ii (from bottom) in model such that altitude_model(ii) > z.
-        ii = 1
-        do while(z >= z_model(ii) .and. ii /= nlines_model)
-          ii = ii + 1
+    if(ispec_is_elastic(ispec)) then
+      ! Use quantities loaded from parfile to fill "external" model for elastic media.
+      rhoext(:, :, ispec) = density(1,kmato(ispec))
+      vpext(:, :, ispec) = sqrt(poroelastcoef(3,1,kmato(ispec))/density(1,kmato(ispec))) ! Since poroelastcoef(3,1,n) = lambda+2mu = rho cp^2 (see gmat01.f90).
+      vsext(:, :, ispec) = sqrt(poroelastcoef(2,1,kmato(ispec))/density(1,kmato(ispec))) ! Since poroelastcoef(2,1,n) = mu = rho vs^2 (see gmat01.f90).
+      QKappa_attenuationext(:, :, ispec) = QKappa_attenuation(kmato(ispec))
+      Qmu_attenuationext(:, :, ispec) = Qmu_attenuation(kmato(ispec))
+      c11ext(:, :, ispec) = anisotropy(1,kmato(ispec))
+      c13ext(:, :, ispec) = anisotropy(2,kmato(ispec))
+      c15ext(:, :, ispec) = anisotropy(3,kmato(ispec))
+      c33ext(:, :, ispec) = anisotropy(4,kmato(ispec))
+      c35ext(:, :, ispec) = anisotropy(5,kmato(ispec))
+      c55ext(:, :, ispec) = anisotropy(6,kmato(ispec))
+      c12ext(:, :, ispec) = anisotropy(7,kmato(ispec))
+      c23ext(:, :, ispec) = anisotropy(8,kmato(ispec))
+      c25ext(:, :, ispec) = anisotropy(9,kmato(ispec))
+      
+      !write(*,*) 'lul' ! DEBUG
+      if(.false.) then ! DEBUG
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            rhoext(i,j,ispec) = 2500.d0
+            vpext(i,j,ispec) = 3600.d0
+            vsext(i,j,ispec) = vpext(i,j,ispec) / 2.d0
+            QKappa_attenuationext(i,j,ispec) = 120.
+            Qmu_attenuationext(i,j,ispec) = 120.
+            c11ext(i,j,ispec) = 0.d0   ! this means no anisotropy
+            c13ext(i,j,ispec) = 0.d0
+            c15ext(i,j,ispec) = 0.d0
+            c33ext(i,j,ispec) = 0.d0
+            c35ext(i,j,ispec) = 0.d0
+            c55ext(i,j,ispec) = 0.d0
+            c12ext(i,j,ispec) = 0.d0
+            c23ext(i,j,ispec) = 0.d0
+            c25ext(i,j,ispec) = 0.d0
+            !! AB AB Do not forget these 3 lines otherwise PML may not work !!
+            density(1,kmato(ispec)) = rhoext(i,j,ispec)
+            poroelastcoef(3,1,kmato(ispec)) = rhoext(i,j,ispec) * vpext(i,j,ispec) * vpext(i,j,ispec)
+            poroelastcoef(2,1,kmato(ispec)) =  rhoext(i,j,ispec) * vsext(i,j,ispec) * vsext(i,j,ispec)
+          enddo
         enddo
-        
-        if(ispec_is_elastic(ispec)) then
-          ! Will not happen here.
-          ! TODO: Check that elastic model is indeed defined from parfile.
-          rhoext(i, j, ispec) = 2500.d0
-          vpext(i, j, ispec) = 3600.d0
-          vsext(i, j, ispec) = vpext(i, j, ispec) / 2.d0
-          QKappa_attenuationext(i, j, ispec) = 120.
-          Qmu_attenuationext(i, j, ispec) = 120.
-          c11ext(i, j, ispec) = ZERO   ! this means no anisotropy
-          c13ext(i, j, ispec) = ZERO
-          c15ext(i, j, ispec) = ZERO
-          c33ext(i, j, ispec) = ZERO
-          c35ext(i, j, ispec) = ZERO
-          c55ext(i, j, ispec) = ZERO
-          c12ext(i, j, ispec) = ZERO
-          c23ext(i, j, ispec) = ZERO
-          c25ext(i, j, ispec) = ZERO
-          !! AB AB Do not forget these 3 lines otherwise PML may not work !!
-          density(1,kmato(ispec)) = rhoext(i, j, ispec)
-          poroelastcoef(3,1,kmato(ispec)) = rhoext(i, j, ispec) * vpext(i, j, ispec) * vpext(i, j, ispec)
-          poroelastcoef(2,1,kmato(ispec)) = rhoext(i, j, ispec) * vsext(i, j, ispec) * vsext(i, j, ispec)
-        else
+      endif
+      
+    else if(ispec_is_acoustic_DG(ispec)) then
+      ! For DG elements, go through GLL points one by one.
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          indglob_DG = ibool_DG(i, j, ispec)
+          
+          z = coord(2, ibool(i, j, ispec)) ! Get z-coordinate of GLL point.
+          z = z - coord_interface ! Get altitude of GLL point.
+          
+          ! Find first index ii (from bottom) in model such that altitude_model(ii) > z.
+          ii = 1
+          do while(z >= z_model(ii) .and. ii /= nlines_model)
+            ii = ii + 1
+          enddo
+          
           if (ii == 1) then
             ! Altitude of point is <= the altitude of first line of model.
             ! Use first line of model.
@@ -1709,8 +1759,8 @@ subroutine define_external_model_DG_only()
               write(*,*) windxext(i, j, ispec)
               write(*,*) windzext(i, j, ispec)
               write(*,*) pext_DG(i, j, ispec)
-              write(*,*) "gamma", gammaext_DG(ptglob)
-              write(*,*) "Htab", Htabext_DG(ptglob)
+              write(*,*) "gamma", gammaext_DG(indglob_DG)
+              write(*,*) "Htab", Htabext_DG(indglob_DG)
               write(*,*) etaext(i, j, ispec)
               write(*,*) muext(i, j, ispec)
               write(*,*) kappa_DG(i, j, ispec)
@@ -1719,14 +1769,15 @@ subroutine define_external_model_DG_only()
             rhoext(i, j, ispec) = density_model(1)
             vpext(i, j, ispec) = vp_model(1)
             gravityext(i, j, ispec) = gravity_model(1)
+            Nsqext(i, j, ispec) = Nsq_model(1)
             vsext(i, j, ispec) = ZERO
             Qmu_attenuationext(i, j, ispec) = HUGEVAL
             QKappa_attenuationext(i, j, ispec) = HUGEVAL
             windxext(i, j, ispec) = wx_model(1)
             !windzext(i, j, ispec) = wz_model(1)
             pext_DG(i, j, ispec) = p_model(1)
-            gammaext_DG(ptglob) = gamma_model(1)
-            Htabext_DG(ptglob) = Htab_model(1)
+            gammaext_DG(indglob_DG) = gamma_model(1)
+            Htabext_DG(indglob_DG) = Htab_model(1)
             etaext(i, j, ispec) = eta_model(1)
             muext(i, j, ispec) = mu_model(1)
             kappa_DG(i, j, ispec) = kappa_model(1)
@@ -1747,10 +1798,10 @@ subroutine define_external_model_DG_only()
             windxext(i, j, ispec) = wx_model(ii-1) + frac*(wx_model(ii)-wx_model(ii-1))
             !windzext(i, j, ispec) = wz_model(ii-1) + frac*(wz_model(ii)-wz_model(ii-1))
             pext_DG(i, j, ispec) = p_model(ii-1) + frac*(p_model(ii)-p_model(ii-1))
-            gammaext_DG(ptglob) = gamma_model(ii-1) + frac*(gamma_model(ii)-gamma_model(ii-1))
+            gammaext_DG(indglob_DG) = gamma_model(ii-1) + frac*(gamma_model(ii)-gamma_model(ii-1))
             etaext(i, j, ispec) = eta_model(ii-1) + frac*(eta_model(ii)-eta_model(ii-1))
             muext(i, j, ispec)  = mu_model(ii-1) + frac*(mu_model(ii)-mu_model(ii-1))
-            Htabext_DG(ptglob) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
+            Htabext_DG(indglob_DG) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
             kappa_DG(i, j, ispec)  = kappa_model(ii-1) + frac*(kappa_model(ii)-kappa_model(ii-1))
           else
             ! Altitude of point is > (ii-1)-th line of model, and <= (ii)-th line of model.
@@ -1781,70 +1832,95 @@ subroutine define_external_model_DG_only()
             windxext(i, j, ispec) = wx_model(ii)*pii + wx_model(ii-1)*piim1 + wx_model(ii-2)*piim2
             !windzext(i, j, ispec) = wz_model(ii)*pii + wz_model(ii-1)*piim1 + wz_model(ii-2)*piim2
             pext_DG(i, j, ispec) = p_model(ii)*pii + p_model(ii-1)*piim1 + p_model(ii-2)*piim2
-            gammaext_DG(ptglob) = gamma_model(ii)*pii + gamma_model(ii-1)*piim1 + gamma_model(ii-2)*piim2
+            gammaext_DG(indglob_DG) = gamma_model(ii)*pii + gamma_model(ii-1)*piim1 + gamma_model(ii-2)*piim2
             etaext(i, j, ispec) = eta_model(ii)*pii + eta_model(ii-1)*piim1 + eta_model(ii-2)*piim2
             muext(i, j, ispec)  = mu_model(ii)*pii + mu_model(ii-1)*piim1 + mu_model(ii-2)*piim2
-            Htabext_DG(ptglob) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
+            Htabext_DG(indglob_DG) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
             kappa_DG(i, j, ispec)  = kappa_model(ii)*pii + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
           endif ! Endif on ii.
-          if(.false.) then ! DEBUG
-            if(rhoext(i, j, ispec) <= ZERO) then
-              write(*,*) "********************************"
-              write(*,*) "*            ERROR             *"
-              write(*,*) "********************************"
-              write(*,*) "* A negative density was found *"
-              write(*,*) "* found after interpolation.   *"
-              write(*,*) "********************************"
-              write(*,*) i,j,ii,coord(1,ptglob),coord(2,ptglob),&
-                         rhoext(i, j, ispec)
-              write(*,*) "********************************"
-              stop
-            endif
-            if(Nsqext(i, j, ispec) <= ZERO) then
-              write(*,*) "********************************"
-              write(*,*) "*            ERROR             *"
-              write(*,*) "********************************"
-              write(*,*) "* A negative Nsq (Nsquare) was *"
-              write(*,*) "* found in the model.          *"
-              write(*,*) "********************************"
-              write(*,*) i,j,ii,coord(1,ptglob),coord(2,ptglob),&
-                         Nsqext(i, j, ispec),gravityext(i, j, ispec),vpext(i, j, ispec)
-              write(*,*) "********************************"
-              stop
-            endif
+          
+          if(rhoext(i, j, ispec) <= ZERO) then
+            write(*,*) "********************************"
+            write(*,*) "*            ERROR             *"
+            write(*,*) "********************************"
+            write(*,*) "* A negative density was found *"
+            write(*,*) "* found after interpolation.   *"
+            write(*,*) "********************************"
+            write(*,*) ispec,i,j,ii,&
+                       coord(1,indglob_DG),coord(2,indglob_DG),&
+                       rhoext(i, j, ispec)
+            write(*,*) "********************************"
+            stop
           endif
-        endif ! Endif on ispec_is_elastic.
-      enddo ! Enddo on i.
-    enddo ! Enddo on j.
+          if(Nsqext(i, j, ispec) <= ZERO) then
+            write(*,*) "********************************"
+            write(*,*) "*            ERROR             *"
+            write(*,*) "********************************"
+            write(*,*) "* A negative Nsq (Nsquare) was *"
+            write(*,*) "* found in the model.          *"
+            write(*,*) "********************************"
+            write(*,*) ispec,i,j,ii,&
+                       coord(1,indglob_DG),coord(2,indglob_DG),&
+                       Nsqext(i, j, ispec),gravityext(i, j, ispec),vpext(i, j, ispec)
+            write(*,*) "********************************"
+            stop
+          endif
+        enddo ! Enddo on i.
+      enddo ! Enddo on j.
+    else
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* The external model loading   *"
+      write(*,*) "* is not supported for         *"
+      write(*,*) "* elements which are neither   *"
+      write(*,*) "* DG acoustic nor elastic.     *"
+      write(*,*) "*  ispec: ", ispec
+      write(*,*) "*  x: ", coord(1, ibool(i, j, ispec))
+      write(*,*) "*  z: ", coord(2, ibool(i, j, ispec))
+      write(*,*) "********************************"
+      stop
+    endif ! Endif on ispec_is_elastic/ispec_is_acoustic_DG.
+    
+    if(.true.) then ! DEBUG
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          if(abs(coord(2, ibool(i, j, ispec)))<0.5 .and. abs(coord(1, ibool(i, j, ispec)))>49.5) then
+            write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
+                      ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
+                      "rho", rhoext(i, j, ispec),&
+                      "vp", vpext(i, j, ispec),&
+                      "g", gravityext(i, j, ispec),&
+                      "vs", vsext(i, j, ispec),&
+                      "Qm", Qmu_attenuationext(i, j, ispec),&
+                      "Qk", QKappa_attenuationext(i, j, ispec),&
+                      "wx", windxext(i, j, ispec),&
+                      "wz", windzext(i, j, ispec),&
+                      "p", pext_DG(i, j, ispec),&
+                      "gamma", gammaext_DG(ibool_DG(i, j, ispec)),&
+                      "Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
+                      "eta", etaext(i, j, ispec),&
+                      "mu", muext(i, j, ispec),&
+                      "kap", kappa_DG(i, j, ispec)
+          endif
+        enddo
+      enddo
+    endif
+    
   enddo ! Enddo on ispec.
   
-  if(minval(rhoext) <= ZERO) then
+  if(myrank==0) then
     write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
+    write(*,*) "*           WARNING            *"
     write(*,*) "********************************"
-    write(*,*) "* A negative density was found *"
-    write(*,*) "* found after interpolation.   *"
-    write(*,*) "* Said interpolation could     *"
-    write(*,*) "* have generated such absurd   *"
-    write(*,*) "* values if the number of      *"
-    write(*,*) "* points in the model is too   *"
-    write(*,*) "* low.                         *"
+    write(*,*) "* When using external DG       *"
+    write(*,*) "* models without periodic      *"
+    write(*,*) "* conditions, non-zero         *"
+    write(*,*) "* horizontal wind produces     *"
+    write(*,*) "* instabilities at the         *"
+    write(*,*) "* fluid/solid boundary.        *"
     write(*,*) "********************************"
-    stop
   endif
-  if(minval(Nsqext) <= ZERO) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* A negative Nsq (Nsquare) was *"
-    write(*,*) "* found after interpolation.   *"
-    write(*,*) "* Said interpolation could     *"
-    write(*,*) "* have generated such absurd   *"
-    write(*,*) "* values if the number of      *"
-    write(*,*) "* points in the model is too   *"
-    write(*,*) "* low.                         *"
-    write(*,*) "********************************"
-    stop
-  endif
+  
 end subroutine define_external_model_DG_only
 

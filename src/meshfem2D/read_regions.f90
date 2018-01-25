@@ -96,6 +96,7 @@
        print *,'vp = ',vpregion
        print *,'vs = ',vsregion
        print *,'rho = ',rho_s(imaterial_number)
+       write(*,*) 'oulouloulou', vpregion, vsregion
        poisson_ratio = 0.5d0*(vpregion*vpregion-2.d0*vsregion*vsregion) / (vpregion*vpregion-vsregion*vsregion)
        print *,'Poisson''s ratio = ',poisson_ratio
        if (poisson_ratio <= -1.00001d0 .or. poisson_ratio >= 0.50001d0) stop 'incorrect value of Poisson''s ratio'

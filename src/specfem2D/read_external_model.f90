@@ -62,6 +62,7 @@
   real(kind=CUSTOM_REAL) :: tmp1, tmp2,tmp3
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy,vs_val,vp_val,rho_val
   character(len=150) :: inputname
+  integer :: nlines_header, nblines_model
 
 
   if (tomo_material > 0) MODEL = 'tomo'
@@ -213,7 +214,8 @@
                                windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG)
   
   else if (trim(MODEL)=='external_DG') then
-    call define_external_model_DG_only()
+    call external_model_DG_only_find_nblines(nlines_header, nblines_model)
+    call define_external_model_DG_only(nlines_header, nblines_model)
     
     if(.false.) then ! DEBUG
       open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
@@ -235,7 +237,6 @@
   endif
 
   if (trim(MODEL)=='external' .or. trim(MODEL)=='tomo' .or. trim(MODEL)=='external_DG') then
-
     ! check that the external model that has just been defined makes sense
     do ispec = 1,nspec
       do j = 1,NGLLZ
@@ -266,7 +267,11 @@
         enddo
       enddo
     enddo
+  endif
 
+  if(trim(MODEL)=='external_DG') then
+    ! In that case, flag re-assigning is not needed since the DG and elastic parts stay unchanged.
+    return
   endif
 
   ! re-assigns flags
@@ -292,9 +297,7 @@
   Mu_nu2(:,:,:) = -1._CUSTOM_REAL
 
   do ispec = 1,nspec
-
     previous_vsext = vsext(1,1,ispec)
-
     do j = 1,NGLLZ
       do i = 1,NGLLX
         !print *,"vsext(i,j,ispec)",vsext(i,j,ispec)

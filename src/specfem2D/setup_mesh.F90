@@ -1205,17 +1205,18 @@ subroutine setup_mesh_surface_DG_coupling()
            etaext(NGLLX,NGLLZ,nspec_ext), &
            pext_DG(NGLLX,NGLLZ,nspec_ext), &
            gammaext_DG(nglob_DG), &
+           Htabext_DG(nglob_DG), &
            kappa_DG(NGLLX,NGLLZ,nspec_ext), stat=ier) 
   else
         allocate(gammaext_DG(1))
   endif
            
-  if (ier /= 0) stop 'Error allocating external model arrays'
+  if (ier /= 0) stop 'Error allocating external model arrays.'
 
   ! reads in external models
   if (assign_external_model) then
     if (myrank == 0) then
-      write(IMAIN,*) 'Assigning an external velocity and density model'
+      write(IMAIN,*) 'Assigning an external velocity and density model.'
       call flush_IMAIN()
     endif
     call read_external_model()

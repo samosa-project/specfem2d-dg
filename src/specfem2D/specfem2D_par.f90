@@ -80,6 +80,8 @@ module specfem_par
   !---------------------------------------------------------------------
   ! DG related quantities.
   !---------------------------------------------------------------------
+  character(len=100), parameter :: EXTERNAL_DG_ONLY_MODEL_FILENAME = './atmospheric_model.dat'
+  
   ! Stretching absorbing boundary conditions.
   logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH ! Self-explanatory.
   real(kind=CUSTOM_REAL) :: ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF ! Length of the stretching buffers.
