@@ -380,7 +380,6 @@
 
   is_periodic(:) = .false.
 
-  if(.false.) then
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
     do el2 = el+1, nelmnts-1
@@ -410,18 +409,6 @@
     enddo
   enddo
   
-  else
-  
-  do el = 0, nelmnts-1 ! we stop one element before the end in order for the second loop to be OK in all cases
-    do icorner = 0,NCORNERS-1
-        num_node = elmnts_l(icorner + NCORNERS*el) + 1 ! the plus one is because elmnts_l() starts at zero
-        x = nodes_coords(1,num_node)
-    if (abs(x - PERIODIC_HORIZ_DIST) < xtol .OR. abs(x) < xtol) is_periodic(el) = .true.
-    enddo
-  enddo
-  
-  endif
-
   print *,'done detecting points for periodic boundary conditions.'
   print *,'number of periodic elements found and grouped in the same partition: ',count(is_periodic)
 
