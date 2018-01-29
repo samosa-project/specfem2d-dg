@@ -299,11 +299,11 @@
             temp_nondiv_E(i, j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
           else
-            ! By constraining hydrostaticity, remark that an additional term appears (p_0 \nabla\cdot v'). We add it here despite the fact that it has nothing to do with gravity.
+            ! By constraining hydrostaticity, remark that an additional term appears outside the divergence (p_0 \nabla\cdot v').
             temp_nondiv_E(i, j) = &
                                 -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
-            !temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl
+            temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl
           endif
           temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
                               * ( (tau_epsilon(i, j, ispec)/tau_sigma(i, j, ispec)) - ONE ) &

@@ -258,7 +258,7 @@ STACEY_ABSORBING_CONDITIONS     = .false.
 
 # Periodic boundary conditions?
 ADD_PERIODIC_CONDITIONS         = .false.
-PERIODIC_HORIZ_DIST             = 4000.0d0
+PERIODIC_HORIZ_DIST             = 100.0d0
 
 
 #---------------------------------------------------------------------#
