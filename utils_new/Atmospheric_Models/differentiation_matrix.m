@@ -1,4 +1,4 @@
-function [D] = differentiation_matrix(Z)
+function [D] = differentiation_matrix(Z, conditionning)
   % Ref.: http://acoustique.ec-lyon.fr/publi/haniquecockenpot_thesis.pdf.
   dz = Z(2) - Z(1);
   nz = length(Z);
@@ -60,7 +60,10 @@ function [D] = differentiation_matrix(Z)
   D(i, i + signe * 6) = - 0.000000352273;
   D(end-4:end, 1:end) = - D(end-4:end, 1:end);
   D = D / dz;
-  D(1, 1) = 1.0; D(1, 2:end) = 0.0; % Conditioning.
+  
+  if(conditionning==1)
+    D(1, 1) = 1.0; D(1, 2:end) = 0.0; % Conditioning.
+  end
   % D(end, end) = 1.0; D(end, 1:end-1) = 0.0; % Conditioning.
 end
 
