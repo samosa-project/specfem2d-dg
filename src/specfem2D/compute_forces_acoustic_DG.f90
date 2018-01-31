@@ -597,7 +597,7 @@
           ! Energy equation's heat flux' contribution (last remaining term, viscous).
           ! Recall: dT_dx, and dT_dx already contain the 0.5 factor to put the flux under mean average form.
           dot_E(iglobM) = dot_E(iglobM) &
-                          + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dx*nz ) )
+                          + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
           
         enddo
       enddo
