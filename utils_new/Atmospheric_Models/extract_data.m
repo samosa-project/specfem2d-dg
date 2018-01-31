@@ -43,7 +43,7 @@ function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCA
   if(interpolate==1)
     % Setup.
     % ALTITUDE = ALTITUDE - ALTITUDE(1); % Set first altitude to 0.
-    if (ALTITUDE(2) - ALTITUDE(1)) < interp_delta
+    if min(diff(ALTITUDE)) < interp_delta
       disp('[WARNING] Interpolation step is greater than data step. Undersampling will occur.');
     end
     % interp_ALTITUDE=[ALTITUDE(1):interp_delta:ALTITUDE(end)]; % Using this, it is possible that interp_ALTITUDE(end)<ALTITUDE(end).

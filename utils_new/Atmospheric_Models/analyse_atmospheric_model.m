@@ -21,8 +21,8 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-interpolate = 1;
-interp_delta = 5000; % Interpolation step (m).
+interpolate = 0;
+interp_delta = 4000; % Interpolation step (m).
 save_plots = 0;
 maxalt=Inf; % If one has to cut data, choose maximum altitude here. Put Inf if all altitudes are to be considered.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +39,8 @@ maxalt=Inf; % If one has to cut data, choose maximum altitude here. Put Inf if a
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_111_-45.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_11_0.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_21_0.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
-DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_21_-45.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_21_-45.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
+DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_60000_111_-45.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,8 +177,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Regularise model.           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-method='integrate';
+% method='integrate';
 % method='bruteforce';
+method='metaheuristic';
 modify_atmospheric_model % See script.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

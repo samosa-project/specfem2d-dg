@@ -63,6 +63,20 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Use a metaheuristic.        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Description: bruteforce density such that hydrostatic gap is zero.
+if(strcmp(method, 'metaheuristic'))
+  disp(['[WARNING] Metaheuristic methods can be very long.']);
+  callFromOutside=1;
+  algo = 'ps';
+  ftol = 1e-5;
+  maxit = 1000;
+  metaheuristics;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Bruteforce Density.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Description: bruteforce density such that hydrostatic gap is zero.
