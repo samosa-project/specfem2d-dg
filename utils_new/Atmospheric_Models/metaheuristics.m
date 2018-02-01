@@ -6,7 +6,7 @@
 % Notes:         N/A.
 
 % clear all;
-close all;
+% close all;
 % clc;
 set(0, 'DefaultLineLineWidth', 1.5); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 6); % Default at 6.

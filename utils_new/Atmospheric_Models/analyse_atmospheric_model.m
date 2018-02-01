@@ -46,24 +46,25 @@ DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_60000
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fid = fopen(DATAFILE);
-if(fid==-1)
-  error(strcat("Cannot open file ", DATAFILE,').'))
-end
-stop=0;
-while(stop==0)
-  line = fgetl(fid);
-  year=str2num(regexprep(regexprep(line, 'day.*', ''), 'year', ''));
-  daysincenewyear=str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ day', ''));
-  secondssincenewday=str2num(regexprep(regexprep(line, 'lat.*', ''), 'year *[0-9]+ day *[0-9]+ seconds', ''));
-  datestr=[num2str(daysincenewyear), 'th day of ', num2str(year), ' at ' num2str(floor(secondssincenewday/3600)),':',num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)), ' UT'];
-
-  lat=str2num(regexprep(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat', ''), 'lon.*', ''));
-  lon=str2num(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat *[0-9]+\.[0-9]+ *lon', ''));
-  posstr=['lat. ',num2str(lat), ', lon. ',num2str(lon)];
-  stop=1;
-end
-fclose('all');
+% fid = fopen(DATAFILE);
+% if(fid==-1)
+%   error(strcat("Cannot open file ", DATAFILE,').'))
+% end
+% stop=0;
+% while(stop==0)
+%   line = fgetl(fid);
+%   year=str2num(regexprep(regexprep(line, 'day.*', ''), 'year', ''));
+%   daysincenewyear=str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ day', ''));
+%   secondssincenewday=str2num(regexprep(regexprep(line, 'lat.*', ''), 'year *[0-9]+ day *[0-9]+ seconds', ''));
+%   datestr=[num2str(daysincenewyear), 'th day of ', num2str(year), ' at ' num2str(floor(secondssincenewday/3600)),':',num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)), ' UT'];
+% 
+%   lat=str2num(regexprep(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat', ''), 'lon.*', ''));
+%   lon=str2num(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat *[0-9]+\.[0-9]+ *lon', ''));
+%   posstr=['lat. ',num2str(lat), ', lon. ',num2str(lon)];
+%   stop=1;
+% end
+% fclose('all');
+[datestr, posstr, ~, ~, ~, ~, ~] = extract_data_setup(DATAFILE);
 
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
  G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA] = ...
@@ -177,9 +178,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Regularise model.           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% method='integrate';
+method='integrate';
 % method='bruteforce';
-method='metaheuristic';
+% method='metaheuristic';
 modify_atmospheric_model % See script.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

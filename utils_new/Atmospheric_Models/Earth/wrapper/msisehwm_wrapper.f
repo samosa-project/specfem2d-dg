@@ -19,8 +19,6 @@ C ****************************************************************
 
       real*4 latmod, lonmod
 
-      character*50 filename,filewind
-
       real*4 z(imax),rhoat(imax),v(imax),T(imax),P(imax)
       real*4 Wind(3,imax),Windshift(2)
       real*4 MUtab(imax),MUvoltab(imax),Kappatab(imax)
@@ -65,18 +63,21 @@ c     that's why they have to be changed for each event.
       integer IYD,Z1,Z2,Zmin,Zmax,dh1,dh2,Iquake,day,year
       
       integer numargs, iarg
-      character(len=50), dimension(:), allocatable :: args
+      character(len=500), dimension(:), allocatable :: args
+
+      character*500 filename,filewind
       real*4 wind_projection
 
 C     ****************************************************************
 C     * Parameters.                                                  *
 C     ****************************************************************
+      AP = 0
       numargs = command_argument_count()
       if(numargs>0) then
-        if(.not. numargs==10) then
-          write(*,*) '10 and only 10 arguments should be given ',
+        if(.not. numargs==13) then
+          write(*,*) '13 and only 13 arguments should be given ',
      &         '(ALTMIN ALTMAX NSAMPLES latmod lonmod year day SEC ',
-     1         'filename wind_projection).'
+     1         'F107A F107 AP filename wind_projection).'
           stop
         endif
         allocate(args(numargs))
@@ -91,8 +92,11 @@ C     ****************************************************************
         read(args(6), *) year
         read(args(7), *) day
         read(args(8), *) SEC
-        read(args(9), *) filename
-        read(args(10), *) wind_projection
+        read(args(9), *) F107A
+        read(args(10), *) F107
+        read(args(11), *) AP(1)
+        read(args(12), *) filename
+        read(args(13), *) wind_projection
         NSAMPLES = NSAMPLES - 1
         write(*, *) 'Arguments assigned.'
       else
@@ -113,6 +117,12 @@ C       Days since the beginning of the year 2000.
         day=69
 C       Seconds since the beginning of day (in UTC).
         SEC=28059.996
+C       81-day average of F10.7 radio flux (centered on the day of the event).
+        F107A=106.7160
+C       Daily F10.7 flux (for previous day).
+        F107=131.
+C       Daily magnetic index.
+        AP=37
 C       Output file name.
         filename='msisehwm_model_output'
 C       Wind projection angle (in degrees). 0 is forward zonal (positive eastward). 90 is forward meridional (positive northward). 180 is backwards zonal (positive westward). 270 is backward meriodional (positive southward).
@@ -129,9 +139,9 @@ C     Earth and Atmosphere parameters.
 C     Flattening of Earth deduced from the WGS84 value of 1/f. Used to compute the geodetic latitude (GLAT).
       f=1./298.257223563
 C     81-day average of F10.7 flux (centered on the day of the event).
-      F107A=106.7160
+C     F107A=106.7160
 C     Daily F10.7 flux for previous day.
-      F107=131.
+C     F107=131.
 C     Magnetic index (daily, for the last 24 hours).
 C   - or when SW(9)=-1. it is an array containing :
 C     (1) Daily AP
@@ -143,7 +153,7 @@ C     (6) Average of eight 3 HR AP indexes from 12 to 33 HRS prior
 C                 to current time
 C     (7) Average of eight 3 HR AP indexes from 36 to 57 HRS prior
 C                 to current time
-      AP=37
+C     AP=37
 C     To change the values of F107, F107A and Ap, watch the website:
 C     http://www.swpc.noaa.gov/alerts/solar_indices.html
       
@@ -272,7 +282,8 @@ C     Write information about model.
       write(2012,*) 'year', (2000+year), 'day', day, 'seconds', SEC,
      &              'lat', latmod, 'lon', lonmod
       write(2012,*) 'IYD', IYD, 'SEC', SEC, 'GLAT', GLAT, 'GLON',
-     &              GLONG, 'STL', STL
+     &              GLONG, 'STL', STL, 'F107A', F107A, 'F107', F107,
+     &              'AP', AP
 C     First loop on altitude samples to get models.
       do iz=1, NSAMPLES+1
 C       Altitude of calculation for model calls. [km].

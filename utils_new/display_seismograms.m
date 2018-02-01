@@ -51,21 +51,21 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_558183_Gderiv/');
 
 % Seismic Hammer.
-% fig_title = strcat('Seismic Hammer Simulation (New Model)');
+fig_title = strcat('Seismic Hammer Simulation (New Model)');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
+root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Tests.
-fig_title = 'test';
+% fig_title = 'test';
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_long/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_coupling'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_coupling'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
