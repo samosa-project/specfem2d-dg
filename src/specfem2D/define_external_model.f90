@@ -1476,7 +1476,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         QKappa_attenuation,Qmu_attenuation,anisotropy,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS
   
   implicit none
   
@@ -1600,6 +1600,25 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       write(*,*) "* 'define_external_model.f90'. *"
       write(*,*) "********************************"
     endif
+  endif
+  if(.not. ADD_PERIODIC_CONDITIONS) then
+    do i=1, nlines_model
+      if(myrank==0 .and. abs(z_model(i))==0. .and. abs(wx_model(i))>0.) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* In the loaded model, wind is *"
+        write(*,*) "* non-zero at altitude 0. This *"
+        write(*,*) "* is not physically            *"
+        write(*,*) "* acceptable. Activating       *"
+        write(*,*) "* horizontal periodic boundary *"
+        write(*,*) "* conditions can make this     *"
+        write(*,*) "* work, but this will remain   *"
+        write(*,*) "* questionnable.               *"
+        write(*,*) "********************************"
+        stop
+      endif
+    enddo
   endif
   if(minval(density_model)<=ZERO) then
     write(*,*) "********************************"
@@ -1882,7 +1901,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       stop
     endif ! Endif on ispec_is_elastic/ispec_is_acoustic_DG.
     
-    if(.true.) then ! DEBUG
+    if(.false.) then ! DEBUG
       do j = 1, NGLLZ
         do i = 1, NGLLX
           if(abs(coord(2, ibool(i, j, ispec)))<0.5 .and. abs(coord(1, ibool(i, j, ispec)))>49.5) then
