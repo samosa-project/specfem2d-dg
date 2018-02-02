@@ -159,7 +159,7 @@
   
   ! initializes
   vector_field_element(:,:,:) = 0._CUSTOM_REAL
-
+  
   ! determines vector field
   if (ispec_is_elastic(ispec)) then
     ! elastic element
@@ -206,57 +206,54 @@
       do i = 1,NGLLX
       
         if(.not. DG_vector_field) then
-      
-        ! derivative along x
-        tempx1l = 0._CUSTOM_REAL
-        if (AXISYM) then
-          if (is_on_the_axis(ispec)) then
-            do k = 1,NGLLX
-              hp1 = hprimeBar_xx(i,k)
-              iglob = ibool(k,j,ispec)
-              tempx1l = tempx1l + field_acoustic(iglob)*hp1
-            enddo
+          ! derivative along x
+          tempx1l = 0._CUSTOM_REAL
+          if (AXISYM) then
+            if (is_on_the_axis(ispec)) then
+              do k = 1,NGLLX
+                hp1 = hprimeBar_xx(i,k)
+                iglob = ibool(k,j,ispec)
+                tempx1l = tempx1l + field_acoustic(iglob)*hp1
+              enddo
+            else
+              !AXISYM but not on the axis
+              do k = 1,NGLLX
+                hp1 = hprime_xx(i,k)
+                iglob = ibool(k,j,ispec)
+                tempx1l = tempx1l + field_acoustic(iglob)*hp1
+              enddo
+            endif
           else
-            !AXISYM but not on the axis
+            !not AXISYM
             do k = 1,NGLLX
               hp1 = hprime_xx(i,k)
               iglob = ibool(k,j,ispec)
               tempx1l = tempx1l + field_acoustic(iglob)*hp1
             enddo
           endif
-        else
-          !not AXISYM
-          do k = 1,NGLLX
-            hp1 = hprime_xx(i,k)
-            iglob = ibool(k,j,ispec)
-            tempx1l = tempx1l + field_acoustic(iglob)*hp1
+
+          ! derivative along z
+          tempx2l = 0._CUSTOM_REAL
+          do k = 1,NGLLZ
+            hp2 = hprime_zz(j,k)
+            iglob = ibool(i,k,ispec)
+            tempx2l = tempx2l + field_acoustic(iglob)*hp2
           enddo
-        endif
 
-        ! derivative along z
-        tempx2l = 0._CUSTOM_REAL
-        do k = 1,NGLLZ
-          hp2 = hprime_zz(j,k)
-          iglob = ibool(i,k,ispec)
-          tempx2l = tempx2l + field_acoustic(iglob)*hp2
-        enddo
+          xixl = xix(i,j,ispec)
+          xizl = xiz(i,j,ispec)
+          gammaxl = gammax(i,j,ispec)
+          gammazl = gammaz(i,j,ispec)
 
-        xixl = xix(i,j,ispec)
-        xizl = xiz(i,j,ispec)
-        gammaxl = gammax(i,j,ispec)
-        gammazl = gammaz(i,j,ispec)
+          if (assign_external_model) rhol = rhoext(i,j,ispec)
 
-        if (assign_external_model) rhol = rhoext(i,j,ispec)
-
-        ! derivatives of potential
-        vector_field_element(1,i,j) = (tempx1l*xixl + tempx2l*gammaxl) / rhol        !u_x
-        vector_field_element(2,i,j) = (tempx1l*xizl + tempx2l*gammazl) / rhol        !u_z
-        
+          ! derivatives of potential
+          vector_field_element(1,i,j) = (tempx1l*xixl + tempx2l*gammaxl) / rhol        !u_x
+          vector_field_element(2,i,j) = (tempx1l*xizl + tempx2l*gammazl) / rhol        !u_z
+          
        else
-        
-        vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
-        vector_field_element(2,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
-        
+         vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
+         vector_field_element(2,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
        endif ! if(ispec_is_acoustic_DG(ispec))
         
       enddo

@@ -45,7 +45,7 @@ subroutine compute_energy()
     vsext,vpext,rhoext,poroelastcoef,density,kmato,assign_external_model, &
     ispec_is_poroelastic,ispec_is_elastic, &
     P_SV &
-    , potential_dphi_dx_DG ! Modification for DG.
+    , rhovx_DG, rhovz_DG, rho_DG ! Modification for DG.
 
   implicit none
 
@@ -77,6 +77,8 @@ subroutine compute_energy()
 
 ! loop over spectral elements
   do ispec = 1,nspec
+  
+    ! TODO: When using buffer techniques, such as the virtual stretching, the calculations below become false. Indeed, the actual derivatives depend on the virtual stretching parameters (in particular for xixl, xizl, gammaxl, gammazl, and jacobianl). Consider not taking into account the points in the buffers for computation of the energy.
 
     !---
     !--- elastic spectral element
@@ -277,11 +279,17 @@ subroutine compute_energy()
       !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
       !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
       ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
-      ! TODO: Do something here instead of this poor patch.
       call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                       potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                      potential_dphi_dx_DG, ispec,vector_field_element)
-
+                                      (rhovx_DG**2+rhovz_DG**2)/rho_DG, ispec,vector_field_element)
+      ! IMPORTANT NOTICE -----------!
+      ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that, 'vector_field_element' is 2-dimensionnal, containing ||v||_2 in both components.
+      ! In the computation of kinetic energy below, this does not change the fact that:
+      !  vector_field_element(1,i,j)**2+vector_field_element(2,i,j)**2 = ||v||_2,
+      ! but it is a convoluted way to do it.
+      ! TODO: Consider sending variables that actually make sense.
+      !-----------------------------!
+      
       ! get density of current spectral element
       lambdal_unrelaxed_elastic = poroelastcoef(1,1,kmato(ispec))
       rhol  = density(1,kmato(ispec))
@@ -332,7 +340,7 @@ subroutine compute_energy_fields()
                         potential_effective_duration_field,potential_dot_gravitoacoustic,potential_dot_gravito,velocs_poroelastic, &
                         poroelastcoef,vsext,vpext,rhoext,density,kmato,assign_external_model,jacobian,wxgll,wzgll,displ_elastic, &
                         hprime_xx,hprime_zz,hprimeBar_xx,xix,xiz,gammax,gammaz,wxglj &
-                        , potential_dphi_dx_DG ! Modification for DG.
+                        , rhovx_DG, rhovz_DG, rho_DG ! Modification for DG.
 
   implicit none
 
@@ -358,6 +366,8 @@ subroutine compute_energy_fields()
 
   ! loop over spectral elements
   do ispec = 1,nspec
+  
+    ! TODO: When using buffer techniques, such as the virtual stretching, the calculations below become false. Indeed, the actual derivatives depend on the virtual stretching parameters (in particular for xixl, xizl, gammaxl, gammazl, and jacobianl). Consider not taking into account the points in the buffers for computation of the energy.
 
     !---
     !--- elastic spectral element
@@ -513,10 +523,16 @@ subroutine compute_energy_fields()
       !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
       !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
       ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
-      ! TODO: Do something here instead of this poor patch.
       call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                       potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                      potential_dphi_dx_DG, ispec,vector_field_element)
+                                      (rhovx_DG**2+rhovz_DG**2)/rho_DG, ispec,vector_field_element)
+      ! IMPORTANT NOTICE -----------!
+      ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that, 'vector_field_element' is 2-dimensionnal, containing ||v||_2 in both components.
+      ! In the computation of kinetic energy below, this does not change the fact that:
+      !  vector_field_element(1,i,j)**2+vector_field_element(2,i,j)**2 = ||v||_2,
+      ! but it is a convoluted way to do it.
+      ! TODO: Consider sending variables that actually make sense.
+      !-----------------------------!
 
       ! compute pressure in this element
       call compute_pressure_one_element(ispec,pressure_element)

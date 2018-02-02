@@ -177,7 +177,7 @@ subroutine iterate_time()
 
     ! computes kinetic and potential energy
     if (output_energy) then
-      !call it_compute_and_output_energy()
+      call it_compute_and_output_energy()
     endif
    
     ! computes integrated_energy_field
@@ -437,6 +437,10 @@ subroutine it_compute_and_output_energy()
 
   ! saves kinetic, potential and total energy for this time step in external file
   if (myrank == 0) then
+    if(it==1) then
+      ! Print header.
+      write(IOUT_ENERGY,*) "Time(s) kinetic_energy(J) potential_energy(J) total_energy(J)"
+    endif
     write(IOUT_ENERGY,*) real(dble(it-1)*deltat - t0,4),real(kinetic_energy_total,4), &
                          real(potential_energy_total,4),real(kinetic_energy_total + potential_energy_total,4)
   endif
