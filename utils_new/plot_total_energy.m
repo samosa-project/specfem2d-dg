@@ -15,7 +15,7 @@ set(0, 'defaultAxesFontSize', 14); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-folder = input('Folder containing the energy.dat file? > ', 's');
+folder = input('  Folder containing the energy.dat file? > ', 's');
 if(not(strcmp(folder(end),'/'))); folder=[folder,'/']; end;
 logscale=-1;
 while(not(logscale==0 || logscale==1))

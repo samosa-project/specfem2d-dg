@@ -15,7 +15,7 @@ set(0, 'defaultAxesFontSize', 14); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-folder = input('Folder containing the SSF files? > ', 's');
+folder = input('  Folder containing the SSF files? > ', 's');
 if(not(strcmp(folder(end),'/'))); folder=[folder,'/']; end;
 
 % Load the data.
@@ -28,7 +28,7 @@ end
 x=a(:,1); z=a(:,2); d=a(:,3);
 
 % Interpolate the point cloud.
-gs = input('Plotting grid size? > ');
+gs = input('  Plotting grid size? > ');
 disp(['Interpolating.'])
 F = scatteredInterpolant(x,z,d);
 tx = min(x(:)):gs:max(x(:));
@@ -37,8 +37,8 @@ tz = min(z(:)):gs:max(z(:));
 D = F(X,Z);
 figure(1);
 surf(X,Z,D,'FaceColor', 'interp', 'EdgeColor', 'white', 'LineStyle', ':');
-ar=input('Axes aspect ratio (format [ar_x, ar_y, ar_z])? > '); set(gca,'DataAspectRatio',ar);
+ar=input('  Axes aspect ratio (format [ar_x, ar_y, ar_z])? > '); set(gca,'DataAspectRatio',ar);
 xlabel('x'); ylabel('z'); title('Source Spatial Function');
-th = input('Threshold to recenter plot (show only where SSF>threshold)? > ');
+th = input('  Threshold to recenter plot (show only where SSF>threshold)? > ');
 xlim([min(x(d>th)), max(x(d>th))]); ylim([min(z(d>th)), max(z(d>th))]); zlim([th, max(d)]);
 figure(1);

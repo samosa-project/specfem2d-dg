@@ -237,7 +237,7 @@ subroutine damp_function(r_l, sigma)
   
   ! Coefficients for the stretching function.
   ! Arina's damping coefficients.
-  C_1 = 0.08!0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
+  C_1 = 0.!0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
   C_2 = 13.!6.!10.!13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
   ! Richards' damping coefficients.
   beta = 4.!3.0d0 ! 4 in Richards' paper.

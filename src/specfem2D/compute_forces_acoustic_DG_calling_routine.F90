@@ -274,7 +274,7 @@ subroutine compute_forces_acoustic_DG_main()
   
   ! TEST POSTERIORI DAMPING
   if(.false.) then
-    if(myrank==0) then
+    if(it==1 .and. i_stage==1 .and. myrank==0) then
         write(*,*) "********************************"
         write(*,*) "*           WARNING            *"
         write(*,*) "********************************"

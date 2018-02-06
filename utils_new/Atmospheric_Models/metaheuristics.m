@@ -68,12 +68,13 @@ x0 = [P;RHO];
 % ub = 1.5*[max(P)*ones(n,1);max(RHO)*ones(n,1);max(G)*ones(n,1)];
 dpc=10/100;
 lb = (1-dpc)*x0;
-% ub = (1+dpc)*x0;
+ub = (1+dpc)*x0;
 % ub = lb+max((1+dpc)*x0-lb,0.0021); % Only like this to make Matlab's SA work (because it approximates derivatives and complains if ub-lb is too small.
-ub = lb+max((1+dpc)*x0-lb,0.0002); % Only like this to make Matlab's SA work (because it approximates derivatives and complains if ub-lb is too small.
+% ub = lb+max((1+dpc)*x0-lb,0.0002); % Only like this to make Matlab's SA work (because it approximates derivatives and complains if ub-lb is too small.
 
 tic;
 if(strcmp(algo,'sa'))
+  disp(["Launching optimisation by simulated annealing."]);
   % options = saoptimset('PlotFcns',{@saplotbestx,@saplotbestf,@saplotx,@saplotf}, 'MaxIter', 1000);%, 'AnnealingFcn', @test_evo_newpt);
   options = saoptimset('PlotFcns',{@saplotbestf} ...
                        , 'MaxIter', maxit ...
@@ -86,6 +87,7 @@ if(strcmp(algo,'sa'))
                        %, 'AnnealingFcn', @test_evo_newpt
   [x, fval, exitflag, output] = simulannealbnd(fun,x0,lb,ub,options);
 elseif(strcmp(algo,'ga'))
+  disp(["Launching optimisation by genetic algorithm."]);
   options = gaoptimset('PlotFcns', {@gaplotbestf} ...
                        , 'PopulationSize', 200 ...
                        , 'Generations', maxit ...
@@ -95,10 +97,11 @@ elseif(strcmp(algo,'ga'))
                        %, 'UseParallel', true
   [x,fval,exitflag] = ga(fun,numel(x0),[],[],[],[],lb,ub,[], options);
 elseif(strcmp(algo,'ps'))
+  disp(["Launching particle swarm optimisation."]);
   options = optimoptions('particleswarm' ...
                          , 'PlotFcns', {@pswplotbestf} ...
                          , 'SwarmSize', 200 ...
-                         , 'InitialSwarmSpan', max(ub) ...
+                         , 'InitialSwarmSpan', x0 ...
                          , 'MaxIterations', maxit ... %200*numel(x0) ...
                          , 'TolFun', ftol ...
                          );
@@ -113,32 +116,30 @@ if(exitflag~=-1)
   x=reshape(x,length(x),1);
   hydrostatic_ratio = @(D, P, RHO, G) (D * P) ./ (-RHO .* G);
 
-  % % TRICKSSSS
-  % FINALX=x;
-  % % originalBETTER=(abs(test_evo_metric(x0))<abs(test_evo_metric(x)));
-  % originalBETTER=(abs(test_evo_metric(x0))<abs(test_evo_metric(x)));
-  % originalBETTER=[originalBETTER;originalBETTER];
-  % FINALX(originalBETTER)=x0(originalBETTER);
-
   nP=x(1:n);
   nRHO=x(n+1:2*n);
   % nG=x(2*n+1:3*n);
   nG=G;
 
-  % FnP=FINALX(1:n);
-  % FnRHO=FINALX(n+1:2*n);
-  % FnG=G;
+  % TRICK
+%   FINALX=x;
+%   originalBETTER=(abs(hydrostatic_ratio(D, P, RHO, G)-1)<abs(hydrostatic_ratio(D, nP, nRHO, nG)-1));
+%   originalBETTER=[originalBETTER;originalBETTER];
+%   FINALX(originalBETTER)=x0(originalBETTER);
+%   FnP=FINALX(1:n);
+%   FnRHO=FINALX(n+1:2*n);
+%   FnG=G;
 
   figure();
   HR0=hydrostatic_ratio(D, P, RHO, G);
   HR=hydrostatic_ratio(D, nP, nRHO, nG);
-  % FHR=hydrostatic_ratio(D, FnP, FnRHO, FnG);
   plot(HR0(1:end), Z(1:end), 'DisplayName', 'original'); hold on;
   plot(HR(1:end), Z(1:end), 'DisplayName', 'after optimisation');
-  % plot(FHR(1:end), Z(1:end), 'DisplayName', 'after trick');
   plot(ones(size(Z)), Z, 'k:', 'DisplayName', 'one');
   title('hydrostatic ratio');
   legend('Location', 'best');
+%   FHR=hydrostatic_ratio(D, FnP, FnRHO, FnG);
+%   plot(FHR(1:end), Z(1:end), 'DisplayName', 'after trick');
 
   figure();
   HG0=abs(D*P+RHO.*G)./(RHO.*G);
