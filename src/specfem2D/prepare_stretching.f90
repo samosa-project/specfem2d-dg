@@ -37,14 +37,14 @@
 ! TODO: Description.
 
 subroutine prepare_stretching()
-  use specfem_par, only: coord, ibool_before_perio,&!ibool_DG,&
+  use specfem_par, only: coord, ibool_before_perio,&
                          myrank, nglob,nspec,&
                          ispec_is_acoustic_DG,&
                          ADD_PERIODIC_CONDITIONS, &
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM, &
                          ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF, &
                          stretching_ya,any_elastic,&
-                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax!,stretching_buffer
+                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,stretching_buffer
   
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
 
@@ -132,15 +132,14 @@ subroutine prepare_stretching()
   endif
   
   allocate(stretching_ya(2,nglob)) ! Two-dimensionnal stretching. Change it to 3 for 3D.
-  !allocate(stretching_buffer(nglob)) ! Stretching buffers code: -1 outside buffers, 1 in top buffer, 2 in left buffer, 3 in bottom buffer, 4 in right buffer.
+  allocate(stretching_buffer(nglob)) ! Stretching buffers code: see specfem2D_par.
   stretching_ya(:, :) = ONE ! By default, mesh is not stretched.
-  !stretching_buffer(:) = 0 ! By default, mesh is not stretched.
+  stretching_buffer(:) = 0 ! By default, mesh is not stretched.
   
   do ispec = 1, nspec
     if(ispec_is_acoustic_DG(ispec)) then
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          !iglob = ibool_DG(i, j, ispec)
           iglob_unique = ibool_before_perio(i, j, ispec)
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
@@ -151,24 +150,35 @@ subroutine prepare_stretching()
             
             if(ABC_STRETCH_TOP) then
               r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
-              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
-              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 0) ! Set 1st LSB to 1.
+              if(r_l>ZERO .and. r_l<=ONE) then
+                call stretching_function(r_l, stretching_ya(2, iglob_unique))
+                stretching_buffer(iglob_unique) = ibset(stretching_buffer(iglob_unique), 0) ! Set 1st LSB to 1.
+              endif
             endif
             if(ABC_STRETCH_LEFT) then
               r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
-              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
-              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 1) ! Set 2nd LSB to 1.
+              if(r_l>ZERO .and. r_l<=ONE) then
+                call stretching_function(r_l, stretching_ya(1, iglob_unique))
+                stretching_buffer(iglob_unique) = ibset(stretching_buffer(iglob_unique), 1) ! Set 2nd LSB to 1.
+              endif
             endif
             if(ABC_STRETCH_BOTTOM) then
               r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
-              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(2, iglob_unique))
-              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 2) ! Set 3rd LSB to 1.
+              if(r_l>ZERO .and. r_l<=ONE) then
+                call stretching_function(r_l, stretching_ya(2, iglob_unique))
+                stretching_buffer(iglob_unique) = ibset(stretching_buffer(iglob_unique), 2) ! Set 3rd LSB to 1.
+                !write(*,*) 'OMEGAKEK', stretching_buffer(ibool_before_perio(i,j,ispec))
+              endif
             endif
             if(ABC_STRETCH_RIGHT) then
               r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
-              if(r_l>ZERO .and. r_l<=ONE) call stretching_function(r_l, stretching_ya(1, iglob_unique))
-              !stretching_buffer(iglob) = ibset(stretching_buffer(iglob), 3) ! Set 4th LSB to 1.
+              if(r_l>ZERO .and. r_l<=ONE) then
+                call stretching_function(r_l, stretching_ya(1, iglob_unique))
+                stretching_buffer(iglob_unique) = ibset(stretching_buffer(iglob_unique), 3) ! Set 4th LSB to 1.
+              endif
             endif
+            !write(*,*) x, z, ibits(stretching_buffer(iglob), 0, 1), ibits(stretching_buffer(iglob), 1, 1), &
+            !           ibits(stretching_buffer(iglob), 1, 1), ibits(stretching_buffer(iglob), 3, 1) !DBEUG
           endif ! Endif.
         enddo ! Enddo on i.
       enddo ! Enddo on j.
@@ -318,6 +328,7 @@ subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
           iglob = ibool_DG(i, j, ispec)
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
+          ! TODO: use instead the newly-implemented stretching_buffer variable (see specfem2D_par).
           if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
              .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
              .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone

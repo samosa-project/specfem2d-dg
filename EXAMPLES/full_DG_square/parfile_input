@@ -197,7 +197,7 @@ USE_TRICK_FOR_BETTER_PRESSURE   = .false.
 NSTEP_BETWEEN_OUTPUT_SEISMOS    = 25
 
 # Compute the field int_0^t v^2 dt for a set of GLL points and write it to file. Use
-# the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms
+# the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms. Points in the stretching buffers (in DG elements) are not taken into account.
 COMPUTE_INTEGRATED_ENERGY_FIELD = .false.
 
 # Time shift to use. This input must be a positive value.
@@ -351,7 +351,7 @@ NSTEP_BETWEEN_OUTPUT_INFO       = 200
 output_grid_Gnuplot             = .false.
 # Dump the grid in an ASCII text file consisting of a set of X,Y,Z points?
 output_grid_ASCII               = .false.        
-# Compute and output total acoustic and elastic energy curves (slows down the code significantly)?
+# Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .false.
 
 #---------------------------------------------------------------------#

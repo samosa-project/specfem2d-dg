@@ -41,6 +41,7 @@
   implicit none
   
   integer ispec,i,j,iglob_unique
+  !integer counter !DBEUG
 
   ! Test compatibility with axisymmetric formulation
   if (AXISYM) call check_compatibility_axisym()
@@ -123,21 +124,41 @@
     call prepare_stretching()
     
     !DEBUG
-    if(myrank==1 .and. .false.) then
-      open(unit=1000,file="OUTPUT_FILES/testYA",status='unknown',action='write', position="append")
+    !counter=0
+    if(.false. .and. myrank==0) then
+      !open(unit=1000,file="OUTPUT_FILES/testYA",status='unknown',action='write', position="append")
       do ispec = 1, nspec
         do i = 1, NGLLX
           do j = 1, NGLLZ
-            if(i==3 .and. j==3 .and. coord(2, iglob_unique)>mesh_zmax - 1.5*ABC_STRETCH_TOP_LBUF) then
-              !iglob_unique = ibool_before_perio(i, j, ispec)
+            iglob_unique = ibool_before_perio(i, j, ispec)
+            if(i==3 .and. j==3) then
               !write(1000,*) coord(1, iglob_unique), coord(2, iglob_unique), &
               !              stretching_ya(1, iglob_unique), stretching_ya(2, iglob_unique)
-              write(*,*) coord(2, iglob_unique), muext(i,j,ispec)
+                  
+              if(.false. .and. ABC_STRETCH_LEFT .and. coord(1, iglob_unique) < mesh_xmin + ABC_STRETCH_LEFT_LBUF) then ! left stretching and in left buffer zone
+                write(*,*) "L", stretching_buffer(ibool_before_perio(i, j, ispec))
+              endif
+              if(.false. .and. ABC_STRETCH_RIGHT .and. coord(1, iglob_unique) > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) then ! right stretching and in right buffer zone
+                write(*,*) "R", stretching_buffer(ibool_before_perio(i, j, ispec))
+              endif
+              if(ABC_STRETCH_BOTTOM .and. coord(2, iglob_unique) < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) then ! bottom stretching and in bottom buffer zone
+                write(*,*) "B", stretching_buffer(ibool_before_perio(i, j, ispec))
+                !counter=counter+1
+              endif
+              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then ! bottom stretching and in bottom buffer zone
+                write(*,*) "B_", stretching_buffer(ibool_before_perio(i, j, ispec))
+                !counter=counter-1
+              endif
+              if(.false. .and. ABC_STRETCH_TOP .and. coord(2, iglob_unique) > mesh_zmax - ABC_STRETCH_TOP_LBUF) then ! top stretching and in top buffer zone
+                write(*,*) "T", stretching_buffer(ibool_before_perio(i, j, ispec))
+              endif
             endif
           enddo
         enddo
       enddo
-      close(1000)
+      !close(1000)
+      !write(*,*) counter
+      stop 'kek'
     endif
   endif
   
@@ -1637,11 +1658,17 @@
   ! note: velocities might have been shifted by attenuation
 
   ! allocates material arrays
-  allocate(kappastore(NGLLX,NGLLZ,nspec))
-  allocate(mustore(NGLLX,NGLLZ,nspec))
-  allocate(rhostore(NGLLX,NGLLZ,nspec))
-  allocate(rho_vp(NGLLX,NGLLZ,nspec))
-  allocate(rho_vs(NGLLX,NGLLZ,nspec))
+  
+  allocate(kappastore(NGLLX,NGLLZ,nspec),stat=ier)
+  if (ier /= 0) stop 'Error allocating kappastore array'
+  allocate(mustore(NGLLX,NGLLZ,nspec),stat=ier)
+  if (ier /= 0) stop 'Error allocating mustore array'
+  allocate(rhostore(NGLLX,NGLLZ,nspec),stat=ier)
+  if (ier /= 0) stop 'Error allocating rhostore array'
+  allocate(rho_vp(NGLLX,NGLLZ,nspec),stat=ier)
+  if (ier /= 0) stop 'Error allocating rho_vp array'
+  allocate(rho_vs(NGLLX,NGLLZ,nspec),stat=ier)
+  if (ier /= 0) stop 'Error allocating rho_vs array'
 
   if (assign_external_model) then
     ! external model

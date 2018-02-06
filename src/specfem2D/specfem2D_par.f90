@@ -90,20 +90,33 @@ module specfem_par
     stretching_ya ! Array of stretching values (2 or 3 dimensions).
   
   ! Code for buffers, to be implemented later.
-  !integer(4), dimension (:), allocatable :: stretching_buffer ! Stretching buffers codes, binary.
+  integer(4), dimension (:), allocatable :: stretching_buffer ! Stretching buffers codes, binary.
   ! Least significant bit (LSB, ---*) is for top buffer, 2nd LSB (--*-) for left buffer, 3rd LSB (-*--) for bottom buffer, 4th LSB (*---) for right buffer. Examples:
   !  0:=0000 for non-stretched.
   !  1:=0001 for top buffer only.
   !  2:=0010 for left buffer only.
   !  3:=0011 for top-left buffer.
   !  4:=0100 for bottom buffer only.
-  !  5:=0101 for bottom-left buffer.
-  !  6:=0110 should not happen (top AND bottom buffer).
+  !  5:=0101 should not happen (top AND bottom buffer).
+  !  6:=0110 for bottom-left buffer.
   !  7:=0111 should not happen (top-left AND bottom-left buffer).
   !  8:=1000 for right buffer only.
   !  9:=1001 for top-right buffer.
-  ! 10:=1010 for bottom-right buffer.
-  ! 11-15 should not happen (all cases covered).
+  ! 10:=1010 should not happen (left AND right buffer).
+  ! 11:=1011 should not happen (top-left AND top-right buffer).
+  ! 12:=1100 for bottom-right buffer.
+  ! 13-15 should not happen (all cases covered).
+  ! How to use:
+  !   Point is in top buffer if:
+  !     ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1
+  !   Point is in left buffer if:
+  !     ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1
+  !   Point is in bottom buffer if:
+  !     ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1
+  !   Point is in right buffer if:
+  !     ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1
+  !   Point is not in any buffer if:
+  !     stretching_buffer(ibool_before_perio(i,j,ispec))==0
     
   ! Switches (variables' names are self-explanatory).
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
