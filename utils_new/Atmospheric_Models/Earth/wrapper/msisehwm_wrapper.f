@@ -51,8 +51,8 @@ C ****************************************************************
       character*37 directory
       character*33 folder
       character*70 location
-c     The sizes of folder and evename are depending on the event name,
-c     that's why they have to be changed for each event.
+C     The sizes of folder and evename are depending on the event name,
+C     that's why they have to be changed for each event.
       
       real*4 time(itop),D(itop),lati(itop),lon(itop),R(itop)
       real*4 WS(2,itop)
@@ -261,14 +261,14 @@ C     * Creation of the atmosphere and wind model.                   *
 C     ****************************************************************
 C     IYD like this because format needed in calls to GTD7 and to GWS5 (YYDDD).
       IYD=year*1000.0+day
-      GLAT=atan(tan(latmod*PI/180.0)/((1-f)*(1-f)))*180/PI
+      GLAT=atan(tan(latmod*PI/180.0)/((1.-f)*(1.-f)))*180./PI
       if(lonmod.lt.0.0) then
         GLONG=lonmod+360.0
       else
         GLONG=lonmod
       endif
 C     Solar local time.
-      STL=SEC/3600+GLONG/15
+      STL=SEC/3600.+GLONG/15.
       if(STL.gt.24.0) then
         STL=STL-24.0
       endif
@@ -327,15 +327,15 @@ C       Compute isobaric heat capacity of the gas mixture (in [J/mol*K]).
      &   Cpcoefs(5,ispec,indtemp)/(Ti*Ti))
         enddo
 C       Add O (atomic oxygen) and H (atomic hydrogen).
-        Cp(iz)=Cp(iz)+(Dms(2)/densmol)*(5/2)*8.3145
-        Cp(iz)=Cp(iz)+(Dms(7)/densmol)*(5/2)*8.3145
+        Cp(iz)=Cp(iz)+(Dms(2)/densmol)*(5./2.)*8.3145
+        Cp(iz)=Cp(iz)+(Dms(7)/densmol)*(5./2.)*8.3145
 C       Isochoric heat capacity. [J/mol*K].
         Cv(iz)=Cp(iz)-8.3145
 C       Heat capacity ratio.
         gammatab(iz)=Cp(iz)/Cv(iz)
 C       Atmospheric pressure. [Pa]=[kg.s^(-2).m^(-1)].
 C       P(iz)=rhoat(iz)*8.3145*T(iz)/0.0289645
-        P(iz)=(densmol*1000/6.02214129e23)*(8.3145*1000)*T(iz)
+        P(iz)=(densmol*1000./6.02214129e23)*(8.3145*1000.)*T(iz)
 C       P(iz)=(densmol/6.02214129e23)*(8.3145)*T(iz)
 C       Sound velocity. [m.s^(-1)].
         v(iz)=sqrt(gammatab(iz)*P(iz)/rhoat(iz))
@@ -393,24 +393,24 @@ C     ****************************************************************
 C     * alclass                                                      *
 C     ****************************************************************
       function alclass(f,rho,v,MU,K,gamma)
-c     - X. Bonnin - 18/07/03
-c     - 'alclass' calculates the term of
-c       classical relaxation absorption of sound  
-c     - Henry E. Bass and James P. Chambers
-c       'Absorption of sound in the Martian atmosphere',
-c       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
-c     - f in Hz, rho in kg/(m**3), v in m/s, MU in kg/(m*s),
-c       K in (J*kg)/(kmol*K*m*s), Cv in J/(kmol*K),
-c       gamma without unit
+C     - X. Bonnin - 18/07/03
+C     - 'alclass' calculates the term of
+C       classical relaxation absorption of sound  
+C     - Henry E. Bass and James P. Chambers
+C       'Absorption of sound in the Martian atmosphere',
+C       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
+C     - f in Hz, rho in kg/(m**3), v in m/s, MU in kg/(m*s),
+C       K in (J*kg)/(kmol*K*m*s), Cv in J/(kmol*K),
+C       gamma without unit
       real*4 alclass
       real*4 f,rho,v,MU,K,gamma
       real*4 Cv,R
       PI=ACOS(-1.)
-c     R in J/(kmol*K) 
+C     R in J/(kmol*K) 
       R=8.314*(1.e+3)
-c     Cv in J/(kmol*K)
+C     Cv in J/(kmol*K)
       Cv=R/(gamma-1.0)
-c     alclass in Np/m
+C     alclass in Np/m
       alclass=((2.0*(PI*f)**2.0)/(rho*(v**3.0)))
      *   *((4.0/3.0)*MU+(gamma-1.0)*K/(gamma*Cv))
       end
@@ -419,24 +419,24 @@ C     ****************************************************************
 C     * MUvolclass                                                   *
 C     ****************************************************************
       function MUvolclass(MU,K,gamma)
-c     - X. Bonnin - 18/07/03
-c     - 'alclass' calculates the term of
-c       classical relaxation absorption of sound  
-c     - Henry E. Bass and James P. Chambers
-c       'Absorption of sound in the Martian atmosphere',
-c       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
-c     - f in Hz, rho in kg/(m**3), v in m/s, MU in kg/(m*s),
-c       K in (J*kg)/(kmol*K*m*s), Cv in J/(kmol*K),
-c       gamma without unit
+C     - X. Bonnin - 18/07/03
+C     - 'alclass' calculates the term of
+C       classical relaxation absorption of sound  
+C     - Henry E. Bass and James P. Chambers
+C       'Absorption of sound in the Martian atmosphere',
+C       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
+C     - f in Hz, rho in kg/(m**3), v in m/s, MU in kg/(m*s),
+C       K in (J*kg)/(kmol*K*m*s), Cv in J/(kmol*K),
+C       gamma without unit
       real*4 MUvolclass
       real*4 f,rho,v,MU,K,gamma
       real*4 Cv,R
       PI=ACOS(-1.)
-c     R in J/(kmol*K) 
+C     R in J/(kmol*K) 
       R=8.314*(1.e+3)
-c     Cv in J/(kmol*K)
+C     Cv in J/(kmol*K)
       Cv=R/(gamma-1.0)
-c     MUvolclass in Pa.s
+C     MUvolclass in Pa.s
       MUvolclass=((4.0/3.0)*MU+(gamma-1.0)*K/(gamma*Cv))
       end
       
@@ -444,38 +444,38 @@ C     ****************************************************************
 C     * MU                                                           *
 C     ****************************************************************
       function MU(rho,P,T,gamma)
-c     - X. Bonnin - 18/07/03
-c     - 'MU' calculates the coefficient of viscosity of Earth atmosphere (N2 approximation
-c     - Following ECSS standards:
-c       http://www.spenvis.oma.be/spenvis/ecss/ecss07/ecss07.html
-c
-c     - T in K 
-c     - P in Pa
-c     - rho in kg/(m**3)
-c     - c : speed of sound (m/s)
-c     - Mu in kg/(m*s)
-c       gamma without unit
+C     - X. Bonnin - 18/07/03
+C     - 'MU' calculates the coefficient of viscosity of Earth atmosphere (N2 approximation
+C     - Following ECSS standards:
+C       http://www.spenvis.oma.be/spenvis/ecss/ecss07/ecss07.html
+C
+C     - T in K 
+C     - P in Pa
+C     - rho in kg/(m**3)
+C     - c : speed of sound (m/s)
+C     - Mu in kg/(m*s)
+C       gamma without unit
       real*4 MU
       real*4 P,T,rho,gamma
       real*4 Kap,k,PI,c,L,da
-c      real*4 beta,S,MU1
+C      real*4 beta,S,MU1
       PI=ACOS(-1.)
-c Formula USSA76:
-c      beta =1.458E-06
-c      S =110.4
-c      MU1=(beta*(T**1.5))/(T+S)
-c Formula ECSS
-c     Kap : ratio of specific heats Cp/Cv
+C Formula USSA76:
+C      beta =1.458E-06
+C      S =110.4
+C      MU1=(beta*(T**1.5))/(T+S)
+C Formula ECSS
+C     Kap : ratio of specific heats Cp/Cv
       Kap=gamma
-c     da : mean collision diameter of N2
+C     da : mean collision diameter of N2
       da=3.62e-10
-c     k : Boltzman constant (J/K)
+C     k : Boltzman constant (J/K)
       k=1.380658e-23
-c     L : mean free path (m)
+C     L : mean free path (m)
       L=1.0/(sqrt(2.0)*PI*da*da*P/(k*T))
-c     c : speed of sound (m/s)
+C     c : speed of sound (m/s)
       c=sqrt(Kap*P/rho)
-c     MU in kg/(m*s) or Pa.s
+C     MU in kg/(m*s) or Pa.s
       MU=(2.0/3.0)*L*rho*c*sqrt(2.0/(PI*Kap))
       end
       
@@ -483,21 +483,20 @@ C     ****************************************************************
 C     * Kappa                                                        *
 C     ****************************************************************
       function Kappa(rho,P,T)
-c     - X. Bonnin - 18/07/03
-c     -'K' calculates the thermal conductivity in Earth atmosphere
-c     - Henry E. Bass and James P. Chambers
-c       'Absorption of sound in the Martian atmosphere',
-c       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
-c     - T in K, Cv in J/(kmol*K) 
+C     - X. Bonnin - 18/07/03
+C     -'K' calculates the thermal conductivity in Earth atmosphere
+C     - Henry E. Bass and James P. Chambers
+C       'Absorption of sound in the Martian atmosphere',
+C       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
+C     - T in K, Cv in J/(kmol*K) 
       real*4 Kappa,PI
       real*4 rho,T
       real*4 Kt,R,M
       PI=ACOS(-1.)
-c Formula USSA76
-c     Kt (J/(m*s*K))
-      Kt=(2.64638E-03)*(T**1.5)/(T+(245.4*(10**(-12./T))))
-c Molar mass in (kg/Kmol):
+C     Empricial formula USSA76 (ref.?).
+C     Kt (J/(m*s*K)), M molar mass (kg/Kmol).
+      Kt=(2.64638E-03)*(T**1.5)/(T+(245.4*(10.**(-12./T))))
       M=rho*(8.314*1000.0)*T/P
-c     K in (J*kg)/(kmol*K*m*s) 
+C     K in (J*kg)/(kmol*K*m*s) 
       Kappa=M*Kt
       end
