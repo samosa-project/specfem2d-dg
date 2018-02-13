@@ -161,8 +161,8 @@
 ! also used as the far-field model. This subroutine also takes
 ! care of the various forcings.
 
-  subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
+subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
+                                 veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
   use constants,only: CUSTOM_REAL, gamma_euler, PI
 
@@ -174,7 +174,7 @@
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
         surface_density, sound_velocity, wind, TYPE_FORCING, &
         forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
-        assign_external_model
+        assign_external_model,myrank
 
   implicit none
   
@@ -204,6 +204,7 @@
   ! Linear mountains
   !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0, Nsq
   real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
+  real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE ! For microbaroms.
   ! Thermal bubble
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
   !real(kind=CUSTOM_REAL) :: Tl, Tu, p0, rho0, RR, rs!, theta, thetaprime, pibar
@@ -321,55 +322,86 @@
        
   !call boundary_forcing_DG(timelocal, rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, E_DG_P)
 
-  ! Set (overwrite) velocities according to forcing.
- 
-  ! Forcing parameters from par_file
-  lambdo = main_spatial_period
-  xo     = forcing_initial_loc
-  perio  = main_time_period
-  to     = forcing_initial_time
+  ! If bottom forcing is activated, set (overwrite) velocities.
+  if(TYPE_FORCING>0 .and. z == ZEROl) then
+    ! Read forcing parameters from parameter file.
+    lambdo = main_spatial_period
+    xo     = forcing_initial_loc
+    perio  = main_time_period
+    to     = forcing_initial_time
 
-  ! --------------------------- !
-  ! Acoustic plane wave         !
-  ! forcing.                    !
-  ! --------------------------- !
-  ! TODO: read the parameters from parfile.
-  if(z == ZEROl .AND. TYPE_FORCING == 1) then
-    veloc_z_DG_P = 0.01*(&
-                   - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
-                         (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
-                   + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
-                         (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) )
-  endif
+    ! --------------------------- !
+    ! Time Gaussian derivative    !
+    ! (acoustic plane wave        !
+    ! forcing).                   !
+    ! --------------------------- !
+    if(TYPE_FORCING == 1) then
+      veloc_z_DG_P = 0.01*(&
+                     - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
+                           (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
+                     + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
+                           (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) )
+    endif
 
-  ! --------------------------- !
-  ! Gravity wave forcing.       !
-  ! --------------------------- !
-  ! TODO: read the parameters from parfile.
-  if(z == ZEROl .AND. TYPE_FORCING == 2) &     
-  veloc_z_DG_P = 0.001*(&
-                - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
-                         (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
-                + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
-                         (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) &
-                 * ( exp(-((x-(xo-lambdo/4))/(lambdo/4))**2) - &
-                        exp(-((x-(xo+lambdo/4))/(lambdo/4))**2) ) 
-       
-  ! --------------------------- !
-  ! Tsunami forcing.            !
-  ! --------------------------- !
-  ! TODO: do something instead of this 'if(.false.)'.
-  if(.false.) then
-    ! TODO: read the parameters from parfile.
-    VELOC_TSUNAMI = 200
-    perio = 1000
-    lambdo = 50000
-    if(timelocal < perio) then
-        veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
-    else
-        veloc_z_DG_P = &
-                2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
-                *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
+    ! --------------------------- !
+    ! Time and space Gaussian     !
+    ! derivative (gravity wave    !
+    ! forcing.                    !
+    ! --------------------------- !
+    if(TYPE_FORCING == 2) then
+      veloc_z_DG_P = 0.001*(&
+                    - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
+                             (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
+                    + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
+                             (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) &
+                     * ( exp(-((x-(xo-lambdo/4))/(lambdo/4))**2) - &
+                            exp(-((x-(xo+lambdo/4))/(lambdo/4))**2) )
+    endif
+    
+    ! --------------------------- !
+    ! Hardcoded custom forcing    !
+    ! (custom forcing case for    !
+    ! user).                      !
+    ! --------------------------- !
+    if(TYPE_FORCING == 9) then
+      ! Tsunami forcing.
+      if(.false.) then        
+        VELOC_TSUNAMI = 200.
+        perio = 1000.
+        lambdo = 50000.
+        if(timelocal < perio) then
+            veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
+        else
+            veloc_z_DG_P = &
+                    2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
+                    *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
+        endif
+      endif
+      
+      ! Microbarom forcing.
+      if(.true.) then
+        lambdo = main_spatial_period
+        perio  = main_time_period
+        MICROBAROM_AMPLITUDE = 1.
+        MICROBAROM_MAXTIME = 8. * perio
+        MICROBAROM_RANGE = 10.d3
+        if(timelocal<MICROBAROM_MAXTIME .and. abs(x)<MICROBAROM_RANGE) then
+          veloc_z_DG_P = MICROBAROM_AMPLITUDE * sin(2.*PI*x/lambdo) * sin(2.*PI*timelocal/perio)
+        endif
+      endif
+      
+      ! Output a warning.
+      if(timelocal == 0 .and. myrank==0) then
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* A hardcoded bottom forcing   *"
+        write(*,*) "* is being used. Use at your   *"
+        write(*,*) "* own risk. See                *"
+        write(*,*) "* 'boundary_terms_DG.f90'.     *"
+        write(*,*) "********************************"
+        call flush_IMAIN()
+      endif
     endif
   endif
 
@@ -381,7 +413,7 @@
   rhovx_DG_P = rho_DG_P*veloc_x_DG_P
   rhovz_DG_P = rho_DG_P*veloc_z_DG_P
    
-  end subroutine boundary_condition_DG
+end subroutine boundary_condition_DG
 
 ! ------------------------------------------------------------ !
 ! compute_interface_unknowns                                   !

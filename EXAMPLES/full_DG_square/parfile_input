@@ -120,7 +120,7 @@ constant_v                      = 717.3447537473 # $c_v$, isochoric specific hea
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = 304.0          # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
+coord_interface                 = -50.0          # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
@@ -148,11 +148,12 @@ REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BE
 # 0: none
 # 1: only time gaussian derivative
 # 2: time and space gaussian derivative
+# 9: hardcoded custom forcing (set it up directly in the code, see "boundary_terms_DG.f90")
 TYPE_FORCING                    = 0
-main_spatial_period             = 1.0
-main_time_period                = 1.0
-forcing_initial_loc             = 1.0
-forcing_initial_time            = 1.0
+main_spatial_period             = 1.
+main_time_period                = 1.
+forcing_initial_loc             = 0.
+forcing_initial_time            = 0.
 
 #---------------------------------------------------------------------#
 #                                                                     #

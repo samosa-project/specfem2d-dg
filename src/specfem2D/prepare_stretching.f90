@@ -273,17 +273,16 @@ subroutine change_visco(i, j, ispec, x, z)
   real(kind=CUSTOM_REAL) :: r_l
   real(kind=CUSTOM_REAL), parameter :: ZERO  = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
-            
-  ! TEST VISCO
+  
   if(ABC_STRETCH_TOP) then
     r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
     if(r_l>ZERO .and. r_l<=ONE)then
       muext(i, j, ispec) = 1.25d-5*(1.+1000.*r_l**2.)
       etaext(i, j, ispec) = (4./3.)*muext(i, j, ispec)
-      !write(*,*) z, muext(i,j,ispec)
     endif
-    !if(r_l>-0.5 .and. r_l<0) 
   endif
+  
+  if(.false.) write(*, *) x ! HORRIBLE HACK, I'M SO SORRY.
 end subroutine change_visco
 
 ! ------------------------------------------------------------ !
