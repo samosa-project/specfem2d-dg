@@ -201,11 +201,11 @@ NSTEP_BETWEEN_OUTPUT_SEISMOS    = 25
 # the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms. Points in the stretching buffers (in DG elements) are not taken into account.
 COMPUTE_INTEGRATED_ENERGY_FIELD = .false.
 
-# Time shift to use. This input must be a positive value.
+# Global time shift to use. This input must be a positive value.
 # This corresponds to the quantity of time to simulate before the earliest source's spike. The earliest source's spike is always assumed to be at t=0. Hence the simulation will always begin at "negative times".
-# If set to zero, the solver will automatically compute a value (originally 1.20 * T0 where T0 is the fundamental period of the earliest source, see "set_source_parameters.f90") and use it. If set to a value lesser than the solver's computed one, an error message will occur and the solver will stop. If set to a value greater than the solver's computed one, the solver will use the user's one.
+# If left at zero, the solver will automatically compute a value (originally 1.20 * T0 where T0 is the fundamental period of the earliest source, see "set_source_parameters.f90"), add to it the earliest source time shift, and use that as global time shift. If set to a value lesser than the solver's computed one, an error message will occur and the solver will stop. If set to a value greater than the solver's computed one, the solver will use the user's one.
 # If you do not know what you are doing, leave this to zero.
-# For time_function_type==3 (see source_input) and USE_TRICK_FOR_BETTER_PRESSURE=.false., a discontinuity at initial time is introduced (since Gaussians have non-compact support). In order for this discontinuity to be of order of magnitude 10^(-r), choose USER_T0=((r*ln(10)+ln(factor))/(pi^2*f^2))^0.5, where factor is the amplification factor, and f is the fundamental frequency.
+# For time_function_type==3 (see source_input) and USE_TRICK_FOR_BETTER_PRESSURE=.false., a discontinuity at initial time is introduced (since Gaussians have non-compact support). In order for this discontinuity to be of order of magnitude 10^(-r), choose USER_T0=((r*ln(10)+ln(factor))/(pi^2*f^2))^0.5+T_S, where factor is the amplification factor, f is the fundamental frequency, and T_S is the earliest source time shift.
 USER_T0                         = 0.0d0
 
 # Seismogram formats.
