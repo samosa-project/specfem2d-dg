@@ -53,10 +53,13 @@
   integer  :: num_node, n
   integer  :: elem_base, elem_target
   integer  :: connectivity
+  
+  integer(KIND=8) :: nsize_nnodes_m1
 
   ! allocates memory for arrays
   if (.not. allocated(nnodes_elmnts) ) allocate(nnodes_elmnts(0:nnodes-1))
-  if (.not. allocated(nodes_elmnts) ) allocate(nodes_elmnts(0:nsize*nnodes-1))
+  nsize_nnodes_m1=int(nsize, KIND=8)*int(nnodes, KIND=8)-1
+  if (.not. allocated(nodes_elmnts) ) allocate(nodes_elmnts(0:nsize_nnodes_m1))
 
   ! initializes
   xadj(:) = 0

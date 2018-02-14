@@ -48,6 +48,7 @@
 
   ! local parameters
   integer :: i, iproc
+  integer(KIND=8) :: nsize_nnodes_m1
 
   ! allocates and initializes partitioning of elements
   allocate(part(0:nelmnts-1))
@@ -157,12 +158,14 @@
 
   ! local number of each element for each partition
   call Construct_glob2loc_elmnts(NPROC)
+  
+  nsize_nnodes_m1=int(nsize, KIND=8)*int(nnodes, KIND=8)-1
 
   if (ngnod == 9) then
     if (allocated(nnodes_elmnts) ) deallocate(nnodes_elmnts)
     if (allocated(nodes_elmnts) ) deallocate(nodes_elmnts)
     allocate(nnodes_elmnts(0:nnodes-1))
-    allocate(nodes_elmnts(0:nsize*nnodes-1))
+    allocate(nodes_elmnts(0:nsize_nnodes_m1))
     nnodes_elmnts(:) = 0
     nodes_elmnts(:) = 0
     do i = 0, ngnod*nelmnts-1
@@ -172,7 +175,7 @@
   else
     if (NPROC < 2) then
       if (.not. allocated(nnodes_elmnts) ) allocate(nnodes_elmnts(0:nnodes-1))
-      if (.not. allocated(nodes_elmnts) ) allocate(nodes_elmnts(0:nsize*nnodes-1))
+      if (.not. allocated(nodes_elmnts) ) allocate(nodes_elmnts(0:nsize_nnodes_m1))
       nnodes_elmnts(:) = 0
       nodes_elmnts(:) = 0
       do i = 0, ngnod*nelmnts-1
