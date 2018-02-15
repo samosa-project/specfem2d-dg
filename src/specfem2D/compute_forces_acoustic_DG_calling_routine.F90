@@ -183,8 +183,8 @@ subroutine compute_forces_acoustic_DG_main()
     dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
     dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
     dot_E(:)     = dot_E(:)     * rmass_inverse_acoustic_DG(:)
-    !dot_e1(:)     = dot_e1(:) * rmass_inverse_acoustic_DG(:)
-  
+    !dot_e1(:)    = dot_e1(:) * rmass_inverse_acoustic_DG(:)
+    
     ! RK5-low dissipation Update
     resu_rho = rk4a(i_stage)*resu_rho + deltat*dot_rho
     resu_rhovx = rk4a(i_stage)*resu_rhovx + deltat*dot_rhovx

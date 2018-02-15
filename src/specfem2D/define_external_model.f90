@@ -1901,10 +1901,10 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       stop
     endif ! Endif on ispec_is_elastic/ispec_is_acoustic_DG.
     
-    if(.false.) then ! DEBUG
+    if(.FALSE.) then ! DEBUG
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          if(abs(coord(2, ibool(i, j, ispec)))<0.5 .and. abs(coord(1, ibool(i, j, ispec)))>49.5) then
+          if(abs(coord(2, ibool(i, j, ispec)))<=20. .and. abs(coord(1, ibool(i, j, ispec)))<=20.) then
             write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
                       ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
                       "rho", rhoext(i, j, ispec),&

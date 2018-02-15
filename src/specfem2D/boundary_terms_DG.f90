@@ -242,6 +242,9 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
     endif
+    
+    ! Set auxiliary variable.
+    e1_DG_P = ZEROl
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
     ! Set gravity, viscosity coefficients, relaxation times, and gravity potential (Phi) derivatives.
@@ -286,7 +289,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     ! Set wind.
     veloc_x_DG_P = wind ! Read horizontal wind, from specfem2_par. TODO: why not windxext(i, j, ispec) as above?
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
-  endif
+  endif ! Endif on assign_external_model.
   
   ! TEST VISCOSITY in top buffer
   if(.false.) then
