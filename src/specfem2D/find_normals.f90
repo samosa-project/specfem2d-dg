@@ -128,24 +128,26 @@ subroutine find_normals()
           weight     = jacobian1D*wxgll(i)
           
           ! BIG MODIF INSTEAD OF  
-          nx = -vd_iface(2)
-          nz = vd_iface(1)
+          !nx = -vd_iface(2)
+          !nz = vd_iface(1)
         else
           nx = nx2
           nz = nz2
           jacobian1D = jacobian1D_2
           weight     = jacobian1D*wzgll(j)
           
-          nx = -vd_iface(2)
-          nz = vd_iface(1)
+          !nx = -vd_iface(2)
+          !nz = vd_iface(1)
         endif
         
         ! Remove small values
-        coef = 1d-08
+        coef = 1d-18
         if(abs(nx) < coef) nx = 0d0
         if(abs(nz) < coef) nz = 0d0
         
-        coef = sqrt(vd_iface(1)**2 + vd_iface(2)**2)/10.
+        !coef = sqrt(vd_iface(1)**2 + vd_iface(2)**2)/10.
+        coef = sqrt((coord(1,iglob_first) - coord(1,iglob_last))**2 +&
+          (coord(2,iglob_first) - coord(2,iglob_last))**2 )/100.
         test_node_x = mid_iface(1) + coef*nx
         test_node_z = mid_iface(2) + coef*nz
         
