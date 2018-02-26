@@ -100,8 +100,6 @@ C     ****************************************************************
         NSAMPLES = NSAMPLES - 1
         write(*, *) 'Arguments assigned.'
       else
-        write(*, *) 'No arguments passed, those in the source code',
-     &              ' will be used.'
 C       Minimum and maximum wanted altitudes (in [m]).
         ALTMIN=0.
         ALTMAX=500000.
@@ -127,6 +125,9 @@ C       Output file name.
         filename='msisehwm_model_output'
 C       Wind projection angle (in degrees). 0 is forward zonal (positive eastward). 90 is forward meridional (positive northward). 180 is backwards zonal (positive westward). 270 is backward meriodional (positive southward).
         wind_projection=0.
+        write(*, *) 'No arguments passed, those in the source code',
+     &              ' will be used. Output file is "', trim(filename),
+     &              '".'
       endif
 C     ****************************************************************
 C     * Constants.                                                   *
@@ -346,19 +347,20 @@ C       Projected wind.
         Wind(3,iz)=cos(wind_projection*PI/180.)*W(2)+
      &             sin(wind_projection*PI/180.)*W(1)
 C       Thermal conductivity. [kg.m.s^(-3).K^(-1)].
-        Kappatab(iz)=Kappa(rhoat(iz),P(iz),T(iz))
+        Kappatab(iz)=Kappa(T(iz))
 C       Dynamic viscosity. [Pa.s]=[kg.s^(-1).m^(-1)].
         MUtab(iz)=MU(rhoat(iz),P(iz),T(iz),gammatab(iz))
 C       Volumic viscosity. [Pa.s]=[kg.s^(-1).m^(-1)].
-        MUvoltab(iz)=MUvolclass(MUtab(iz),Kappatab(iz),gammatab(iz))
+        MUvoltab(iz)=MUvolclass(MUtab(iz),Kappatab(iz),gammatab(iz),
+     &                          rhoat(iz),T(iz),P(iz))
       enddo
     
 C     Print column headers to file.
-      write(2012,*) 'z[m] rho[kg.m^(-3)] T[K] c[m/s] p[Pa] H[m] ',
-     &              'g[m.s^(-2)] N^2[1/s] kappa[kg.m.s^(-3).K^(-1)] ',
-     &              'mu[kg.s^(-1).m^(-1)] mu_vol[kg.s^(-1).m^(-1)] ',
-     &              'w_M[m/s] w_Z[m/s] w_P[m/s] c_p[J/mol*K] ',
-     &              'c_v[J/mol*K] gamma'
+      write(2012,*) 'z[m] rho[kg/(m^3)] T[K] c[m/s] p[Pa] H[m] ',
+     &              'g[m/(s^2)] N^2[1/s] kappa[J/(s.m.K)] ',
+     &              'mu[kg(s.m)] mu_vol[kg/(s.m)] ',
+     &              'w_M[m/s] w_Z[m/s] w_P[m/s] c_p[J/(mol.K)] ',
+     &              'c_v[J/(mol.K)] gamma'
 
 C     Second loop for gravity related parameters and printing to file.
       do iz=1, NSAMPLES+1
@@ -392,7 +394,7 @@ C ****************************************************************
 C     ****************************************************************
 C     * alclass                                                      *
 C     ****************************************************************
-      function alclass(f,rho,v,MU,K,gamma)
+      function alclass(f, rho, v, MU, K, gamma)
 C     - X. Bonnin - 18/07/03
 C     - 'alclass' calculates the term of
 C       classical relaxation absorption of sound  
@@ -418,7 +420,7 @@ C     alclass in Np/m
 C     ****************************************************************
 C     * MUvolclass                                                   *
 C     ****************************************************************
-      function MUvolclass(MU,K,gamma)
+      function MUvolclass(MU, K, gamma, RHO, T, P)
 C     - X. Bonnin - 18/07/03
 C     - 'alclass' calculates the term of
 C       classical relaxation absorption of sound  
@@ -429,21 +431,23 @@ C     - f in Hz, rho in kg/(m**3), v in m/s, MU in kg/(m*s),
 C       K in (J*kg)/(kmol*K*m*s), Cv in J/(kmol*K),
 C       gamma without unit
       real*4 MUvolclass
-      real*4 f,rho,v,MU,K,gamma
+      real*4 f,rho,v,MU,K,gamma,KapMol
       real*4 Cv,R
       PI=ACOS(-1.)
 C     R in J/(kmol*K) 
       R=8.314*(1.e+3)
+C     Kappa in (J*kg)/(kmol*K*m*s):
+      KapMol=RHO*R*T*K/P
 C     Cv in J/(kmol*K)
       Cv=R/(gamma-1.0)
 C     MUvolclass in Pa.s
-      MUvolclass=((4.0/3.0)*MU+(gamma-1.0)*K/(gamma*Cv))
+      MUvolclass=((4.0/3.0)*MU+(gamma-1.0)*KapMol/(gamma*Cv))
       end
       
 C     ****************************************************************
 C     * MU                                                           *
 C     ****************************************************************
-      function MU(rho,P,T,gamma)
+      function MU(rho, P, T, gamma)
 C     - X. Bonnin - 18/07/03
 C     - 'MU' calculates the coefficient of viscosity of Earth atmosphere (N2 approximation
 C     - Following ECSS standards:
@@ -452,7 +456,7 @@ C
 C     - T in K 
 C     - P in Pa
 C     - rho in kg/(m**3)
-C     - c : speed of sound (m/s)
+C     - c speed of sound (m/s)
 C     - Mu in kg/(m*s)
 C       gamma without unit
       real*4 MU
@@ -482,21 +486,15 @@ C     MU in kg/(m*s) or Pa.s
 C     ****************************************************************
 C     * Kappa                                                        *
 C     ****************************************************************
-      function Kappa(rho,P,T)
+      function Kappa(T)
 C     - X. Bonnin - 18/07/03
 C     -'K' calculates the thermal conductivity in Earth atmosphere
 C     - Henry E. Bass and James P. Chambers
 C       'Absorption of sound in the Martian atmosphere',
 C       J. Acoust. Soc. Am., Vol.109,No.6,p.3069-3071 (June 2001)
-C     - T in K, Cv in J/(kmol*K) 
-      real*4 Kappa,PI
-      real*4 rho,T
-      real*4 Kt,R,M
-      PI=ACOS(-1.)
-C     Empricial formula USSA76 (ref.?).
-C     Kt (J/(m*s*K)), M molar mass (kg/Kmol).
-      Kt=(2.64638E-03)*(T**1.5)/(T+(245.4*(10.**(-12./T))))
-      M=rho*(8.314*1000.0)*T/P
-C     K in (J*kg)/(kmol*K*m*s) 
-      Kappa=M*Kt
+C     - USSA76 (https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19770009539.pdf).
+C     - T in K
+      real*4 Kappa, T
+C     Empricial formula from USSA76, in J/(s*m*K).
+      Kappa = (2.64638E-03)*(T**1.5)/(T+(245.4*(10.**(-12./T))))
       end
