@@ -778,6 +778,15 @@
   
   
   
+  if(id_region_DG > nbmodels .or. id_region_DG<0) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* id_region_DG badly set.      *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
   if(ABC_STRETCH .and. (     ABC_STRETCH_TOP_LBUF<=0. .or. ABC_STRETCH_LEFT_LBUF<=0. &
                         .or. ABC_STRETCH_RIGHT_LBUF<=0. .or. ABC_STRETCH_BOTTOM_LBUF<=0.)) then
     write(*,*) "********************************"
@@ -788,6 +797,22 @@
     write(*,*) "* activated, but one of the    *"
     write(*,*) "* buffers has non-positive     *"
     write(*,*) "* length.                      *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  if((ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) .and. ADD_PERIODIC_CONDITIONS) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Both the lateral stretching  *"
+    write(*,*) "* absorbing boundary           *"
+    write(*,*) "* conditions and the periodic  *"
+    write(*,*) "* boundary conditions are      *"
+    write(*,*) "* activated. Either remove     *"
+    write(*,*) "* lateral stretching boundary  *"
+    write(*,*) "* conditions or the periodic   *"
+    write(*,*) "* boundary conditions.         *"
     write(*,*) "********************************"
     stop
   endif
