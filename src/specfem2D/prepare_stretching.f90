@@ -40,7 +40,7 @@ subroutine prepare_stretching()
   use specfem_par, only: coord, ibool_before_perio,&
                          myrank, nglob,nspec,&
                          ispec_is_acoustic_DG,&
-                         ADD_PERIODIC_CONDITIONS, &
+                         !ADD_PERIODIC_CONDITIONS, &
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM, &
                          ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF, &
                          stretching_ya,any_elastic,&
@@ -86,17 +86,6 @@ subroutine prepare_stretching()
       write(*,*) "*  top buffer length :    ", ABC_STRETCH_TOP_LBUF
       write(*,*) "*  bottom buffer length : ", ABC_STRETCH_BOTTOM_LBUF
       write(*,*) "*  vertical size:         ", mesh_zmax-mesh_zmin
-      write(*,*) "********************************"
-      stop
-    endif
-    if(ADD_PERIODIC_CONDITIONS .and. (ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT)) then
-      write(*,*) "********************************"
-      write(*,*) "*            ERROR             *"
-      write(*,*) "********************************"
-      write(*,*) "* Cannot use (horizontal) both *"
-      write(*,*) "* periodic boundary conditions *"
-      write(*,*) "* and stretching BC on one or  *"
-      write(*,*) "* both lateral boundaries.     *"
       write(*,*) "********************************"
       stop
     endif
@@ -185,6 +174,24 @@ subroutine prepare_stretching()
     endif ! Endif on ispec_is_acoustic_DG(ispec).
   enddo ! Enddo on ispec.
   call synchronize_all()
+  
+  if(.false.) then ! DEBUG
+    write(*,*) "TOPKEK"
+    do ispec = 1, nspec
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          iglob_unique = ibool_before_perio(i, j, ispec)
+          x=coord(1, iglob_unique)
+          z=coord(2, iglob_unique)
+          !write(*,*) x, z
+          if(x > 59. .and. x <= 60. .and. z > 59.5) then ! DEBUG
+            write(*,*) coord(1, iglob_unique), coord(2, iglob_unique), &
+                       stretching_buffer(iglob_unique), stretching_ya(1, iglob_unique)
+          endif
+        enddo
+      enddo
+    enddo
+  endif
 end subroutine prepare_stretching
 
 ! ------------------------------------------------------------ !

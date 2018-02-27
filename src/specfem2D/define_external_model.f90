@@ -1469,14 +1469,16 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
   use specfem_par,only: ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
         poroelastcoef,density,kmato, ispec_is_elastic,ispec_is_acoustic_DG,&
-        mesh_zmax,tau_sigma, tau_epsilon,&
+        mesh_zmax,tau_sigma, tau_epsilon, ibool_before_perio,&
         rhoext,vpext,vsext,&
         QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext,&
         nspec,coord,ibool,myrank,&
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         QKappa_attenuation,Qmu_attenuation,anisotropy,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
+        ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF,&
+        ABC_STRETCH_RIGHT_LBUF,mesh_xmin,mesh_xmax
   
   implicit none
   
@@ -1505,6 +1507,8 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   integer :: i, j, ispec, ii, io, indglob_DG
   real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3 ! Dummy reals for reading parameters which we do not care about.
   double precision :: z, frac, tmp1, pii, piim1, piim2, piip1!,gamma_temp,gamma_temp_prev,x,max_z
+  
+  real(kind=CUSTOM_REAL) x_buffer
   
   z_model=ZERO
   density_model=ZERO
@@ -1925,8 +1929,32 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         enddo
       enddo
     endif
-    
   enddo ! Enddo on ispec.
+  
+  if(.false.) then ! TEST HACK TO REMOVE IMPACT OF WIND WHEN USING STRETCHING BUFFERS
+    ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!!
+    ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
+    ! TODO: This is a hack.
+    if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
+      do ispec = 1, nspec
+        if(ispec_is_acoustic_DG(ispec)) then
+          do j = 1, NGLLZ
+            do i = 1, NGLLX
+              x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
+              if(ABC_STRETCH_LEFT .and. x_buffer < mesh_xmin + ABC_STRETCH_LEFT_LBUF) then ! If in left buffer (cannot use stretching_buffer variable since it is not yet initialised).
+                x_buffer = (x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (1 at beginning, 0 at end).
+              else if(ABC_STRETCH_RIGHT .and. x_buffer > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) then ! If in right buffer (cannot use stretching_buffer variable since it is not yet initialised).
+                x_buffer = (mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (1 at beginning, 0 at end).
+              else
+                x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
+              endif
+              windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
+            enddo ! Enddo on i.
+          enddo ! Enddo on j.
+        endif ! Endif on ispec_is_acoustic_DG.
+      enddo ! Enddo on ispec.
+    endif ! Endif on ABC_STRETCH.
+  endif
   
   if(myrank==0) then
     write(*,*) "********************************"

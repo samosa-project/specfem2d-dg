@@ -287,7 +287,7 @@
           endif
           
           
-          ! Gravity contributions (separated from the rest).
+          ! Gravity (and in fact, everything not inside the divergence operator in the strong form, except sources) contributions (separated from the rest).
           temp_nondiv_rho(i, j) = ZERO
           temp_nondiv_rhovx(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl
           if(.not. CONSTRAIN_HYDROSTATIC) then
@@ -396,6 +396,22 @@
         enddo
       enddo
       
+      !DEBUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUG
+      !DEBUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUG
+      !DEBUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUG
+      if(.false. .and. timelocal>=2e-5 .and. timelocal<8e-5) then
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            if(coord(1, ibool(i, j, ispec)) > 59. &
+               .and. coord(1, ibool(i, j, ispec)) < 60. &
+               .and. coord(2, ibool(i, j, ispec)) > 59.5) then ! DEBUG
+              iglob = ibool_DG(i, j, ispec)
+              write(*,*) timelocal, coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)), veloc_z_DG(iglob)
+            endif
+          enddo
+        enddo
+      endif
+      
       ! --------------------------- !
       ! Second set of loops: add    !
       ! fluxes between elements,    !
@@ -423,14 +439,6 @@
             neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
             neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
             neighbor(3) = ispec_neighbor
-          endif
-          
-          !if(ABC_STRETCH .and. stretching_buffer(iglob)>0) then
-          if(ABC_STRETCH) then
-            ! Add jacobian of stretching into the integrand (artifically).
-            ! TODO: Do that more clearly.
-            iglob_unique=ibool_before_perio(i, j, ispec)
-            weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
           endif
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes.
@@ -473,6 +481,16 @@
                        + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
                        abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
                        + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))
+          
+          !if(ABC_STRETCH .and. stretching_buffer(iglob)>0) then
+          if(ABC_STRETCH) then
+            ! Add jacobian of stretching into the integrand (artifically).
+            ! It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
+            ! TODO: Do it more clearly.
+            iglob_unique=ibool_before_perio(i, j, ispec)
+            nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
+            nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+          endif
           
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).
           dux_dx = ZERO
@@ -927,6 +945,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
           
             if(ABC_STRETCH) then
               ! Add jacobian of stretching into the integrand (artifically).
+              ! Questionnable method. See surface terms in the subroutine above.
               ! TODO: Do that more clearly.
               !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
               iglob_unique=ibool_before_perio(i, j, ispec)
