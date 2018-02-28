@@ -55,6 +55,14 @@ subroutine compute_forces_acoustic_DG_main()
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x
   integer :: i,j,ispec
   
+  logical CHECK_NONPOSITIVITY, CHECK_NONPOSITIVITY_ON_ALL_PROCS, CHECK_NONPOSITIVITY_FIND_POINT
+  
+  ! TODO: make those parameters in the parameter file.
+  ! Note: CHECK_NONPOSITIVITY_ON_ALL_PROCS=.true. and CHECK_NONPOSITIVITY_FIND_POINT=.true. is computationaly very heavy.
+  CHECK_NONPOSITIVITY=.true.               ! Set to .true. to enable nonpositivity checking.
+  CHECK_NONPOSITIVITY_ON_ALL_PROCS=.false. ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .false. for checking only on proc 0. Set to .true. for checking on all procs.
+  CHECK_NONPOSITIVITY_FIND_POINT=.false.   ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .true. to find where nonpositivity was encountered.
+  
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
     return
@@ -204,29 +212,37 @@ subroutine compute_forces_acoustic_DG_main()
     endif
     
     ! Check non-positivity.
-    if(myrank==0 .and. minval(rho_DG) < 10d-14) then
-      WRITE(*,*) "***************************************************************"
-      WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG), "    *"
-      if(.true.) then
-        ! DEBUG: Find where density is low.
-        do ispec = 1,nspec
-          do j = 1,NGLLZ
-            do i = 1,NGLLX
-              !write(*,*) rho_DG(ibool_DG(ispec, i, j))
-              !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
-              if(rho_DG(ibool_DG(i, j, ispec))==minval(rho_DG)) then
-                WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
-                write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)), &
-                            ".*"
-                !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
-                !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
-              endif
+    if(CHECK_NONPOSITIVITY) then
+      if(     CHECK_NONPOSITIVITY_ON_ALL_PROCS &
+         .or. ((.not. CHECK_NONPOSITIVITY_ON_ALL_PROCS) .and. myrank==0) &
+        ) then
+        ! If:    we check on all procs,
+        !     or we check only on proc 0 and we are on proc 0.
+        if(minval(rho_DG) < 10d-14) then
+          WRITE(*,*) "***************************************************************"
+          WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(rho_DG), "    *"
+          if(CHECK_NONPOSITIVITY_FIND_POINT) then
+            ! Find where density is low.
+            do ispec = 1,nspec
+              do j = 1,NGLLZ
+                do i = 1,NGLLX
+                  !write(*,*) rho_DG(ibool_DG(ispec, i, j))
+                  !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
+                  if(rho_DG(ibool_DG(i, j, ispec))==minval(rho_DG)) then
+                    WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
+                    write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)), &
+                                ".*"
+                    !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
+                    !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
+                  endif
+                enddo
+              enddo
             enddo
-          enddo
-        enddo
-      endif
-      WRITE(*,*) "***************************************************************"
-    endif
+          endif ! Endif on CHECK_NONPOSITIVITY_FIND_POINT.
+          WRITE(*,*) "***************************************************************"
+        endif ! Endif on minval(rho_DG).
+      endif ! Endif on CHECK_NONPOSITIVITY_ON_ALL_PROCS.
+    endif ! Endif on CHECK_NONPOSITIVITY.
   else
     stop "Time stepping scheme not implemented for the discontinuous Galerkin method."
     ! TODO: Implement the other time stepping schemes?

@@ -1526,6 +1526,11 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   cv_model=ZERO
   gamma_model=ZERO
   
+  if(myrank==0) then
+    write(*,*) "> Reading atmospheric model file '", trim(EXTERNAL_DG_ONLY_MODEL_FILENAME),&
+               "' and setting the external model accordingly."
+  endif
+  
   ! Read and store values of model.
   OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
   i=1
@@ -1963,10 +1968,15 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     write(*,*) "* When using external DG       *"
     write(*,*) "* models without periodic      *"
     write(*,*) "* conditions, non-zero         *"
-    write(*,*) "* horizontal wind produces     *"
-    write(*,*) "* instabilities at the         *"
-    write(*,*) "* fluid/solid boundary.        *"
+    write(*,*) "* horizontal wind at           *"
+    write(*,*) "* fluid-solid interface        *"
+    write(*,*) "* produces instabilities at    *"
+    write(*,*) "* the fluid/solid boundary.    *"
     write(*,*) "********************************"
+  endif
+  
+  if(myrank==0) then
+    write(*,*) "> Done reading atmospheric model file and setting the external model accordingly."
   endif
   
 end subroutine define_external_model_DG_only
