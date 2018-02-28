@@ -62,7 +62,10 @@
                                 ! MODIF DG
                                 rmass_inverse_acoustic_DG, rmass_inverse_acoustic_DG_b, ibool_DG, &
                                 ! MODIF NS
-                                USE_DISCONTINUOUS_METHOD
+                                USE_DISCONTINUOUS_METHOD,&
+                                ! MODIF STRETCHING
+                                ABC_STRETCH, ibool_before_perio, stretching_ya,stretching_buffer
+                                
 
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,region_CPML,spec_to_PML, &
@@ -365,7 +368,18 @@
           
           iglob = ibool_DG(i,j,ispec)
           ! MODIF DG
-          rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+          
+          if(.false. .and. ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+            ! Add jacobian of stretching into the mass matrix.
+            ! This changes nothing in the computational domain of interest. Thus, this can be left undone, since all that happens in the buffers does not interest us, and since if it is done it would make the mass matrix worse-conditionned.
+            rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
+                                               stretching_ya(1, ibool_before_perio(i, j, ispec))*&
+                                               stretching_ya(2, ibool_before_perio(i, j, ispec))*&
+                                               jacobian(i,j,ispec)
+          else
+            rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
+                                               jacobian(i,j,ispec)
+          endif
         endif
       enddo
     enddo
@@ -820,9 +834,15 @@
   endif
   
   ! Modif DG
+  !DEBUG
+  write(*,*) "mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
+             "maxval", maxval(rmass_inverse_acoustic_DG)
   if(USE_DISCONTINUOUS_METHOD) then
     rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
   endif
+  !DEBUG
+  write(*,*) "inverse mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
+             "maxval", maxval(rmass_inverse_acoustic_DG)
   
   end subroutine invert_mass_matrix
 

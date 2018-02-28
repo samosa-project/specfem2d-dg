@@ -59,7 +59,7 @@
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
                          ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF, ABC_STRETCH_TOP_LBUF, ABC_STRETCH_BOTTOM_LBUF,&
                          mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
-                         coord, ibool_before_perio!,cnu
+                         coord, ibool_before_perio,stretching_buffer!,cnu
                          
   implicit none
 
@@ -185,12 +185,11 @@
           gammaxl = gammax(i, j, ispec)
           gammazl = gammaz(i, j, ispec)
           
-          !if(ABC_STRETCH .and. stretching_buffer(iglob)>0) then
-          if(ABC_STRETCH) then
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+          !if(ABC_STRETCH) then
             ! Here are updated the operator \nabla and the jacobian, but only if stretching is activated and we are in a buffer.
-            ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z.
-            ! Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
-            !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+            ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
+            ! The jacobian of the stretching transformation is updated following the same rationale.
             iglob_unique = ibool_before_perio(i, j, ispec);
             ya_x_l=stretching_ya(1, iglob_unique)
             ya_z_l=stretching_ya(2, iglob_unique)
@@ -198,8 +197,7 @@
             xizl = ya_z_l * xizl
             gammaxl = ya_x_l * gammaxl
             gammazl = ya_z_l * gammazl
-            ! Add jacobian of stretching into the integrand (artifically).
-            ! TODO: Do that more clearly.
+            ! TODO: This is a bit rough, do it more clearly.
             jacobianl = ya_x_l*ya_z_l*jacobianl
           endif
           
@@ -358,6 +356,7 @@
               endif
             endif
           endif
+          ! END OF TESTS
           
           ! Memory variable evolution. TODO: Describe more precisely.
           dot_e1(iglob) = dot_e1(iglob) - (ONE/tau_sigma(i, j, ispec)) &
@@ -482,10 +481,8 @@
                        abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
                        + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))
           
-          !if(ABC_STRETCH .and. stretching_buffer(iglob)>0) then
-          if(ABC_STRETCH) then
-            ! Add jacobian of stretching into the integrand (artifically).
-            ! It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+            ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
             ! TODO: Do it more clearly.
             iglob_unique=ibool_before_perio(i, j, ispec)
             nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
@@ -645,7 +642,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
                          ibool_before_perio,&
                          rhovx_init, rhovz_init, rho_init, T_init, CONSTRAIN_HYDROSTATIC, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
-                         ABC_STRETCH,stretching_ya!,stretching_buffer ! Stretching-based absorbing conditions.
+                         ABC_STRETCH,stretching_ya,stretching_buffer ! Stretching-based absorbing conditions.
                          
   implicit none
   
@@ -727,9 +724,8 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
           gammaxl = gammax(i, j, ispec)
           gammazl = gammaz(i, j, ispec)
           
-          !if(ABC_STRETCH .and. stretching_buffer(iglob)>0) then
-          if(ABC_STRETCH) then
-            !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+            ! See beginning of subroutine compute_forces_acoustic_DG for detailed explanations.
             iglob_unique=ibool_before_perio(i, j, ispec)
             ya_x_l=stretching_ya(1, iglob_unique)
             ya_z_l=stretching_ya(2, iglob_unique)
@@ -737,7 +733,6 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
             xizl = ya_z_l * xizl
             gammaxl = ya_x_l * gammaxl
             gammazl = ya_z_l * gammazl
-            ! Add jacobian of stretching into the integrand (artifically).
             ! TODO: Do that more clearly.
             jacobianl = ya_x_l*ya_z_l*jacobianl
           endif
@@ -943,11 +938,9 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
               neighbor(3) = ispec_neighbor
             endif
           
-            if(ABC_STRETCH) then
-              ! Add jacobian of stretching into the integrand (artifically).
-              ! Questionnable method. See surface terms in the subroutine above.
+            if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+              ! Update flux with stretching components. See explanation in the surface terms part in the subroutine above.
               ! TODO: Do that more clearly.
-              !call virtual_stretch(i, j, ispec, ya_x_l, ya_z_l)
               iglob_unique=ibool_before_perio(i, j, ispec)
               weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
             endif

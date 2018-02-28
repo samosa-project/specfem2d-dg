@@ -54,48 +54,8 @@
 
   ! PML preparation
   call prepare_timerun_PML()
-
-  ! prepares mass matrices
-  call prepare_timerun_mass_matrix()
-
-  ! postscript images for grids and snapshots
-  call prepare_timerun_postscripts()
-
-  ! jpeg images
-  call prepare_timerun_image_coloring()
-
-  ! for adjoint kernel runs
-  call prepare_timerun_adjoint()
   
-  ! reads initial fields from external file if needed
-  call prepare_timerun_initialfield
-  
-  ! compute the source time function and stores it in a text file
-  call prepare_timerun_stf()
-  
-  if(REMOVE_STF_INITIAL_DISCONTINUITY .and. (.not. USE_TRICK_FOR_BETTER_PRESSURE) .and. myrank==0) then
-    write(*,*) "********************************"
-    write(*,*) "*         INFORMATION          *"
-    write(*,*) "********************************"
-    write(*,*) "* If one source has            *"
-    write(*,*) "* time_function_type==3, its   *"
-    write(*,*) "* initial discontinuity was    *"
-    write(*,*) "* removed. See                 *"
-    write(*,*) "* 'prepare_source_time_function.f90'."
-    write(*,*) "********************************"
-    call flush_IMAIN()
-  endif
-  
-  ! Compute the source spatial function and store it in a variable.
-  if(USE_SPREAD_SSF) then
-    if (myrank==0) then
-      write(IMAIN,*) 'Preparing source spatial function in DG elements.'
-      call flush_IMAIN()
-    endif
-    call prepare_timerun_ssf()
-  endif
-  
-  ! Compute the stretching values and store them in correspongding variables.
+  ! Compute the stretching values and store them in corresponding variables.
   if(ABC_STRETCH) then
     if(myrank==0) then
       write(IMAIN,*) 'Preparing stretching absorbing boundary conditions for the DG elements.'
@@ -119,7 +79,6 @@
       else
         write(IMAIN,*) "       right? ", ABC_STRETCH_RIGHT
       endif
-      call flush_IMAIN()
     endif
     call prepare_stretching()
     
@@ -160,6 +119,48 @@
       !write(*,*) counter
       stop 'kek'
     endif
+    
+    if(myrank==0) write(IMAIN,*) '> Done preparing stretching absorbing boundary conditions for the DG elements.'
+    call flush_IMAIN()
+  endif ! Endif on ABC_STRETCH.
+
+  ! prepares mass matrices
+  call prepare_timerun_mass_matrix()
+
+  ! postscript images for grids and snapshots
+  call prepare_timerun_postscripts()
+
+  ! jpeg images
+  call prepare_timerun_image_coloring()
+
+  ! for adjoint kernel runs
+  call prepare_timerun_adjoint()
+  
+  ! reads initial fields from external file if needed
+  call prepare_timerun_initialfield
+  
+  ! compute the source time function and stores it in a text file
+  call prepare_timerun_stf()
+  
+  if(REMOVE_STF_INITIAL_DISCONTINUITY .and. (.not. USE_TRICK_FOR_BETTER_PRESSURE) .and. myrank==0) then
+    write(*,*) "********************************"
+    write(*,*) "*         INFORMATION          *"
+    write(*,*) "********************************"
+    write(*,*) "* If one source has            *"
+    write(*,*) "* time_function_type==3, its   *"
+    write(*,*) "* initial discontinuity was    *"
+    write(*,*) "* removed. See                 *"
+    write(*,*) "* 'prepare_source_time_function.f90'."
+    write(*,*) "********************************"
+    call flush_IMAIN()
+  endif
+  
+  ! Compute the source spatial function and store it in a variable.
+  if(USE_SPREAD_SSF) then
+    if (myrank==0) write(IMAIN,*) 'Preparing source spatial function in DG elements.'
+    call prepare_timerun_ssf()
+    if (myrank==0) write(IMAIN,*) '> Done preparing source spatial function in DG elements.'
+    call flush_IMAIN()
   endif
   
   ! prepares noise simulations
