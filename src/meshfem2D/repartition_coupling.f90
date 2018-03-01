@@ -353,6 +353,9 @@
 
   double precision :: xtol,xtypdist
   double precision :: x,y,x2,y2
+  
+  double precision :: xmin, xmax, band ! Acceleration of periodic elements finding.
+  logical accelerate_finding
 
 ! set up a local geometric tolerance by computing the typical horizontal size of an element.
 ! the sqrt() assumes that the geometrical model is 'not too elongated' and thus 'not too far from a square'
@@ -379,9 +382,30 @@
   print *,'start detecting points for periodic boundary conditions (the current algorithm can be slow and could be improved)...'
 
   is_periodic(:) = .false.
+  
+  accelerate_finding = .true.
+  xmin = minval(nodes_coords(1,:))
+  xmax = maxval(nodes_coords(1,:))
+  band = 5.*xtypdist ! Roughly 5 elements.
 
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
+  
+    if(.false. .and. mod(el, 250)==0) then
+      ! DEBUG, only here to make sure periodic points detection does not crash on huge meshes.
+      if(el>0) write(*,*) "DEBUG OF PERIODIC ELEMENTS' DETECTION. ELEMENT ", el, ". ", (100.*el/nelmnts), '% DONE.'
+    endif
+    
+    ! Skip elements too far from left/right boundaries.
+    if(accelerate_finding) then
+      if(el==0) write(*,*) "> using acceleration method (skip points too far from left/right boundaries)"
+      if(     nodes_coords(1,elmnts_l(NCORNERS*el) + 1)>xmin+band & ! Too far from left boundary.
+         .and. nodes_coords(1,elmnts_l(NCORNERS*el) + 1)<xmax-band & ! Too far from right boundary.
+        ) then
+        cycle
+      endif
+    endif
+    
     do el2 = el+1, nelmnts-1
       if (is_periodic(el2)) cycle
       ! it is sufficient to loop on the four corners to determine if this element has at least one periodic point
@@ -415,6 +439,7 @@
 ! loop on all the elements to find the first partition that contains a periodic element
   ifirst_partition_found = -1
   do el = 0, nelmnts-1
+    ! TODO: maybe the acceleration trick above can be used here too, since we only look for periodic elements.
     if (is_periodic(el)) then
       ifirst_partition_found = part(el)
       exit
@@ -424,6 +449,7 @@
 
 ! loop on all the elements to move all periodic elements to the first partition found
   do el = 0, nelmnts-1
+    ! TODO: maybe the acceleration trick above can be used here too, since we only look for periodic elements.
     if (is_periodic(el)) part(el) = ifirst_partition_found
   enddo
 

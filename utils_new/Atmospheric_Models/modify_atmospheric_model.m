@@ -70,8 +70,8 @@ if(strcmp(method, 'metaheuristic'))
   disp(['[WARNING] Metaheuristic methods can be very long.']);
   callFromOutside=1;
   algo = 'ps';
-  ftol = 1e-5;
-  maxit = 1000;
+  ftol = 1e-16;
+  maxit = 10000;
   metaheuristics;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -51,13 +51,22 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_558183_Gderiv/');
 
 % Seismic Hammer.
-% fig_title = strcat('Seismic Hammer Simulation (New Model)');
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
+
+% Seismic Hammer, hard soil.
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580113/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580185/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580228/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580333/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580712/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580457/');
 
 % Tests.
 fig_title = 'test';
@@ -66,7 +75,12 @@ fig_title = 'test';
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_coupling'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
 % root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching_FFcounterpart'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching_FFcounterpart'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_test_atmo'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_TEST');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_test_densitysource'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_TEST');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_quake'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES');
+% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/quake_oklahoma45'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES__long_working');
+root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/quake_ok_45'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_narrow_okdx');
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -83,7 +97,7 @@ unknown = 'BXZ';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if(not(strcmp(output_files_dir(end),'/'))); folder=[folder,'/']; end;
+if(not(strcmp(output_files_dir(end),'/'))); output_files_dir=[output_files_dir,'/']; end;
 % Load sources' positions.
 pos_sources = [inf, inf]; % Allocate a row for the first source's position.
 % fid = fopen([root_dir, '/DATA/SOURCE']);
@@ -244,7 +258,7 @@ for istat = 1 : nstat
     end
     xlim([Ztime(1, 1), Ztime(1, end)]);
 
-    legend(strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'west');
+    legend(strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'east');
 
     hold on;
 

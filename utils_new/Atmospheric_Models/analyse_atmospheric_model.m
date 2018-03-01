@@ -24,7 +24,15 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 interpolate = 0;
 interp_delta = 4000; % Interpolation step (m).
 save_plots = 0;
-maxalt=Inf; % If one has to cut data, choose maximum altitude here. Put Inf if all altitudes are to be considered.
+% If one has to cut data, choose maximum altitude here. Put Inf if all altitudes are to be considered.
+% maxalt=Inf;
+maxalt=150e3;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Regularisation method. %%%%%%
+% method='integrate';
+method='bruteforce';
+% method='metaheuristic';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,37 +49,38 @@ maxalt=Inf; % If one has to cut data, choose maximum altitude here. Put Inf if a
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_21_0.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_100000_21_-45.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/0_60000_111_-45.00000_0.00000_0_0_0.00000_0.00000"; headerlines=3;
-DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/tests/0_300000_51_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/tests/0_300000_51_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_45.00000_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_23.43694_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_23.43694_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+
+DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_45.00000_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_23.43694_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_23.43694_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% fid = fopen(DATAFILE);
-% if(fid==-1)
-%   error(strcat("Cannot open file ", DATAFILE,').'))
-% end
-% stop=0;
-% while(stop==0)
-%   line = fgetl(fid);
-%   year=str2num(regexprep(regexprep(line, 'day.*', ''), 'year', ''));
-%   daysincenewyear=str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ day', ''));
-%   secondssincenewday=str2num(regexprep(regexprep(line, 'lat.*', ''), 'year *[0-9]+ day *[0-9]+ seconds', ''));
-%   datestr=[num2str(daysincenewyear), 'th day of ', num2str(year), ' at ' num2str(floor(secondssincenewday/3600)),':',num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)), ' UT'];
-% 
-%   lat=str2num(regexprep(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat', ''), 'lon.*', ''));
-%   lon=str2num(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat *[0-9]+\.[0-9]+ *lon', ''));
-%   posstr=['lat. ',num2str(lat), ', lon. ',num2str(lon)];
-%   stop=1;
-% end
-% fclose('all');
+disp("Loading.");
 [datestr, posstr, ~, ~, ~, ~, ~] = extract_data_setup(DATAFILE);
-
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
  G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA] = ...
  extract_data(DATAFILE, headerlines, interpolate, interp_delta);
-
 N = NBVSQ .^ 0.5 / (2 * pi);
+
+plot_model(DATAFILE, 230, '-', 'k', 'no');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,13 +124,11 @@ KAPPA=KAPPA(1:ind_maxalt);
 VISCMU=VISCMU(1:ind_maxalt);
 WEAST=WEAST(1:ind_maxalt);
 WNORTH=WNORTH(1:ind_maxalt);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% nz.                         %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+W=W(1:ind_maxalt);
 nz=length(Z);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+disp(" ");
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check Evaluation            %
@@ -130,6 +137,24 @@ nz=length(Z);
 tit_plus={posstr, datestr};
 D=differentiation_matrix(Z, 0);
 
+hydrostatic_ratio = @(D, P, RHO, G) (D * P) ./ (-RHO .* G);
+east_Richardson = Richardson_number(WEAST, D, N);
+north_Richardson = Richardson_number(WNORTH, D, N);
+proj_Richardson = Richardson_number(W, D, N);
+HR=hydrostatic_ratio(D, P, RHO, G);
+
+if(any(proj_Richardson<1))
+  disp(["Projected wind's Richardson number is < 1 somewhere. Unstability can occur."]);
+end
+if(any(proj_Richardson<0.25))
+  disp(["[WARNING] Projected wind's Richardson number is < 0.25 somewhere. Unstability will probably occur."]);
+end
+
+disp(strcat(['Maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(HR-1))*100), '%.']));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plots.                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure();
 semilogx(abs(D * (VISCMU .* (D * W))), Z, 'r'); hold on;
 semilogx(abs(D * (KAPPA .* (D * TEMP) + W .* VISCMU .* (D * W))), Z, 'g');
@@ -143,22 +168,17 @@ if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__unbalance_terms.png'));
 end
 
-figure();
-plot(WEAST, Z, WNORTH, Z);
-% xlim([0.5 * min([east_Richardson; north_Richardson]), 2 * max([east_Richardson; north_Richardson])]);
-xlabel('wind (m/s)'); ylabel('altitude (m)');
-legend('eastward wind', 'northward wind', 'Location', 'NorthWest');
-title(tit_plus);
-if save_plots == 1
-  saveas(gcf, strcat(DATAFILE,'__winds.png'));
-end
-
-hydrostatic_ratio = @(D, P, RHO, G) (D * P) ./ (-RHO .* G);
-east_Richardson = Richardson_number(WEAST, D, N);
-north_Richardson = Richardson_number(WNORTH, D, N);
+% figure();
+% plot(WEAST, Z, WNORTH, Z);
+% % xlim([0.5 * min([east_Richardson; north_Richardson]), 2 * max([east_Richardson; north_Richardson])]);
+% xlabel('wind (m/s)'); ylabel('altitude (m)');
+% legend('eastward wind', 'northward wind', 'Location', 'NorthWest');
+% title(tit_plus);
+% if save_plots == 1
+%   saveas(gcf, strcat(DATAFILE,'__winds.png'));
+% end
 
 figure();
-HR=hydrostatic_ratio(D, P, RHO, G);
 % plot(HR(2:end), Z(2:end), ones(size(Z)), Z, 'k:');
 plot(HR, Z, ones(size(Z)), Z, 'k:');
 xlabel('$\partial_zp/(-\rho g)$'); ylabel('altitude (m)');
@@ -166,22 +186,22 @@ xlabel('$\partial_zp/(-\rho g)$'); ylabel('altitude (m)');
 title(tit_plus);
 
 figure();
-semilogx(east_Richardson, Z, north_Richardson, Z, ones(size(Z)), Z, 'k:');
+semilogx(east_Richardson, Z, north_Richardson, Z, proj_Richardson, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
 xlim([0.5 * min([east_Richardson; north_Richardson]), 2 * max([east_Richardson; north_Richardson])]);
 xlabel('Richardson number'); ylabel('altitude (m)');
-legend('eastward Richardson number', 'northward Richardson number', 'Location', 'NorthWest');
+legend('eastward Richardson number', 'northward Richardson number', 'projected wind Richardson number', 'Location', 'NorthWest');
 title(tit_plus);
 if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__richardson.png'));
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+disp(" ");
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Regularise model.           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-method='integrate';
-% method='bruteforce';
-% method='metaheuristic';
-modify_atmospheric_model % See script.
+disp(["Trying regularisation."]);
+modify_atmospheric_model; % See script.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

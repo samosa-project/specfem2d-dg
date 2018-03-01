@@ -53,9 +53,9 @@ n=length(P);
 
 % Weights for objective function.
 % w = logspace(0,-5,n)';
-% w = logspace(2,-2,n)'/100; %100% to 0.1%
+w = logspace(2,-2,n)'/100; %100% to 0.1%
 % w = P/P(1);
-w = RHO/RHO(1);
+% w = RHO/RHO(1);
 
 % Objective function only depending on X.
 fun = @(X) (objective_function(X, w));
@@ -71,6 +71,9 @@ lb = (1-dpc)*x0;
 ub = (1+dpc)*x0;
 % ub = lb+max((1+dpc)*x0-lb,0.0021); % Only like this to make Matlab's SA work (because it approximates derivatives and complains if ub-lb is too small.
 % ub = lb+max((1+dpc)*x0-lb,0.0002); % Only like this to make Matlab's SA work (because it approximates derivatives and complains if ub-lb is too small.
+
+% In case we deal with negative values, flip upper/lower bounds.
+oub=ub; olb=lb; nub=lb(oub<olb); nlb=ub(oub<olb); ub(oub<olb)=nub; lb(oub<olb)=nlb;
 
 tic;
 if(strcmp(algo,'sa'))
@@ -97,7 +100,7 @@ elseif(strcmp(algo,'ga'))
                        %, 'UseParallel', true
   [x,fval,exitflag] = ga(fun,numel(x0),[],[],[],[],lb,ub,[], options);
 elseif(strcmp(algo,'ps'))
-  disp(["Launching particle swarm optimisation."]);
+  disp(strcat(['Launching particle swarm optimisation (ftol=',num2str(ftol),', maxit=',num2str(maxit),').']));
   options = optimoptions('particleswarm' ...
                          , 'PlotFcns', {@pswplotbestf} ...
                          , 'SwarmSize', 200 ...
@@ -176,7 +179,6 @@ function y = objective_function(PRHO, w)
 %   y=trapz(Z, abs(epsilon))/(Z(end)-Z(1));
   y=trapz(Z, abs(w.*metric(PRHO)));
 end
-
 % Metric.
 function epsilon = metric(PRHO)
   global D G
@@ -186,4 +188,27 @@ function epsilon = metric(PRHO)
 %   RHO = PRHO(tn/2+1:end);
 %   epsilon=(D * P) ./ (-RHO .* G)-1;
   epsilon=(D * PRHO(1:tn/2)) ./ (-PRHO(tn/2+1:end) .* G)-1;
+end
+
+% Objective function.
+function y = objective_function_wind(NW, w)
+  global D Z G
+%   tn=length(PRHO);
+%   PRHO=reshape(PRHO,tn,1);
+%   P = PRHO(1:tn/2);
+%   RHO = PRHO(tn/2+1:end);
+%   epsilon=w.*metric(PRHO);
+%   y=sqrt(trapz(Z, epsilon.^2)/(Z(end)-Z(1)));
+%   y=trapz(Z, abs(epsilon))/(Z(end)-Z(1));
+  y=trapz(Z, abs(metric_wind(NW)));
+end
+% Metric.
+function epsilon = metric_wind(NW)
+  global D G
+  tn=length(NW);
+  NW=reshape(NW,tn,1);
+%   P = PRHO(1:tn/2);
+%   RHO = PRHO(tn/2+1:end);
+%   epsilon=(D * P) ./ (-RHO .* G)-1;
+  epsilon= ((NW(1:tn/2) ./ (D * NW(tn/2+1:end))) .^ 2.0) <1;
 end
