@@ -38,4 +38,5 @@ function [] = rewrite_model(NEWDATAFILE, OLDDATAFILE, Z, RHO, TEMP, SOUNDSPEED, 
   end
   
   fclose('all');
+  disp(strcat("Model output to file: '", NEWDATAFILE, "'."));
 end

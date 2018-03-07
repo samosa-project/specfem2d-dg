@@ -75,6 +75,7 @@ DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratos
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp("> Loading.");
+disp(strcat("File: '", DATAFILE, "'."));
 [datestr, posstr, ~, ~, ~, ~, ~] = extract_data_setup(DATAFILE);
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
  G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA] = ...
@@ -267,6 +268,9 @@ if(strcmp(method, 'bruteforce_rho'))
   if save_plots == 1
     saveas(gcf, strcat(DATAFILE,'__new_richardson.png'));
   end
+  
+  % Not modified.
+  nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -294,7 +298,6 @@ if(decision==0)
 end
 
 SPL=split(DATAFILE, '/'); SPL(end)=strcat("reg_", SPL(end)); nDATAFILE=join(SPL, '/');
-nNBVSQ=(N*2*pi).^2;
-rewrite_model(nDATAFILE, DATAFILE, Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, G, nNBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA);
+rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, (nN*2*pi).^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
