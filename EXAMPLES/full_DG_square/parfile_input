@@ -137,7 +137,7 @@ ABC_STRETCH_BOTTOM_LBUF = 1.                     # Length of the buffer used for
 ABC_STRETCH_RIGHT_LBUF  = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
 
 # Source spatial function.
-USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used.
+USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
 SPREAD_SSF_SAVE  = .false.                       # Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
 SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
 
@@ -374,8 +374,8 @@ cutsnaps                        = 1.
 # JPEG Snapshots              #
 #-----------------------------#
 output_color_image              = .true.         # Draw JPEG color snapshot?
-imagetype_JPEG                  = 4              #    display 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
-                                                 # DG display 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=pressure 5=Energy 6=Temperature 7=Density 8=sqrt(rho)*veloc_Ux 9=sqrt(rho)*veloc_Uz 10=none
+imagetype_JPEG                  = 5              #    display 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
+                                                 # DG display 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure 6=Temperature 7=Density 8=sqrt(rho)*veloc_Ux 9=sqrt(rho)*veloc_Uz 10=none
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
 CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..

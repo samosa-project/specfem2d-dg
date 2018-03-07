@@ -102,14 +102,17 @@
   
     if(any_acoustic_DG) then
       if(imagetype_JPEG == 4) then
+        ! If v_x is plotted in elastic elements, plot energy in DG elements.
+        vector_DG_temp = E_DG - coef*E_init
+      endif
+      if(imagetype_JPEG == 5) then
+        ! If v_x is plotted in elastic elements, plot energy in DG elements.
         vector_DG_temp = ( ( (gammaext_DG - 1.) &
                              * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
                           - coef*p_DG_init )
       endif
-      if(imagetype_JPEG == 5) then
-        vector_DG_temp = E_DG - coef*E_init
-      endif
       if(imagetype_JPEG == 6) then
+        ! If ||v|| is plotted in elastic elements, plot temperature in DG elements.
         vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - coef*T_init)
       endif
     endif
