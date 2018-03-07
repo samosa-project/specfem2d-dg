@@ -80,8 +80,12 @@ end
 % Bruteforce Density.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Description: bruteforce density such that hydrostatic gap is zero.
-if(strcmp(method, 'bruteforce'))
+if(strcmp(method, 'bruteforce_rho'))
+  D=differentiation_matrix(Z, 0);
   bruteforced_RHO = - (D * P) ./ G;
-  disp('Gap is necessarily zero with this method.');
+end
+if(strcmp(method, 'bruteforce_rho_log'))
+  D=differentiation_matrix(Z, 0);
+  bruteforced_RHO_log = - ((D * (log(P))) .* P ) ./ G;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

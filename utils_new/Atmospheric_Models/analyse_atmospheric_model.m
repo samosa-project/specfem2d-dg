@@ -31,7 +31,8 @@ maxalt=150e3;
 
 % Regularisation method. %%%%%%
 % method='integrate';
-method='bruteforce';
+method='bruteforce_rho';
+% method='bruteforce_rho_log';
 % method='metaheuristic';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -73,7 +74,7 @@ DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratos
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("Loading.");
+disp("> Loading.");
 [datestr, posstr, ~, ~, ~, ~, ~] = extract_data_setup(DATAFILE);
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
  G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA] = ...
@@ -117,14 +118,20 @@ ind_maxalt=find(abs(Z-maxalt)==min((abs(Z-maxalt))), 1, 'last');
 Z=Z(1:ind_maxalt);
 RHO=RHO(1:ind_maxalt);
 TEMP=TEMP(1:ind_maxalt);
+SOUNDSPEED=SOUNDSPEED(1:ind_maxalt);
 P=P(1:ind_maxalt);
+LOCALPRESSURESCALE=LOCALPRESSURESCALE(1:ind_maxalt);
 G=G(1:ind_maxalt);
 N=N(1:ind_maxalt);
 KAPPA=KAPPA(1:ind_maxalt);
 VISCMU=VISCMU(1:ind_maxalt);
+MUVOL=MUVOL(1:ind_maxalt);
 WEAST=WEAST(1:ind_maxalt);
 WNORTH=WNORTH(1:ind_maxalt);
 W=W(1:ind_maxalt);
+CP=CP(1:ind_maxalt);
+CV=CV(1:ind_maxalt);
+GAMMA=GAMMA(1:ind_maxalt);
 nz=length(Z);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -134,13 +141,18 @@ disp(" ");
 % Check Evaluation            %
 % Coefficients.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(["> Checking stability coefficients."]);
 tit_plus={posstr, datestr};
 D=differentiation_matrix(Z, 0);
 
 hydrostatic_ratio = @(D, P, RHO, G) (D * P) ./ (-RHO .* G);
+Mach_number = @(W, C) abs(W)./C;
 east_Richardson = Richardson_number(WEAST, D, N);
 north_Richardson = Richardson_number(WNORTH, D, N);
 proj_Richardson = Richardson_number(W, D, N);
+east_Mach = Mach_number(WEAST, SOUNDSPEED);
+north_Mach = Mach_number(WNORTH, SOUNDSPEED);
+proj_Mach = Mach_number(W, SOUNDSPEED);
 HR=hydrostatic_ratio(D, P, RHO, G);
 
 if(any(proj_Richardson<1))
@@ -187,12 +199,22 @@ title(tit_plus);
 
 figure();
 semilogx(east_Richardson, Z, north_Richardson, Z, proj_Richardson, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
-xlim([0.5 * min([east_Richardson; north_Richardson]), 2 * max([east_Richardson; north_Richardson])]);
+xlim([0.5 * min([east_Richardson; north_Richardson; proj_Richardson]), 2 * max([east_Richardson; north_Richardson; proj_Richardson])]);
 xlabel('Richardson number'); ylabel('altitude (m)');
 legend('eastward Richardson number', 'northward Richardson number', 'projected wind Richardson number', 'Location', 'NorthWest');
 title(tit_plus);
 if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__richardson.png'));
+end
+
+figure();
+semilogx(east_Mach, Z, north_Mach, Z, proj_Mach, Z, ones(size(Z)), Z, 'k:');
+xlim([0.5 * min([east_Mach; north_Mach; proj_Mach]), 2 * max([east_Mach; north_Mach; proj_Mach])]);
+xlabel('Mach number ($|w|/c$)'); ylabel('altitude (m)');
+legend('eastward Mach number', 'northward Mach number', 'projected wind Mach number', 'Location', 'NorthWest');
+title(tit_plus);
+if save_plots == 1
+  saveas(gcf, strcat(DATAFILE,'__mach.png'));
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -201,7 +223,78 @@ disp(" ");
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Regularise model.           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(["Trying regularisation."]);
+disp(["> Trying regularisation."]);
 modify_atmospheric_model; % See script.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+disp(" ");
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Display modifications.      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(["> Modifications."]);
+
+tit_plus={strcat(['Regularised model ("', regexprep(method, '_', '\\_'), '" method)']), tit_plus{1}, tit_plus{2}};
+if(strcmp(method, 'bruteforce_rho'))
+  disp(strcat(['Used "', method, '" method.']));
+  nRHO=bruteforced_RHO;
+  disp(strcat(['Maximum relative difference on RHO: ', num2str(max(abs(nRHO-RHO)./RHO)*100), '%.']));
+  
+  disp('Hydrostatic ratio is necessarily 1 with this method.');
+  
+  nSOUNDSPEED=sqrt(GAMMA.*P./nRHO);
+%   figure();
+%   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
+%   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
+%   xlabel('$c$'); ylabel('altitude (m)');
+%   legend('old $c$', 'new $c$', 'Location', 'NorthWest');
+%   title(tit_plus);
+  nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2);
+%   figure();
+%   semilogx(N.^2, Z, nN.^2, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
+%   xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
+%   xlabel('$N^2$'); ylabel('altitude (m)');
+%   legend('old $N^2$', 'new $N^2$', 'Location', 'NorthWest');
+%   title(tit_plus);
+  Richard=Richardson_number(W, D, N);
+  nRichard=Richardson_number(W, D, nN);
+  figure();
+  semilogx(Richard, Z, nRichard, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
+  xlim([0.5 * min([Richard;nRichard]), 2 * max([Richard;nRichard])]);
+  xlabel('Richardson number'); ylabel('altitude (m)');
+  legend('old Richardson number', 'new Richardson number', 'Location', 'NorthWest');
+  title(tit_plus);
+  if save_plots == 1
+    saveas(gcf, strcat(DATAFILE,'__new_richardson.png'));
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+disp(" ");
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Output regularised model to %
+% file.                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(["> Outputting regularised model to file."]);
+
+if(maxalt<Inf)
+  disp(["[WARNING] maxalt<Inf, the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
+end
+if(interpolate~=0)
+  disp(["[WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0."]);
+end
+decision=-1;
+while(decision~=0 && decision~=1)
+  decision=input(['Output regularised model to another file? (0 for no, 1 for yes) > ']);
+end
+if(decision==0)
+  disp("Outputting cancelled, stopping script."); return;
+end
+
+SPL=split(DATAFILE, '/'); SPL(end)=strcat("reg_", SPL(end)); nDATAFILE=join(SPL, '/');
+nNBVSQ=(N*2*pi).^2;
+rewrite_model(nDATAFILE, DATAFILE, Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, G, nNBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
