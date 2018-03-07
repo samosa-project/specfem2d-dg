@@ -82,8 +82,7 @@
           case (1)
             ! displacement
             call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
-                                            !potential_gravito,displ_elastic,displs_poroelastic, rhovz_DG/rho_DG,&
-                                            potential_gravito,veloc_elastic,displs_poroelastic, &
+                                            potential_gravito,displ_elastic,displs_poroelastic, &
                                             rhovz_DG/rho_DG,&
                                             ispec,vector_field_element)
           case (2)
