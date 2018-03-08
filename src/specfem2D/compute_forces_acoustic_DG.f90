@@ -485,8 +485,9 @@
             ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
             ! TODO: Do it more clearly.
             iglob_unique=ibool_before_perio(i, j, ispec)
-            nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
-            nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+            weight=weight*stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)
+            !nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
+            !nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
           endif
           
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).

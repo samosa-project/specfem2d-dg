@@ -82,7 +82,7 @@ freq0                           = 0.05           # frequency for viscous attenua
 # for viscoelastic attenuation
 N_SLS                           = 2              # number of standard linear solids for attenuation (3 is usually the minimum)
 f0_attenuation                  = 5.196152422706633 # (Hz) relevant only if source is a Dirac or a Heaviside, otherwise it is f0 the dominant frequency of the source in the DATA/SOURCE file
-READ_VELOCITIES_AT_f0           = .false.        # shift velocities to account for physical dispersion (see user manual for more information)
+READ_VELOCITIES_AT_f0           = .false.        # Set to .true. to shift velocities to account for physical dispersion. If set to .false., the unrelaxed velocities, set in the models below, will be used instead (see 'shift_velocities_from_f0' subroutine in 'attenuation_model.f90' for more information).
 
 # to undo attenuation for sensitivity kernel calculations or forward runs with SAVE_FORWARD
 # use the flag below. It performs undoing of attenuation in an exact way for sensitivity kernel calculations
@@ -276,6 +276,7 @@ nbmodels                        = 1
 #   anistoropic: model_number 2  rho  c11  c13 c15 c33 c35    c55 c12 c23 c25 0    0    0
 #   poroelastic: model_number 3  rhos rhof phi c   kxx kxz    kzz Ks  Kf  Kfr etaf mufr Qmu
 #   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
+# Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the 'Attenuation' section above as wanted.
 1 1 1.164 349.0d0 0.0d0 0 0 10.0d0 10.0d0 0 0 0 0 0 0
 
 # External tomography file.

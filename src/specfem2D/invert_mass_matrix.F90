@@ -835,14 +835,14 @@
   
   ! Modif DG
   !DEBUG
-  write(*,*) "mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
-             "maxval", maxval(rmass_inverse_acoustic_DG)
+  !write(*,*) "mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
+  !           "maxval", maxval(rmass_inverse_acoustic_DG)
   if(USE_DISCONTINUOUS_METHOD) then
     rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
   endif
   !DEBUG
-  write(*,*) "inverse mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
-             "maxval", maxval(rmass_inverse_acoustic_DG)
+  !write(*,*) "inverse mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
+  !           "maxval", maxval(rmass_inverse_acoustic_DG)
   
   end subroutine invert_mass_matrix
 

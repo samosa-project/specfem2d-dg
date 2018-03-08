@@ -41,7 +41,8 @@
   implicit none
   
   integer ispec,i,j,iglob_unique
-  !integer counter !DBEUG
+  !integer counter !DEBUG
+  real(kind=CUSTOM_REAL) x_buffer !TEST
 
   ! Test compatibility with axisymmetric formulation
   if (AXISYM) call check_compatibility_axisym()
@@ -118,6 +119,34 @@
       !close(1000)
       !write(*,*) counter
       stop 'kek'
+    endif
+    
+    if(.false.) then ! TEST HACK TO REMOVE IMPACT OF WIND WHEN USING STRETCHING BUFFERS
+      ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!!
+      ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
+      ! TODO: This is a hack.
+      if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
+        do ispec = 1, nspec
+          if(ispec_is_acoustic_DG(ispec)) then
+            do j = 1, NGLLZ
+              do i = 1, NGLLX
+                x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
+                if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then ! If in left buffer.
+                  x_buffer = 1.-(x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
+                else if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then ! If in right buffer.
+                  x_buffer = 1.-(mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
+                else
+                  x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
+                endif
+                !if(x_buffer<1.) write(*,*) coord(1, ibool_before_perio(i, j, ispec)), x_buffer
+                !windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
+                windxext(i, j, ispec) = 2.*windxext(i, j, ispec)
+              enddo ! Enddo on i.
+            enddo ! Enddo on j.
+          endif ! Endif on ispec_is_acoustic_DG.
+        enddo ! Enddo on ispec.
+      endif ! Endif on ABC_STRETCH.
+      !stop 'kek'
     endif
     
     if(myrank==0) write(IMAIN,*) '> Done preparing stretching absorbing boundary conditions for the DG elements.'
@@ -198,6 +227,7 @@
   ! Modif DG
   if(USE_DISCONTINUOUS_METHOD) then
     if (myrank==0) then
+      write(IMAIN,*) ''
       write(IMAIN,*) 'Preparing normal vectors for DG simulations.'
       call flush_IMAIN()
     endif
@@ -1572,7 +1602,9 @@
       enddo
     enddo
 
-    if (ATTENUATION_VISCOELASTIC_SOLID .and. READ_VELOCITIES_AT_f0 .and. .not. assign_external_model) then
+    if (ATTENUATION_VISCOELASTIC_SOLID .and. READ_VELOCITIES_AT_f0 .and. &
+        ((trim(MODEL)=='external_DG') .or. .not. assign_external_model)& ! If MODEL is set to 'external_DG', 'assign_external_model' is set to true, but we want to still be able to use attenuation in the elastic part.
+       ) then
       if (ispec_is_anisotropic(ispec) .or. ispec_is_poroelastic(ispec) .or. ispec_is_gravitoacoustic(ispec)) &
          stop 'READ_VELOCITIES_AT_f0 only implemented for non anisotropic, non poroelastic, non gravitoacoustic materials for now'
       n = kmato(ispec)
@@ -1594,6 +1626,16 @@
       endif
     endif
   enddo
+  
+  if(ATTENUATION_VISCOELASTIC_SOLID .and. READ_VELOCITIES_AT_f0 .and.&
+     trim(MODEL)=='external_DG') then
+    if(myrank==0) then
+      write(*,*) "  Viscoelastic attenuation and velocity shifting was asked by parfile. "&
+                 "Elastic materials' values were updated, we need to update anew the "&
+                 "'external' variables for elastic parts."
+    endif
+    call external_DG_update_elastic_from_parfile() ! Update elastic regions.
+  endif
 
   ! allocate memory variables for viscous attenuation (poroelastic media)
   if (ATTENUATION_PORO_FLUID_PART) then

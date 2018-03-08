@@ -287,7 +287,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     endif
     
     ! Set wind.
-    veloc_x_DG_P = wind ! Read horizontal wind, from specfem2_par. TODO: why not windxext(i, j, ispec) as above?
+    veloc_x_DG_P = wind ! Read horizontal wind (from specfem2_par), which is the scalar value read from parfile.
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
   endif ! Endif on assign_external_model.
   
@@ -520,7 +520,7 @@ end subroutine boundary_condition_DG
   
   e1_DG_P = ZERO
   
-  exact_interface_flux = .false.
+  exact_interface_flux = .false. ! Unless otherwise specified, use the Lax-Friedrich approximation.
   
   if(neighbor(3) == -1 ) then
     ! --------------------------- !
@@ -916,6 +916,7 @@ end subroutine boundary_condition_DG
     !   not an outside edge,      !
     !   thus values are known.    !
     ! --------------------------- !
+    exact_interface_flux = .false.
     iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
     gamma_P = gammaext_DG(iglobP)
     rho_DG_P     = rho_DG_iP

@@ -1468,17 +1468,14 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
   use specfem_par,only: ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
-        poroelastcoef,density,kmato, ispec_is_elastic,ispec_is_acoustic_DG,&
-        mesh_zmax,tau_sigma, tau_epsilon, ibool_before_perio,&
+        ispec_is_elastic,ispec_is_acoustic_DG,&
+        mesh_zmax,tau_sigma, tau_epsilon,&
         rhoext,vpext,vsext,&
         QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext,&
         nspec,coord,ibool,myrank,&
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
-        QKappa_attenuation,Qmu_attenuation,anisotropy,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
-        ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF,&
-        ABC_STRETCH_RIGHT_LBUF,mesh_xmin,mesh_xmax
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS
   
   implicit none
   
@@ -1507,8 +1504,6 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   integer :: i, j, ispec, ii, io, indglob_DG
   real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3 ! Dummy reals for reading parameters which we do not care about.
   double precision :: z, frac, tmp1, pii, piim1, piim2, piip1!,gamma_temp,gamma_temp_prev,x,max_z
-  
-  real(kind=CUSTOM_REAL) x_buffer
   
   z_model=ZERO
   density_model=ZERO
@@ -1705,48 +1700,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
-      ! Use quantities loaded from parfile to fill "external" model for elastic media.
-      rhoext(:, :, ispec) = density(1,kmato(ispec))
-      vpext(:, :, ispec) = sqrt(poroelastcoef(3,1,kmato(ispec))/density(1,kmato(ispec))) ! Since poroelastcoef(3,1,n) = lambda+2mu = rho cp^2 (see gmat01.f90).
-      vsext(:, :, ispec) = sqrt(poroelastcoef(2,1,kmato(ispec))/density(1,kmato(ispec))) ! Since poroelastcoef(2,1,n) = mu = rho vs^2 (see gmat01.f90).
-      QKappa_attenuationext(:, :, ispec) = QKappa_attenuation(kmato(ispec))
-      Qmu_attenuationext(:, :, ispec) = Qmu_attenuation(kmato(ispec))
-      c11ext(:, :, ispec) = anisotropy(1,kmato(ispec))
-      c13ext(:, :, ispec) = anisotropy(2,kmato(ispec))
-      c15ext(:, :, ispec) = anisotropy(3,kmato(ispec))
-      c33ext(:, :, ispec) = anisotropy(4,kmato(ispec))
-      c35ext(:, :, ispec) = anisotropy(5,kmato(ispec))
-      c55ext(:, :, ispec) = anisotropy(6,kmato(ispec))
-      c12ext(:, :, ispec) = anisotropy(7,kmato(ispec))
-      c23ext(:, :, ispec) = anisotropy(8,kmato(ispec))
-      c25ext(:, :, ispec) = anisotropy(9,kmato(ispec))
-      
-      !write(*,*) 'lul' ! DEBUG
-      if(.false.) then ! DEBUG
-        do j = 1, NGLLZ
-          do i = 1, NGLLX
-            rhoext(i,j,ispec) = 2500.d0
-            vpext(i,j,ispec) = 3600.d0
-            vsext(i,j,ispec) = vpext(i,j,ispec) / 2.d0
-            QKappa_attenuationext(i,j,ispec) = 120.
-            Qmu_attenuationext(i,j,ispec) = 120.
-            c11ext(i,j,ispec) = 0.d0   ! this means no anisotropy
-            c13ext(i,j,ispec) = 0.d0
-            c15ext(i,j,ispec) = 0.d0
-            c33ext(i,j,ispec) = 0.d0
-            c35ext(i,j,ispec) = 0.d0
-            c55ext(i,j,ispec) = 0.d0
-            c12ext(i,j,ispec) = 0.d0
-            c23ext(i,j,ispec) = 0.d0
-            c25ext(i,j,ispec) = 0.d0
-            !! AB AB Do not forget these 3 lines otherwise PML may not work !!
-            density(1,kmato(ispec)) = rhoext(i,j,ispec)
-            poroelastcoef(3,1,kmato(ispec)) = rhoext(i,j,ispec) * vpext(i,j,ispec) * vpext(i,j,ispec)
-            poroelastcoef(2,1,kmato(ispec)) =  rhoext(i,j,ispec) * vsext(i,j,ispec) * vsext(i,j,ispec)
-          enddo
-        enddo
-      endif
-      
+      cycle ! Elastic regions are treated separately (see call to 'external_DG_update_elastic_from_parfile' below).
     else if(ispec_is_acoustic_DG(ispec)) then
       ! For DG elements, go through GLL points one by one.
       do j = 1, NGLLZ
@@ -1908,7 +1862,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       write(*,*) "*  z: ", coord(2, ibool(i, j, ispec))
       write(*,*) "********************************"
       stop
-    endif ! Endif on ispec_is_elastic/ispec_is_acoustic_DG.
+    endif ! Endif on ispec_is_acoustic_DG.
     
     if(.FALSE.) then ! DEBUG
       do j = 1, NGLLZ
@@ -1936,30 +1890,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     endif
   enddo ! Enddo on ispec.
   
-  if(.false.) then ! TEST HACK TO REMOVE IMPACT OF WIND WHEN USING STRETCHING BUFFERS
-    ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!!
-    ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
-    ! TODO: This is a hack.
-    if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
-      do ispec = 1, nspec
-        if(ispec_is_acoustic_DG(ispec)) then
-          do j = 1, NGLLZ
-            do i = 1, NGLLX
-              x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
-              if(ABC_STRETCH_LEFT .and. x_buffer < mesh_xmin + ABC_STRETCH_LEFT_LBUF) then ! If in left buffer (cannot use stretching_buffer variable since it is not yet initialised).
-                x_buffer = (x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (1 at beginning, 0 at end).
-              else if(ABC_STRETCH_RIGHT .and. x_buffer > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) then ! If in right buffer (cannot use stretching_buffer variable since it is not yet initialised).
-                x_buffer = (mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (1 at beginning, 0 at end).
-              else
-                x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
-              endif
-              windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
-            enddo ! Enddo on i.
-          enddo ! Enddo on j.
-        endif ! Endif on ispec_is_acoustic_DG.
-      enddo ! Enddo on ispec.
-    endif ! Endif on ABC_STRETCH.
-  endif
+  call external_DG_update_elastic_from_parfile() ! Update elastic regions.
   
   if(myrank==0) then
     write(*,*) "********************************"
@@ -1981,3 +1912,80 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   
 end subroutine define_external_model_DG_only
 
+! ------------------------------------------------------------ !
+! external_DG_update_elastic_from_parfile                      !
+! ------------------------------------------------------------ !
+! Only used for trim(MODEL)=='external_DG': sets the variables for elastic model according to what is specified in parfile.
+
+subroutine external_DG_update_elastic_from_parfile()
+
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
+  use specfem_par,only: &
+        poroelastcoef,density,kmato, ispec_is_elastic,&
+        rhoext,vpext,vsext,&
+        QKappa_attenuationext,Qmu_attenuationext,&
+        nspec,myrank,&
+        QKappa_attenuation,Qmu_attenuation,anisotropy,&
+        c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext
+  
+  implicit none
+  
+  ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HUGEVAL = 9999._CUSTOM_REAL
+  integer :: i, j, ispec
+  
+  if(myrank==0) then
+    write(*,*) "  Updating elastic part of external model: read values from ",&
+               "materials variables (which initially come from parfile) to fill the 'external' variables."
+  endif
+  
+  do ispec = 1, nspec
+    if(ispec_is_elastic(ispec)) then
+      ! Use quantities loaded from parfile to fill "external" model for elastic media.
+      rhoext(:, :, ispec) = density(1,kmato(ispec))
+      vpext(:, :, ispec) = sqrt(poroelastcoef(3,1,kmato(ispec))/density(1,kmato(ispec))) ! Since poroelastcoef(3,1,n) = lambda+2mu = rho cp^2 (see gmat01.f90).
+      vsext(:, :, ispec) = sqrt(poroelastcoef(2,1,kmato(ispec))/density(1,kmato(ispec))) ! Since poroelastcoef(2,1,n) = mu = rho vs^2 (see gmat01.f90).
+      QKappa_attenuationext(:, :, ispec) = QKappa_attenuation(kmato(ispec))
+      Qmu_attenuationext(:, :, ispec) = Qmu_attenuation(kmato(ispec))
+      c11ext(:, :, ispec) = anisotropy(1,kmato(ispec))
+      c13ext(:, :, ispec) = anisotropy(2,kmato(ispec))
+      c15ext(:, :, ispec) = anisotropy(3,kmato(ispec))
+      c33ext(:, :, ispec) = anisotropy(4,kmato(ispec))
+      c35ext(:, :, ispec) = anisotropy(5,kmato(ispec))
+      c55ext(:, :, ispec) = anisotropy(6,kmato(ispec))
+      c12ext(:, :, ispec) = anisotropy(7,kmato(ispec))
+      c23ext(:, :, ispec) = anisotropy(8,kmato(ispec))
+      c25ext(:, :, ispec) = anisotropy(9,kmato(ispec))
+      
+      !write(*,*) 'lul' ! DEBUG
+      if(.false.) then ! DEBUG
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            rhoext(i,j,ispec) = 2500.d0
+            vpext(i,j,ispec) = 3600.d0
+            vsext(i,j,ispec) = vpext(i,j,ispec) / 2.d0
+            QKappa_attenuationext(i,j,ispec) = 120.
+            Qmu_attenuationext(i,j,ispec) = 120.
+            c11ext(i,j,ispec) = 0.d0   ! this means no anisotropy
+            c13ext(i,j,ispec) = 0.d0
+            c15ext(i,j,ispec) = 0.d0
+            c33ext(i,j,ispec) = 0.d0
+            c35ext(i,j,ispec) = 0.d0
+            c55ext(i,j,ispec) = 0.d0
+            c12ext(i,j,ispec) = 0.d0
+            c23ext(i,j,ispec) = 0.d0
+            c25ext(i,j,ispec) = 0.d0
+            !! AB AB Do not forget these 3 lines otherwise PML may not work !!
+            density(1,kmato(ispec)) = rhoext(i,j,ispec)
+            poroelastcoef(3,1,kmato(ispec)) = rhoext(i,j,ispec) * vpext(i,j,ispec) * vpext(i,j,ispec)
+            poroelastcoef(2,1,kmato(ispec)) =  rhoext(i,j,ispec) * vsext(i,j,ispec) * vsext(i,j,ispec)
+          enddo
+        enddo
+      endif
+    else
+      cycle
+    endif  ! Endif on ispec_is_elastic.
+  enddo ! Enddo on ispec.
+end subroutine external_DG_update_elastic_from_parfile
