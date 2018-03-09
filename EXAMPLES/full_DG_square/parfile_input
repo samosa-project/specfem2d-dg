@@ -74,15 +74,15 @@ SAVE_MODEL                      = default
 #---------------------------------------------------------------------#
 
 # attenuation parameters
-ATTENUATION_VISCOELASTIC_SOLID  = .false.        # turn attenuation (viscoelasticity) on or off for non-poroelastic solid parts of the model
-ATTENUATION_PORO_FLUID_PART     = .false.        # turn viscous attenuation on or off for the fluid part of poroelastic parts of the model
-Q0                              = 1              # quality factor for viscous attenuation
-freq0                           = 0.05           # frequency for viscous attenuation
+ATTENUATION_VISCOELASTIC_SOLID  = .false.        # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
+ATTENUATION_PORO_FLUID_PART     = .false.        # Poroelastic materials only. Turn on or off viscous attenuation for the fluid part of poroelastic parts of the model.
+Q0                              = 1              # Poroelastic materials only. Quality factor for the viscous attenuation.
+freq0                           = 0.05           # Poroelastic materials only. Frequency for the viscous attenuation.
 
-# for viscoelastic attenuation
-N_SLS                           = 2              # number of standard linear solids for attenuation (3 is usually the minimum)
-f0_attenuation                  = 5.196152422706633 # (Hz) relevant only if source is a Dirac or a Heaviside, otherwise it is f0 the dominant frequency of the source in the DATA/SOURCE file
-READ_VELOCITIES_AT_f0           = .false.        # Set to .true. to shift velocities to account for physical dispersion. If set to .false., the unrelaxed velocities, set in the models below, will be used instead (see 'shift_velocities_from_f0' subroutine in 'attenuation_model.f90' for more information).
+# For viscoelastic attenuation (only used if ATTENUATION_VISCOELASTIC_SOLID==.true.).
+N_SLS                           = 2              # Number of standard linear solids for attenuation (3 is usually the minimum).
+f0_attenuation                  = 1.             # Relevant only if source is a Dirac or a Heaviside. Otherwise, this will take the value of f0 the dominant frequency of the source. Peak frequency of quality factor of attenuation. [Hz].
+READ_VELOCITIES_AT_f0           = .false.        # Set to .true. to shift velocities to account for physical dispersion (the velocities set in the materials below then correspond to those at f_0_attenuation frequency). If set to .false., do not shift velocities (the velocities set in the materials below then correspond to those at infinite frequency, and are used as are). See 'shift_velocities_from_f0' subroutine in 'attenuation_model.f90' and user manual ('Notes_on_viscoelasticity_and_compatibility_with_Carcione_analytical_solution.pdf') for more information.
 
 # to undo attenuation for sensitivity kernel calculations or forward runs with SAVE_FORWARD
 # use the flag below. It performs undoing of attenuation in an exact way for sensitivity kernel calculations

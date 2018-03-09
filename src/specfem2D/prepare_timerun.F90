@@ -1630,8 +1630,8 @@
   if(ATTENUATION_VISCOELASTIC_SOLID .and. READ_VELOCITIES_AT_f0 .and.&
      trim(MODEL)=='external_DG') then
     if(myrank==0) then
-      write(*,*) "  Viscoelastic attenuation and velocity shifting was asked by parfile. "&
-                 "Elastic materials' values were updated, we need to update anew the "&
+      write(*,*) "  Viscoelastic attenuation and velocity shifting was asked by parfile. ",&
+                 "Elastic materials' values were updated, we need to update anew the ",&
                  "'external' variables for elastic parts."
     endif
     call external_DG_update_elastic_from_parfile() ! Update elastic regions.
