@@ -60,15 +60,15 @@ method='bruteforce_rho';
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 
-DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_45.00000_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_23.43694_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_23.43694_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/stratospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/reg_0_200000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_45.00000_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_23.43694_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_23.43694_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,11 +156,13 @@ north_Mach = Mach_number(WNORTH, SOUNDSPEED);
 proj_Mach = Mach_number(W, SOUNDSPEED);
 HR=hydrostatic_ratio(D, P, RHO, G);
 
-if(any(proj_Richardson<1))
-  disp(["Projected wind's Richardson number is < 1 somewhere. Unstability can occur."]);
-end
+disp(strcat(['Minimum Richardson number: ',num2str(min(proj_Richardson)), ' (@z=', num2str(Z(proj_Richardson==min(proj_Richardson))), ' m).']));
 if(any(proj_Richardson<0.25))
   disp(["[WARNING] Projected wind's Richardson number is < 0.25 somewhere. Unstability will probably occur."]);
+else
+  if(any(proj_Richardson<1))
+    disp(["Projected wind's Richardson number is < 1 somewhere. Unstability can occur."]);
+  end
 end
 
 disp(strcat(['Maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(HR-1))*100), '%.']));
@@ -168,24 +170,13 @@ disp(strcat(['Maximum relative gap to hydrostatic state (via ratio): ', num2str(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Plots.                      %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure();
-semilogx(abs(D * (VISCMU .* (D * W))), Z, 'r'); hold on;
-semilogx(abs(D * (KAPPA .* (D * TEMP) + W .* VISCMU .* (D * W))), Z, 'g');
-semilogx(abs(D * P + RHO .* G), Z, 'b');
-tmp_valmat=cell2mat(get(get(gca, 'children'), 'XData')); tmp_plot_maxval=max(max(tmp_valmat)); tmp_valmat(tmp_valmat==0)=Inf; tmp_plot_minval=min(min(tmp_valmat));
-xlim([0.5*tmp_plot_minval, 2*tmp_plot_maxval]);
-xlabel({'amplitude of hydrostatic unbalance terms', '(projected wind)'}); ylabel('altitude (m)');
-legend('$\left|\partial_z\left(\mu\partial_zw\right)\right|$', '$\left|\partial_z\left(\kappa\partial_zT+w\mu\partial_zw\right)\right|$', '$\left|\partial_zp + \rho g_z\right|$', 'Location', 'best');
-title(tit_plus);
-if save_plots == 1
-  saveas(gcf, strcat(DATAFILE,'__unbalance_terms.png'));
-end
+plot_hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W, tit_plus, save_plots);
 
 % figure();
 % plot(WEAST, Z, WNORTH, Z);
 % % xlim([0.5 * min([east_Richardson; north_Richardson]), 2 * max([east_Richardson; north_Richardson])]);
 % xlabel('wind (m/s)'); ylabel('altitude (m)');
-% legend('eastward wind', 'northward wind', 'Location', 'NorthWest');
+% legend('eastward wind', 'northward wind', 'Location', 'northeast');
 % title(tit_plus);
 % if save_plots == 1
 %   saveas(gcf, strcat(DATAFILE,'__winds.png'));
@@ -202,21 +193,21 @@ figure();
 semilogx(east_Richardson, Z, north_Richardson, Z, proj_Richardson, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
 xlim([0.5 * min([east_Richardson; north_Richardson; proj_Richardson]), 2 * max([east_Richardson; north_Richardson; proj_Richardson])]);
 xlabel('Richardson number'); ylabel('altitude (m)');
-legend('eastward Richardson number', 'northward Richardson number', 'projected wind Richardson number', 'Location', 'NorthWest');
+legend('eastward Richardson number', 'northward Richardson number', 'projected wind Richardson number', 'Location', 'northeast');
 title(tit_plus);
 if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__richardson.png'));
 end
 
-figure();
-semilogx(east_Mach, Z, north_Mach, Z, proj_Mach, Z, ones(size(Z)), Z, 'k:');
-xlim([0.5 * min([east_Mach; north_Mach; proj_Mach]), 2 * max([east_Mach; north_Mach; proj_Mach])]);
-xlabel('Mach number ($|w|/c$)'); ylabel('altitude (m)');
-legend('eastward Mach number', 'northward Mach number', 'projected wind Mach number', 'Location', 'NorthWest');
-title(tit_plus);
-if save_plots == 1
-  saveas(gcf, strcat(DATAFILE,'__mach.png'));
-end
+% figure();
+% semilogx(east_Mach, Z, north_Mach, Z, proj_Mach, Z, ones(size(Z)), Z, 'k:');
+% xlim([0.5 * min([east_Mach; north_Mach; proj_Mach]), 2 * max([east_Mach; north_Mach; proj_Mach])]);
+% xlabel('Mach number ($|w|/c$)'); ylabel('altitude (m)');
+% legend('eastward Mach number', 'northward Mach number', 'projected wind Mach number', 'Location', 'northeast');
+% title(tit_plus);
+% if save_plots == 1
+%   saveas(gcf, strcat(DATAFILE,'__mach.png'));
+% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 disp(" ");
@@ -248,29 +239,43 @@ if(strcmp(method, 'bruteforce_rho'))
 %   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
 %   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
 %   xlabel('$c$'); ylabel('altitude (m)');
-%   legend('old $c$', 'new $c$', 'Location', 'NorthWest');
+%   legend('old $c$', 'new $c$', 'Location', 'northeast');
 %   title(tit_plus);
   nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2);
 %   figure();
 %   semilogx(N.^2, Z, nN.^2, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
 %   xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
 %   xlabel('$N^2$'); ylabel('altitude (m)');
-%   legend('old $N^2$', 'new $N^2$', 'Location', 'NorthWest');
+%   legend('old $N^2$', 'new $N^2$', 'Location', 'best');
 %   title(tit_plus);
+  nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
+
+  plot_hydrostat_unbalance(Z, nRHO, nTEMP, nP, nG, nKAPPA, nVISCMU, nW, tit_plus, save_plots);
+  
   Richard=Richardson_number(W, D, N);
   nRichard=Richardson_number(W, D, nN);
+  disp(strcat(['New minimum Richardson number: ',num2str(min(nRichard)), ' (@z=', num2str(Z(nRichard==min(nRichard))), ' m).']));
   figure();
   semilogx(Richard, Z, nRichard, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
   xlim([0.5 * min([Richard;nRichard]), 2 * max([Richard;nRichard])]);
   xlabel('Richardson number'); ylabel('altitude (m)');
-  legend('old Richardson number', 'new Richardson number', 'Location', 'NorthWest');
+  legend('old Richardson number', 'new Richardson number', 'Location', 'northeast');
   title(tit_plus);
   if save_plots == 1
     saveas(gcf, strcat(DATAFILE,'__new_richardson.png'));
   end
   
-  % Not modified.
-  nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA;
+%   Mach=Mach_number(W, SOUNDSPEED);
+%   nMach=Mach_number(W, nSOUNDSPEED);
+%   figure();
+%   semilogx(Mach, Z, nMach, Z, ones(size(Z)), Z, 'k:');
+%   xlim([0.5 * min([Mach;nMach]), 2 * max([Mach;nMach])]);
+%   xlabel('Mach number'); ylabel('altitude (m)');
+%   legend('old Mach number', 'new Mach number', 'Location', 'northeast');
+%   title(tit_plus);
+%   if save_plots == 1
+%     saveas(gcf, strcat(DATAFILE,'__new_mach.png'));
+%   end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -297,7 +302,34 @@ if(decision==0)
   disp("Outputting cancelled, stopping script."); return;
 end
 
-SPL=split(DATAFILE, '/'); SPL(end)=strcat("reg_", SPL(end)); nDATAFILE=join(SPL, '/');
+prefix="reg_";
+% nVISCMU=0*nVISCMU;prefix="reg+mu0_";
+% nKAPPA=0*nKAPPA;prefix="reg+kappa0_";
+% nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix="reg+mukappa0_";
+SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL, '/');
 rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, (nN*2*pi).^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W)
+  D=differentiation_matrix(Z, 0);
+  term1 = abs(D * (VISCMU .* (D * W)));
+  term2 = abs(D * (KAPPA .* (D * TEMP) + W .* VISCMU .* (D * W)));
+  term3 = abs(D * P + RHO .* G);
+end
+
+function plot_hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W, tit_plus, save_plots)
+  figure();
+  [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W);
+  semilogx(term1, Z, 'r'); hold on;
+  semilogx(term2, Z, 'g');
+  semilogx(term3, Z, 'b');
+  tmp_valmat=cell2mat(get(get(gca, 'children'), 'XData')); tmp_plot_maxval=max(max(tmp_valmat)); tmp_valmat(tmp_valmat==0)=Inf; tmp_plot_minval=min(min(tmp_valmat));
+  xlim([0.5*tmp_plot_minval, 2*tmp_plot_maxval]);
+  xlabel({'amplitude of hydrostatic unbalance terms', '(projected wind)'}); ylabel('altitude (m)');
+  legend('$\left|\partial_z\left(\mu\partial_zw\right)\right|$', '$\left|\partial_z\left(\kappa\partial_zT+w\mu\partial_zw\right)\right|$', '$\left|\partial_zp + \rho g_z\right|$', 'Location', 'best');
+  title(tit_plus);
+  if save_plots == 1
+    saveas(gcf, strcat(DATAFILE,'__unbalance_terms.png'));
+  end
+end

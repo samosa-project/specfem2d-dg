@@ -6,6 +6,7 @@
 % Notes:         N/A.
 
 clear all;
+% close all
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 1.5); % Default at 0.5.
@@ -19,7 +20,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 
 %%%%%%%%%%%%%%%%%
 % INITIALIZATION
-
+renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 % Direct waves parameters (??)
 %windsurf = - 10.5; % m/s
 %csurf = 233.5; % m/s
@@ -31,56 +32,78 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Mars AGW.
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_KappaON/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
 
 % Mars Gravity Wave.
 % fig_title = strcat('Mars Gravity Wave Simulation');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_533937_vNEW_full/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_534758_long_instab/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535011_with_FTS/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave/test_RAPHAEL'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9078210_spread_source/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081352_spread_cut_source/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091089_new_coupling/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_552471_atmo_only/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_552455_factor0p1/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_557219_long/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Mars_Gravity_Wave'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_558183_Gderiv/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_533937_vNEW_full/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_534758_long_instab/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_535011_with_FTS/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave/test_RAPHAEL'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9078210_spread_source/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9081352_spread_cut_source/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9091089_new_coupling/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_552471_atmo_only/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_552455_factor0p1/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_557219_long/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_558183_Gderiv/');
 
-% Seismic Hammer.
+% Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9048100_seismic_DG/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9081476_seismic_potential/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/Ongoing_Work/Balloons/simulations'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
+
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9048100_seismic_DG/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9081476_seismic_potential/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580113/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580185/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580228/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580333/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580712/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_580457/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); renorm_factor=8.840811261618920e-04;
+
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580185/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580228/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580333/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
+
+% Quake, 45.
+fig_title = strcat('Quake Simulation (45° dip)');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+
+% Quake, 0.
+% fig_title = strcat('Quake Simulation (0° dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
-fig_title = 'test';
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/full_DG_square'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_long/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_FTS'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_coupling'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_stretching_FFcounterpart'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES/');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_test_atmo'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_TEST');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_test_densitysource'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_TEST');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_quake'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES');
-% root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/quake_oklahoma45'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES__long_working');
-root_dir = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/quake_ok_45'; output_files_dir = strcat(root_dir, '/OUTPUT_FILES_narrow_okdx');
+% fig_title = 'test';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/full_DG_square'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES_long/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_FTS'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_coupling'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_FFcounterpart'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_test_atmo'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_test_densitysource'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_quake'); OFd = strcat(rootd, '/OUTPUT_FILES');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES__long_working');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma0'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_narrow_okdx');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583123_100km_3sources_nospread');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583128_100km_3sources_nospread');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583138_100km_3sources_spread');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_test_scale_sources');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_583180');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_583194');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); renorm_factor=8.840811261618920e-04;
+
+% Sub-sample? Useful for lengthy seismograms.
+subsample = 0;
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -97,13 +120,15 @@ unknown = 'BXZ';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if(not(strcmp(output_files_dir(end),'/'))); output_files_dir=[output_files_dir,'/']; end;
+renorm=0; % Do not renormalise by default.
+if(not(strcmp(OFd(end),'/'))); OFd=[OFd,'/']; end;
+if(not(exist(OFd))); error(strcat("OUTPUT_FILES directory does not exist (",OFd,').')); end;
 % Load sources' positions.
 pos_sources = [inf, inf]; % Allocate a row for the first source's position.
-% fid = fopen([root_dir, '/DATA/SOURCE']);
-fid = fopen([output_files_dir, 'SOURCE']);
+% fid = fopen([rootd, '/DATA/SOURCE']);
+fid = fopen([OFd, 'SOURCE']);
 if(fid==-1)
-  error(strcat("Cannot open SOURCE file in ", output_files_dir, '(',[output_files_dir, 'SOURCE'],').'))
+  error(strcat("Cannot open SOURCE file (",[OFd, 'SOURCE'],').'));
 end
 line = 0; xfound = 0; zfound = 0; stop=0;
 while(stop==0)
@@ -129,10 +154,10 @@ fclose('all');
 
 % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
 try
-  A = importdata(strcat(output_files_dir, 'STATIONS'));
+  A = importdata(strcat(OFd, 'STATIONS'));
 catch
   try
-    A = importdata(strcat(root_dir, '/DATA/STATIONS'));
+    A = importdata(strcat(rootd, '/DATA/STATIONS'));
   catch
     error('Cannot find STATIONS file.');
   end
@@ -206,9 +231,9 @@ for istat = 1 : nstat
     extension = "semd"; % Because original SPECFEM2D's sismogram is displacement.
     % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
     if(strcmp(unknown,'BXZ'))
-      unknown_name = 'vertical {displacement (m), velocity (m/s)}';
+      unknown_name = 'vertical {$u_z$ (m), $v_z$ (m/s)}';
     elseif(strcmp(unknown,'BXX'))
-      unknown_name = 'horizontal {displacement (m), velocity (m/s)}';
+      unknown_name = 'horizontal {$u_x$ (m), $v_x$ (m/s)}';
     else
       error("The variable 'unknown' has a non-standard value.");
     end
@@ -216,21 +241,26 @@ for istat = 1 : nstat
     % Original SPECFEM2D's sismogram is velocity.
     extension = "semv"; % Because original SPECFEM2D's sismogram is velocity.
     if(strcmp(unknown,'BXZ'))
-      unknown_name = '{vertical velocity (m/s), pressure perturbation (Pa)}';
+      unknown_name = '{$v_z$ (m/s), $\delta P$ (Pa)}';
     elseif(strcmp(unknown,'BXX'))
-      unknown_name = '{horizontal velocity (m/s), pressure perturbation (Pa)}';
+      unknown_name = '{$v_x$ (m/s), $\delta P$ (Pa)}';
     else
       error("The variable 'unknown' has a non-standard value.");
     end
   end
 
   % Read the sismogram.
-  file = strcat(output_files_dir, 'AA.', A.textdata(istat_glob, 1), '.', unknown, '.', extension);
+  file = strcat(OFd, 'AA.', A.textdata(istat_glob, 1), '.', unknown, '.', extension);
   data = load(file{1});
   nt = max(size(data));
-  % Sub-sample of records.
-  nsub = ceil(nt/1000);
-  nd = max(size(data(1:nsub:nt, 1)));
+  if(subsample==1)
+    % Sub-sample of records.
+    nsub = ceil(nt/1000);
+    nd = max(size(data(1:nsub:nt, 1)));
+  else
+    nsub=1;
+    nd=nt;
+  end
   % Recover time/amplitude data.
   % Ztime(istat,1:nt) = data(1:nsub:nt,1)';
   % Zamp(istat,1:nt)  = data(1:nsub:nt,2)';
@@ -241,7 +271,22 @@ for istat = 1 : nstat
 
   % Display.
   if(display_or_load==0) % If display.
-    ax(istat) = subplot(nstat, 1, istat); plot(Ztime(1, :), Zamp(istat, :));
+    ax(istat) = subplot(nstat, 1, istat);
+    legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km');
+    
+    if(renorm_factor~=1)
+      renorm=-1;
+      disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), "."));
+      inputtxt=char(strcat("    Renormalise data for station ", legtext,"? (0 for no, 1 for yes) > "));
+      while(not(renorm==0 || renorm==1))
+        renorm=input(inputtxt);
+      end
+    end
+    if(renorm==1)
+      plot(Ztime(1, :), renorm_factor*Zamp(istat, :));
+    else
+      plot(Ztime(1, :), Zamp(istat, :));
+    end
 
     % Cosmetics.
     if (istat == 1)
@@ -258,7 +303,7 @@ for istat = 1 : nstat
     end
     xlim([Ztime(1, 1), Ztime(1, end)]);
 
-    legend(strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km'), 'Location', 'east');
+    legend(legtext, 'Location', 'northeast');
 
     hold on;
 
