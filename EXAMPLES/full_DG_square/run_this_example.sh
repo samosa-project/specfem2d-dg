@@ -56,7 +56,7 @@ echo ">> Starting mesher."
 
 # Check if mesher ran well.
 exit_status=$?
-if [ $exit_status -ne 0 ]; then
+if [ $exit_status -ne 0 ] || [ ! -f ./OUTPUT_FILES/Database00000 ]; then
   echo
   echo ">> [ERROR] Mesher did not finish well. Exiting."
   exit $exit_status

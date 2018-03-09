@@ -55,6 +55,8 @@
   integer :: i,j
   double precision :: vpregion,vsregion,poisson_ratio
   integer,external :: err_occurred
+  
+  integer ixdeb_prec, ixfin_prec, izdeb_prec, izfin_prec ! Safeguard against overlapping regions.
 
   ! read the material numbers for each region
   call read_value_integer_p(nbregion, 'mesher.nbregions')
@@ -77,6 +79,30 @@
     if (ixfinregion > nxread) stop 'Right coordinate of region too high!'
     if (izdebregion < 1) stop 'Bottom coordinate of region negative!'
     if (izfinregion > nzread) stop 'Top coordinate of region too high!'
+    
+    ! Safeguard against overlapping regions:
+    ! If n-th and (n-1)-th regions have same lateral span (same ixdeb and ixfin), but izdeb of n-th region is lesser than izfin of (n-1) region, then those two regions overlap. Call it out, and stop.
+    if(iregion>1) then
+      if(      ixdebregion==ixdeb_prec&
+         .and. ixfinregion==ixfin_prec&
+         .and. izdebregion<=izfin_prec) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* Two regions overlap:         *"
+        write(*,*) "*  1st region:", (iregion-1)
+        write(*,*) "*  2nd region:", iregion
+        write(*,*) "*  izfin(1):  ", izfin_prec
+        write(*,*) "*  izdeb(2):  ", izdebregion
+        write(*,*) "********************************"
+        stop
+      endif
+    endif
+    ixdeb_prec=ixdebregion
+    ixfin_prec=ixfinregion
+    izdeb_prec=izdebregion
+    izfin_prec=izfinregion
+    ! TODO: more safeguards against overlapping regions.
 
     print *,'Region ',iregion
     print *,'IX from ',ixdebregion,' to ',ixfinregion
