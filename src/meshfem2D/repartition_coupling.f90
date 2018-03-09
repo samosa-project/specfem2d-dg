@@ -386,7 +386,7 @@
   accelerate_finding = .true.
   xmin = minval(nodes_coords(1,:))
   xmax = maxval(nodes_coords(1,:))
-  band = 5.*xtypdist ! Roughly 5 elements.
+  band = 0.2*(xmax-xmin) ! Span 20% of lateral size for each side.
 
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
@@ -435,6 +435,28 @@
   
   print *,'done detecting points for periodic boundary conditions.'
   print *,'number of periodic elements found and grouped in the same partition: ',count(is_periodic)
+  
+  if(mod(count(is_periodic),2)/=0) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Odd number of periodic       *"
+    write(*,*) "* elements found, this is      *"
+    write(*,*) "* impossible.                  *"
+    write(*,*) "********************************"
+    if(accelerate_finding) then
+      write(*,*) "* Acceleration method was      *"
+      write(*,*) "* used, this may be the cause. *"
+      write(*,*) "* Try to go to code            *"
+      write(*,*) "* (meshfem2D/repartition_coupling.f90)"
+      write(*,*) "* in order to increase band    *"
+      write(*,*) "* variable size, or to         *"
+      write(*,*) "* deactivate acceleration      *"
+      write(*,*) "* method.                      *"
+      write(*,*) "********************************"
+    endif
+    stop
+  endif
 
 ! loop on all the elements to find the first partition that contains a periodic element
   ifirst_partition_found = -1
