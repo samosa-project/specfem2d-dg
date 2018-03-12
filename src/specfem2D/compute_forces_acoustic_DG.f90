@@ -125,6 +125,7 @@
   rhovz_DG = rhovz_DG_main
   E_DG     = E_DG_main
   
+  ! TODO: remove?
   ABSORB_BC = .false.
   if(ABSORB_BC) then
     maxval_rho   = maxval(rho_DG-rho_init)
@@ -256,6 +257,7 @@
             dT_dz  = T_DG(2, iglob)
             
             ! This vector, [temp_unknown, temp_unknown2], is the first line of the viscous Navier-Stokes tensor (\Sigma_v).
+            ! When CONSTRAIN_HYDROSTATIC==.true., it is the first line of the perturbed tensor (\Sigma'_v).
             temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
             temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
             temp_rhovx_1(i, j) = temp_rhovx_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
@@ -267,6 +269,7 @@
             temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown) 
             
             ! This vector, [temp_unknown, temp_unknown2], is the second line of the viscous Navier-Stokes tensor (\Sigma_v).
+            ! When CONSTRAIN_HYDROSTATIC==.true., it is the first line of the perturbed tensor (\Sigma'_v).
             temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
             temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
             temp_rhovz_1(i, j) = temp_rhovz_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
@@ -485,9 +488,16 @@
             ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
             ! TODO: Do it more clearly.
             iglob_unique=ibool_before_perio(i, j, ispec)
-            weight=weight*stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)
-            !nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
-            !nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+            !weight=weight*(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
+            nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
+            nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+            !lambda = max(abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz) &
+            !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
+            !             + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
+            !             abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
+            !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
+            !             + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))!&
+            !            *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
           endif
           
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).

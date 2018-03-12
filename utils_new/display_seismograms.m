@@ -72,20 +72,21 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
 
 % Quake, 45.
-fig_title = strcat('Quake Simulation (45° dip)');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+% fig_title = strcat('Quake Simulation (45d dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
-% fig_title = strcat('Quake Simulation (0° dip)');
+% fig_title = strcat('Quake Simulation (0d dip)');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
-% fig_title = 'test';
+fig_title = 'test';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/full_DG_square'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES_long/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_FTS'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_coupling'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_FFcounterpart'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_test_atmo'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_test_densitysource'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
@@ -98,9 +99,12 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = s
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583128_100km_3sources_nospread');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583138_100km_3sources_spread');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_test_scale_sources');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_591778_66j1200_regmukap0_softground_nocrash');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_583180');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_583194');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); renorm_factor=8.840811261618920e-04;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_591776_additional_stations');fig_title = 'test_soft';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_591777_additional_stations');fig_title = 'test_hard';
 
 % Sub-sample? Useful for lengthy seismograms.
 subsample = 0;
@@ -185,7 +189,7 @@ display_or_load=-1;
 while(not(display_or_load==0 || display_or_load==1))
   display_or_load=input('  Load and display (0) or load only (1)? > ');
 end
-istattab = input(['  Stations (Matlab format, eg. [1, 4, 7] or 1:20)? > ']);
+istattab = input(['  Stations (Matlab format, e.g. [1, 4, 7] or 1:20)? > ']);
 nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -208,6 +212,9 @@ nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Plot.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+geometric_attenuation=-1; inputtxt=char(strcat("  Include geometric attenuation (1/sqrt(d) factor)? (0 for no, 1 for yes) > "));
+while(not(geometric_attenuation==0 || geometric_attenuation==1)); geometric_attenuation=input(inputtxt); end;
+
 if(display_or_load==0)
   figure(); hold on;
 end
@@ -274,19 +281,18 @@ for istat = 1 : nstat
     ax(istat) = subplot(nstat, 1, istat);
     legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km');
     
+    factor=1;
+    if(geometric_attenuation==1)
+      factor=factor/(dist_to_sources(istat_glob)^0.5);
+    end
     if(renorm_factor~=1)
-      renorm=-1;
-      disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), "."));
-      inputtxt=char(strcat("    Renormalise data for station ", legtext,"? (0 for no, 1 for yes) > "));
-      while(not(renorm==0 || renorm==1))
-        renorm=input(inputtxt);
-      end
+      renorm=-1; disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), ".")); inputtxt=char(strcat("    Renormalise data for station ", legtext,"? (0 for no, 1 for yes) > "));
+      while(not(renorm==0 || renorm==1)); renorm=input(inputtxt); end;
     end
     if(renorm==1)
-      plot(Ztime(1, :), renorm_factor*Zamp(istat, :));
-    else
-      plot(Ztime(1, :), Zamp(istat, :));
+      factor=factor*renorm_factor;
     end
+    plot(Ztime(1, :), factor*Zamp(istat, :));
 
     % Cosmetics.
     if (istat == 1)

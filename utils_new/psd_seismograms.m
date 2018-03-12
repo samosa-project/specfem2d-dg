@@ -29,15 +29,16 @@ signal = cumtrapz(raw_t, raw_s);
 signal_name = "displacement"; unit="m";
 
 % Select.
-% time=raw_t; time = time(select_time_l<=time); time=time(time<=select_time_u);
-% signal = signal(time<=select_time_u);
-time=raw_t;
-signal(select_time_l>=time)=0; signal(time>=select_time_u)=0;
+% time=raw_t; time = time(select_time_l<=time); time=time(time<=select_time_u); signal = signal(time<=select_time_u); % Cut signal and time around selection window.
+time=raw_t; signal(select_time_l>=time)=0; signal(time>=select_time_u)=0; % Zero signal value around selection window.
+% signal=[signal, zeros(1,size(time,2))]; time=[time-time(1), time(end)-2*time(1)+time]; % Zero signal value around selection window and add zeros at the end.
 
 % PSD.
+signal=detrend(signal); % Remove eventual linear trend.
 dt=time(2)-time(1);
 Fls=1/dt;
-nfft= 2^(floor(log2(2000)))/2;
+% nfft= 2^(floor(log2(2000)))/2;
+nfft= 2^(12);
 window = hann(nfft);
 noverlap= nfft/2;
 
@@ -48,10 +49,10 @@ figure();
 plot(time, signal);
 xlim([time(1), time(end)]);
 xlabel("$t$ (s)"); ylabel(strcat(signal_name, " (",unit,")"));
-title(strcat(signal_name, ""));
+title({fig_title,strcat(signal_name, "")});
 
 figure();
 loglog(Freqf, Powerf);
 xlim([Freqf(1), Freqf(end)]);
 xlabel("$f$ (Hz)"); ylabel(strcat(signal_name, " PSD (",unit,"$^2$/Hz)"));
-title(strcat(signal_name, " PSD"));
+title({fig_title,strcat(signal_name, " PSD")});

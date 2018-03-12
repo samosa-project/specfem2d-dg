@@ -246,6 +246,23 @@
 
     courant_stability_number_max = max(courant_stability_number_max, &
                                        vpImax_local * deltat / (distance_min_local * percent_GLL(NGLLX)))
+    
+    ! Safeguard: check if CFL is > 1. If so, warn user, so that they can know where the issue is and do something about it. Do not stop program.
+    if(vpImax_local*deltat/(distance_min_local*percent_GLL(NGLLX))>1.) then
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* CFL > 1 somewhere in the     *"
+        write(*,*) "* mesh:                        *"
+        write(*,*) "* (x, z) = (", coord(1,ibool(3,3,ispec)), ", ", coord(2,ibool(3,3,ispec)), ")"
+        write(*,*) "* vpImax_local = ", vpImax_local
+        write(*,*) "* deltat = ", deltat
+        write(*,*) "* distance_min_local = ", distance_min_local
+        write(*,*) "* Reduce vpImax_local, reduce  *"
+        write(*,*) "* deltat, or increase          *"
+        write(*,*) "* distance_min_local.          *"
+        write(*,*) "********************************"
+    endif
 
     ! check if fluid region with Vs = 0
     if (vsmin_local > 1.d-20) then

@@ -121,34 +121,6 @@
       stop 'kek'
     endif
     
-    if(.false.) then ! TEST HACK TO REMOVE IMPACT OF WIND WHEN USING STRETCHING BUFFERS
-      ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!!
-      ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
-      ! TODO: This is a hack.
-      if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
-        do ispec = 1, nspec
-          if(ispec_is_acoustic_DG(ispec)) then
-            do j = 1, NGLLZ
-              do i = 1, NGLLX
-                x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
-                if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then ! If in left buffer.
-                  x_buffer = 1.-(x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
-                else if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then ! If in right buffer.
-                  x_buffer = 1.-(mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
-                else
-                  x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
-                endif
-                !if(x_buffer<1.) write(*,*) coord(1, ibool_before_perio(i, j, ispec)), x_buffer
-                !windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
-                windxext(i, j, ispec) = 2.*windxext(i, j, ispec)
-              enddo ! Enddo on i.
-            enddo ! Enddo on j.
-          endif ! Endif on ispec_is_acoustic_DG.
-        enddo ! Enddo on ispec.
-      endif ! Endif on ABC_STRETCH.
-      !stop 'kek'
-    endif
-    
     if(myrank==0) write(IMAIN,*) '> Done preparing stretching absorbing boundary conditions for the DG elements.'
     call flush_IMAIN()
   endif ! Endif on ABC_STRETCH.
@@ -233,7 +205,35 @@
     endif
     call find_normals()
   endif
-
+  
+  if(.false.) then ! TEST HACK: IMPACT OF WIND WHEN USING STRETCHING BUFFERS
+    ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!
+    ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
+    ! TODO: This is a hack.
+    if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
+      do ispec = 1, nspec
+        if(ispec_is_acoustic_DG(ispec)) then
+          do j = 1, NGLLZ
+            do i = 1, NGLLX
+              x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
+              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then ! If in left buffer.
+                x_buffer = 1.-(x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
+              else if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then ! If in right buffer.
+                x_buffer = 1.-(mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
+              else
+                x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
+              endif
+              !if(x_buffer<1.) write(*,*) coord(1, ibool_before_perio(i, j, ispec)), x_buffer
+              !windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
+              windxext(i, j, ispec) = windxext(i, j, ispec)/stretching_ya(1, ibool_before_perio(i, j, ispec))
+            enddo ! Enddo on i.
+          enddo ! Enddo on j.
+        endif ! Endif on ispec_is_acoustic_DG.
+      enddo ! Enddo on ispec.
+    endif ! Endif on ABC_STRETCH.
+    !stop 'kek'
+  endif
+  
   ! synchronizes all processes
   call synchronize_all()
 
