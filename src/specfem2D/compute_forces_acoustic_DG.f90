@@ -206,33 +206,33 @@
           wxl = wxgll(i)
           
           ! Inviscid stress tensor's contributions.
-          
+          ! Mass conservation.
           temp_unknown = rhovx_DG(iglob)
           temp_unknown2 = rhovz_DG(iglob)
-          
           temp_rho_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
           temp_rho_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
           
+          ! x-Momentum.
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + p_DG(iglob)
           else
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
           temp_unknown2 = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
-          
           temp_rhovx_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
           temp_rhovx_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
+          ! z-Momentum.
           temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + p_DG(iglob)
           else
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
-          
           temp_rhovz_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
           temp_rhovz_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
+          ! Energy.
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = veloc_x_DG(iglob)*(E_DG(iglob) + p_DG(iglob))
             temp_unknown2 = veloc_z_DG(iglob)*(E_DG(iglob) + p_DG(iglob))
@@ -240,11 +240,10 @@
             temp_unknown = veloc_x_DG(iglob)*(E_DG(iglob) + (p_DG(iglob) - p_DG_init(iglob)))
             temp_unknown2 = veloc_z_DG(iglob)*(E_DG(iglob) + (p_DG(iglob) - p_DG_init(iglob)))
           endif
-          
           temp_E_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
           temp_E_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
-          ! Add the viscous stress tensor's contributions.
+          ! Viscous stress tensor's contributions.
           dux_dx = V_DG(1, 1, iglob)
           dux_dz = V_DG(1, 2, iglob)
           duz_dx = V_DG(2, 1, iglob)
@@ -263,7 +262,7 @@
             temp_rhovx_1(i, j) = temp_rhovx_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
             temp_rhovx_2(i, j) = temp_rhovx_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
-            ! Use the values stored in temp_unknown and temp_unknown2 to compute the x component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}).
+            ! Use the values stored in temp_unknown and temp_unknown2 to compute the x component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true.).
             temp_unknown  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
             temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xixl * temp_unknown) 
             temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown) 
@@ -271,22 +270,30 @@
             ! This vector, [temp_unknown, temp_unknown2], is the second line of the viscous Navier-Stokes tensor (\Sigma_v).
             ! When CONSTRAIN_HYDROSTATIC==.true., it is the first line of the perturbed tensor (\Sigma'_v).
             temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
-            temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
-            temp_rhovz_1(i, j) = temp_rhovz_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-            temp_rhovz_2(i, j) = temp_rhovz_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz)
+            temp_rhovz_1(i, j) = temp_rhovz_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
+            temp_rhovz_2(i, j) = temp_rhovz_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
             
-            ! Use the values stored in temp_unknown and temp_unknown2 to compute the z component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}).
+            ! Use the values stored in temp_unknown and temp_unknown2 to compute the z component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true.).
             temp_unknown2  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
-            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xizl * temp_unknown2) 
-            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammazl * temp_unknown2) 
+            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xizl * temp_unknown2)
+            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammazl * temp_unknown2)
             
-            ! Add the heat contributions (second part of the viscous energy tensor).
+            ! TODO: When CONSTRAIN_HYDROSTATIC==.true., doesn't the energy contribution lack the term \Sigma_{v,0}{\vect{v}'} here? As follows:
+            !if(.false. .and. CONSTRAIN_HYDROSTATIC) then
+            !  ! DV0X_DZ should be set to $\partial_z{v_{0,x}}$ here.
+            !  temp_unknown = muext(i, j, ispec)*DV0X_DZ*(veloc_z_DG(iglob)-rhovz_init(iglob)/rho_init(iglob))
+            !  temp_unknown2 = muext(i, j, ispec)*DV0X_DZ*(veloc_x_DG(iglob)-rhovx_init(iglob)/rho_init(iglob))
+            !  temp_E_1(i, j) = temp_E_1(i, j) + wzl*jacobianl*(xixl*temp_unknown + xizl*temp_unknown2) 
+            !  temp_E_2(i, j) = temp_E_2(i, j) + wxl*jacobianl*(gammaxl*temp_unknown + gammazl*temp_unknown2) 
+            !endif
+            
+            ! Add the heat contributions (second part of the viscous energy tensor, \kappa\nabla T, or \kappa\nabla{T'} if CONSTRAIN_HYDROSTATIC==.true.).
             temp_unknown  = kappa_DG(i, j, ispec)*dT_dx
             temp_unknown2 = kappa_DG(i, j, ispec)*dT_dz
             temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
             temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           endif
-          
           
           ! Gravity (and in fact, everything not inside the divergence operator in the strong form, except sources) contributions (separated from the rest).
           temp_nondiv_rho(i, j) = ZERO
@@ -300,7 +307,7 @@
             temp_nondiv_E(i, j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
           else
-            ! By constraining hydrostaticity, remark that an additional term appears outside the divergence (p_0 \nabla\cdot v').
+            ! By constraining hydrostaticity, remark that an additional term appears outside the divergence ($p_0\nabla\cdot{\vect{v}'}$).
             temp_nondiv_E(i, j) = &
                                 -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
@@ -386,10 +393,12 @@
           wxl = real(wxgll(i), kind=CUSTOM_REAL)
           
           ! Terms outside divergence operator.
-          dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i, j) * wxl * wzl ! Save one operation.
+          dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i, j) * wxl * wzl
           dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i, j) * wxl * wzl
           dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i, j) * wxl * wzl
           dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i, j) * wxl * wzl
+          
+          !dot_E(iglob) = 0. ! DEBUG: DEACTIVATE ENERGY INTERNAL (ALL EXCEPT FLUXES) EVOLUTION.
         enddo
       enddo
       
@@ -467,8 +476,8 @@
                   !nx_unit, nz_unit, weight, timelocal, iface1, iface)
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
-          lambda = 0.
-          jump   = 0.
+          lambda = ZERO
+          jump   = ZERO
           !veloc_n_M = abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz)
           !veloc_n_P = abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz)
           ! Save some operations.
@@ -550,6 +559,7 @@
           dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
 
           ! x-Momentum equation's viscous contributions.
+          ! 1st line of \Sigma_v, or \Sigma'_v if CONSTRAIN_HYDROSTATIC==.true..
           ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the x-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
           temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
@@ -557,7 +567,7 @@
           ! Dot product.
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
-          ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's x component of the mean average flux at the boundary. Thus, we add this contribution here.
+          ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's x component of the mean average flux at the boundary. Thus, we add this contribution here. (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true..)
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
@@ -582,6 +592,7 @@
           dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
           ! z-Momentum equation's viscous contributions.
+          ! 2nd line of \Sigma_v, or \Sigma'_v if CONSTRAIN_HYDROSTATIC==.true..
           ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the z-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
           temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
@@ -589,7 +600,7 @@
           ! Dot product.
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
-          ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's z component of the mean average flux at the boundary. Thus, we add this contribution here.
+          ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's z component of the mean average flux at the boundary. Thus, we add this contribution here. (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true..)
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
@@ -615,11 +626,20 @@
           endif
           dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
+          ! TODO: When CONSTRAIN_HYDROSTATIC==.true., doesn't the energy contribution lack the term \Sigma_{v,0}{\vect{v}'} here? As follows:
+          !if(.false. .and. CONSTRAIN_HYDROSTATIC) then
+          !  ! DV0X_DZ should be set to $\partial_z{v_{0,x}}$ here.
+          !  temp_unknown = muext(i, j, ispec)*DV0X_DZ*(veloc_z_DG(iglob)-rhovz_init(iglob)/rho_init(iglob))
+          !  temp_unknown2 = muext(i, j, ispec)*DV0X_DZ*(veloc_x_DG(iglob)-rhovx_init(iglob)/rho_init(iglob))
+          !  dot_E(iglobM) = dot_E(iglobM)+weight*(temp_unknown*nx+temp_unknown2*nz)
+          !endif
+          
           ! Energy equation's heat flux' contribution (last remaining term, viscous).
-          ! Recall: dT_dx, and dT_dx already contain the 0.5 factor to put the flux under mean average form.
+          ! Recall: dT_dx already contains the 0.5 factor to put the flux under mean average form.
           dot_E(iglobM) = dot_E(iglobM) &
                           + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
           
+          !dot_E(iglobM) = 0. ! DEBUG: DEACTIVATE ENERGY FLUXES.
         enddo
       enddo
     endif ! End of test if acoustic element
