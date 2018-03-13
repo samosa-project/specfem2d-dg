@@ -355,7 +355,7 @@
   double precision :: x,y,x2,y2
   
   double precision :: xmin, xmax, band ! Acceleration of periodic elements finding.
-  logical accelerate_finding
+  logical accelerate_finding, debug_finding
 
 ! set up a local geometric tolerance by computing the typical horizontal size of an element.
 ! the sqrt() assumes that the geometrical model is 'not too elongated' and thus 'not too far from a square'
@@ -384,23 +384,33 @@
   is_periodic(:) = .false.
   
   accelerate_finding = .true.
+  debug_finding = .false.
+  
   xmin = minval(nodes_coords(1,:))
   xmax = maxval(nodes_coords(1,:))
-  band = 0.2*(xmax-xmin) ! Span 20% of lateral size for each side.
+  ! Band must be greater than the maximum horizontal dx.
+  ! Larger band is better (less chances of not finding all points), but also slower.
+  ! (xmax-xmin)/(number of points along x) the minimum. Assuming the mesh contains at least 5 points horizontally:
+  band = (xmax-xmin)/5.
+  ! Other choices can be hard-coded:
+  !band = (xmax-xmin)/21.
 
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
   
-    if(.false. .and. mod(el, 250)==0) then
+    if(debug_finding .and. mod(el, floor(nelmnts/1000.))==0) then
       ! DEBUG, only here to make sure periodic points detection does not crash on huge meshes.
-      if(el>0) write(*,*) "DEBUG OF PERIODIC ELEMENTS' DETECTION. ELEMENT ", el, ". ", (100.*el/nelmnts), '% DONE.'
+      if(el>0) write(*,*) "> DEBUG OF PERIODIC ELEMENTS' DETECTION: ELEMENT ", el, ", ", (100.*el/nelmnts), '% DONE.'
     endif
     
     ! Skip elements too far from left/right boundaries.
     if(accelerate_finding) then
-      if(el==0) write(*,*) "> using acceleration method (skip points too far from left/right boundaries)"
-      if(     nodes_coords(1,elmnts_l(NCORNERS*el) + 1)>xmin+band & ! Too far from left boundary.
-         .and. nodes_coords(1,elmnts_l(NCORNERS*el) + 1)<xmax-band & ! Too far from right boundary.
+      if(el==0) then
+        write(*,*) "> Using acceleration method (skip points too far from left/right boundaries)."
+        write(*,*) "> Band: ", band, " ( ",int(100*band/(xmax-xmin)),"% of horizontal span)."
+      endif
+      if(      nodes_coords(1,elmnts_l(NCORNERS*el) + 1) > xmin+band & ! Corner n°0 is laterally too far from left boundary.
+         .and. nodes_coords(1,elmnts_l(NCORNERS*el) + 1) < xmax-band & ! Corner n°0 is laterally too far from right boundary.
         ) then
         cycle
       endif
@@ -450,9 +460,8 @@
       write(*,*) "* Try to go to code            *"
       write(*,*) "* (meshfem2D/repartition_coupling.f90)"
       write(*,*) "* in order to increase band    *"
-      write(*,*) "* variable size, or to         *"
-      write(*,*) "* deactivate acceleration      *"
-      write(*,*) "* method.                      *"
+      write(*,*) "* size, or to deactivate       *"
+      write(*,*) "* acceleration method.         *"
       write(*,*) "********************************"
     endif
     stop
