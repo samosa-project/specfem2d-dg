@@ -15,7 +15,7 @@ C ****************************************************************
       implicit none
 
       integer imax
-      parameter (imax=600)
+      parameter (imax=5000)
 
       real*4 latmod, lonmod
 
@@ -99,6 +99,11 @@ C     ****************************************************************
         read(args(13), *) wind_projection
         NSAMPLES = NSAMPLES - 1
         write(*, *) 'Arguments assigned.'
+        if(NSAMPLES>imax) then
+          write(*,*) "NSAMPLES > imax (", imax, "): Reduce NSAMPLES or",
+     &               " hard-code a higher imax limit."
+          stop
+        endif
       else
 C       Minimum and maximum wanted altitudes (in [m]).
         ALTMIN=0.

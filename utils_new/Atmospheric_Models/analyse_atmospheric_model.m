@@ -60,7 +60,7 @@ method='bruteforce_rho';
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_ATMOSPHERIC_SELECTED/0_300000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 
-DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_66.56306_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/reg_0_200000_301_45.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
@@ -69,6 +69,8 @@ DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratosph
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_23.43694_0.00000_0_356_43200.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_0.00000_0.00000"; headerlines=3;
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_200000_301_0.00000_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+
+DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -288,8 +290,8 @@ disp(" ");
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(["> Outputting regularised model to file."]);
 
-if(maxalt<Inf)
-  disp(["[WARNING] maxalt<Inf, the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
+if(maxalt<Z(end))
+  disp(["[WARNING] maxalt<Z(end), the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
 end
 if(interpolate~=0)
   disp(["[WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0."]);
