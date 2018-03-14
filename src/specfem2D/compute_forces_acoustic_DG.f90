@@ -248,6 +248,16 @@
           dux_dz = V_DG(1, 2, iglob)
           duz_dx = V_DG(2, 1, iglob)
           duz_dz = V_DG(2, 2, iglob)
+          
+          !DEBUG
+          if(.false.) then
+            x=coord(1, ibool_before_perio(i, j, ispec))
+            z=coord(2, ibool_before_perio(i, j, ispec))
+            if(abs(z-30.)<0.5 .and. abs(x-9.)<2.) then
+              write(*,*) x, z, dux_dx, dux_dz, duz_dx, duz_dz
+            endif
+          endif
+          
           if(muext(i, j, ispec) > 0 .OR. &
              etaext(i, j, ispec) > 0 .OR. &
              kappa_DG(i, j, ispec) > 0) then

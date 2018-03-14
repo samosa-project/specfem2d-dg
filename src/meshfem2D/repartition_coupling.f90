@@ -335,7 +335,7 @@
 
   subroutine periodic_edges_repartitioning(elmnts_l,nnodes,nodes_coords,PERIODIC_HORIZ_DIST)
 
-  use part_unstruct_par,only: nelmnts,part
+  use part_unstruct_par,only: nelmnts,part, nzread
 
   implicit none
   include "constants.h"
@@ -393,12 +393,12 @@
   ! (xmax-xmin)/(number of points along x) the minimum. Assuming the mesh contains at least 5 points horizontally:
   band = (xmax-xmin)/5.
   ! Other choices can be hard-coded:
-  !band = (xmax-xmin)/21.
+  !band = (xmax-xmin)/19.
 
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
   
-    if(debug_finding .and. mod(el, floor(nelmnts/1000.))==0) then
+    if(debug_finding .and. mod(el, floor(nelmnts/100.))==0) then
       ! DEBUG, only here to make sure periodic points detection does not crash on huge meshes.
       if(el>0) write(*,*) "> DEBUG OF PERIODIC ELEMENTS' DETECTION: ELEMENT ", el, ", ", (100.*el/nelmnts), '% DONE.'
     endif
@@ -465,6 +465,20 @@
       write(*,*) "********************************"
     endif
     stop
+  endif
+  if(count(is_periodic)/=2*nzread) then
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* Number of periodic elements  *"
+    write(*,*) "* should (except maybe a few   *"
+    write(*,*) "* specific cases) equal 2      *"
+    write(*,*) "* times the number of spectral *"
+    write(*,*) "* elements along Z. This is    *"
+    write(*,*) "* not the case, be careful.    *"
+    write(*,*) "* n_periodic = ", count(is_periodic)
+    write(*,*) "* 2*nz_layer = ", (2*nzread)
+    write(*,*) "********************************"
   endif
 
 ! loop on all the elements to find the first partition that contains a periodic element

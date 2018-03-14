@@ -371,7 +371,11 @@
           
           if(.false. .and. ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
             ! Add jacobian of stretching into the mass matrix.
-            ! This changes nothing in the computational domain of interest. Thus, this can be left undone, since all that happens in the buffers does not interest us, and since if it is done it would make the mass matrix worse-conditionned.
+            ! This changes nothing in the computational domain of interest.
+            ! We leave this undone (in an 'if(.false.)') because:
+            ! 1) all of what happens in the buffers does not interest us, and
+            ! 2) if it is done then the mass matrix becomes ill-conditionned and any signal touching the buffers will make the code crash.
+            ! By setting smooth buffers (0.9<epsilon<=1), the conditionning of the matrix is less affected, but this kills the purpose of the stretching buffers as it would require larger ones to have the same effect.
             rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
                                                stretching_ya(1, ibool_before_perio(i, j, ispec))*&
                                                stretching_ya(2, ibool_before_perio(i, j, ispec))*&
@@ -835,6 +839,11 @@
   
   ! Modif DG
   !DEBUG
+  if(myrank==0) then
+    write(*,*) "(Proc 0) DG mass matrix condition number (lowest is best, ideal is 1,",&
+               " by experience 50 runs okay) = ",&
+               (maxval(rmass_inverse_acoustic_DG)/minval(rmass_inverse_acoustic_DG)), "."
+  endif
   !write(*,*) "mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
   !           "maxval", maxval(rmass_inverse_acoustic_DG)
   if(USE_DISCONTINUOUS_METHOD) then
@@ -843,6 +852,6 @@
   !DEBUG
   !write(*,*) "inverse mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
   !           "maxval", maxval(rmass_inverse_acoustic_DG)
-  
+  !stop
   end subroutine invert_mass_matrix
 

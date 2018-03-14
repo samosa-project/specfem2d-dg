@@ -217,9 +217,9 @@ subroutine stretching_function(r_l, ya)
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  eps_l = 0.2!1.0d-4!0.2!0.3!1.0d-4 ! 1.d-4 in Arina's paper.
-  p = 3.25d0
-  q = 6.!1.75!1.75!8.!5.!1.75d0
+  eps_l = 0.2 ! 1.d-4 in Arina's paper.
+  p = 3.25
+  q = 6.
   
   ! Arina's stretching.
   ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.

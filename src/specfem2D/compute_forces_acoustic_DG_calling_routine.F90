@@ -186,6 +186,9 @@ subroutine compute_forces_acoustic_DG_main()
     save_pressure = (gammaext_DG - ONEl)*( E_DG &
         - (HALFl)*(ONEl/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     
+    ! DEBUG
+    !write(*,*) "MULTIPLY BY INVERSE MASS MATRIX"
+    
     ! Inverse mass matrix
     dot_rho(:)   = dot_rho(:)   * rmass_inverse_acoustic_DG(:)
     dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
