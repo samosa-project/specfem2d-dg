@@ -572,12 +572,14 @@
           ! 1st line of \Sigma_v, or \Sigma'_v if CONSTRAIN_HYDROSTATIC==.true..
           ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the x-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
+          ! No "jump" is considered on viscous fluxes, because they correspond to diffusive terms (rather than convective) and thus the first-order mean is enough to represent that behaviour (or in other terms, adding higher order does not improve results much).
           temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
           temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
           ! Dot product.
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
           ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's x component of the mean average flux at the boundary. Thus, we add this contribution here. (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true..)
+          ! Recall (see above): no "jump" is considered on viscous fluxes.
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
@@ -605,12 +607,14 @@
           ! 2nd line of \Sigma_v, or \Sigma'_v if CONSTRAIN_HYDROSTATIC==.true..
           ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the z-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
+          ! No "jump" is considered on viscous fluxes, because they correspond to diffusive terms (rather than convective) and thus the first-order mean is enough to represent that behaviour (or in other terms, adding higher order does not improve results much).
           temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
           temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz)
           ! Dot product.
           flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
           ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's z component of the mean average flux at the boundary. Thus, we add this contribution here. (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true..)
+          ! Recall (see above): no "jump" is considered on viscous fluxes.
           dot_E(iglobM)     = dot_E(iglobM) &
                               + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
@@ -646,6 +650,7 @@
           
           ! Energy equation's heat flux' contribution (last remaining term, viscous).
           ! Recall: dT_dx already contains the 0.5 factor to put the flux under mean average form.
+          ! No "jump" is considered on viscous fluxes, because they correspond to diffusive terms (rather than convective) and thus the first-order mean is enough to represent that behaviour (or in other terms, adding higher order does not improve results much).
           dot_E(iglobM) = dot_E(iglobM) &
                           + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
           

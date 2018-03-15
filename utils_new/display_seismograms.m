@@ -9,14 +9,12 @@ clear all;
 % close all
 clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 1.5); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-set(0, 'defaultTextFontSize', 16);
-set(0, 'defaultAxesFontSize', 14); % Default at 10.
+set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
+set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
+set(0, 'defaultTextFontSize', 12);
+set(0, 'defaultAxesFontSize', 12); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
-
-% scale of recordsection
 
 %%%%%%%%%%%%%%%%%
 % INITIALIZATION
@@ -72,21 +70,21 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
 
 % Quake, 45.
-% fig_title = strcat('Quake Simulation (45d dip)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+fig_title = strcat('Quake Simulation (45d dip)');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
 % fig_title = strcat('Quake Simulation (0d dip)');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
-fig_title = 'test';
+% fig_title = 'test';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/full_DG_square'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES_long/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_FTS'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_coupling'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_FFcounterpart'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_test_atmo'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_test_densitysource'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
@@ -177,20 +175,22 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Stations to display. %%%%%%%%
+% Stations to display.        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Display stations informations, and ask user for input.
-%disp([num2str(size(pos_stations,1)) ' stations found.']);
-%[(1:size(pos_stations,1));[[0;0],(diff(pos_stations)~=0)']]
-format shortG;
-[(1:size(pos_stations, 1)); pos_stations';dist_to_sources']
-format compact;
+% Display stations' informations.
+format shortG; disp("  [station_id; x; z; d] for all stations:"); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']); format compact;
+
+% Ask user for various inputs.
 display_or_load=-1;
-while(not(display_or_load==0 || display_or_load==1))
-  display_or_load=input('  Load and display (0) or load only (1)? > ');
-end
-istattab = input(['  Stations (Matlab format, e.g. [1, 4, 7] or 1:20)? > ']);
+while(not(display_or_load==0 || display_or_load==1)); display_or_load=input('  Load and display (0) or load only (1)?\n  > '); end
+istattab = input(['  Stations (Matlab format, e.g. [1, 4, 7] or 1:20)?\n  > ']);
 nstat = size(pos_stations(istattab, 1), 1);
+geometric_attenuation=-1; inputtxt=char(strcat("  Apply geometric attenuation (1/sqrt(d) factor) to data? (0 for no, 1 for yes)\n  > "));
+while(not(geometric_attenuation==0 || geometric_attenuation==1)); geometric_attenuation=input(inputtxt); end
+if(display_or_load==0 && nstat>1)
+  normalise_ylims=-1;
+  while(not(normalise_ylims==0 || normalise_ylims==1)); normalise_ylims=input('  Normalise y-scale? (0 for no, 1 for yes)\n  > '); end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -210,11 +210,8 @@ nstat = size(pos_stations(istattab, 1), 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Plot.                       %
+% Load and eventually plot.   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-geometric_attenuation=-1; inputtxt=char(strcat("  Include geometric attenuation (1/sqrt(d) factor)? (0 for no, 1 for yes) > "));
-while(not(geometric_attenuation==0 || geometric_attenuation==1)); geometric_attenuation=input(inputtxt); end;
-
 if(display_or_load==0)
   figure(); hold on;
 end
@@ -269,11 +266,9 @@ for istat = 1 : nstat
     nd=nt;
   end
   % Recover time/amplitude data.
-  % Ztime(istat,1:nt) = data(1:nsub:nt,1)';
-  % Zamp(istat,1:nt)  = data(1:nsub:nt,2)';
   Ztime(istat, 1:nd) = data(1:nsub:nt, 1)';
   %Ztime(istat, 1:nd) = Ztime(istat, 1:nd) - Ztime(istat, 1); % Make time values start at zero.
-  % Correct for sign of source function for N wave pattern (??)
+  % Correct for sign of source function for N wave pattern (??).
   Zamp(istat, 1:nd) = data(1:nsub:nt, 2)';
 
   % Display.
@@ -329,10 +324,6 @@ if(display_or_load==0)
   %tightfig;
 
   if(nstat>1)
-    normalise_ylims=-1;
-    while(not(normalise_ylims==0 || normalise_ylims==1))
-      normalise_ylims=input('  Normalise y-scale? (0 for no, 1 for yes) > ');
-    end
     if(normalise_ylims)
       f=gcf;
       for i=1:length(f.Children)
@@ -344,7 +335,7 @@ if(display_or_load==0)
   end
   f=gcf; figure(f.Number);
 end
-disp("  Data loaded. [id, station]:");
-[(1:length(istattab))',istattab']
+disp("  Data loaded. [matlab_id, station_id]:");
+disp([(1:length(istattab))',istattab']);
 disp(strcat("  Example: Data of station ",num2str(istattab(1))," are in         Zamp(",num2str(1),", :)."));
 disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :)."));

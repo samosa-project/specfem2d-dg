@@ -3,28 +3,31 @@
 % Description:   TODO.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         N/A.
+% Notes:         display_seismograms.m should have been ran before.
 
 % clear all
 % close all
 % clc
 format compact;
-set(0, 'DefaultLineLineWidth', 1.5); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-set(0, 'defaultTextFontSize', 16);
-set(0, 'defaultAxesFontSize', 14); % Default at 10.
+set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
+set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
+set(0, 'defaultTextFontSize', 12);
+set(0, 'defaultAxesFontSize', 12); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-% Load raw seismograms.
+% Load raw seismogram.
+% TODO: ask for user input.
 raw_t=Ztime(1,:);
 raw_s=Zamp(1,:);
 
 % Parameters.
+% TODO: ask for user input.
 select_time_l=0;
 select_time_u=45;
 
 % Set signal to be used.
+% TODO: ask for user input.
 signal = cumtrapz(raw_t, raw_s);
 signal_name = "displacement"; unit="m";
 
