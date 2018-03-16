@@ -106,10 +106,18 @@
         vector_DG_temp = E_DG - coef*E_init
       endif
       if(imagetype_JPEG == 5) then
+        ! OLD VERSION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! If v_z is plotted in elastic elements, plot pressure in DG elements.
-        vector_DG_temp = ( ( (gammaext_DG - 1.) &
-                             * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
-                          - coef*p_DG_init )
+        !vector_DG_temp = ( ( (gammaext_DG - 1.) &
+        !                     * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
+        !                  - coef*p_DG_init )
+        ! OLD VERSION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            
+        ! If v_z is plotted in elastic elements, plot pressure / density in DG elements (only where rho!=0).
+        vector_DG_temp = 0.
+        where(rho_DG>0.) vector_DG_temp = ( ( (gammaext_DG - 1.) &
+                                              * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
+                                           - coef*p_DG_init ) / rho_DG
       endif
       if(imagetype_JPEG == 6) then
         ! If ||v|| is plotted in elastic elements, plot temperature in DG elements.
