@@ -362,7 +362,7 @@ C       Volumic viscosity. [Pa.s]=[kg.s^(-1).m^(-1)].
     
 C     Print column headers to file.
       write(2012,*) 'z[m] rho[kg/(m^3)] T[K] c[m/s] p[Pa] H[m] ',
-     &              'g[m/(s^2)] N^2[1/s] kappa[J/(s.m.K)] ',
+     &              'g[m/(s^2)] N^2[rad^2/s^2] kappa[J/(s.m.K)] ',
      &              'mu[kg(s.m)] mu_vol[kg/(s.m)] ',
      &              'w_M[m/s] w_Z[m/s] w_P[m/s] c_p[J/(mol.K)] ',
      &              'c_v[J/(mol.K)] gamma'
@@ -379,6 +379,7 @@ C       Brunt–Väisälä frequency from TODO.
         Nsq1=0.0-((gammatab(iz)-1)/gammatab(iz))*Gravity(iz)*
      &       (log(rhoat(iz+1))-log(rhoat(iz)))/(z(iz+1)-z(iz))
 C       Brunt–Väisälä frequency from Lighthill, "Waves in Fluids", page 295, Eq. (49).
+C       In rad^2 / s^2.
         Nsq2=(gammatab(iz)-1)*(Gravity(iz)/v(iz))**2.0
         Nsqtab(iz)=Nsq2
 C       Print to file.

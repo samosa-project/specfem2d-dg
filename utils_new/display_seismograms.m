@@ -18,6 +18,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 
 %%%%%%%%%%%%%%%%%
 % INITIALIZATION
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
 renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 % Direct waves parameters (??)
 %windsurf = - 10.5; % m/s
@@ -29,6 +30,10 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% StratoExplo, 66, June, 12:00
+fig_title = strcat('Stratospheric Explosions, lat66, June, 12:00');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
+
 % Mars AGW.
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
 
@@ -51,6 +56,7 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 
 % Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
 
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9048100_seismic_DG/');
@@ -61,6 +67,7 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); renorm_factor=8.840811261618920e-04;
 
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
@@ -70,8 +77,8 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
 
 % Quake, 45.
-fig_title = strcat('Quake Simulation (45d dip)');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+% fig_title = strcat('Quake Simulation (45d dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
 % fig_title = strcat('Quake Simulation (0d dip)');

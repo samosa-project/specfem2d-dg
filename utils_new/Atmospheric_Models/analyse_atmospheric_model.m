@@ -26,7 +26,7 @@ interpolate = 0; % Set to 1 to activate interpolation.
 interp_delta = 4000; % Interpolation step (m).
 save_plots = 0; % Set to 1 to save plots.
 % maxalt=Inf; % If one has to cut data, choose maximum altitude here. Put Inf if all altitudes are to be considered.
-maxalt=150e3; % If one has to cut data, choose maximum altitude here. Put Inf if all altitudes are to be considered.
+maxalt=140e3; % If one has to cut data, choose maximum altitude here. Put Inf if all altitudes are to be considered.
 
 % Regularisation method.
 method='bruteforce_rho'; % Bruteforce $\rho = -\partial_z{P} / g_z$.
@@ -51,14 +51,16 @@ disp(strcat("File: '", DATAFILE, "'."));
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
  G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA] = ...
  extract_data(DATAFILE, headerlines, interpolate, interp_delta);
-N = NBVSQ .^ 0.5 / (2 * pi);
+% NBVSQ: rad^2/s^2
+% Nf = NBVSQ .^ 0.5 / (2 * pi); % 1/s
+N = NBVSQ .^ 0.5; % rad/s
 plot_model(DATAFILE, 230, '-', 'k', 'no');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Eventually cut data.        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ind_maxalt=find(abs(Z-maxalt)==min((abs(Z-maxalt))), 1, 'last');
+ind_maxalt=find(abs(Z-maxalt)==min((abs(Z-maxalt))), 1, 'last'); original_zmax=Z(end);
 Z=Z(1:ind_maxalt); RHO=RHO(1:ind_maxalt); TEMP=TEMP(1:ind_maxalt); SOUNDSPEED=SOUNDSPEED(1:ind_maxalt);
 P=P(1:ind_maxalt); LOCALPRESSURESCALE=LOCALPRESSURESCALE(1:ind_maxalt); G=G(1:ind_maxalt); N=N(1:ind_maxalt);
 KAPPA=KAPPA(1:ind_maxalt); VISCMU=VISCMU(1:ind_maxalt); MUVOL=MUVOL(1:ind_maxalt); WEAST=WEAST(1:ind_maxalt);
@@ -157,6 +159,11 @@ if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__richardson.png'));
 end
 
+plot_model_effective_soundspeed(DATAFILE);
+if save_plots == 1
+  saveas(gcf, strcat(DATAFILE,'__effective_sound_speed.png'));
+end
+
 % figure();
 % semilogx(east_Mach, Z, north_Mach, Z, proj_Mach, Z, ones(size(Z)), Z, 'k:');
 % xlim([0.5 * min([east_Mach; north_Mach; proj_Mach]), 2 * max([east_Mach; north_Mach; proj_Mach])]);
@@ -199,11 +206,11 @@ if(strcmp(method, 'bruteforce_rho'))
 %   xlabel('$c$'); ylabel('altitude (m)');
 %   legend('old $c$', 'new $c$', 'Location', 'northeast');
 %   title(tit_plus);
-  nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2);
+  nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2); % rad/s
 %   figure();
-%   semilogx(N.^2, Z, nN.^2, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
-%   xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
-%   xlabel('$N^2$'); ylabel('altitude (m)');
+%   semilogx(Nf.^2, Z, nN.^2, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
+%   xlim([0.5 * min([Nf.^2;nN.^2]), 2 * max([Nf.^2;nN.^2])]);
+%   xlabel('$N^2$ (ATTENTION AUX UNITES)'); ylabel('altitude (m)');
 %   legend('old $N^2$', 'new $N^2$', 'Location', 'best');
 %   title(tit_plus);
   nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
@@ -246,8 +253,8 @@ disp(" ");
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(["> Outputting regularised model to file."]);
 
-if(maxalt<Z(end))
-  disp(["[WARNING] maxalt<Z(end), the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
+if(maxalt<original_zmax)
+  disp(["[WARNING] maxalt < original max_alt, the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
 end
 if(interpolate~=0)
   disp(["[WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0."]);
@@ -262,10 +269,10 @@ end
 
 % prefix="reg_";
 % nVISCMU=0*nVISCMU;prefix="reg+mu0_";
-% nKAPPA=0*nKAPPA;prefix="reg+kappa0_";
-nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix="reg+mukappa0_";
+nKAPPA=0*nKAPPA;prefix="reg+kappa0_";
+% nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix="reg+mukappa0_";
 SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL, '/');
-rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, (nN*2*pi).^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
+rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, nN.^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
