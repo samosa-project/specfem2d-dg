@@ -1,9 +1,16 @@
-function [] = plot_model(output_file, subplotcode, marker, colour, legends)
-  [Z, RHO, T, C, P, LOCALPRESSURESCALE, ...
-   G, NSQ, KAPPA, MU, MUVOL, WN, WE, W, CP, CV, GAMMA] = ...
-   extract_data([output_file], 3, 0, 0);
+% Author:        Léo Martire.
+% Mail:          leo.martire@outlook.com
+% Description:   TODO.
+% Last modified: See file metadata.
+% Usage:         N/A.
+% Notes:         N/A.
 
-  [~, posstr, y, d, s, ~, ~, F107A, F107, AP] = extract_data_setup(output_file);
+function [] = plot_model(output_file, subplotcode, marker, colour, legends)
+  [Z, RHO, ~, C, ~, ~, ...
+   ~, NSQ, ~, ~, ~, WN, WE, ~, ~, ~, GAMMA] = ...
+   extract_data(output_file, 3, 0, 0);
+
+  [~, posstr, ~, d, s, ~, ~, F107A, F107, AP] = extract_data_setup(output_file);
   apf107str=strcat("F10.7 avg. ", sprintf("%.1f",F107A), ", F10.7 ", sprintf("%.1f",F107), ", AP ", sprintf("%.1f",AP));
 %       datestr=[num2str(y),', ',num2str(d), 'th day, ', num2str(floor(s/3600)),':',num2str(floor((s - floor(s/3600)*3600)/60)), ' UT'];
   datestr=[num2str(d), 'th day, ', num2str(floor(s/3600)),':',num2str(floor((s - floor(s/3600)*3600)/60)), ' UT'];

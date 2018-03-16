@@ -394,7 +394,7 @@
   band = (xmax-xmin)/5.
   ! Other choices can be hard-coded:
   !band = (xmax-xmin)/19.
-
+  
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
   
