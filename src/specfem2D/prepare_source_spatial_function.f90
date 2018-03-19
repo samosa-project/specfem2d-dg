@@ -102,13 +102,13 @@ subroutine prepare_source_spatial_function_DG
   ! Local variables.
   integer :: i_source, iglob_unique, ispec, i, j
   real(kind=CUSTOM_REAL) :: distsqrd
-  character(len=24) :: filename ! Used for saving values. Length: 16 for "OUTPUT_FILES/SSF" + N for process numbering.
+  character(len=33) :: filename ! Used for saving values. Length: 16 for "OUTPUT_FILES/SSF" + 8 for process numbering + 1 + 8 for source numbering.
   
-  if(SPREAD_SSF_SAVE) then
-    write(filename, '( "OUTPUT_FILES/SSF", i8.8 )' ) myrank
-    open(unit=504,file=filename,status='unknown',action='write', position="append")
-  endif
   do i_source = 1, NSOURCES ! Loop on sources.
+    if(SPREAD_SSF_SAVE) then
+      write(filename, '( "OUTPUT_FILES/SSF", i8.8, "_", i8.8 )' ) i_source, myrank
+      open(unit=504,file=filename,status='unknown',action='write', position="append")
+    endif
     if(.not. ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
       ! The central point of the source is not in a DG element, ignore call and inform user.
       if(myrank == 0) then
@@ -142,6 +142,19 @@ subroutine prepare_source_spatial_function_DG
                 source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
                 !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
                 !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
+              else
+                if(myrank == 0) then
+                  write(*,*) "********************************"
+                  write(*,*) "*            ERROR             *"
+                  write(*,*) "********************************"
+                  write(*,*) "* This source type as spread   *"
+                  write(*,*) "* source spatial function is   *"
+                  write(*,*) "* not implemented.             *"
+                  write(*,*) "* i_source              = ", i_source
+                  write(*,*) "* source_type(i_source) = ", source_type(i_source)
+                  write(*,*) "********************************"
+                  stop
+                endif
               endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
               
               ! Plane waves tests.
@@ -158,29 +171,30 @@ subroutine prepare_source_spatial_function_DG
               endif
               
               if(SPREAD_SSF_SAVE) then
-                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(1, iglob_unique)
+                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
               endif
             enddo ! Enddo on j.
           enddo ! Enddo on i.
         endif ! Endif on ispec_is_acoustic_DG(ispec).
       enddo ! Enddo on ispec.
     endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
-  enddo ! Enddo on i_source.
-  if(SPREAD_SSF_SAVE) then
-    close(504)
-    if(myrank == 0) then
-      write(*,*) "********************************"
-      write(*,*) "*         INFORMATION          *"
-      write(*,*) "********************************"
-      write(*,*) "* The spread source spatial    *"
-      write(*,*) "* function's values at the     *"
-      write(*,*) "* mesh's points were saved in  *"
-      write(*,*) "* the OUTPUT_FILES folder. Use *"
-      write(*,*) "* the Matlab script            *"
-      write(*,*) "* '/utils_new/show_SSF.m' to   *"
-      write(*,*) "* plot.                        *"
-      write(*,*) "********************************"
-      call flush_IMAIN()
+    if(SPREAD_SSF_SAVE) then
+      close(504)
+      if(myrank == 0) then
+        write(*,*) "********************************"
+        write(*,*) "*         INFORMATION          *"
+        write(*,*) "********************************"
+        write(*,*) "* The spread source spatial    *"
+        write(*,*) "* function's values for source *"
+        write(*,*) "* number ", i_source, " at the  *"
+        write(*,*) "* mesh's points were saved in  *"
+        write(*,*) "* the OUTPUT_FILES folder. Use *"
+        write(*,*) "* the Matlab script            *"
+        write(*,*) "* '/utils_new/show_SSF.m' to   *"
+        write(*,*) "* plot them.                   *"
+        write(*,*) "********************************"
+        call flush_IMAIN()
+      endif
     endif
-  endif
+  enddo ! Enddo on i_source.
 end subroutine prepare_source_spatial_function_DG

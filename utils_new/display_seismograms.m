@@ -20,6 +20,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % INITIALIZATION
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
 renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
+coord_units='km'; remove_source_coords = 0;
 % Direct waves parameters (??)
 %windsurf = - 10.5; % m/s
 %csurf = 233.5; % m/s
@@ -32,7 +33,8 @@ renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoExplo, 66, June, 12:00
 fig_title = strcat('Stratospheric Explosions, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Mars AGW.
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
@@ -55,8 +57,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexpl
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_558183_Gderiv/');
 
 % Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; remove_source_coords = 1;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
 
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9048100_seismic_DG/');
@@ -66,8 +68,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexpl
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; remove_source_coords = 1;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); renorm_factor=8.840811261618920e-04;
 
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
@@ -171,9 +173,7 @@ catch
     error('Cannot find STATIONS file.');
   end
 end
-pos_stations = [A.data(:, 1) A.data(:, 2)];
-xstattab = pos_stations(:, 1);
-ystattab = pos_stations(:, 2);
+pos_stations = [A.data(:, 1) A.data(:, 2)]; xstattab = pos_stations(:, 1); ystattab = pos_stations(:, 2);
 % Compute distance to sources.
 dist_to_sources = zeros(size(pos_stations, 1), size(pos_sources, 1));
 for n_source = 1:size(pos_sources, 1)
@@ -185,7 +185,7 @@ end
 % Stations to display.        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display stations' informations.
-format shortG; disp("  [station_id; x; z; d] for all stations:"); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']); format compact;
+format shortG; disp("  [station_id; x; z; d] for all stations (absolute x and z, relative d):"); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']); format compact;
 
 % Ask user for various inputs.
 display_or_load=-1;
@@ -224,8 +224,8 @@ if(display_or_load==0)
 end
 
 % Loop on sismograms.
-max_ylim_plus=-Inf;
-min_ylim_minus=+Inf;
+max_ylim_plus=-Inf; min_ylim_minus=+Inf;
+if(remove_source_coords==1); xstattab=xstattab-pos_sources(1,1); ystattab=ystattab-pos_sources(1,2); end % Eventually remove source components for display.
 for istat = 1 : nstat
   istat_glob = istattab(istat); % Recover global numer of station.
 
@@ -281,7 +281,13 @@ for istat = 1 : nstat
   % Display.
   if(display_or_load==0) % If display.
     ax(istat) = subplot(nstat, 1, istat);
-    legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km');
+    if(strcmp(coord_units, 'km'))
+      legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km');
+    elseif(strcmp(coord_units, 'm'))
+      legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ',', num2str(dist_to_sources(istat_glob)), ') m');
+    else
+      error(['coord_units = ', coord_units, 'not implemented.']);
+    end
     
     factor=1;
     if(geometric_attenuation==1)

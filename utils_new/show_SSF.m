@@ -18,27 +18,38 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 folder = input('  Folder containing the SSF files? > ', 's');
 if(not(strcmp(folder(end),'/'))); folder=[folder,'/']; end;
 
+nsources = input('  Number of sources? > ');
+
 % Load the data.
 listSSF=dir(strcat(folder, 'SSF*'));
-a=[];
-for i=1:length(listSSF)
-  a=[a;importdata(strcat(folder, listSSF(i).name))];
-  if(mod(i,floor(length(listSSF)/10))==0 || i==length(listSSF)); disp(strcat('Loading data (', num2str(100*i/length(listSSF)), '%).')); end;
+for s=1:nsources
+  a=[];
+  for i=1:length(listSSF)
+    if(not(isempty(regexp(listSSF(i).name, strcat(num2str(s),'_')))))
+      data=importdata(strcat(folder, listSSF(i).name));
+      a=[a;data];
+      if(mod(i,floor(length(listSSF)/10))==0 || i==length(listSSF)); disp(strcat('Loading data (', num2str(100*i/length(listSSF)), '%).')); end;
+    end
+  end
+  x{s}=a(:,1); z{s}=a(:,2); d{s}=a(:,3);
 end
-x=a(:,1); z=a(:,2); d=a(:,3);
 
 % Interpolate the point cloud.
 gs = input('  Plotting grid size? > ');
-disp(['Interpolating.'])
-F = scatteredInterpolant(x,z,d);
-tx = min(x(:)):gs:max(x(:));
-tz = min(z(:)):gs:max(z(:));
-[X,Z] = meshgrid(tx,tz);
-D = F(X,Z);
-figure(1);
-surf(X,Z,D,'FaceColor', 'interp', 'EdgeColor', 'white', 'LineStyle', ':');
-ar=input('  Axes aspect ratio (format [ar_x, ar_y, ar_z])? > '); set(gca,'DataAspectRatio',ar);
-xlabel('x'); ylabel('z'); title('Source Spatial Function');
+ar=input('  Axes aspect ratio (format [ar_x, ar_y, ar_z])? > ');
 th = input('  Threshold to recenter plot (show only where SSF>threshold)? > ');
-xlim([min(x(d>th)), max(x(d>th))]); ylim([min(z(d>th)), max(z(d>th))]); zlim([th, max(d)]);
-figure(1);
+
+disp(['Interpolating.']);
+xx=x{s}; zz=z{s}; dd=d{s};
+for s=1:nsources
+  figure(s);
+  F = scatteredInterpolant(x{s},z{s},d{s});
+  tx = min(xx(:)):gs:max(xx(:));
+  tz = min(zz(:)):gs:max(zz(:));
+  [X,Z] = meshgrid(tx,tz);
+  D = F(X,Z);
+  surf(X,Z,D,'FaceColor', 'interp', 'EdgeColor', 'white', 'LineStyle', ':');
+  set(gca,'DataAspectRatio',ar);
+  xlabel('x'); ylabel('z'); title(strcat("Source Spatial Function ", num2str(s)));
+  xlim([min(xx(d{s}>th)), max(xx(d{s}>th))]); ylim([min(zz(d{s}>th)), max(zz(d{s}>th))]); zlim([th, max(d{s})]);
+end

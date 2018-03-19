@@ -157,7 +157,9 @@
   endif
 
   ! local number of each element for each partition
+  write(*,*) "Constructing local numbering for the elements in each partition."
   call Construct_glob2loc_elmnts(NPROC)
+  write(*,*) "Done."
   
   nsize_nnodes_m1=int(nsize, KIND=8)*int(nnodes, KIND=8)-1
 
@@ -186,7 +188,9 @@
   endif
 
   ! local number of each node for each partition
+  write(*,*) "Constructing local numbering for the nodes in each partition."
   call Construct_glob2loc_nodes(NPROC)
+  write(*,*) "Done."
 
   ! construct the interfaces between partitions (used for MPI assembly)
   if (NPROC > 1) then
