@@ -336,6 +336,8 @@
   subroutine periodic_edges_repartitioning(elmnts_l,nnodes,nodes_coords,PERIODIC_HORIZ_DIST)
 
   use part_unstruct_par,only: nelmnts,part, nzread
+  
+  use parameter_file_par,only:periodic_BC_search_bandwidth
 
   implicit none
   include "constants.h"
@@ -383,17 +385,13 @@
 
   is_periodic(:) = .false.
   
-  accelerate_finding = .true.
+  accelerate_finding = .true. ! Set this to .false. to go back to the original O(N^2) search algorithm.
   debug_finding = .false.
   
   xmin = minval(nodes_coords(1,:))
   xmax = maxval(nodes_coords(1,:))
-  ! Band must be greater than the maximum horizontal dx.
-  ! Larger band is better (less chances of not finding all points), but also slower.
-  ! (xmax-xmin)/(number of points along x) the minimum. Assuming the mesh contains at least 5 points horizontally:
-  band = (xmax-xmin)/5.
-  ! Other choices can be hard-coded:
-  !band = (xmax-xmin)/19.
+  ! Band must be greater than the maximum horizontal dx. The larger the band the better (less chances of not finding all points), but also slower. (xmax-xmin)/(number of points along x) the minimum. Other choices can be hard-coded here.
+  band=periodic_BC_search_bandwidth
   
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases

@@ -111,6 +111,7 @@
   logical :: ADD_PERIODIC_CONDITIONS
   ! horizontal periodicity distance for periodic conditions
   double precision :: PERIODIC_HORIZ_DIST
+  double precision :: periodic_BC_search_bandwidth ! For acceleration method for periodic points finding (skip points too far from left/right boundaries). See 'repartition_coupling.f90'.
 
   !---------------------------------------------------------------------
   ! DG related quantities.

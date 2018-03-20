@@ -545,6 +545,8 @@
     call read_value_integer_p(nx_param, 'mesher.nx')
     if (err_occurred() /= 0) stop 'error reading parameter nx in Par_file'
 
+    periodic_BC_search_bandwidth = 1.05*((xmax_param-xmin_param)/nx_param) ! Set bandwidth for periodic boundary conditions search as a little bit more than the elements' (maximum) horizontal width. For acceleration method for periodic points finding (skip points too far from left/right boundaries). See 'repartition_coupling.f90'.
+
     ! read absorbing boundary parameters
     call read_value_logical_p(absorbbottom, 'solver.absorbbottom')
     if (err_occurred() /= 0) stop 'error reading parameter absorbbottom in Par_file'
