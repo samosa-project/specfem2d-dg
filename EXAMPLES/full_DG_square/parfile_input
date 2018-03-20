@@ -138,7 +138,7 @@ ABC_STRETCH_RIGHT_LBUF  = 1.                     # Length of the buffer used for
 
 # Source spatial function.
 USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
-SPREAD_SSF_SAVE  = .false.                       # Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
+SPREAD_SSF_SAVE  = .false.                       # Can generate many files when using many CPUs, and huge files when using many elements, use with caution. Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
 SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
 
 # Source time function.

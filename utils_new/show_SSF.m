@@ -15,19 +15,21 @@ set(0, 'defaultAxesFontSize', 14); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-folder = input('  Folder containing the SSF files? > ', 's');
-if(not(strcmp(folder(end),'/'))); folder=[folder,'/']; end;
-
-nsources = input('  Number of sources? > ');
+folder = input('  Folder containing the SSF files? > ', 's'); if(not(strcmp(folder(end),'/'))); folder=[folder,'/']; end;
+listSSF=dir(strcat(folder, 'SSF*')); listSSF.name, nsources = input('  Number of sources? > ');
+gs = input('  Plotting grid size? > ');
+ar = input('  Axes aspect ratio (format [ar_x, ar_y, ar_z])? > ');
+th = input('  Threshold to recenter plot (show only where SSF>threshold)? > ');
 
 % Load the data.
-listSSF=dir(strcat(folder, 'SSF*'));
+disp(['Loading.']);
 for s=1:nsources
   a=[];
   for i=1:length(listSSF)
     if(not(isempty(regexp(listSSF(i).name, strcat(num2str(s),'_')))))
-      data=importdata(strcat(folder, listSSF(i).name));
-      a=[a;data];
+%       data=importdata(strcat(folder, listSSF(i).name));
+      a=unique([a;importdata(strcat(folder, listSSF(i).name))],'rows');
+%       a(a(:,3)==0,:)=[]; % Remove lines where value is 0.
       if(mod(i,floor(length(listSSF)/10))==0 || i==length(listSSF)); disp(strcat('Loading data (', num2str(100*i/length(listSSF)), '%).')); end;
     end
   end
@@ -35,14 +37,10 @@ for s=1:nsources
 end
 
 % Interpolate the point cloud.
-gs = input('  Plotting grid size? > ');
-ar=input('  Axes aspect ratio (format [ar_x, ar_y, ar_z])? > ');
-th = input('  Threshold to recenter plot (show only where SSF>threshold)? > ');
-
 disp(['Interpolating.']);
-xx=x{s}; zz=z{s}; dd=d{s};
 for s=1:nsources
   figure(s);
+  xx=x{s}; zz=z{s}; dd=d{s};
   F = scatteredInterpolant(x{s},z{s},d{s});
   tx = min(xx(:)):gs:max(xx(:));
   tz = min(zz(:)):gs:max(zz(:));

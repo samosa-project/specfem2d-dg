@@ -28,12 +28,26 @@ coord_units='km'; remove_source_coords = 0;
 % window size for Amplitude estimate
 %tws = 20.0; % s
 
+% Sub-sample? Useful for lengthy seismograms.
+subsample = 0;
+
+% Quantity to display:
+%   1 = displacement for non-DG and velocity for DG,
+%   2 = velocity for non-DG and pressure perturbation (Pa) for DG.
+type_display = 2; % Should be the same as the seismotype variable in parfile.
+
+% Unknown:
+% For type_display==2 and stations in DG zones, pressure perturbation (Pa) is saved both in BXX and BXZ files.
+% unknown = 'BXX';
+unknown = 'BXZ';
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoExplo, 66, June, 12:00
 fig_title = strcat('Stratospheric Explosions, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Mars AGW.
@@ -101,6 +115,7 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexpl
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES__long_working');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma0'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_dz'); type_display = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_narrow_okdx');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583123_100km_3sources_nospread');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583128_100km_3sources_nospread');
@@ -112,19 +127,6 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexpl
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); renorm_factor=8.840811261618920e-04;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_591776_additional_stations');fig_title = 'test_soft';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_591777_additional_stations');fig_title = 'test_hard';
-
-% Sub-sample? Useful for lengthy seismograms.
-subsample = 0;
-
-% Quantity to display:
-%   1 = displacement for non-DG and velocity for DG,
-%   2 = velocity for non-DG and pressure perturbation (Pa) for DG.
-type_display = 2; % Should be the same as the seismotype variable in parfile.
-
-% Unknown:
-% For type_display==2 and stations in DG zones, pressure perturbation (Pa) is saved both in BXX and BXZ files.
-% unknown = 'BXX';
-unknown = 'BXZ';
 
 % close all; % Close all figure. Comment this to keep them.
 
