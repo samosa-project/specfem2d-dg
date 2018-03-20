@@ -38,7 +38,7 @@ method='bruteforce_rho'; % Bruteforce $\rho = -\partial_z{P} / g_z$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set DATAFILE.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ');
+% disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ', 's'); disp(['[INPUT] Number of header lines of datafile to be loaded? Default is 3.']); headerlines = input(' > ');
 DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -200,12 +200,12 @@ if(strcmp(method, 'bruteforce_rho'))
   disp('Hydrostatic ratio is necessarily 1 with this method.');
   
   nSOUNDSPEED=sqrt(GAMMA.*P./nRHO);
-%   figure();
-%   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
-%   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
-%   xlabel('$c$'); ylabel('altitude (m)');
-%   legend('old $c$', 'new $c$', 'Location', 'northeast');
-%   title(tit_plus);
+  figure();
+  semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
+  xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
+  xlabel('$c$'); ylabel('altitude (m)');
+  legend('old $c$', 'new $c$', 'Location', 'northeast');
+  title(tit_plus);
   nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2); % rad/s
 %   figure();
 %   semilogx(Nf.^2, Z, nN.^2, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');

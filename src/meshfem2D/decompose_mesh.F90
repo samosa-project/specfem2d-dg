@@ -194,6 +194,18 @@
 
   ! construct the interfaces between partitions (used for MPI assembly)
   if (NPROC > 1) then
+     write(*,*) "Constructing the interfaces between partitions."
+     write(*,*) "********************************"
+     write(*,*) "*           WARNING            *"
+     write(*,*) "********************************"
+     write(*,*) "* The algorithm used is in     *"
+     write(*,*) "* O(NPROC^2*NELEMS). This step *"
+     write(*,*) "* can be extremely long for    *"
+     write(*,*) "* huge meshes and/or a high    *"
+     write(*,*) "* number of CPUS.              *"
+     write(*,*) "* NPROC  = ", NPROC
+     write(*,*) "* NELEMS = ", nelmnts
+     write(*,*) "********************************"
      if (ngnod == 9) then
         call Construct_interfaces(NPROC, elmnts_bis, &
                                   nbmodels, phi, num_material)
@@ -203,6 +215,7 @@
      endif
      allocate(my_interfaces(0:ninterfaces-1))
      allocate(my_nb_interfaces(0:ninterfaces-1))
+     write(*,*) "Done."
   else
      ! dummy allocation
      ninterfaces=0
