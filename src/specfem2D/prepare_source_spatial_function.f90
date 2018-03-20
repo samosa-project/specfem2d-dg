@@ -171,7 +171,11 @@ subroutine prepare_source_spatial_function_DG
               endif
               
               if(SPREAD_SSF_SAVE) then
-                write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
+                if(source_spatial_function_DG(i_source, iglob_unique)>1.d-50) then
+                  ! Do not save zeros, because that would be silly.
+                  ! Do not save negligible values either.
+                  write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
+                endif
               endif
             enddo ! Enddo on j.
           enddo ! Enddo on i.
