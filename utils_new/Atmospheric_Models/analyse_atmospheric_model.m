@@ -195,22 +195,24 @@ tit_plus={strcat(['Regularised model ("', regexprep(method, '_', '\\_'), '" meth
 if(strcmp(method, 'bruteforce_rho'))
   disp(strcat(['Used "', method, '" method.']));
   nRHO=bruteforced_RHO;
+%   nRHO=smoooth(nRHO,10);
   disp(strcat(['Maximum relative difference on RHO: ', num2str(max(abs(nRHO-RHO)./RHO)*100), '%.']));
   
   disp('Hydrostatic ratio is necessarily 1 with this method.');
   
-  nSOUNDSPEED=sqrt(GAMMA.*P./nRHO);
-  figure();
-  semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
-  xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
-  xlabel('$c$'); ylabel('altitude (m)');
-  legend('old $c$', 'new $c$', 'Location', 'northeast');
-  title(tit_plus);
+  nSOUNDSPEED=sqrt(GAMMA.*P./bruteforced_RHO);
+  nSOUNDSPEED=smoooth(nSOUNDSPEED,20);
+%   figure();
+%   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z);
+%   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
+%   xlabel('$c$'); ylabel('altitude (m)');
+%   legend('old $c$', 'new $c$', 'Location', 'northeast');
+%   title(tit_plus);
   nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2); % rad/s
 %   figure();
-%   semilogx(Nf.^2, Z, nN.^2, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
-%   xlim([0.5 * min([Nf.^2;nN.^2]), 2 * max([Nf.^2;nN.^2])]);
-%   xlabel('$N^2$ (ATTENTION AUX UNITES)'); ylabel('altitude (m)');
+%   semilogx(N.^2, Z, nN.^2, Z);
+%   xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
+%   xlabel('$N^2$ (rad/s)'); ylabel('altitude (m)');
 %   legend('old $N^2$', 'new $N^2$', 'Location', 'best');
 %   title(tit_plus);
   nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
@@ -275,6 +277,10 @@ SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL,
 rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, nN.^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function sQ=smoooth(Q,n)
+  sQ=smoothdata(Q,'gaussian',n); disp(strcat("[WARNING] Smoothed quantity ", inputname(1), " by a Gaussian filter over ", num2str(n), " elements."));
+end
 
 function [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W)
   D=differentiation_matrix(Z, 0);

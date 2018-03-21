@@ -317,8 +317,9 @@
           else
             ! By constraining hydrostaticity, remark that an additional term appears outside the divergence ($p_0\nabla\cdot{\vect{v}'}$).
             temp_nondiv_E(i, j) = &
-                                -(rho_DG(iglob) - rho_init(iglob))*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
-                                veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
+                                  -(rho_DG(iglob) - rho_init(iglob))*&
+                                    (veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
+                                     veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
             temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl
           endif
           ! Memory variable evolution.
