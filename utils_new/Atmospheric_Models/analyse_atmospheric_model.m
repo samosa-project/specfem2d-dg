@@ -209,12 +209,12 @@ if(strcmp(method, 'bruteforce_rho'))
 %   legend('old $c$', 'new $c$', 'Location', 'northeast');
 %   title(tit_plus);
   nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2); % rad/s
-%   figure();
-%   semilogx(N.^2, Z, nN.^2, Z);
-%   xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
-%   xlabel('$N^2$ (rad/s)'); ylabel('altitude (m)');
-%   legend('old $N^2$', 'new $N^2$', 'Location', 'best');
-%   title(tit_plus);
+  figure();
+  semilogx(N.^2, Z, nN.^2, Z);
+  xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
+  xlabel('$N^2$ (rad/s)'); ylabel('altitude (m)');
+  legend('old $N^2$', 'new $N^2$', 'Location', 'best');
+  title(tit_plus);
   nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
 
   plot_hydrostat_unbalance(Z, nRHO, nTEMP, nP, nG, nKAPPA, nVISCMU, nW, tit_plus, save_plots);

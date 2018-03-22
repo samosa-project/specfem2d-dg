@@ -28,8 +28,8 @@ select_time_u=45;
 
 % Set signal to be used.
 % TODO: ask for user input.
-signal = cumtrapz(raw_t, raw_s);
-signal_name = "displacement"; unit="m";
+signal = raw_s; signal_name = "displacement"; unit="m";
+% signal = cumtrapz(raw_t, raw_s); signal_name = "displacement"; unit="m";
 
 % Select.
 % time=raw_t; time = time(select_time_l<=time); time=time(time<=select_time_u); signal = signal(time<=select_time_u); % Cut signal and time around selection window.

@@ -38,8 +38,8 @@ synOFd = strcat(rootd, '/OUTPUT_FILES_stf4/'); type_display = 1; % Dirac.
 
 % Directory where is save the wanted STF.
 % TODO: Ask user for custom STF.
-% stfOFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); % Gaussian.
-stfOFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); % Gaussian derivative.
+stfOFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); % Gaussian.
+% stfOFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); % Gaussian derivative.
 
 station=input('  Station number?\n  > ');
 

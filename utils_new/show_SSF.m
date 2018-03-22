@@ -39,7 +39,7 @@ end
 % Interpolate the point cloud.
 disp(['Interpolating.']);
 for s=1:nsources
-  figure(s);
+  figure(1000*s);
   xx=x{s}; zz=z{s}; dd=d{s};
   F = scatteredInterpolant(x{s},z{s},d{s});
   tx = min(xx(:)):gs:max(xx(:));

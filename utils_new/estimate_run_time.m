@@ -17,7 +17,7 @@ neltot    = 3142000;
 neldg     = neltot-60000;
 nstepsnap = 300;
 nsteptot  = 300000;
-nproc     = 48*16;
+nproc     = 35*16;
 
 point=[neldg/neltot,nstepsnap/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
 
