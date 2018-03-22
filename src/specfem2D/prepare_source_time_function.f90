@@ -220,6 +220,10 @@ subroutine prepare_source_time_function()
             hdur_gauss(i_source) = hdur(i_source) * 5.d0 / 3.d0
             source_time_function(i_source, it, i_stage) = factor(i_source) * 0.5d0*(1.0d0 + &
                 netlib_specfun_erf(SOURCE_DECAY_MIMIC_TRIANGLE*t_used/hdur_gauss(i_source)))
+            
+          else if (time_function_type(i_source) == 10) then
+              source_time_function(i_source, it, i_stage) = (factor(i_source)/(2.*PI**0.5*f0_source(i_source))) * &
+                  (1.+ netlib_specfun_erf(PI*f0_source(i_source)*t_used))
 
           else if (time_function_type(i_source) == 6) then
             ! ocean acoustics type I
