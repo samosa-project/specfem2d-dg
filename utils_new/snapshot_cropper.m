@@ -81,8 +81,8 @@ for s=1:size(list,1)
   xticklabels({strcat(" $",sprintf("%.1f",left_xval-xs),"$")," $0$",strcat("$",sprintf("%.1f",right_xval-xs),"$ ")});
 
   xlp = get(get(gca, 'XLabel'), 'Position'); zlp = get(get(gca, 'YLabel'), 'Position');
-  set(get(gca, 'XLabel'), 'Position', [xlp(1),2.01*zlp(2),0]);
-  set(get(gca, 'YLabel'), 'Position', [-xlp(1)/18,zlp(2),0]);
+  set(get(gca, 'XLabel'), 'Position', [ xlp(1),    2.01*zlp(2), 0]);
+  set(get(gca, 'YLabel'), 'Position', [-xlp(1)/18, zlp(2),      0]);
 
   f.set('pos',[10 10 1.1*nNX 1.1*nNZ]);
   figure(s);
