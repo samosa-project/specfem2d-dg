@@ -9,10 +9,10 @@ clear all;
 % close all
 clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
+set(0, 'DefaultLineLineWidth', 3); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
-set(0, 'defaultTextFontSize', 12);
-set(0, 'defaultAxesFontSize', 12); % Default at 10.
+set(0, 'defaultTextFontSize', 22);
+set(0, 'defaultAxesFontSize', 22); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
@@ -46,9 +46,10 @@ unknown = 'BXZ';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoExplo, 66, June, 12:00
 fig_title = strcat('Stratospheric Explosions, lat66, June, 12:00');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
@@ -96,11 +97,11 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexpl
 
 % Quake, 45.
 % fig_title = strcat('Quake Simulation (45d dip)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
 % fig_title = strcat('Quake Simulation (0d dip)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
 % fig_title = 'test';
@@ -302,9 +303,9 @@ for istat = 1 : nstat
   if(display_or_load==0) % If display.
     ax(istat) = subplot(nstat, 1, istat);
     if(strcmp(coord_units, 'km'))
-      legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), ',', num2str(dist_to_sources(istat_glob) / 1000), ') km');
+      legtext=strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) km');
     elseif(strcmp(coord_units, 'm'))
-      legtext=strcat('S', num2str(istat_glob), ', (x,z,d)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ',', num2str(dist_to_sources(istat_glob)), ') m');
+      legtext=strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ m');
     else
       error(['coord_units = ', coord_units, 'not implemented.']);
     end

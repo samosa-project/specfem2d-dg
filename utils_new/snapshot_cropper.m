@@ -6,7 +6,7 @@
 % Notes:         N/A.
 
 clear all;
-% close all
+close all;
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
@@ -21,8 +21,8 @@ addpath('/usr/local/matlab/r2017b/toolbox/tightfig');
 suffix="_crop";
 
 % FOLDER='/home/l.martire/Documents/MATLAB/snapshot_beautifier_tests/';
-FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/SH_final/snapshots_edits/cropping';
-% FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/snapshots_edits/cropping';
+% FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/SH_final/snapshots_edits/cropping';
+FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/snapshots_edits/cropping';
 
 if(not(strcmp(FOLDER(end),'/'))); FOLDER=[FOLDER,'/']; end;
 list=dir(strcat(FOLDER, '*.jpg'));
@@ -34,6 +34,8 @@ for i=1:size(list,1)
 end
 list(rem)=[];
 disp(strcat("Treating folder '",FOLDER,"', containing ",num2str(size(list,1))," snapshot files."));
+
+fs=input('Font size (default 24)? > '); set(0, 'defaultTextFontSize', fs); set(0, 'defaultAxesFontSize', fs);
 
 for s=1:size(list,1)
   snap = strcat(FOLDER,list(s).name);
@@ -58,6 +60,14 @@ for s=1:size(list,1)
       close(s);f=figure(s);image(cropped_img);set(gca,'DataAspectRatio',[1,1,1]);
       satisfied=input('  Satisfied (0 for no, 1 for yes)? > ');
     end
+    
+    fconfig=fopen(strcat(FOLDER,"/config"),"w");
+    fprintf(fconfig,strcat(xunit," ",zunit));
+    fprintf(fconfig,"\n");
+    fprintf(fconfig,num2str(XZunit));
+    fprintf(fconfig,"\n");
+    fprintf(fconfig,num2str(XZcrop));
+    fclose("all");
   end
 
   cropped_img=img(1+crop_top:end-crop_bottom,1+crop_left:end-crop_right,:);
@@ -81,8 +91,9 @@ for s=1:size(list,1)
   xticklabels({strcat(" $",sprintf("%.1f",left_xval-xs),"$")," $0$",strcat("$",sprintf("%.1f",right_xval-xs),"$ ")});
 
   xlp = get(get(gca, 'XLabel'), 'Position'); zlp = get(get(gca, 'YLabel'), 'Position');
-  set(get(gca, 'XLabel'), 'Position', [ xlp(1),    2.01*zlp(2), 0]);
+  set(get(gca, 'XLabel'), 'Position', [ xlp(1),    2.02*zlp(2), 0]);
   set(get(gca, 'YLabel'), 'Position', [-xlp(1)/18, zlp(2),      0]);
+  set(gca,'TickDir','out');
 
   f.set('pos',[10 10 1.1*nNX 1.1*nNZ]);
   figure(s);

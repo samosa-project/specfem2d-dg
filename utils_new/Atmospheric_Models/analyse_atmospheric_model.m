@@ -38,8 +38,8 @@ method='bruteforce_rho'; % Bruteforce $\rho = -\partial_z{P} / g_z$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set DATAFILE.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ', 's'); disp(['[INPUT] Number of header lines of datafile to be loaded? Default is 3.']); headerlines = input(' > ');
-DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ', 's'); disp(['[INPUT] Number of header lines of datafile to be loaded? Default is 3.']); headerlines = input(' > ');
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -151,7 +151,7 @@ title(tit_plus);
 
 figure();
 semilogx(east_Richardson, Z, north_Richardson, Z, proj_Richardson, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
-xlim([0.5 * min([east_Richardson; north_Richardson; proj_Richardson]), 2 * max([east_Richardson; north_Richardson; proj_Richardson])]);
+xlim([0.5 * min([east_Richardson; north_Richardson; proj_Richardson]), 2*max([east_Richardson; north_Richardson; proj_Richardson])]);
 xlabel('Richardson number'); ylabel('altitude (m)');
 legend('eastward Richardson number', 'northward Richardson number', 'projected wind Richardson number', 'Location', 'northeast');
 title(tit_plus);
@@ -279,7 +279,8 @@ rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSU
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function sQ=smoooth(Q,n)
-  sQ=smoothdata(Q,'gaussian',n); disp(strcat("[WARNING] Smoothed quantity ", inputname(1), " by a Gaussian filter over ", num2str(n), " elements."));
+  sQ=smoothdata(Q,'gaussian',n);
+  disp(strcat("[WARNING] Smoothed quantity ", inputname(1), " by a Gaussian filter over ", num2str(n), " elements."));
 end
 
 function [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W)
