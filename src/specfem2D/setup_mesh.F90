@@ -1205,7 +1205,7 @@ subroutine setup_mesh_surface_DG_coupling()
            etaext(NGLLX,NGLLZ,nspec_ext), &
            pext_DG(NGLLX,NGLLZ,nspec_ext), &
            gammaext_DG(nglob_DG), &
-           Htabext_DG(nglob_DG), &
+           !Htabext_DG(nglob_DG), &
            kappa_DG(NGLLX,NGLLZ,nspec_ext), stat=ier) 
   else
         allocate(gammaext_DG(1))

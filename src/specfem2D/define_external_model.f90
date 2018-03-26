@@ -1467,8 +1467,8 @@ end subroutine external_model_DG_only_find_nblines
 subroutine define_external_model_DG_only(nlines_header, nlines_model)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
-  use specfem_par,only: ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
-        ispec_is_elastic,ispec_is_acoustic_DG,&
+  use specfem_par,only: ibool_DG, cp, cnu, coord_interface, &
+        ispec_is_elastic,ispec_is_acoustic_DG,&!Htabext_DG&
         mesh_zmax,tau_sigma, tau_epsilon,&
         rhoext,vpext,vsext,&
         QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext,&
@@ -1693,7 +1693,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   windzext = ZERO
   pext_DG = ZERO
   gammaext_DG = ZERO
-  Htabext_DG = ZERO
+  !Htabext_DG = ZERO
   etaext = ZERO
   muext = ZERO
   kappa_DG = ZERO
@@ -1742,7 +1742,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
               write(*,*) windzext(i, j, ispec)
               write(*,*) pext_DG(i, j, ispec)
               write(*,*) "gamma", gammaext_DG(indglob_DG)
-              write(*,*) "Htab", Htabext_DG(indglob_DG)
+              !write(*,*) "Htab", Htabext_DG(indglob_DG)
               write(*,*) etaext(i, j, ispec)
               write(*,*) muext(i, j, ispec)
               write(*,*) kappa_DG(i, j, ispec)
@@ -1759,7 +1759,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             !windzext(i, j, ispec) = wz_model(1)
             pext_DG(i, j, ispec) = p_model(1)
             gammaext_DG(indglob_DG) = gamma_model(1)
-            Htabext_DG(indglob_DG) = Htab_model(1)
+            !Htabext_DG(indglob_DG) = Htab_model(1)
             etaext(i, j, ispec) = eta_model(1)
             muext(i, j, ispec) = mu_model(1)
             kappa_DG(i, j, ispec) = kappa_model(1)
@@ -1783,7 +1783,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             gammaext_DG(indglob_DG) = gamma_model(ii-1) + frac*(gamma_model(ii)-gamma_model(ii-1))
             etaext(i, j, ispec) = eta_model(ii-1) + frac*(eta_model(ii)-eta_model(ii-1))
             muext(i, j, ispec)  = mu_model(ii-1) + frac*(mu_model(ii)-mu_model(ii-1))
-            Htabext_DG(indglob_DG) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
+            !Htabext_DG(indglob_DG) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
             kappa_DG(i, j, ispec)  = kappa_model(ii-1) + frac*(kappa_model(ii)-kappa_model(ii-1))
           else
             ! Altitude of point is > (ii-1)-th line of model, and <= (ii)-th line of model.
@@ -1817,7 +1817,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             gammaext_DG(indglob_DG) = gamma_model(ii)*pii + gamma_model(ii-1)*piim1 + gamma_model(ii-2)*piim2
             etaext(i, j, ispec) = eta_model(ii)*pii + eta_model(ii-1)*piim1 + eta_model(ii-2)*piim2
             muext(i, j, ispec)  = mu_model(ii)*pii + mu_model(ii-1)*piim1 + mu_model(ii-2)*piim2
-            Htabext_DG(indglob_DG) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
+            !Htabext_DG(indglob_DG) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
             kappa_DG(i, j, ispec)  = kappa_model(ii)*pii + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
           endif ! Endif on ii.
           
@@ -1880,7 +1880,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
                       "wz", windzext(i, j, ispec),&
                       "p", pext_DG(i, j, ispec),&
                       "gamma", gammaext_DG(ibool_DG(i, j, ispec)),&
-                      "Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
+                      !"Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
                       "eta", etaext(i, j, ispec),&
                       "mu", muext(i, j, ispec),&
                       "kap", kappa_DG(i, j, ispec)
