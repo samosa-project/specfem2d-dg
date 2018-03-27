@@ -385,9 +385,9 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       if(.true.) then
         lambdo = main_spatial_period
         perio  = main_time_period
-        MICROBAROM_AMPLITUDE = 1.
-        MICROBAROM_MAXTIME = 8. * perio
-        MICROBAROM_RANGE = 10.d3
+        MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
+        MICROBAROM_MAXTIME = 8. * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s.
+        MICROBAROM_RANGE = 10.d3 ! Range around x=0 to which impose microbaroms. Unit: m.
         if(timelocal<MICROBAROM_MAXTIME .and. abs(x)<MICROBAROM_RANGE) then
           veloc_z_DG_P = MICROBAROM_AMPLITUDE * sin(2.*PI*x/lambdo) * sin(2.*PI*timelocal/perio)
         endif

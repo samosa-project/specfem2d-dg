@@ -782,6 +782,16 @@
   
   
   
+  if(TYPE_FORCING==9 .and. main_spatial_period>=xmax_param-xmin_param) then
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* TYPE_FORCING==9 and          *"
+    write(*,*) "* main_spatial_period >        *"
+    write(*,*) "* xmax_param-xmin_param.       *"
+    write(*,*) "********************************"
+  endif
+  
   if(id_region_DG > nbmodels .or. id_region_DG<0) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
