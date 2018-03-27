@@ -38,8 +38,8 @@ method='bruteforce_rho'; % Bruteforce $\rho = -\partial_z{P} / g_z$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set DATAFILE.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ', 's'); disp(['[INPUT] Number of header lines of datafile to be loaded? Default is 3.']); headerlines = input(' > ');
-% DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
+% disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ', 's'); disp(['[INPUT] Number of header lines of datafile to be loaded? Default is 3.']); headerlines = input(' > ');
+DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,7 +195,11 @@ tit_plus={strcat(['Regularised model ("', regexprep(method, '_', '\\_'), '" meth
 if(strcmp(method, 'bruteforce_rho'))
   disp(strcat(['Used "', method, '" method.']));
   nRHO=bruteforced_RHO;
+  
+  % Quirk regularisation. Deactivated since it defeats the purpose of having forced RHO (with versions below, model becomes non hydrostatic once again.
 %   nRHO=smoooth(nRHO,10);
+%   i1=find(abs(Z-7.2e4)==min(abs(Z-7.2e4))); i2=find(abs(Z-7.32e4)==min(abs(Z-7.32e4))); work_RHO=bruteforced_RHO; work_RHO(i1:i2)=polyval(polyfit([Z(i1), Z(i2)], [work_RHO(i1), work_RHO(i2)], 1),Z(i1:i2)); nRHO=work_RHO;
+
   disp(strcat(['Maximum relative difference on RHO: ', num2str(max(abs(nRHO-RHO)./RHO)*100), '%.']));
   
   disp('Hydrostatic ratio is necessarily 1 with this method.');
@@ -209,12 +213,13 @@ if(strcmp(method, 'bruteforce_rho'))
 %   legend('old $c$', 'new $c$', 'Location', 'northeast');
 %   title(tit_plus);
   nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2); % rad/s
-  figure();
-  semilogx(N.^2, Z, nN.^2, Z);
-  xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
-  xlabel('$N^2$ (rad/s)'); ylabel('altitude (m)');
-  legend('old $N^2$', 'new $N^2$', 'Location', 'best');
-  title(tit_plus);
+%   figure();
+%   semilogx(N.^2, Z, nN.^2, Z);
+%   xlim([0.5 * min([N.^2;nN.^2]), 2 * max([N.^2;nN.^2])]);
+%   xlabel('$N^2$ (rad/s)'); ylabel('altitude (m)');
+%   legend('old $N^2$', 'new $N^2$', 'Location', 'best');
+%   title(tit_plus);
+  
   nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
 
   plot_hydrostat_unbalance(Z, nRHO, nTEMP, nP, nG, nKAPPA, nVISCMU, nW, tit_plus, save_plots);

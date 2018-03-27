@@ -81,7 +81,7 @@ freq0                           = 0.05           # Poroelastic materials only. F
 
 # For viscoelastic attenuation (only used if ATTENUATION_VISCOELASTIC_SOLID==.true.).
 N_SLS                           = 2              # Number of standard linear solids for attenuation (3 is usually the minimum).
-f0_attenuation                  = 1.             # Relevant only if source is a Dirac or a Heaviside. Otherwise, this will take the value of f0 the dominant frequency of the source. Peak frequency of quality factor of attenuation. [Hz].
+f0_attenuation                  = 1.             # Relevant only if source is a Dirac or a Heaviside. Otherwise, this will take the value of f0 the dominant frequency of the source. Peak frequency of quality factor of attenuation. Unit: Hz.
 READ_VELOCITIES_AT_f0           = .false.        # Set to .true. to shift velocities to account for physical dispersion (the velocities set in the materials below then correspond to those at f_0_attenuation frequency). If set to .false., do not shift velocities (the velocities set in the materials below then correspond to those at infinite frequency, and are used as are). See 'shift_velocities_from_f0' subroutine in 'attenuation_model.f90' and user manual ('Notes_on_viscoelasticity_and_compatibility_with_Carcione_analytical_solution.pdf') for more information.
 
 # to undo attenuation for sensitivity kernel calculations or forward runs with SAVE_FORWARD
@@ -104,17 +104,17 @@ CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydros
 
 # Fluid model (if MODEL\='external').
 USE_ISOTHERMAL_MODEL            = .false.
-SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. [m].
-surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 340.0          # $c$.
-wind                            = 0.0            # Horizontal wind. [m.s^(-1)].
+SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
+surface_density                 = 1.4            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
+sound_velocity                  = 340.0          # $c$. Unit: m.s^{-1}.
+wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true..
-dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. [kg.s^(-1).m^(-1)]. Choose 1.25d-5 for dry air at 20 °C.
-thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. [kg.m.s^(-3).K^(-1)]. Choose 0.025 for dry air at 20 °C.
-tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. [s].
-tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. [s].
-constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 1005 for dry air between -40 and 40 °C.
-constant_v                      = 717.3447537473 # $c_v$, isochoric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 717.3447537473 for dry air between -40 and 25 °C (in order to have gamma=1.401) or 717.8571428571 for dry air between 25 and 40 °C (in order to have gamma=1.400).
+dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
+thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
+tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.
+tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. Unit: s.
+constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 1005 for dry air between -40 and 40 °C.
+constant_v                      = 717.3447537473 # $c_v$, isochoric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 717.3447537473 for dry air between -40 and 25 °C (in order to have gamma=1.401) or 717.8571428571 for dry air between 25 and 40 °C (in order to have gamma=1.400).
 
 # ID of the DG region (refering to "Velocity and Density Models" below).
 id_region_DG                    = 1
@@ -131,10 +131,10 @@ ABC_STRETCH_TOP         = .false.                # Use buffer-based stretching m
 ABC_STRETCH_LEFT        = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_BOTTOM      = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_RIGHT       = .false.                # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_TOP_LBUF    = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
-ABC_STRETCH_LEFT_LBUF   = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
-ABC_STRETCH_BOTTOM_LBUF = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
-ABC_STRETCH_RIGHT_LBUF  = 1.                     # Length of the buffer used for the buffer-based stretching method. [m].
+ABC_STRETCH_TOP_LBUF    = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
+ABC_STRETCH_LEFT_LBUF   = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
+ABC_STRETCH_BOTTOM_LBUF = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
+ABC_STRETCH_RIGHT_LBUF  = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
 
 # Source spatial function.
 USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
@@ -150,10 +150,10 @@ REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BE
 # 2: time and space gaussian derivative
 # 9: hardcoded custom forcing (set it up directly in the code, see "boundary_terms_DG.f90")
 TYPE_FORCING                    = 0
-main_spatial_period             = 1.
-main_time_period                = 1.
-forcing_initial_loc             = 0.
-forcing_initial_time            = 0.
+main_spatial_period             = 1. # Self-explaining. Unit: m.
+main_time_period                = 1. # Self-explaining. Unit: s.
+forcing_initial_loc             = 0. # Self-explaining. Unit: m.
+forcing_initial_time            = 0. # Self-explaining. Unit: s.
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -194,7 +194,7 @@ subsamp_seismos                 = 1
 # so far, this option can only be used if all the receivers are in acoustic elements
 USE_TRICK_FOR_BETTER_PRESSURE   = .false.
 
-# Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway. A good rule of thumb would be NSTEP = (f0 * dt * Np)^(-1) in order to have Np points per period, where f0 is the fundamental frequency of the source time function.
+# Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway. A good rule of thumb would be NSTEP = (f0 * dt * Np)^{-1} in order to have Np points per period, where f0 is the fundamental frequency of the source time function.
 NSTEP_BETWEEN_OUTPUT_SEISMOS    = 25
 
 # Compute the field int_0^t v^2 dt for a set of GLL points and write it to file. Use
@@ -374,8 +374,8 @@ cutsnaps                        = 1.
 # JPEG Snapshots              #
 #-----------------------------#
 output_color_image              = .true.         # Draw JPEG color snapshot?
-imagetype_JPEG                  = 5              #    display 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
-                                                 # DG display 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz 10=none
+imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
+                                                 # DG display: 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz 10=none
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
 CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
