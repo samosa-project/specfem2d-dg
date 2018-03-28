@@ -45,8 +45,11 @@ DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratosph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("> Loading.");
-disp(strcat("File: '", DATAFILE, "'."));
+disp("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+disp("% Loading.                    %");
+disp("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+disp("> File:");
+disp(strcat("  '",DATAFILE, "'."));
 [datestr, posstr, ~, ~, ~, ~, ~] = extract_data_setup(DATAFILE);
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
  G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA] = ...
@@ -96,7 +99,9 @@ disp(" ");
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Hydrostatic Equilibrium Treatment.                          %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("> Hydrostatic treatment.");
+disp("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+disp("% Hydrostatic treatment.      %");
+disp("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check Evaluation            %
@@ -116,16 +121,16 @@ north_Mach = Mach_number(WNORTH, SOUNDSPEED);
 proj_Mach = Mach_number(W, SOUNDSPEED);
 HR=hydrostatic_ratio(D, P, RHO, G);
 
-disp(strcat(['Minimum Richardson number: ',num2str(min(proj_Richardson)), ' (@z=', num2str(Z(proj_Richardson==min(proj_Richardson))), ' m).']));
+disp(strcat(['  Minimum Richardson number: ',num2str(min(proj_Richardson)), ' (@z=', num2str(Z(proj_Richardson==min(proj_Richardson))), ' m).']));
 if(any(proj_Richardson<0.25))
-  disp(["[WARNING] Projected wind's Richardson number is < 0.25 somewhere. Unstability will probably occur."]);
+  disp(["  [WARNING] Projected wind's Richardson number is < 0.25 somewhere. Unstability will probably occur."]);
 else
   if(any(proj_Richardson<1))
-    disp(["Projected wind's Richardson number is < 1 somewhere. Unstability can occur."]);
+    disp(["  Projected wind's Richardson number is < 1 somewhere. Unstability can occur."]);
   end
 end
 
-disp(strcat(['Maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(HR-1))*100), '%.']));
+disp(strcat(['  Maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(HR-1))*100), '%.']));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Plots.                      %
@@ -193,19 +198,24 @@ disp(["> Modifications."]);
 
 tit_plus={strcat(['Regularised model ("', regexprep(method, '_', '\\_'), '" method)']), tit_plus{1}, tit_plus{2}};
 if(strcmp(method, 'bruteforce_rho'))
-  disp(strcat(['Used "', method, '" method.']));
+  disp(strcat(['  Used "', method, '" method.']));
   nRHO=bruteforced_RHO;
-  
-  % Quirk regularisation. Deactivated since it defeats the purpose of having forced RHO (with versions below, model becomes non hydrostatic once again.
-%   nRHO=smoooth(nRHO,10);
+%   nRHO=smoooth(nRHO,10); disp("  [WARNING] RHO WAS SMOOTHED."); % Smooth using sliding Gaussian on 10 points.
 %   i1=find(abs(Z-7.2e4)==min(abs(Z-7.2e4))); i2=find(abs(Z-7.32e4)==min(abs(Z-7.32e4))); work_RHO=bruteforced_RHO; work_RHO(i1:i2)=polyval(polyfit([Z(i1), Z(i2)], [work_RHO(i1), work_RHO(i2)], 1),Z(i1:i2)); nRHO=work_RHO;
+%   spline=fit(Z,nRHO,'smoothingspline','smoothingparam',1e-11); nRHO=spline(Z); disp("  [WARNING] RHO WAS SMOOTHED."); % Smooth using splines.
 
-  disp(strcat(['Maximum relative difference on RHO: ', num2str(max(abs(nRHO-RHO)./RHO)*100), '%.']));
+  disp(strcat(['  Maximum relative difference on RHO: ', num2str(max(abs(nRHO-RHO)./RHO)*100), '%.']));
   
-  disp('Hydrostatic ratio is necessarily 1 with this method.');
+  nHR=hydrostatic_ratio(D, P, nRHO, G);
+  if(max(abs(nHR-1))>1e-12)
+    figure(); plot(nHR, Z, ones(size(Z)), Z, 'k:');
+  end
+  disp(strcat(['  Maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(nHR-1))*100), '%.']));
   
   nSOUNDSPEED=sqrt(GAMMA.*P./bruteforced_RHO);
-  nSOUNDSPEED=smoooth(nSOUNDSPEED,20);
+%   nSOUNDSPEED=smoooth(nSOUNDSPEED,20); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED."); % Smooth using sliding Gaussian on 20 points.
+%   spline=fit(Z,nSOUNDSPEED,'smoothingspline','smoothingparam',1e-11); nSOUNDSPEED=spline(Z); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED."); % Smooth using splines.
+  spline=fit(Z,smoooth(nSOUNDSPEED,20),'smoothingspline','smoothingparam',1e-10); nSOUNDSPEED=spline(Z); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED."); % Smooth using sliding Gaussian on 20 points, and then splines.
 %   figure();
 %   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z);
 %   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
@@ -226,7 +236,7 @@ if(strcmp(method, 'bruteforce_rho'))
   
   Richard=Richardson_number(W, D, N);
   nRichard=Richardson_number(W, D, nN);
-  disp(strcat(['New minimum Richardson number: ',num2str(min(nRichard)), ' (@z=', num2str(Z(nRichard==min(nRichard))), ' m).']));
+  disp(strcat(['  Minimum Richardson number: ',num2str(min(nRichard)), ' (@z=', num2str(Z(nRichard==min(nRichard))), ' m).']));
   figure();
   semilogx(Richard, Z, nRichard, Z, ones(size(Z)), Z, 'k:', 0.25*ones(size(Z)), Z, 'k');
   xlim([0.5 * min([Richard;nRichard]), 2 * max([Richard;nRichard])]);
@@ -261,17 +271,17 @@ disp(" ");
 disp(["> Outputting regularised model to file."]);
 
 if(maxalt<original_zmax)
-  disp(["[WARNING] maxalt < original max_alt, the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
+  disp(["  [WARNING] maxalt < original max_alt, the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
 end
 if(interpolate~=0)
-  disp(["[WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0."]);
+  disp(["  [WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0."]);
 end
 decision=-1;
 while(decision~=0 && decision~=1)
-  decision=input(['Output regularised model to another file? (0 for no, 1 for yes) > ']);
+  decision=input(['  Output regularised model to another file? (0 for no, 1 for yes) > ']);
 end
 if(decision==0)
-  disp("Outputting cancelled, stopping script."); return;
+  disp("  Outputting cancelled, stopping script."); return;
 end
 
 % prefix="reg_";
@@ -285,7 +295,7 @@ rewrite_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSU
 
 function sQ=smoooth(Q,n)
   sQ=smoothdata(Q,'gaussian',n);
-  disp(strcat("[WARNING] Smoothed quantity ", inputname(1), " by a Gaussian filter over ", num2str(n), " elements."));
+%   disp(strcat("[WARNING] Smoothed quantity ", inputname(1), " by a Gaussian filter over ", num2str(n), " elements."));
 end
 
 function [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W)

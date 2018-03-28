@@ -18,7 +18,7 @@ function [] = plot_model(output_file, subplotcode, marker, colour, legends)
   subplot(subplotcode+1); myplot(RHO, Z, marker, colour, datestr, 'sx'); xlabel('$\rho$ (kg/m$^3$)'); % xlim([0.1*min(RHO),10*max(RHO)]);
   subplot(subplotcode+2); myplot(C, Z, marker, colour, datestr, 'p'); xlabel('$c$ (m/s)'); % LIMX=C; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   title({[posstr],apf107str,''});
-  subplot(subplotcode+3); myplot(NSQ, Z, marker, colour, datestr, 'p'); xlabel('$N^2$ (Hz$^2$)'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
+  subplot(subplotcode+3); myplot(NSQ, Z, marker, colour, datestr, 'p'); xlabel('$N^2$ (rad$^2$/s$^2$)'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   if(strcmp(legends,'no')==0)
     legend('Location', 'northwest');
   end
