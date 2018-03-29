@@ -20,9 +20,10 @@ addpath('/usr/local/matlab/r2017b/toolbox/tightfig');
 
 suffix="_crop";
 
-% FOLDER='/home/l.martire/Documents/MATLAB/snapshot_beautifier_tests/';
+FOLDER = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200/snapshots_edits';
+% FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/snapshots_edits/cropping';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/SH_final/snapshots_edits/cropping';
-FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/snapshots_edits/cropping';
+% FOLDER='/home/l.martire/Documents/MATLAB/snapshot_beautifier_tests/';
 
 if(not(strcmp(FOLDER(end),'/'))); FOLDER=[FOLDER,'/']; end;
 list=dir(strcat(FOLDER, '*.jpg'));
@@ -37,6 +38,7 @@ disp(strcat("Treating folder '",FOLDER,"', containing ",num2str(size(list,1))," 
 
 fs=input('Font size (default 24)? > '); set(0, 'defaultTextFontSize', fs); set(0, 'defaultAxesFontSize', fs);
 
+newsnap={};
 for s=1:size(list,1)
   snap = strcat(FOLDER,list(s).name);
 
@@ -100,6 +102,10 @@ for s=1:size(list,1)
   gcf;
   tightfig;
 
-  splsnap=split(snap,"/"); splsnapend=split(splsnap(end),"."); splsnapend{1}=[splsnapend{1},char(suffix)];splsnap{end}=char(join(splsnapend,"."));newsnap=char(join(splsnap,"/"));
-  saveas(gcf,newsnap);
+  splsnap=split(snap,"/"); splsnapend=split(splsnap(end),"."); splsnapend{1}=[splsnapend{1},char(suffix)];splsnap{end}=char(join(splsnapend,"."));newsnap{s}=char(join(splsnap,"/"));
+  saveas(gcf,newsnap{s});
+end
+
+if(0==1) % One-liner to be ran to correct axis label positionning on all cropped snapshots.
+  for s=1:size(list,1); figure(s); xlp = get(get(gca, 'XLabel'), 'Position'); set(get(gca, 'XLabel'), 'Position', xlp+[-90,20,0]); saveas(gcf,newsnap{s}); end
 end

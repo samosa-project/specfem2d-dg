@@ -49,8 +49,8 @@ unknown = 'BXZ';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_599638_testmicrobarom/');
 
 % StratoExplo, 66, June, 12:00
-% fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
+fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
@@ -66,11 +66,11 @@ unknown = 'BXZ';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
 
 % Quake, 45.
-fig_title = strcat('Quake Simulation (45d dip)');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
-% fig_title = strcat('Quake Simulation (0d dip)');
+% fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
