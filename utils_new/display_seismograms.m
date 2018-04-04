@@ -20,7 +20,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % INITIALIZATION
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
 renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
-coord_units='km'; remove_source_coords = 0;
+coord_units='km'; convert_to_relative_coords = 0;
 % Direct waves parameters (??)
 %windsurf = - 10.5; % m/s
 %csurf = 233.5; % m/s
@@ -49,8 +49,8 @@ unknown = 'BXZ';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_599638_testmicrobarom/');
 
 % StratoExplo, 66, June, 12:00
-fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
+% fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
@@ -58,11 +58,11 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexpl
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; remove_source_coords = 1;
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
+fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
 
 % Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; remove_source_coords = 1;
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
 
 % Quake, 45.
@@ -185,7 +185,7 @@ end
 
 % Loop on sismograms.
 max_ylim_plus=-Inf; min_ylim_minus=+Inf;
-if(remove_source_coords==1); xstattab=xstattab-pos_sources(1,1); ystattab=ystattab-pos_sources(1,2); end % Eventually remove source components for display.
+if(convert_to_relative_coords==1); xstattab=xstattab-pos_sources(1,1); ystattab=ystattab-pos_interface; end % Eventually remove source components for display.
 for istat = 1 : nstat
   istat_glob = istattab(istat); % Recover global number of station.
 
@@ -319,7 +319,7 @@ disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; remove_source_coords = 1;
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); renorm_factor=8.840811261618920e-04;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
@@ -329,7 +329,7 @@ disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
 
 % Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; remove_source_coords = 1;
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9048100_seismic_DG/');

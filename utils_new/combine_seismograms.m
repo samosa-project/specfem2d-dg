@@ -23,28 +23,31 @@ colour=-1; colour=input('  Colour choice? ([0, 0.447, 0.741] for nice blue, [0.8
 
 distancechoice=-1;
 while(~ismember(distancechoice,[1,2,3]))
-  distancechoice=input('  Distance choice? (1 for x, 2 for z, 3 for d) > ');
+  distancechoice=input('  Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ');
 end
 switch distancechoice
   case 1
-    distance=xstattab; dist_symbol="x_s";
+    distance=xstattab; dist_symbol="x"; dist_name="horizontal distance";
   case 2
-    distance=ystattab; dist_symbol="z_s";
+    distance=abs(xstattab); dist_symbol="|x|"; dist_name="horizontal distance";
   case 3
-    distance=dist_to_sources; dist_symbol="d_s";
+    distance=ystattab; dist_symbol="z"; dist_name="altitude";
+  case 4
+    distance=dist_to_sources; dist_symbol="d"; dist_name="distance";
 end
 
 [~,isort]=sort(distance(istattab(1:nstat)));
 ptp_over_dist=max(peak2peak(Zamp(isort,:),2))/max(diff(distance(istattab(isort))));
 
-satisfied=-1;
 figure(fign);
 name={};
+yticklabel=[];
 vertical_shift={};
-while(satisfied~=0)
+scale=-1;
+while(scale~=0)
   close(fign); figure(fign);
-  if(satisfied~=0 && satisfied~=-1)
-    ptp_over_dist=satisfied;
+  if(scale~=0 && scale~=-1)
+    ptp_over_dist=scale;
   end
   s=sprintf("%.2e",ptp_over_dist);spls=split(s,"e");s=[char(spls(1)),'\cdot10^{',num2str(str2num(char(spls(2)))),'}'];
   for i=1:size(isort,1)
@@ -52,6 +55,7 @@ while(satisfied~=0)
     istat_glob = istattab(istat);
     vertical_shift{istat}=ptp_over_dist*distance(istat_glob);
     name{istat}=strcat('S', num2str(istat_glob));
+    yticklabel=[yticklabel, sprintf("%.2f",distance(istat_glob))];
     plot(Ztime(istat,:),vertical_shift{istat}+Zamp(istat,:),'displayname',name{istat},'color',colour);
 %     text(1.01*Ztime(istat,end),vertical_shift,name{istat},'HorizontalAlignment','left');
     hold on;
@@ -59,13 +63,28 @@ while(satisfied~=0)
   xlim([min(Ztime(1:nstat, 1)), max(Ztime(1:nstat, end))]);
   xlabel('time (s)');
   ylabel(strcat("$\left(",s,"\right)",dist_symbol,"$ + ", unknown_name));
-  satisfied=input('  Rechoose coefficient? (0 for no, new value for yes)? > ');
+  scale=input('  Rechoose coefficient? (0 for no, new value for yes)? > ');
 end
 % legend('location', 'best');
+yticks(ptp_over_dist*distance(istattab(isort)));
+yticklabels(yticklabel);
+ylabel(strcat(dist_name," $",dist_symbol,"$ $\longrightarrow$"));
 
 tmin=input('  t_min? > '); tmax=input('  t_max? > '); xlim([tmin, tmax]);
 for i=1:size(isort,1)
   text(1.01*tmax,vertical_shift{isort(i)},name{isort(i)},'HorizontalAlignment','left');
+end
+
+scale=-1;
+while(not(ismember(scale,[0,1])))
+  scale=input('  Draw scale examples? (0 for no, 1 for yes)? > ');
+end
+if(scale==1)
+  min_amplitude_log10=floor(log10(max(max(Zamp(:,:)')-min(Zamp(:,:)'))));
+  for i=1:10
+    abs=(tmax+tmin)*i/11;
+    plot(abs*[1,1],ptp_over_dist*distance(istattab(isort(1)))*[1,1]+0.5*i*10^(min_amplitude_log10)*[-1,1],'DisplayName',sprintf("%.0e",i*10^(min_amplitude_log10)));
+  end
 end
 
 ax=gca();

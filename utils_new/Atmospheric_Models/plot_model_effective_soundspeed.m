@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [] = plot_model_effective_soundspeed(output_file)
+function [] = plot_model_effective_soundspeed(output_file, upwinddownwind)
   [Z, ~, ~, C, ~, ~, ...
    ~, ~, ~, ~, ~, ~, ~, W, ~, ~, ~] = ...
    extract_data(output_file, 3, 0, 0);
@@ -17,10 +17,15 @@ function [] = plot_model_effective_soundspeed(output_file)
   tit_plus={posstr, datestr};
   
   figure();
-  semilogx(C, Z, ":", C+W, Z, "-", C-W, Z, "-");
+  if(upwinddownwind~=0)
+    semilogx(C, Z, ":", min(C+W,C-W), Z, "-", max(C+W,C-W), Z, "-");
+    legend('sound speed $c$', 'upwind effective sound speed', 'downwind effective sound speed', 'Location', 'best');
+  else
+    semilogx(C, Z, ":", C+W, Z, "-", C-W, Z, "-");
+    legend('sound speed $c$', 'rightward effective sound speed $c+w$', 'leftward effective sound speed $c-w$', 'Location', 'best');
+  end
   %xlim([0.5 * min([east_Richardson; north_Richardson; proj_Richardson]), 2 * max([east_Richardson; north_Richardson; proj_Richardson])]);
   xlabel('sound speed (m/s)'); ylabel('altitude (m)');
-  legend('sound speed $c$', 'rightward effective sound speed $c+w$', 'leftward effective sound speed $c-w$', 'Location', 'best');
   title(tit_plus);
 end
 

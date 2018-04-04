@@ -15,6 +15,7 @@ function [] = plot_model(output_file, subplotcode, marker, colour, legends)
 %       datestr=[num2str(y),', ',num2str(d), 'th day, ', num2str(floor(s/3600)),':',num2str(floor((s - floor(s/3600)*3600)/60)), ' UT'];
   datestr=[num2str(d), 'th day, ', num2str(floor(s/3600)),':',num2str(floor((s - floor(s/3600)*3600)/60)), ' UT'];
 
+  figure();
   subplot(subplotcode+1); myplot(RHO, Z, marker, colour, datestr, 'sx'); xlabel('$\rho$ (kg/m$^3$)'); % xlim([0.1*min(RHO),10*max(RHO)]);
   subplot(subplotcode+2); myplot(C, Z, marker, colour, datestr, 'p'); xlabel('$c$ (m/s)'); % LIMX=C; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   title({[posstr],apf107str,''});
