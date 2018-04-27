@@ -830,9 +830,9 @@
   endif
   
   ! Modification for DG.
-  WRITE(*,*) "before inversion" ! DEBUG
-  WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
-             "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
+  !WRITE(*,*) "before inversion" ! DEBUG
+  !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
+  !           "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
   if (USE_DISCONTINUOUS_METHOD) then
     ! Backward method.
     ! TODO: Remove?
@@ -840,10 +840,10 @@
     ! Forward method.
     rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
   endif
-  WRITE(*,*) "after inversion" ! DEBUG
-  WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
-             "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
-  stop ! DEBUG
+  !WRITE(*,*) "after inversion" ! DEBUG
+  !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
+  !           "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
+  !stop ! DEBUG
   if(myrank==0) then
     write(*,*) "(Proc 0) DG mass matrix condition number (lowest is best, ideal is 1,",&
                " by experience 50 runs okay) = ",&
