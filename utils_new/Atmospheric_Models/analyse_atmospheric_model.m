@@ -164,7 +164,7 @@ if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__richardson.png'));
 end
 
-plot_model_effective_soundspeed(DATAFILE);
+plot_model_effective_soundspeed(DATAFILE,0);
 if save_plots == 1
   saveas(gcf, strcat(DATAFILE,'__effective_sound_speed.png'));
 end

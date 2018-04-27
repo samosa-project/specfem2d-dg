@@ -20,7 +20,8 @@ addpath('/usr/local/matlab/r2017b/toolbox/tightfig');
 
 suffix="_crop";
 
-FOLDER = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200/snapshots_edits';
+FOLDER = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/SH_final/snapshots_edits/kushida';
+% FOLDER = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200/snapshots_edits';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/snapshots_edits/cropping';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/SH_final/snapshots_edits/cropping';
 % FOLDER='/home/l.martire/Documents/MATLAB/snapshot_beautifier_tests/';

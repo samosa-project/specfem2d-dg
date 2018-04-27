@@ -58,16 +58,16 @@ unknown = 'BXZ';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
-fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
 
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
 
 % Quake, 45.
-% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
 % fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
@@ -145,7 +145,13 @@ end
 % Stations to display.        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display stations' informations.
-format shortG; disp("  [station_id; x; z; d] for all stations (absolute x and z, relative d):"); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']); format compact;
+format shortG;
+if(convert_to_relative_coords==1)
+  disp("  [station_id; x; z; d] for all stations (x relative to source, z relative to ground, d relative to source):"); disp([(1:size(pos_stations, 1)); (pos_stations-[pos_sources(1,1), pos_interface])';dist_to_sources']);
+else
+  disp("  [station_id; x; z; d] for all stations (absolute x and z, d relative to source):"); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']);
+end
+format compact;
 
 % Ask user for various inputs.
 display_or_load=-1;
@@ -277,7 +283,7 @@ for istat = 1 : nstat
     end
     xlim([Ztime(1, 1), Ztime(1, end)]);
 
-    legend(legtext{istat}, 'Location', 'northeast');
+%     legend(legtext{istat}, 'Location', 'northeast');
 
     hold on;
 
@@ -313,6 +319,11 @@ disp([(1:length(istattab))',istattab']);
 disp(strcat("  Example: Data of station ",num2str(istattab(1))," are in         Zamp(",num2str(1),", :)."));
 disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :)."));
 
+% Clear useless variables.
+if(display_or_load==1)
+  clear('max_ylim_plus', 'min_ylim_minus');
+end
+clear('A', 'ans', 'display_or_load', 'fid', 'file', 'inputtxt', 'istat', 'istatglob', 'line', 'nd', 'nt', 'nsub', 'pos_stations', 'stop', 'subsample', 'xfound', 'zfound');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Old simulations' files.     %
