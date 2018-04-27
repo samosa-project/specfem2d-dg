@@ -299,44 +299,35 @@
   endif
 
   ! MODIF NS
+  ! TODO: Remove?
   allocate(resu_rhoveloc_x(nglob_acoustic), resu_rhoveloc_z(nglob_acoustic), &
         resu_density(nglob_acoustic), resu_rhoenergy(nglob_acoustic))
-        
   allocate(dt_rhoveloc_acoustic(NDIM,nglob_acoustic), &
            rhoveloc_acoustic(NDIM,nglob_acoustic), &
            density_p(nglob_acoustic), rhoenergy(nglob_acoustic), stat=ier)  
-   
   allocate(dt_density(nglob_acoustic), &
            dt_rhoenergy(nglob_acoustic),stat=ier)      
            
-  ! Modif DG
+  ! Modification for DG.
   if (USE_DISCONTINUOUS_METHOD) then
     nglob_DG_loc = nglob_DG
-    
-    ! For background parameters & inverse method (Temporary)
+    ! For background parameters & inverse method (temporary).
+    ! TODO: Remove?
     allocate(rmass_inverse_acoustic_DG_b(nglob))
     allocate(potential_dphi_dx_DG(nglob), potential_dphi_dz_DG(nglob))
-    
-    if(.not. only_DG_acoustic .AND. any_acoustic_DG) allocate(veloc_vector_acoustic_DG_coupling(nglob, 2))
-  
+    if(.not. only_DG_acoustic .AND. any_acoustic_DG) then
+      allocate(veloc_vector_acoustic_DG_coupling(nglob, 2))
+    endif
   else
-    ! dummy allocate unused arrays with fictitious size
+    ! Dummy allocation.
     nglob_DG_loc = 1
   endif
-  !allocate(dot_rho(nglob_DG), dot_rhovx(nglob_DG), dot_rhovz(nglob_DG), dot_E(nglob_DG), dot_e1(nglob_DG))
-  !allocate(resu_rho(nglob_DG), resu_rhovx(nglob_DG), resu_rhovz(nglob_DG), resu_E(nglob_DG), resu_e1(nglob_DG))
-  !allocate(rho_DG(nglob_DG), p_DG(nglob_DG), rhovx_DG(nglob_DG), rhovz_DG(nglob_DG), &
-  !      veloc_x_DG(nglob_DG), veloc_z_DG(nglob_DG), E_DG(nglob_DG), e1_DG(nglob_DG))
-  !allocate(p_DG_init(nglob_DG), T_init(nglob_DG), V_DG(2,2,nglob_DG), T_DG(2,nglob_DG))
-  !allocate(rmass_inverse_acoustic_DG(nglob_DG))
-  
   allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc))
   allocate(resu_rho(nglob_DG_loc), resu_rhovx(nglob_DG_loc), resu_rhovz(nglob_DG_loc), resu_E(nglob_DG_loc), resu_e1(nglob_DG_loc))
   allocate(rho_DG(nglob_DG_loc), p_DG(nglob_DG_loc), rhovx_DG(nglob_DG_loc), rhovz_DG(nglob_DG_loc), &
         veloc_x_DG(nglob_DG_loc), veloc_z_DG(nglob_DG_loc), E_DG(nglob_DG_loc), e1_DG(nglob_DG_loc))
   allocate(p_DG_init(nglob_DG_loc), T_init(nglob_DG_loc), V_DG(2,2,nglob_DG_loc), T_DG(2,nglob_DG_loc))
   allocate(rmass_inverse_acoustic_DG(nglob_DG_loc))
-  
   rho_DG   = 0.
   rhovx_DG = 0.
   rhovz_DG = 0.

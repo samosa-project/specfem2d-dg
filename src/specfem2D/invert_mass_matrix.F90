@@ -361,13 +361,14 @@
         !rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) &
         !           + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) * exp(-coord(2,iglob)/15000)
         
+        ! Modification for DG.
         if(USE_DISCONTINUOUS_METHOD) then
-          ! Backward inverse matrix
+          ! Backward method.
+          ! TODO: Remove?
           rmass_inverse_acoustic_DG_b(iglob) = rmass_inverse_acoustic_DG_b(iglob) &
                      + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) 
           
           iglob = ibool_DG(i,j,ispec)
-          ! MODIF DG
           
           if(.false. .and. ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
             ! Add jacobian of stretching into the mass matrix.
@@ -823,35 +824,31 @@
     rmass_w_inverse_poroelastic(:) = 1._CUSTOM_REAL / rmass_w_inverse_poroelastic(:)
   if (any_acoustic) &
     rmass_inverse_acoustic(:) = 1._CUSTOM_REAL / rmass_inverse_acoustic(:)
-    
-    !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG_b), &
-    !    "maxval", maxval(rmass_inverse_acoustic_DG_b)
-    
-  if (USE_DISCONTINUOUS_METHOD) then
-    rmass_inverse_acoustic_DG_b(:) = 1._CUSTOM_REAL /rmass_inverse_acoustic_DG_b(:)
-    !rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
-  endif
-  if (any_gravitoacoustic) then
+  if(any_gravitoacoustic) then
     rmass_inverse_gravitoacoustic(:) = 1._CUSTOM_REAL / rmass_inverse_gravitoacoustic(:)
     rmass_inverse_gravito(:) = 1._CUSTOM_REAL / rmass_inverse_gravito(:)
-    !rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
   endif
   
-  ! Modif DG
-  !DEBUG
+  ! Modification for DG.
+  WRITE(*,*) "before inversion" ! DEBUG
+  WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
+             "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
+  if (USE_DISCONTINUOUS_METHOD) then
+    ! Backward method.
+    ! TODO: Remove?
+    rmass_inverse_acoustic_DG_b(:) = 1._CUSTOM_REAL /rmass_inverse_acoustic_DG_b(:)
+    ! Forward method.
+    rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
+  endif
+  WRITE(*,*) "after inversion" ! DEBUG
+  WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
+             "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
+  stop ! DEBUG
   if(myrank==0) then
     write(*,*) "(Proc 0) DG mass matrix condition number (lowest is best, ideal is 1,",&
                " by experience 50 runs okay) = ",&
                (maxval(rmass_inverse_acoustic_DG)/minval(rmass_inverse_acoustic_DG)), "."
   endif
-  !write(*,*) "mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
-  !           "maxval", maxval(rmass_inverse_acoustic_DG)
-  if(USE_DISCONTINUOUS_METHOD) then
-    rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
-  endif
-  !DEBUG
-  !write(*,*) "inverse mass matrix, minval", minval(rmass_inverse_acoustic_DG), &
-  !           "maxval", maxval(rmass_inverse_acoustic_DG)
-  !stop
+  
   end subroutine invert_mass_matrix
 
