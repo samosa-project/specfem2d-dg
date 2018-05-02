@@ -16,12 +16,11 @@ set(0, 'defaultAxesFontSize', 12); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-% Load raw seismogram.
+% Load signal.
 % TODO: ask for user input.
 % raw_t=Ztime(1,:);
 % raw_s=Zamp(1,:);
 % raw_t=data_leo_t(1,:);raw_s=data_leo_v(1,:);
-
 % OKQ0
 % raw_t=data_voon_t{4};raw_s=data_voon_v{4}'; fig_tit='Voon 15';
 % raw_t=data_voon_t{5};raw_s=data_voon_v{5}'; fig_tit='Voon 30';
@@ -51,8 +50,7 @@ time=raw_t; signal(select_time_l>=time)=0; signal(time>=select_time_u)=0; % Zero
 signal=detrend(signal); % Remove eventual linear trend.
 dt=time(2)-time(1);
 Fls=1/dt;
-% nfft= 2^(floor(log2(2000)))/2;
-nfft= 2^(8); nfft=min(length(raw_s), nfft);
+nfft=max(2^floor(log2(length(signal))),length(signal));
 window = hann(nfft);
 noverlap= nfft/2;
 
