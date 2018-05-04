@@ -37,6 +37,13 @@ end
 list(rem)=[];
 disp(strcat("Treating folder '",FOLDER,"', containing ",num2str(size(list,1))," snapshot files."));
 
+ext="KEK";
+while(not(ismember(ext,["fig","jpg","png","eps"])))
+  ext=input('Extension (fig, jpg, png, eps)? > ','s');
+end
+if(strcmp(ext,"eps")); ext="epsc"; end
+ext=char(ext);
+
 fs=input('Font size (default 24)? > '); set(0, 'defaultTextFontSize', fs); set(0, 'defaultAxesFontSize', fs);
 
 newsnap={};
@@ -105,11 +112,14 @@ for s=1:size(list,1)
   gcf;
   tightfig;
 
-  splsnap=split(snap,"/"); splsnapend=split(splsnap(end),"."); splsnapend{1}=[splsnapend{1},char(suffix)];splsnap{end}=char(join(splsnapend,"."));newsnap{s}=char(join(splsnap,"/"));
-  saveas(gcf,newsnap{s});
+%   splsnap=split(snap,"/"); splsnapend=split(splsnap(end),"."); splsnapend{1}=[splsnapend{1},char(suffix)]; splsnapend{2}=''; splsnap{end}=char(join(splsnapend,".")); newsnap{s}=char(join(splsnap,"/"));
+  splsnap=split(snap,"/"); splsnapend=split(splsnap(end),"."); splsnap{end}=[splsnapend{1},char(suffix)]; newsnap{s}=char(join(splsnap,"/"));
+  saveas(gcf,newsnap{s},ext);
 end
 
 if(0==1) % One-liners to be ran to correct axis label positionning on all cropped snapshots.
-  for s=1:size(list,1); figure(s); xlp = get(get(gca, 'XLabel'), 'Position'); set(get(gca, 'XLabel'), 'Position', xlp+[-90,20,0]); saveas(gcf,newsnap{s}); end
-  for s=1:size(list,1); figure(s); zlp = get(get(gca, 'YLabel'), 'Position'); set(get(gca, 'YLabel'), 'Position', zlp+[-40,0,0]); saveas(gcf,newsnap{s}); end
+  for s=1:size(list,1); figure(s); xlp = get(get(gca, 'XLabel'), 'Position'); set(get(gca, 'XLabel'), 'Position', xlp+[0,10,0]); saveas(gcf,newsnap{s},ext); end % Shift XLabel vertically.
+  for s=1:size(list,1); figure(s); xlp = get(get(gca, 'XLabel'), 'Position'); set(get(gca, 'XLabel'), 'Position', xlp+[10,0,0]); saveas(gcf,newsnap{s},ext); end % Shift XLabel horizontally.
+  for s=1:size(list,1); figure(s); zlp = get(get(gca, 'YLabel'), 'Position'); set(get(gca, 'YLabel'), 'Position', zlp+[0,-40,0]); saveas(gcf,newsnap{s},ext); end % Shift YLabel vertically.
+  for s=1:size(list,1); figure(s); zlp = get(get(gca, 'YLabel'), 'Position'); set(get(gca, 'YLabel'), 'Position', zlp+[-40,0,0]); saveas(gcf,newsnap{s},ext); end % Shift YLabel horizontally.
 end

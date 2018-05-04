@@ -23,11 +23,11 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % raw_t=data_leo_t(1,:);raw_s=data_leo_v(1,:);
 % OKQ0
 % raw_t=data_voon_t{4};raw_s=data_voon_v{4}'; fig_tit='Voon 15';
-% raw_t=data_voon_t{5};raw_s=data_voon_v{5}'; fig_tit='Voon 30';
+raw_t=data_voon_t{5};raw_s=data_voon_v{5}'; fig_tit='Voon 30';
 % raw_t=data_voon_t{6};raw_s=data_voon_v{6}'; fig_tit='Voon 45';
 % raw_t=Ztime(1,:); raw_s=Zamp(1,:); fig_tit=fig_title;
 % raw_t=Ztime(2,:); raw_s=Zamp(2,:); fig_tit=fig_title;
-raw_t=Ztime(3,:); raw_s=Zamp(3,:); fig_tit=fig_title;
+% raw_t=Ztime(3,:); raw_s=Zamp(3,:); fig_tit=fig_title;
 
 % Parameters.
 % TODO: ask for user input.

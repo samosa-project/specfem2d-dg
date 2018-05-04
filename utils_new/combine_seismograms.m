@@ -32,7 +32,7 @@ while(~ismember(dist_unit,["m", "km"]))
 end
 dist_factor=1;
 distancechoice=-1;
-while(~ismember(distancechoice,[1,2,3]))
+while(~ismember(distancechoice,[1,2,3,4]))
   distancechoice=input('  Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ');
 end
 normalise=-1;
