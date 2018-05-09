@@ -61,16 +61,18 @@ distance=distance/dist_factor;
 % Sort according to chosen distance.
 [~,isort]=sort(distance(istattab(1:nstat)));
 
-% Enventually normalise.
-if(normalise==1)
-  for i=1:size(isort,1)
+% Remove mean value.
+for i=1:size(isort,1)
+  % Enventually normalise.
+  if(normalise==1)
     data_v(i,:)=(data_v(i,:)-min(data_v(i,:)))/(max(data_v(i,:))-min(data_v(i,:)));
-    data_v(i,:)=data_v(i,:)-mean(data_v(i,:));
   end
+  data_v(i,:)=data_v(i,:)-mean(data_v(i,:));
 end
 
 % Plotting tools.
 dist_over_ptp=max(diff(distance(istattab(isort))))/max(peak2peak(data_v(isort,:),2));
+if(dist_over_ptp>1e15); error("Variable dist_over_ptp is > 1e15, probably coming from the signal being very small everywhere."); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure.                     %
@@ -113,7 +115,7 @@ end
 ylabel(strcat(dist_name," $",dist_symbol,"$ ", dist_unit));%, " $\longrightarrow$"));
 
 % Time axis limits.
-tmin=input(['  t_min (',num2str(min(min(data_t))),' now)? > ']); tmax=input(['  t_max (',num2str(max(max(data_t))),' now)? > ']); xlim([tmin, tmax]);
+tmin=input(['  t_min (',num2str(min(min(data_t))),' now)? > ']); tmax=input(['  t_max (',num2str(max(max(data_t))),' now)? > ']); if(isempty(tmin));tmin=min(min(data_t));end; if(isempty(tmax));tmax=max(max(data_t));end; xlim([tmin, tmax]);
 
 % Stations' names labels.
 for i=1:size(isort,1)

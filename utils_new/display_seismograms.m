@@ -60,7 +60,12 @@ unknown = 'BXZ';
 % Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=0_618645/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
+% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
@@ -77,6 +82,7 @@ unknown = 'BXZ';
 % Tests.
 fig_title = 'test';
 rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES_observesignalinbuffer_cstrhdr/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4/'); type_display = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf10_1hz/'); type_display = 1;
@@ -157,7 +163,7 @@ format compact;
 
 % Ask user for various inputs.
 display_or_load=-1;
-while(not(display_or_load==0 || display_or_load==1)); display_or_load=input('  Load and display (0) or load only (1)?\n  > '); end
+while(not(ismember(display_or_load,[0,1,2]))); display_or_load=input('  Load and display (0), load only (1), or load only and combine (2)?\n  > '); end
 istattab = input(['  Stations (Matlab format, e.g. [1, 4, 7] or 1:20)?\n  > ']);
 nstat = size(pos_stations(istattab, 1), 1);
 geometric_attenuation=-1; inputtxt=char(strcat("  Apply geometric attenuation (1/sqrt(d) factor) to data? (0 for no, 1 for yes)\n  > "));
@@ -322,10 +328,14 @@ disp(strcat("  Example: Data of station ",num2str(istattab(1))," are in         
 disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :)."));
 
 % Clear useless variables.
-if(display_or_load==1)
+if(ismember(display_or_load,[1,2]))
   clear('max_ylim_plus', 'min_ylim_minus');
 end
-clear('A', 'ans', 'display_or_load', 'fid', 'file', 'inputtxt', 'istat', 'istatglob', 'line', 'nd', 'nt', 'nsub', 'pos_stations', 'stop', 'subsample', 'xfound', 'zfound');
+clear('A', 'ans', 'fid', 'file', 'inputtxt', 'istat', 'istatglob', 'line', 'nd', 'nt', 'nsub', 'pos_stations', 'stop', 'subsample', 'xfound', 'zfound');
+
+if(display_or_load==2)
+  combine_seismograms;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Old simulations' files.     %
@@ -414,3 +424,7 @@ clear('A', 'ans', 'display_or_load', 'fid', 'file', 'inputtxt', 'istat', 'istatg
 
 % Mars AGW.
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
+
+if(0==1)
+  for ii=1:length(Zamp(:,1));amp(ii)=max(Zamp(ii,:))-min(Zamp(ii,:));end, figure(); plot(dist_to_sources, amp); % plot amplitude
+end
