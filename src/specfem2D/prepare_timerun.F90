@@ -57,7 +57,7 @@
   call prepare_timerun_PML()
   
   ! Compute the stretching values and store them in corresponding variables.
-  if(ABC_STRETCH) then
+  if(USE_DISCONTINUOUS_METHOD .and. ABC_STRETCH) then
     if(myrank==0) then
       write(IMAIN,*) 'Preparing stretching absorbing boundary conditions for the DG elements.'
       if(ABC_STRETCH_TOP) then

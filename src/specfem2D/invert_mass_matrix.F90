@@ -844,7 +844,7 @@
   !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG
   !           "maxval", maxval(rmass_inverse_acoustic_DG) ! DEBUG
   !stop ! DEBUG
-  if(myrank==0) then
+  if(USE_DISCONTINUOUS_METHOD .and. myrank==0) then
     write(*,*) "(Proc 0) DG mass matrix condition number (lowest is best, ideal is 1,",&
                " by experience 50 runs okay) = ",&
                (maxval(rmass_inverse_acoustic_DG)/minval(rmass_inverse_acoustic_DG)), "."

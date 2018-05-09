@@ -81,26 +81,53 @@
           select case (seismotype)
           case (1)
             ! displacement
-            call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
-                                            potential_gravito,displ_elastic,displs_poroelastic, &
-                                            rhovz_DG/rho_DG,&
-                                            ispec,vector_field_element)
+            if (USE_DISCONTINUOUS_METHOD) then
+              ! Send DG velocity in the DG parameter slot.
+              call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
+                                              potential_gravito,displ_elastic,displs_poroelastic, &
+                                              rhovz_DG/rho_DG,&
+                                              ispec,vector_field_element)
+            else
+              ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
+              call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
+                                              potential_gravito,displ_elastic,displs_poroelastic, &
+                                              0.,&
+                                              ispec,vector_field_element)
+            endif
           case (2)
             coef = 0.
-            if(CONSTRAIN_HYDROSTATIC) coef = 1.  
+            if(CONSTRAIN_HYDROSTATIC) coef = 1.
             ! velocity
-            call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                            potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                            (((gammaext_DG - 1.)*( E_DG &
-                                                - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) &
-                                                - coef*p_DG_init), &
-                                            ispec,vector_field_element)
+            if (USE_DISCONTINUOUS_METHOD) then
+              ! Send DG pressure in the DG parameter slot.
+              call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+                                              potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                              (((gammaext_DG - 1.)*( E_DG &
+                                                  - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) &
+                                                  - coef*p_DG_init), &
+                                              ispec,vector_field_element)
+            else
+              ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
+              call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+                                              potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                              0., &
+                                              ispec,vector_field_element)
+            endif
           case (3)
             ! acceleration
-            call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
-                                            potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                            rhovz_DG/sqrt(rho_DG), &
-                                            ispec,vector_field_element)
+            if (USE_DISCONTINUOUS_METHOD) then
+              ! Send DG sqrt(rho)*velocity in the DG parameter slot.
+              call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
+                                              potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
+                                              rhovz_DG/sqrt(rho_DG), &
+                                              ispec,vector_field_element)
+            else
+              ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
+              call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
+                                              potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
+                                              0., &
+                                              ispec,vector_field_element)
+            endif
           case (4)
             ! pressure
             call compute_pressure_one_element(ispec,pressure_element)

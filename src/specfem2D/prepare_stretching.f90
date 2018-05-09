@@ -217,7 +217,7 @@ subroutine stretching_function(r_l, ya)
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  eps_l = 0.2 ! 1.d-4 in Arina's paper.
+  eps_l = 0.2 ! Ending value of stretching. 1.d-4 in Arina's paper.
   p = 3.25
   q = 6.
   
@@ -266,9 +266,10 @@ subroutine change_visco(i, j, ispec, x, z)
   
   use specfem_par, only: etaext, muext,&
                          !ABC_STRETCH,&
-                         ABC_STRETCH_TOP, ABC_STRETCH_TOP_LBUF,&
-                         !mesh_xmin, mesh_xmax, mesh_zmin,&
-                         mesh_zmax
+                         !ABC_STRETCH_TOP, ABC_STRETCH_TOP_LBUF,&
+                         ABC_STRETCH_LEFT, ABC_STRETCH_LEFT_LBUF,&
+                         !mesh_zmax, mesh_xmax, mesh_zmin,&
+                         mesh_xmin
 
   implicit none
   
@@ -281,15 +282,15 @@ subroutine change_visco(i, j, ispec, x, z)
   real(kind=CUSTOM_REAL), parameter :: ZERO  = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   
-  if(ABC_STRETCH_TOP) then
-    r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
+  if(ABC_STRETCH_LEFT) then
+    r_l = -(x-mesh_xmin)/ABC_STRETCH_LEFT_LBUF + ONE ! 0 at beginning of buffer, 1 at end.
     if(r_l>ZERO .and. r_l<=ONE)then
-      muext(i, j, ispec) = 1.25d-5*(1.+1000.*r_l**2.)
+      muext(i, j, ispec) = 1.25d-5*(1.+1.d3*r_l**2.)
       etaext(i, j, ispec) = (4./3.)*muext(i, j, ispec)
     endif
   endif
   
-  if(.false.) write(*, *) x ! HORRIBLE HACK, I'M SO SORRY.
+  if(.false.) write(*, *) x, z ! HORRIBLE HACK, I'M SO SORRY.
 end subroutine change_visco
 
 ! ------------------------------------------------------------ !

@@ -287,15 +287,6 @@
             temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xizl * temp_unknown2)
             temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammazl * temp_unknown2)
             
-            ! TODO: When CONSTRAIN_HYDROSTATIC==.true., doesn't the energy contribution lack the term \Sigma_{v,0}{\vect{v}'} here? As follows:
-            !if(.false. .and. CONSTRAIN_HYDROSTATIC) then
-            !  ! DV0X_DZ should be set to $\partial_z{v_{0,x}}$ here.
-            !  temp_unknown = muext(i, j, ispec)*DV0X_DZ*(veloc_z_DG(iglob)-rhovz_init(iglob)/rho_init(iglob))
-            !  temp_unknown2 = muext(i, j, ispec)*DV0X_DZ*(veloc_x_DG(iglob)-rhovx_init(iglob)/rho_init(iglob))
-            !  temp_E_1(i, j) = temp_E_1(i, j) + wzl*jacobianl*(xixl*temp_unknown + xizl*temp_unknown2) 
-            !  temp_E_2(i, j) = temp_E_2(i, j) + wxl*jacobianl*(gammaxl*temp_unknown + gammazl*temp_unknown2) 
-            !endif
-            
             ! Add the heat contributions (second part of the viscous energy tensor, \kappa\nabla T, or \kappa\nabla{T'} if CONSTRAIN_HYDROSTATIC==.true.).
             temp_unknown  = kappa_DG(i, j, ispec)*dT_dx
             temp_unknown2 = kappa_DG(i, j, ispec)*dT_dz
@@ -327,7 +318,8 @@
                               * ( (tau_epsilon(i, j, ispec)/tau_sigma(i, j, ispec)) - ONE ) &
                               * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
           
-          ! TEST ARTIFICIAL ADVECTION on top buffer
+          ! TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! ARTIFICIAL ADVECTION on top buffer
           if(.false.) then
             x=coord(1, ibool_before_perio(i, j, ispec))
             z=coord(2, ibool_before_perio(i, j, ispec))
@@ -370,7 +362,7 @@
               endif
             endif
           endif
-          ! END OF TESTS
+          ! END OF TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! Memory variable evolution. TODO: Describe more precisely.
           dot_e1(iglob) = dot_e1(iglob) - (ONE/tau_sigma(i, j, ispec)) &
@@ -407,7 +399,11 @@
           dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i, j) * wxl * wzl
           dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i, j) * wxl * wzl
           
-          !dot_E(iglob) = 0. ! DEBUG: DEACTIVATE ENERGY INTERNAL (ALL EXCEPT FLUXES) EVOLUTION.
+          ! DEBUG: DEACTIVATE INTERNAL (ALL EXCEPT FLUXES) EVOLUTION.
+          !dot_rho(iglob) = 0.
+          !dot_rhovx(iglob) = 0.
+          !dot_rhovz(iglob) = 0.
+          !dot_E(iglob) = 0.
         enddo
       enddo
       
@@ -502,8 +498,10 @@
             ! TODO: Do it more clearly.
             iglob_unique=ibool_before_perio(i, j, ispec)
             !weight=weight*(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
-            nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
-            nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+            
+            !nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
+            !nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+            
             !lambda = max(abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz) &
             !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
             !             + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
@@ -620,12 +618,12 @@
             temp_unknown_P = veloc_x_DG_P*(E_DG_P + p_DG_P)
             temp_unknown2_M = veloc_z_DG(iglobM)*(E_DG(iglobM) + p_DG(iglobM))
             temp_unknown2_P = veloc_z_DG_P*(E_DG_P + p_DG_P)
-          else        
+          else
             temp_unknown_M = veloc_x_DG(iglobM)*(E_DG(iglobM) + (p_DG(iglobM)- p_DG_init(iglobM)))
             temp_unknown_P = veloc_x_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
             temp_unknown2_M = veloc_z_DG(iglobM)*(E_DG(iglobM) + (p_DG(iglobM)- p_DG_init(iglobM)))
             temp_unknown2_P = veloc_z_DG_P*(E_DG_P + (p_DG_P - p_DG_init(iglobM)))
-          endif        
+          endif
           ! Dot product.
           flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations].
           jump   = E_DG(iglobM) - E_DG_P
@@ -648,7 +646,11 @@
           dot_E(iglobM) = dot_E(iglobM) &
                           + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
           
-          !dot_E(iglobM) = 0. ! DEBUG: DEACTIVATE ENERGY FLUXES.
+          ! DEBUG: DEACTIVATE FLUXES.
+          !dot_rho(iglobM) = 0.
+          !dot_rhovx(iglobM) = 0.
+          !dot_rhovz(iglobM) = 0.
+          !dot_E(iglobM) = 0.
         enddo
       enddo
     endif ! End of test if acoustic element

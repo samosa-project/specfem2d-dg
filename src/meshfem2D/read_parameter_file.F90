@@ -238,38 +238,40 @@
   SPREAD_SSF_SIGMA = 1.
   REMOVE_STF_INITIAL_DISCONTINUITY=.false.
   
-  ! Try to read parameters in parfile.
-  call read_value_logical_p(ABC_STRETCH_TOP, 'solver.ABC_STRETCH_TOP')
-  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_TOP in Par_file'
-  call read_value_logical_p(ABC_STRETCH_LEFT, 'solver.ABC_STRETCH_LEFT')
-  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LEFT in Par_file'
-  call read_value_logical_p(ABC_STRETCH_BOTTOM, 'solver.ABC_STRETCH_BOTTOM')
-  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_BOTTOM in Par_file'
-  call read_value_logical_p(ABC_STRETCH_RIGHT, 'solver.ABC_STRETCH_RIGHT')
-  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_RIGHT in Par_file'
-  ABC_STRETCH = (ABC_STRETCH_TOP .or. ABC_STRETCH_LEFT .or. ABC_STRETCH_BOTTOM .or. ABC_STRETCH_RIGHT)
-  call read_value_double_precision_p(ABC_STRETCH_TOP_LBUF, 'solver.ABC_STRETCH_TOP_LBUF')
-  call read_value_double_precision_p(ABC_STRETCH_LEFT_LBUF, 'solver.ABC_STRETCH_LEFT_LBUF')
-  call read_value_double_precision_p(ABC_STRETCH_BOTTOM_LBUF, 'solver.ABC_STRETCH_BOTTOM_LBUF')
-  call read_value_double_precision_p(ABC_STRETCH_RIGHT_LBUF, 'solver.ABC_STRETCH_RIGHT_LBUF')
-  !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LBUF in Par_file'
-  call read_value_logical_p(USE_SPREAD_SSF, 'solver.USE_SPREAD_SSF')
-  !if (err_occurred() /= 0) stop 'error reading parameter USE_SPREAD_SSF in Par_file'
-  call read_value_logical_p(SPREAD_SSF_SAVE, 'solver.SPREAD_SSF_SAVE')
-  !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SAVE in Par_file'
-  call read_value_double_precision_p(SPREAD_SSF_SIGMA, 'solver.SPREAD_SSF_SIGMA')
-  !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SIGMA in Par_file'
-  call read_value_logical_p(REMOVE_STF_INITIAL_DISCONTINUITY, 'solver.REMOVE_STF_INITIAL_DISCONTINUITY')
-  !if (err_occurred() /= 0) stop 'error reading parameter REMOVE_STF_INITIAL_DISCONTINUITY in Par_file'
+  if(USE_DISCONTINUOUS_METHOD) then
+    ! If DG is used, try to read parameters in parfile.
+    ! If not, leave at default values (i.e. deactivated).
+    call read_value_logical_p(ABC_STRETCH_TOP, 'solver.ABC_STRETCH_TOP')
+    !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_TOP in Par_file'
+    call read_value_logical_p(ABC_STRETCH_LEFT, 'solver.ABC_STRETCH_LEFT')
+    !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LEFT in Par_file'
+    call read_value_logical_p(ABC_STRETCH_BOTTOM, 'solver.ABC_STRETCH_BOTTOM')
+    !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_BOTTOM in Par_file'
+    call read_value_logical_p(ABC_STRETCH_RIGHT, 'solver.ABC_STRETCH_RIGHT')
+    !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_RIGHT in Par_file'
+    ABC_STRETCH = (ABC_STRETCH_TOP .or. ABC_STRETCH_LEFT .or. ABC_STRETCH_BOTTOM .or. ABC_STRETCH_RIGHT)
+    call read_value_double_precision_p(ABC_STRETCH_TOP_LBUF, 'solver.ABC_STRETCH_TOP_LBUF')
+    call read_value_double_precision_p(ABC_STRETCH_LEFT_LBUF, 'solver.ABC_STRETCH_LEFT_LBUF')
+    call read_value_double_precision_p(ABC_STRETCH_BOTTOM_LBUF, 'solver.ABC_STRETCH_BOTTOM_LBUF')
+    call read_value_double_precision_p(ABC_STRETCH_RIGHT_LBUF, 'solver.ABC_STRETCH_RIGHT_LBUF')
+    !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_LBUF in Par_file'
+    call read_value_logical_p(USE_SPREAD_SSF, 'solver.USE_SPREAD_SSF')
+    !if (err_occurred() /= 0) stop 'error reading parameter USE_SPREAD_SSF in Par_file'
+    call read_value_logical_p(SPREAD_SSF_SAVE, 'solver.SPREAD_SSF_SAVE')
+    !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SAVE in Par_file'
+    call read_value_double_precision_p(SPREAD_SSF_SIGMA, 'solver.SPREAD_SSF_SIGMA')
+    !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SIGMA in Par_file'
+    call read_value_logical_p(REMOVE_STF_INITIAL_DISCONTINUITY, 'solver.REMOVE_STF_INITIAL_DISCONTINUITY')
+    !if (err_occurred() /= 0) stop 'error reading parameter REMOVE_STF_INITIAL_DISCONTINUITY in Par_file'
 
-  !TEST READING NEW PARAMETERS
-  if(.false.) then
-    write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
-    write(*,*) ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
-    write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA
-    write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
+    !TEST READING NEW PARAMETERS
+    if(.false.) then
+      write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
+      write(*,*) ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
+      write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA
+      write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
+    endif
   endif
-  !stop
   
   !--------------------------------------------------------------------
   !
