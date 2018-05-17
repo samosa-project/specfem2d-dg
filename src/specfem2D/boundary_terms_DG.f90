@@ -153,7 +153,7 @@
    enddo
   
   end subroutine recompute_density
-  
+
 ! ------------------------------------------------------------ !
 ! boundary_condition_DG                                        !
 ! ------------------------------------------------------------ !
@@ -203,8 +203,12 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0
   ! Linear mountains
   !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0, Nsq
+  ! Tsunami
   real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
-  real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE ! For microbaroms.
+  ! Microbaroms.
+  real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE
+  real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK 
+  
   ! Thermal bubble
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
   !real(kind=CUSTOM_REAL) :: Tl, Tu, p0, rho0, RR, rs!, theta, thetaprime, pibar
@@ -366,6 +370,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     ! (custom forcing case for    !
     ! user).                      !
     ! --------------------------- !
+    ! The Matlab script "utils_new/forcings.m" implements tests for some of those forcings, in order to make hardcoding a little easier.
     if(TYPE_FORCING == 9) then
       ! Tsunami forcing.
       if(.false.) then        
@@ -383,13 +388,46 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       
       ! Microbarom forcing.
       if(.true.) then
+        perio  = main_time_period
+        MICROBAROM_MAXTIME = 2. * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s.
+        if(timelocal==0) then
+          XPHASE_RANDOMWALK = 0.
+          TPHASE_RANDOMWALK = 0.
+        endif
+        if(timelocal<MICROBAROM_MAXTIME) then
+          XPHASE_RANDOMWALK = XPHASE_RANDOMWALK! + rand(); TODO: find why intrinsic functions won't compile.
+          TPHASE_RANDOMWALK = TPHASE_RANDOMWALK! + rand(); TODO: find why intrinsic functions won't compile.
+          lambdo = main_spatial_period
+          MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
+          MICROBAROM_RANGE = 15.d3 ! Range around x=0 to which impose microbaroms. Unit: m.
+          if(abs(x)<MICROBAROM_RANGE) then
+            veloc_z_DG_P = MICROBAROM_AMPLITUDE & ! Amplitude.
+            * sin(2.*PI*x/lambdo & ! Spatial baseline.
+                  + XPHASE_RANDOMWALK) & ! Shift phase.
+            !* 0.25*(1.-erf((x-MICROBAROM_RANGE+10.*lambdo)/(5.*lambdo)))*& ! Spatial apodisation. TODO: find why intrinsic functions won't compile.
+            !       (1.+erf((x+MICROBAROM_RANGE-10.*lambdo)/(5.*lambdo)))& ! Spatial apodisation, continued.
+            * sin(2.*PI*timelocal/perio & ! Temporal baseline.
+                  + TPHASE_RANDOMWALK)! & ! Shift phase.
+            !* 0.5*(1.-erf((timelocal-MICROBAROM_MAXTIME+perio)/(0.5*perio)))& ! Temporal apodisation. TODO: find why intrinsic functions won't compile.
+            
+            if(abs(x)>MICROBAROM_RANGE-10.*lambdo) then
+              ! Spatial apodisation without erf.
+              veloc_z_DG_P = veloc_z_DG_P * (1.-((-abs(x)+MICROBAROM_RANGE)/(10.*lambdo)-1.)**2.)
+            endif
+            if(timelocal>MICROBAROM_MAXTIME-2.*perio) then
+              ! Temporal apodisation without erf.
+              veloc_z_DG_P = veloc_z_DG_P * (1.-((timelocal-MICROBAROM_MAXTIME)/(2.*perio)+1.)**2.)
+            endif
+          endif
+        endif
+      endif
+      
+      ! Plane wave forcing.
+      if(.false.) then
         lambdo = main_spatial_period
         perio  = main_time_period
-        MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
-        MICROBAROM_MAXTIME = 8. * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s.
-        MICROBAROM_RANGE = 10.d3 ! Range around x=0 to which impose microbaroms. Unit: m.
-        if(timelocal<MICROBAROM_MAXTIME .and. abs(x)<MICROBAROM_RANGE) then
-          veloc_z_DG_P = MICROBAROM_AMPLITUDE * sin(2.*PI*x/lambdo) * sin(2.*PI*timelocal/perio)
+        if(timelocal<2. .and. abs(x)<20.d3) then
+          veloc_z_DG_P = sin(2.*PI*timelocal/perio)
         endif
       endif
       
