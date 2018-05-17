@@ -213,9 +213,9 @@ if(strcmp(method, 'bruteforce_rho'))
   disp(strcat(['  Maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(nHR-1))*100), '%.']));
   
   nSOUNDSPEED=sqrt(GAMMA.*P./bruteforced_RHO);
-%   nSOUNDSPEED=smoooth(nSOUNDSPEED,20); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED."); % Smooth using sliding Gaussian on 20 points.
-%   spline=fit(Z,nSOUNDSPEED,'smoothingspline','smoothingparam',1e-11); nSOUNDSPEED=spline(Z); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED."); % Smooth using splines.
-  spline=fit(Z,smoooth(nSOUNDSPEED,20),'smoothingspline','smoothingparam',1e-10); nSOUNDSPEED=spline(Z); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED."); % Smooth using sliding Gaussian on 20 points, and then splines.
+%   nSOUNDSPEED=smoooth(nSOUNDSPEED,20); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED (Gaussian)."); % Smooth using sliding Gaussian on 20 points.
+%   spline=fit(Z,nSOUNDSPEED,'smoothingspline','smoothingparam',1e-11); nSOUNDSPEED=spline(Z); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED (spline)."); % Smooth using splines.
+  spline=fit(Z,smoooth(nSOUNDSPEED,20),'smoothingspline','smoothingparam',1e-10); nSOUNDSPEED=spline(Z); disp("  [WARNING] SOUNDSPEED WAS SMOOTHED (Gaussian + spline)."); % Smooth using sliding Gaussian on 20 points, and then splines.
 %   figure();
 %   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z);
 %   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
@@ -271,7 +271,7 @@ disp(" ");
 disp(["> Outputting regularised model to file."]);
 
 if(maxalt<original_zmax)
-  disp(["  [WARNING] maxalt < original max_alt, the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf."]);
+  disp(['  [WARNING] maxalt = ', num2str(maxalt),' < original max_alt = ', num2str(original_zmax),', the regularised model might not go as far up as the original model. Be careful, or re-run script with maxalt=Inf.']);
 end
 if(interpolate~=0)
   disp(["  [WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0."]);
