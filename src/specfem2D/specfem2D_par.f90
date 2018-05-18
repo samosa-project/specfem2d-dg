@@ -159,7 +159,10 @@ module specfem_par
   real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
   real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
     source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
-
+  
+  ! Microbarom forcing: memory variables for phase random walk.
+  real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME
+  
   ! MPI: Transfers' buffers.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, buffer_DG_Vzz_P, &

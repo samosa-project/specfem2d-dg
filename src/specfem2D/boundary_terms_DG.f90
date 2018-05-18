@@ -174,7 +174,8 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
         surface_density, sound_velocity, wind, TYPE_FORCING, &
         forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
-        assign_external_model,myrank
+        assign_external_model,myrank, &
+        deltat, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME ! Microbarom forcing.
 
   implicit none
   
@@ -207,7 +208,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
   ! Microbaroms.
   real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE
-  real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK 
+  real(kind=CUSTOM_REAL) :: UNIFORM1, UNIFORM2, NORMAL1, NORMAL2
   
   ! Thermal bubble
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
@@ -389,34 +390,48 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       ! Microbarom forcing.
       if(.true.) then
         perio  = main_time_period
-        MICROBAROM_MAXTIME = 2. * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s.
+        lambdo = main_spatial_period
+        MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
+        MICROBAROM_RANGE = 80.*lambdo ! Range around x=0 to which impose microbaroms. Unit: m. Be careful with apodisation below.
+        MICROBAROM_MAXTIME = 10.5 * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s. Be careful with apodisation below.
         if(timelocal==0) then
+          ! Start random phase walk.
           XPHASE_RANDOMWALK = 0.
           TPHASE_RANDOMWALK = 0.
+          PHASE_RANDOMWALK_LASTTIME=0.
         endif
         if(timelocal<MICROBAROM_MAXTIME) then
-          XPHASE_RANDOMWALK = XPHASE_RANDOMWALK! + rand(); TODO: find why intrinsic functions won't compile.
-          TPHASE_RANDOMWALK = TPHASE_RANDOMWALK! + rand(); TODO: find why intrinsic functions won't compile.
-          lambdo = main_spatial_period
-          MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
-          MICROBAROM_RANGE = 15.d3 ! Range around x=0 to which impose microbaroms. Unit: m.
+          if(timelocal>=PHASE_RANDOMWALK_LASTTIME+deltat) then
+            ! Update the random walk only once par time step.
+            call random_number(UNIFORM1)
+            call random_number(UNIFORM2)
+            NORMAL1 = (PI*deltat/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*cos(2.*PI*UNIFORM2) ! Box-Muller method to generate a 1nd N(0, \sigma^2) random variable.
+            NORMAL2 = (PI*deltat/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*sin(2.*PI*UNIFORM2) ! Box-Muller method to generate a 2nd N(0, \sigma^2) random variable.
+            XPHASE_RANDOMWALK = XPHASE_RANDOMWALK + NORMAL1
+            TPHASE_RANDOMWALK = TPHASE_RANDOMWALK + NORMAL2
+            PHASE_RANDOMWALK_LASTTIME = timelocal
+          endif
           if(abs(x)<MICROBAROM_RANGE) then
             veloc_z_DG_P = MICROBAROM_AMPLITUDE & ! Amplitude.
-            * sin(2.*PI*x/lambdo & ! Spatial baseline.
-                  + XPHASE_RANDOMWALK) & ! Shift phase.
+            * sin(2.*PI*x/lambdo+XPHASE_RANDOMWALK) &
             !* 0.25*(1.-erf((x-MICROBAROM_RANGE+10.*lambdo)/(5.*lambdo)))*& ! Spatial apodisation. TODO: find why intrinsic functions won't compile.
             !       (1.+erf((x+MICROBAROM_RANGE-10.*lambdo)/(5.*lambdo)))& ! Spatial apodisation, continued.
-            * sin(2.*PI*timelocal/perio & ! Temporal baseline.
-                  + TPHASE_RANDOMWALK)! & ! Shift phase.
-            !* 0.5*(1.-erf((timelocal-MICROBAROM_MAXTIME+perio)/(0.5*perio)))& ! Temporal apodisation. TODO: find why intrinsic functions won't compile.
-            
+            * sin(2.*PI*timelocal/perio+TPHASE_RANDOMWALK) ! &
+            !* 0.5*(1.-erf((timelocal-MICROBAROM_MAXTIME+perio)/(0.5*perio))) ! Temporal apodisation. TODO: find why intrinsic functions won't compile.
+            ! Spatial apodisation over 10 periods.
             if(abs(x)>MICROBAROM_RANGE-10.*lambdo) then
-              ! Spatial apodisation without erf.
               veloc_z_DG_P = veloc_z_DG_P * (1.-((-abs(x)+MICROBAROM_RANGE)/(10.*lambdo)-1.)**2.)
             endif
-            if(timelocal>MICROBAROM_MAXTIME-2.*perio) then
-              ! Temporal apodisation without erf.
-              veloc_z_DG_P = veloc_z_DG_P * (1.-((timelocal-MICROBAROM_MAXTIME)/(2.*perio)+1.)**2.)
+            ! Temporal beginning apodisation over 1 period (split into 0.5 and 0.5 for smoothness).
+            if(timelocal<0.5*perio) then
+              veloc_z_DG_P = veloc_z_DG_P * (2.*(timelocal/perio)**2.)
+            endif
+            if(timelocal>=0.5*perio .and. timelocal<=perio) then
+              veloc_z_DG_P = veloc_z_DG_P * ((4.*timelocal)/perio-2.*(timelocal/perio)**2.-1.)
+            endif
+            ! Temporal end apodisation over 1.5 periods.
+            if(timelocal>MICROBAROM_MAXTIME-1.5*perio) then
+              veloc_z_DG_P = veloc_z_DG_P * (1.-((timelocal-MICROBAROM_MAXTIME)/(1.5*perio)+1.)**2.)
             endif
           endif
         endif
