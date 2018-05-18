@@ -1,6 +1,9 @@
 % Author:        Léo Martire.
 % Mail:          leo.martire@outlook.com
-% Description:   TODO.
+% Description:   Loads an atmospheric model generated using
+%                /utils_new/Atmospheric_Models/Earth/wrapper/msisehwm.
+%                Analyses hydrostatic balance and other stability
+%                coefficients. Tries regularisations.
 % Last modified: See file metadata.
 % Usage:         N/A.
 % Notes:         N/A.

@@ -22,7 +22,8 @@ lambdo=200;
 MICROBAROM_MAXTIME=8*perio;
 MICROBAROM_RANGE=15e3;
 dt=1.5d-2;
-t=max(0,MICROBAROM_MAXTIME-4*perio):dt:MICROBAROM_MAXTIME+perio/4;
+% t=max(0,MICROBAROM_MAXTIME-4*perio):dt:MICROBAROM_MAXTIME+perio/4;
+t=0:dt:3*perio;
 x=linspace(MICROBAROM_RANGE-15*lambdo,MICROBAROM_RANGE+lambdo/4,1000);
 % x=linspace(-MICROBAROM_RANGE-lambo/4,MICROBAROM_RANGE+lambo/4,1000);
 
@@ -37,7 +38,7 @@ for i=2:length(t)
   % pi*dt/(2*period). If the walk is normal, we thus choose n*sigma = 
   % pi*dt/(2*period), that is sigma = pi*dt/(n*2*period). n=1 is generally
   % a good choice.
-  n=0.3;
+  n=0.2;
   sigma=pi*dt/(n*2*perio);
   Phix(i)=Phix(i-1)+normrnd(0,sigma);
   Phit(i)=Phit(i-1)+normrnd(0,sigma);
@@ -45,9 +46,12 @@ end
 
 % Apodisation
 % n=10; apox=0.25.*(1.-erf((x-MICROBAROM_RANGE+n*lambdo)/(0.5*n*lambdo))).*(1+erf((x+MICROBAROM_RANGE-n*lambdo)/(0.5*n*lambdo)));
-n=10; apox=(1-((-abs(x)+MICROBAROM_RANGE)/(n*lambdo)-1).^2.*(abs(x)>MICROBAROM_RANGE-n*lambdo)).*(abs(x)<MICROBAROM_RANGE);
+n=10; apox=(1-((-abs(x)+MICROBAROM_RANGE)/(n*lambdo)-1).^2 .*(abs(x)>MICROBAROM_RANGE-n*lambdo)).*(abs(x)<MICROBAROM_RANGE);
 % n=1; apot=0.5.*(1.-erf((t-MICROBAROM_MAXTIME+n*perio)/(0.5*n*perio)));
-n=2; apot=(t<MICROBAROM_MAXTIME-n*perio)+(1-((t-MICROBAROM_MAXTIME)/(n*perio)+1).^2).*(t>MICROBAROM_MAXTIME-n*perio).*(t<MICROBAROM_MAXTIME);
+n=2; apot=(t<MICROBAROM_MAXTIME-n*perio)+ (1-((t-MICROBAROM_MAXTIME)/(n*perio)+1).^2) .*(t>MICROBAROM_MAXTIME-n*perio).*(t<MICROBAROM_MAXTIME);
+% n=1; apot0=0.5*(t/(n/2*perio)).^2 .* (t<n/2*perio) + (0.5+0.5*(1-(2-t/(n/2*perio)).^2)) .*(t>n/2*perio).*(t<n*perio);
+n=1; apot0=2*(t/(n*perio)).^2 .* (t<n/2*perio) + ((4*t)/(n*perio)-2*(t/(n^2*perio)).^2-1) .*(t>n/2*perio).*(t<n*perio) + (t>n*perio);
+apot=apot.*apot0;
 
 [X,T]=meshgrid(x,t);
 

@@ -1,13 +1,15 @@
 % Author:        Léo Martire.
 % Mail:          leo.martire@outlook.com
-% Description:   TODO.
+% Description:   Combines synthetics under the classical one-panel plot
+%                fashion.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         display_seismograms.m should have been ran before.
+% Notes:         /utils_new/display_seismograms.m should have been ran
+%                before.
 
 % clear all;
 % close all
-clc;
+% clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 8); % Default at 6.

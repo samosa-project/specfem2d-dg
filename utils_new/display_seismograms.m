@@ -46,7 +46,10 @@ unknown = 'BXZ';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoBaro, 66, June, 12:00
 fig_title = strcat('Microbaroms, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622147_final_test/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622125/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622037/');
@@ -67,13 +70,13 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro
 % Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=0_618645/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % original
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
