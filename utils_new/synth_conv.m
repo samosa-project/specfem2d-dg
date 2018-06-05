@@ -1,18 +1,20 @@
 % Author:        Léo Martire.
 % Mail:          leo.martire@outlook.com
-% Description:   TODO.
+% Description:   Convolves synthetics by a function.
 % Last modified: See file metadata.
 % Usage:         N/A.
 % Notes:         N/A.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOT FUNCTIONNAL FOR NOW.    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear all;
-% close all
+close all;
 clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
-set(0, 'defaultTextFontSize', 12);
-set(0, 'defaultAxesFontSize', 12); % Default at 10.
+set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 

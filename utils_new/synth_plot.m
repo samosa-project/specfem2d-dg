@@ -4,25 +4,30 @@
 %                fashion.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         /utils_new/display_seismograms.m should have been ran
+% Notes:         /utils_new/synth_load.m has to have been ran
 %                before.
 
 % clear all;
-% close all
+% close all;
 % clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
-set(0, 'defaultTextFontSize', 22);
-set(0, 'defaultAxesFontSize', 22); % Default at 10.
+set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
+if(not(exist('synth_load_was_ran') && synth_load_was_ran==1))
+  error("[ERROR] synth_load was not ran before.");
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Load.                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data_t=Ztime;
 data_v=Zamp;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% User input.                 %
+% Ask for user input.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fign=-1;
 fign=input('  Figure number? > ');
@@ -64,7 +69,7 @@ distance=distance/dist_factor;
 [~,isort]=sort(distance(istattab(1:nstat)));
 
 % Remove mean value.
-for i=1:size(isort,1)
+for i=1:nstat
   % Enventually normalise.
   if(normalise==1)
     data_v(i,:)=(data_v(i,:)-min(data_v(i,:)))/(max(data_v(i,:))-min(data_v(i,:)));
@@ -82,15 +87,19 @@ if(dist_over_ptp>1e15); error("Variable dist_over_ptp is > 1e15, probably coming
 figure(fign);
 name={};
 yticklabel=[];
-vertical_shift={};
 scale=-1;
 while(scale~=0)
-  close(fign); figure(fign);
+  close(fign);
+  figure(fign);
   if(scale~=0 && scale~=-1)
     dist_over_ptp=scale;
   end
-  coef_string=sprintf("%.2e",dist_over_ptp);spls=split(coef_string,"e");coef_string=[char(spls(1)),'\cdot10^{',num2str(str2num(char(spls(2)))),'}'];
-  for i=1:size(isort,1)
+  % Prepare a string to give information about what is plotted.
+  coef_string=sprintf("%.2e",dist_over_ptp);
+  spls=split(coef_string,"e");
+  coef_string=[char(spls(1)),'\cdot10^{',num2str(str2num(char(spls(2)))),'}'];
+  clear('spls');
+  for i=1:nstat
     istat=isort(i);
     istat_glob = istattab(istat);
 %     vertical_shift{istat}=*distance(istat_glob);
@@ -105,23 +114,31 @@ while(scale~=0)
   scale=input('  Rechoose coefficient? (0 for no, new value for yes)? > ');
 end
 
+ylabel(strcat(dist_name," $",dist_symbol,"$ ", dist_unit));%, " $\longrightarrow$"));
+
+% Time axis limits.
+tmin=input(['  t_min (',num2str(min(min(data_t))),' now)? > ']);
+tmax=input(['  t_max (',num2str(max(max(data_t))),' now)? > ']);
+if(isempty(tmin))
+  tmin=min(min(data_t));
+end
+if(isempty(tmax));
+  tmax=max(max(data_t));
+end
+xlim([tmin, tmax]);
+
 % Eventually label each plot.
 labeleach=-1;
 while(~ismember(labeleach,[0,1]))
   labeleach=input('  Label each line? (0 for no, 1 for yes) > ');
 end
 if(labeleach==1)
+  % YTicks.
   yticks(distance(istattab(isort)));
-end
-% yticklabels(yticklabel);
-ylabel(strcat(dist_name," $",dist_symbol,"$ ", dist_unit));%, " $\longrightarrow$"));
-
-% Time axis limits.
-tmin=input(['  t_min (',num2str(min(min(data_t))),' now)? > ']); tmax=input(['  t_max (',num2str(max(max(data_t))),' now)? > ']); if(isempty(tmin));tmin=min(min(data_t));end; if(isempty(tmax));tmax=max(max(data_t));end; xlim([tmin, tmax]);
-
-% Stations' names labels.
-for i=1:size(isort,1)
-  text(1.01*tmax,distance(isort(i)),name{isort(i)},'HorizontalAlignment','left');
+  % Stations' names labels.
+  for i=1:size(isort,1)
+    text(1.01*tmax,distance(istattab(isort(i))),name{isort(i)},'HorizontalAlignment','left');
+  end
 end
 
 % Scales.
@@ -142,3 +159,8 @@ end
 % Useful if stations' labels are outside plotting zone.
 % ax=gca();
 % set(ax, 'Position', [1,1,0.9,1].*ax.Position);
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Clear variables.             %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clear('coef_string', 'colour', 'data_t', 'data_v', 'dist_factor', 'dist_name', 'dist_over_ptp', 'distancechoice', 'fign', 'i', 'isort', 'istat', 'istat_glob', 'labeleach', 'name', 'normalise', 'scale', 'spls', 'tmax', 'tmin', 'yticklabel');

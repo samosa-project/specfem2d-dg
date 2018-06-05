@@ -6,30 +6,30 @@
 % Notes:         N/A.
 
 clear all;
-% close all
+% close all;
 clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 3); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
-set(0, 'defaultTextFontSize', 22);
-set(0, 'defaultAxesFontSize', 22); % Default at 10.
+set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-%%%%%%%%%%%%%%%%%
-% INITIALIZATION
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
-renorm_factor=1; SPCFMloc='/home/l.martire/Documents/SPECFEM/';
-coord_units='km'; convert_to_relative_coords = 0;
-% Direct waves parameters (??)
-%windsurf = - 10.5; % m/s
-%csurf = 233.5; % m/s
-%tstart = 9.0;
-% window size for Amplitude estimate
-%tws = 20.0; % s
+SPCFMloc = '/home/l.martire/Documents/SPECFEM/';
 
-% Sub-sample? Useful for lengthy seismograms.
-subsample = 0;
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Default parameters' values. %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Those can be re-set inline for each OUTPUT_FILES directory (see "OUTPUT_FILES location" section below).
+renorm = 0; renorm_factor = 1; % Renormalisation.
+coord_units = 'km'; % Self-explanatory.
+convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordinates: x=0 above source, z=0 on surface (defined by pos_interface).
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Parameters.                 %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+subsample = 0; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that synthetics are nsublength (below) long.
+nsublength = 1000; % Length of sub-sampled synthetics.
 
 % Quantity to display:
 %   1 = displacement for non-DG and velocity for DG,
@@ -37,16 +37,17 @@ subsample = 0;
 type_display = 2; % Should be the same as the seismotype variable in parfile.
 
 % Unknown:
-% For type_display==2 and stations in DG zones, pressure perturbation (Pa) is saved both in BXX and BXZ files.
-% unknown = 'BXX';
-unknown = 'BXZ';
+% unknown = 'BXX'; % _x.
+unknown = 'BXZ'; % _z.
+% For type_display==2 and stations in DG zones, pressure perturbation (Pa) is saved both in BXX and BXZ files.)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Parameters.                 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OUTPUT_FILES location.      %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoBaro, 66, June, 12:00
-fig_title = strcat('Microbaroms, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
+% fig_title = strcat('Microbaroms, lat66, June, 12:00');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
@@ -68,7 +69,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
+fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/');
@@ -76,7 +78,7 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % original
+rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % original
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
@@ -108,36 +110,41 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); type_display = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); type_display = 1;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Loading.                    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-renorm=0; % Do not renormalise by default.
-if(not(strcmp(OFd(end),'/'))); OFd=[OFd,'/']; end;
-if(not(exist(OFd))); error(strcat("OUTPUT_FILES directory does not exist (",OFd,').')); end;
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Stations' loading.           %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Test if OUTPUT_FILES directory exists.
+if (not(strcmp(OFd(end), '/')))
+  OFd = [OFd, '/'];
+end
+if (not(exist(OFd)))
+  error(strcat("OUTPUT_FILES directory does not exist (", OFd, ').'))
+end
+
 % Load sources' positions.
 pos_sources = [inf, inf]; % Allocate a row for the first source's position.
 % fid = fopen([rootd, '/DATA/SOURCE']);
 fid = fopen([OFd, 'SOURCE']);
-if(fid==-1)
-  error(strcat("Cannot open SOURCE file (",[OFd, 'SOURCE'],').'));
+if (fid == - 1)
+  error(strcat("Cannot open SOURCE file (", [OFd, 'SOURCE'], ').'));
 end
-line = 0; xfound = 0; zfound = 0; stop=0;
-while(stop==0)
+line = 0; xfound = 0; zfound = 0; stop = 0;
+while (stop == 0)
   % TODO: Loop on source number.
   line = fgetl(fid);
-  if length(line)>0
-    if(line==-1)
-      stop=1;
+  if length(line) > 0
+    if (line == - 1)
+      stop = 1;
     end
-    line = regexprep(regexprep(line, ' +', ' '),'^ ',''); % Remove multiple spaces, and then eventually remove space if it there is one as first character.
+    line = regexprep(regexprep(line, ' +', ' '), '^ ', ''); % Remove multiple spaces, and then eventually remove space if it there is one as first character.
     if strcmp(line(1:2), 'xs')
-      xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *','')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
+      xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', '')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
     end
     if strcmp(line(1:2), 'zs')
-      zfound = 1; pos_sources(1, 2) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *',''));
+      zfound = 1; pos_sources(1, 2) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', ''));
     end
   end
-  if(xfound && zfound)
+  if (xfound && zfound)
     break
   end
 end
@@ -159,135 +166,133 @@ dist_to_sources = zeros(size(pos_stations, 1), size(pos_sources, 1));
 for n_source = 1:size(pos_sources, 1)
   dist_to_sources(:, n_source) = sqrt((pos_stations(:, 1) - pos_sources(n_source, 1)) .^ 2 + (pos_stations(:, 2) - pos_sources(n_source, 2)) .^ 2);
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Stations to display.        %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Display stations' informations.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Ask for user input.         %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Display stations' information.
 format shortG;
-if(convert_to_relative_coords==1)
-  disp("  [station_id; x; z; d] for all stations (x relative to source, z relative to ground, d relative to source):"); disp([(1:size(pos_stations, 1)); (pos_stations-[pos_sources(1,1), pos_interface])';dist_to_sources']);
+if (convert_to_relative_coords == 1)
+  disp("  [station_id; x; z; d] for all stations (x relative to source, z relative to ground, d relative to source):"); disp([(1:size(pos_stations, 1)); (pos_stations - [pos_sources(1, 1), pos_interface])';dist_to_sources']);
 else
   disp("  [station_id; x; z; d] for all stations (absolute x and z, d relative to source):"); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']);
 end
 format compact;
 
-% Ask user for various inputs.
-display_or_load=-1;
-while(not(ismember(display_or_load,[0,1,2]))); display_or_load=input('  Load and display (0), load only (1), or load only and combine (2)?\n  > '); end
+% Ask for behaviour.
+display_or_load = - 1;
+while (not(length(display_or_load) == 1 && ismember(display_or_load, [0, 1, 2])))
+  display_or_load = input('  Load and display (0), load only (1), or load and combine (2)?\n  > ');
+end
+% Ask for stations.
 istattab = input(['  Stations (Matlab format, e.g. [1, 4, 7] or 1:20)?\n  > ']);
 nstat = size(pos_stations(istattab, 1), 1);
-geometric_attenuation=-1; inputtxt=char(strcat("  Apply geometric attenuation (1/sqrt(d) factor) to data? (0 for no, 1 for yes)\n  > "));
-while(not(geometric_attenuation==0 || geometric_attenuation==1)); geometric_attenuation=input(inputtxt); end
-if(display_or_load==0 && nstat>1)
-  normalise_ylims=-1;
-  while(not(normalise_ylims==0 || normalise_ylims==1)); normalise_ylims=input('  Normalise y-scale? (0 for no, 1 for yes)\n  > '); end
+% Ask for geometric attenuation (relies on distance to source).
+geometric_attenuation = - 1; inputtxt = char(strcat("  Apply geometric attenuation (1/sqrt(d) factor) to data? (0 for no, 1 for yes)\n  > "));
+while (not(geometric_attenuation == 0 || geometric_attenuation == 1));
+  geometric_attenuation = input(inputtxt);
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Ask if plot y-axis should be normalised to same scale.
+normalise_ylims = 0; % Default value.
+if (display_or_load == 0 && nstat > 1)
+  normalise_ylims = - 1;
+  while (not(normalise_ylims == 0 || normalise_ylims == 1))
+    normalise_ylims = input('  Normalise y-scale? (0 for no, 1 for yes)\n  > ');
+  end
+end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ??                          %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% scale of recordsection (??)
-% lbar = 10;
-% if (type_display == 1)
-%   recscale = 50;
-% else
-%   % recscale = 300.0;
-%   recscale = 1;
-% end
-
-% reduction velocity (??)
-% redvel = 250; % m/s
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load and eventually plot.   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if(display_or_load==0)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if (display_or_load == 0)
   figure(); hold on;
 end
 
-% Loop on sismograms.
-max_ylim_plus=-Inf; min_ylim_minus=+Inf;
-if(convert_to_relative_coords==1); xstattab=xstattab-pos_sources(1,1); ystattab=ystattab-pos_interface; end % Eventually remove source components for display.
-for istat = 1 : nstat
+% Loop on synthetics.
+if (normalise_ylims)
+  % Prepare updates of y-axis scale.
+  max_ylim_plus = - Inf;
+  min_ylim_minus = + Inf;
+end
+if (convert_to_relative_coords == 1)
+  % Eventually remove source components for display.
+  xstattab = xstattab - pos_sources(1, 1);
+  ystattab = ystattab - pos_interface;
+end
+for istat = 1:nstat
   istat_glob = istattab(istat); % Recover global number of station.
-
-  % Unused?
-  %   if (istat_glob > 9)
-  %     cmplt = '000';
-  %   else
-  %     cmplt = '0000';
-  %   end
 
   % Switch on type of display.
   if (type_display == 1)
     % Original SPECFEM2D's sismogram is displacement.
     extension = "semd"; % Because original SPECFEM2D's sismogram is displacement.
     % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
-    if(strcmp(unknown,'BXZ'))
+    if (strcmp(unknown, 'BXZ'))
       unknown_name = 'vertical {$u_z$ (m), $v_z$ (m/s)}';
-    elseif(strcmp(unknown,'BXX'))
+    elseif (strcmp(unknown, 'BXX'))
       unknown_name = 'horizontal {$u_x$ (m), $v_x$ (m/s)}';
     else
-      error("The variable 'unknown' has a non-standard value.");
+      error("The variable 'unknown' has a non - standard value.");
     end
   elseif (type_display == 2)
     % Original SPECFEM2D's sismogram is velocity.
     extension = "semv"; % Because original SPECFEM2D's sismogram is velocity.
-    if(strcmp(unknown,'BXZ'))
+    if (strcmp(unknown, 'BXZ'))
       unknown_name = '{$v_z$ (m/s), $\delta P$ (Pa)}';
-    elseif(strcmp(unknown,'BXX'))
+    elseif (strcmp(unknown, 'BXX'))
       unknown_name = '{$v_x$ (m/s), $\delta P$ (Pa)}';
     else
-      error("The variable 'unknown' has a non-standard value.");
+      error("The variable 'unknown' has a non - standard value.");
     end
   end
 
-  % Read the sismogram.
+  % Read the synthetic.
   file = strcat(OFd, 'AA.', A.textdata(istat_glob, 1), '.', unknown, '.', extension);
   data = load(file{1});
   nt = max(size(data));
-  if(subsample==1)
+  if (subsample == 1)
     % Sub-sample of records.
-    nsub = ceil(nt/1000);
+    nsub = ceil(nt / nsublength);
     nd = max(size(data(1:nsub:nt, 1)));
   else
-    nsub=1;
-    nd=nt;
+    nsub = 1;
+    nd = nt;
   end
+
   % Recover time/amplitude data.
   Ztime(istat, 1:nd) = data(1:nsub:nt, 1)';
-  %Ztime(istat, 1:nd) = Ztime(istat, 1:nd) - Ztime(istat, 1); % Make time values start at zero.
-  % Correct for sign of source function for N wave pattern (??).
+  % Ztime(istat, :) = Ztime(istat, :) - Ztime(istat, 1); % Make time values start at zero.
   Zamp(istat, 1:nd) = data(1:nsub:nt, 2)';
 
-  % Display.
-  if(display_or_load==0) % If display.
+  % Renormalisation (global, and eventually geometric).
+  factor = 1; % Default value.
+  if (geometric_attenuation == 1)
+    factor = factor / (dist_to_sources(istat_glob) ^ 0.5);
+  end
+  if (renorm_factor ~= 1)
+    renorm = - 1;
+    disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), "."));
+    inputtxt = char(strcat("    Renormalise data for station ", num2str(istat_glob), "? (0 for no, 1 for yes) > "));
+    while (not(renorm == 0 || renorm == 1))
+      renorm = input(inputtxt);
+    end
+  end
+  if (renorm == 1)
+    factor = factor * renorm_factor;
+  end
+  Zamp(istat, :) = factor * Zamp(istat, :);
+
+  % Enventually display.
+  if (display_or_load == 0)
     ax(istat) = subplot(nstat, 1, istat);
-    if(strcmp(coord_units, 'km'))
-      legtext{istat}=strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) km');
-    elseif(strcmp(coord_units, 'm'))
-      legtext{istat}=strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ m');
+    if (strcmp(coord_units, 'km'))
+      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) km');
+    elseif (strcmp(coord_units, 'm'))
+      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ m');
     else
       error(['coord_units = ', coord_units, 'not implemented.']);
     end
-    
-    factor=1;
-    if(geometric_attenuation==1)
-      factor=factor/(dist_to_sources(istat_glob)^0.5);
-    end
-    if(renorm_factor~=1)
-      renorm=-1; disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), ".")); inputtxt=char(strcat("    Renormalise data for station ", legtext{istat},"? (0 for no, 1 for yes) > "));
-      while(not(renorm==0 || renorm==1)); renorm=input(inputtxt); end;
-    end
-    if(renorm==1)
-      factor=factor*renorm_factor;
-    end
-    plot(Ztime(1, :), factor*Zamp(istat, :));
-
+    plot(Ztime(1, :), Zamp(istat, :));
     % Cosmetics.
     if (istat == 1)
       title(fig_title)
@@ -302,56 +307,72 @@ for istat = 1 : nstat
       ylabel(unknown_name);
     end
     xlim([Ztime(1, 1), Ztime(1, end)]);
-
     legend(legtext{istat}, 'Location', 'northeast');
-
     hold on;
-
-    ax=gca;
-    if(ax.YLim(1)<min_ylim_minus)
-      min_ylim_minus=ax.YLim(1);
-    end
-    if(ax.YLim(2)>max_ylim_plus)
-      max_ylim_plus=ax.YLim(2);
-    end
-  else % Load only.
-    % Nothing to do.
-  end
-end
-if(display_or_load==0)
-  linkaxes(ax, 'x');
-  %tightfig;
-
-  if(nstat>1)
-    if(normalise_ylims)
-      f=gcf;
-      for i=1:length(f.Children)
-        if(strcmp(f.Children(i).Type,'axes'))
-          f.Children(i).YLim=[min_ylim_minus, max_ylim_plus];
-        end
+    if (normalise_ylims)
+      % Update y-axis scale.
+      ax = gca;
+      if (ax.YLim(1) < min_ylim_minus)
+        min_ylim_minus = ax.YLim(1);
       end
+      if (ax.YLim(2) > max_ylim_plus)
+        max_ylim_plus = ax.YLim(2);
+      end
+      linkaxes(ax, 'y');
+    end
+    ax = gca; linkaxes(ax, 'x');
+  end
+end
+
+if (display_or_load == 0 && nstat > 1 && normalise_ylims == 1)
+  % Normalise plot y-axis to same scale.
+  f = gcf;
+  for i = 1:length(f.Children)
+    if (strcmp(f.Children(i).Type, 'axes'))
+      f.Children(i).YLim = [min_ylim_minus, max_ylim_plus];
     end
   end
-  f=gcf; figure(f.Number);
 end
+
+% Display information.
+disp(" ");
 disp("  Data loaded. [matlab_id, station_id]:");
 disp([(1:length(istattab))',istattab']);
-disp(strcat("  Example: Data of station ",num2str(istattab(1))," are in         Zamp(",num2str(1),", :)."));
-disp(strcat("           Corresponding time values are in Ztime(",num2str(1),", :)."));
+disp(strcat("  Example: Data of station ", num2str(istattab(1)), " are in         Zamp(", num2str(1), ", :)."));
+disp(strcat("           Corresponding time values are in Ztime(", num2str(1), ", :)."));
 
-% Clear useless variables.
-if(ismember(display_or_load,[1,2]))
-  clear('max_ylim_plus', 'min_ylim_minus');
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Clear variables.             %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clear('A', 'ans', 'ax', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'normalise_ylims', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
+if (factor == 1)
+  clear('factor');
 end
-clear('A', 'ans', 'fid', 'file', 'inputtxt', 'istat', 'istatglob', 'line', 'nd', 'nt', 'nsub', 'pos_stations', 'stop', 'subsample', 'xfound', 'zfound');
-
-if(display_or_load==2)
-  combine_seismograms;
+if (geometric_attenuation == 0)
+  clear('geometric_attenuation');
+end
+if (renorm == 0)
+  clear('renorm', 'renorm_factor');
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Old simulations' files.     %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+synth_load_was_ran=1;
+
+if (display_or_load == 2)
+  synth_plot;
+end
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Old things.                 %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if (0 == 1)
+  % Plot amplitude.
+  for ii = 1:length(Zamp(:, 1))
+    amp(ii) = max(Zamp(ii, :)) - min(Zamp(ii, :));
+  end
+  figure();
+  plot(dist_to_sources, amp);
+end
 
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1;
@@ -436,7 +457,3 @@ end
 
 % Mars AGW.
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
-
-if(0==1)
-  for ii=1:length(Zamp(:,1));amp(ii)=max(Zamp(ii,:))-min(Zamp(ii,:));end, figure(); plot(dist_to_sources, amp); % plot amplitude
-end
