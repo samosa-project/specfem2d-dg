@@ -144,11 +144,12 @@ SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial functio
 # Source time function.
 REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BETTER_PRESSURE==.false. and time_function_type==3 (see source_input). Analytically removes the discontinuity introduced at initial time (since Gaussians have non-compact support). Alternatively, leave this to .false. and set USER_T0 to a better value (see below).
 
-# Bottom forcing function
-# 0: none
-# 1: only time gaussian derivative
-# 2: time and space gaussian derivative
-# 9: hardcoded custom forcing (set it up directly in the code, see "boundary_terms_DG.f90")
+# Bottom forcing function.
+#  0: none
+#  1: only time gaussian derivative
+#  2: time and space gaussian derivative
+#  9: hardcoded custom forcing (set it up directly in the code, see "boundary_terms_DG.f90")
+# 10: read from 'external_bottom_forcing.dat' (generated with 'utils_new/forcings.m'). The lines of this file should be formatted as 't x value', using the same DT as above and points x should correspond to the mesh. The time values in this file will be read as time values from beginning of simulation, thus including any time shift induced by non-Dirac sources (i.e. 'negative times').
 TYPE_FORCING                    = 0
 main_spatial_period             = 1. # Self-explaining. Unit: m.
 main_time_period                = 1. # Self-explaining. Unit: s.

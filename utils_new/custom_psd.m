@@ -5,12 +5,12 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [Powerf, Freqf] = custom_psd(time, signal)
-  signal = detrend(signal); % Remove eventual linear trend.
-  dt = time(2) - time(1);
-  Fls = 1 / dt;
-  nfft = max(2 ^ floor(log2(length(signal))), length(signal));
+function [PSD, f] = custom_psd(t, s)
+  s = detrend(s); % Remove eventual linear trend.
+  dt = t(2) - t(1);
+  fmax = 1 / dt;
+  nfft = max(2 ^ floor(log2(length(s))), length(s));
   window = hann(nfft);
   noverlap = nfft / 2;
-  [Powerf, Freqf] = pwelch(signal, window, noverlap, nfft, Fls);
+  [PSD, f] = pwelch(s, window, noverlap, nfft, fmax);
 end
