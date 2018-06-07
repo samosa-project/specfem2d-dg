@@ -164,7 +164,7 @@
 subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
-  use constants,only: CUSTOM_REAL, gamma_euler, PI
+  use constants,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL
 
   use specfem_par, only: ibool_before_perio, ibool_DG, coord, &
         rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
@@ -175,7 +175,8 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         surface_density, sound_velocity, wind, TYPE_FORCING, &
         forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
         assign_external_model,myrank, &
-        deltat, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME ! Microbarom forcing.
+        DT, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
+        EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL ! External forcing.
 
   implicit none
   
@@ -209,6 +210,8 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   ! Microbaroms.
   real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE
   real(kind=CUSTOM_REAL) :: UNIFORM1, UNIFORM2, NORMAL1, NORMAL2
+  ! External focing.
+  integer :: externalforcingid
   
   ! Thermal bubble
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
@@ -371,7 +374,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     ! (custom forcing case for    !
     ! user).                      !
     ! --------------------------- !
-    ! The Matlab script "utils_new/forcings.m" implements tests for some of those forcings, in order to make hardcoding a little easier.
+    ! The Matlab script 'utils_new/forcings.m' contains some tests for some of those forcings, in order to make hardcoding a little easier.
     if(TYPE_FORCING == 9) then
       ! Tsunami forcing.
       if(.false.) then        
@@ -387,7 +390,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         endif
       endif
       
-      ! Microbarom forcing.
+      ! Analytic microbarom forcing.
       if(.true.) then
         perio  = main_time_period
         lambdo = main_spatial_period
@@ -401,12 +404,12 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
           PHASE_RANDOMWALK_LASTTIME=0.
         endif
         if(timelocal<MICROBAROM_MAXTIME) then
-          if(timelocal>=PHASE_RANDOMWALK_LASTTIME+deltat) then
+          if(timelocal>=PHASE_RANDOMWALK_LASTTIME+DT) then
             ! Update the random walk only once par time step.
             call random_number(UNIFORM1)
             call random_number(UNIFORM2)
-            NORMAL1 = (PI*deltat/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*cos(2.*PI*UNIFORM2) ! Box-Muller method to generate a 1nd N(0, \sigma^2) random variable.
-            NORMAL2 = (PI*deltat/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*sin(2.*PI*UNIFORM2) ! Box-Muller method to generate a 2nd N(0, \sigma^2) random variable.
+            NORMAL1 = (PI*DT/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*cos(2.*PI*UNIFORM2) ! Box-Muller method to generate a 1nd N(0, \sigma^2) random variable.
+            NORMAL2 = (PI*DT/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*sin(2.*PI*UNIFORM2) ! Box-Muller method to generate a 2nd N(0, \sigma^2) random variable.
             XPHASE_RANDOMWALK = XPHASE_RANDOMWALK + NORMAL1
             TPHASE_RANDOMWALK = TPHASE_RANDOMWALK + NORMAL2
             PHASE_RANDOMWALK_LASTTIME = timelocal
@@ -458,7 +461,27 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         write(*,*) "********************************"
         call flush_IMAIN()
       endif
-    endif
+    endif ! Endif on TYPEFORCING==9
+    
+    
+    ! --------------------------- !
+    ! Forcing read from file.     !
+    ! --------------------------- !
+    ! The Matlab script 'utils_new/forcings.m' can be used to generate the external bottom forcing file.
+    if(TYPE_FORCING == 10) then
+      !write(*,*) "KEK", floor(timelocal/DT+1)
+      !write(*,*) ibool_before_perio(i,j,ispec)
+      !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(1)
+      if(timelocal<EXTERNAL_FORCING_MAXTIME) then
+        externalforcingid=EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec))
+        if(externalforcingid/=HUGE(0)) then
+          veloc_z_DG_P=EXTERNAL_FORCING(floor(timelocal/DT+1),externalforcingid)
+          !if(abs(timelocal-0.16)<0.1 .and. abs(x+10.)<3.) then
+          !  write(*,*) timelocal, x, veloc_z_DG_P
+          !endif
+        endif
+      endif
+    endif ! Endif on TYPEFORCING==10
   endif
 
   ! Set energy.
@@ -470,6 +493,172 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   rhovz_DG_P = rho_DG_P*veloc_z_DG_P
    
 end subroutine boundary_condition_DG
+
+! ------------------------------------------------------------ !
+! prepare_external_forcing                                     !
+! ------------------------------------------------------------ !
+! Reads EXTERNAL_FORCING_FILENAME, save values of bottom forcing in an array, and map mesh coordinates to that array.
+
+subroutine prepare_external_forcing()
+
+  use constants,only: CUSTOM_REAL, HUGEVAL
+
+  use specfem_par, only: EXTERNAL_FORCING_FILENAME, EXTERNAL_FORCING_MAXTIME,&
+                         EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL, DT,&
+                         nglob_DG,coord,nspec,NGLLX,NGLLZ,&
+                         only_DG_acoustic,ibool_before_perio!,stage_time_scheme
+
+  implicit none
+
+  ! Local variables.
+  logical :: fileexists, counting_nx
+  real(kind=CUSTOM_REAL) :: t, x, z, val, tmp_t_old, forcing_min_x, forcing_max_x
+  integer :: io, istat,NSTEPFORCING,nx,it,ix,ibbp,ispec,i,j
+  
+  if(.not. only_DG_acoustic) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* External bottom forcing can  *"
+    write(*,*) "* only be used on a full DG    *"
+    write(*,*) "* simulation, which is now not *"
+    write(*,*) "* the case.                    *"
+    write(*,*) "********************************"
+    stop
+  endif
+  ! Check existence of model file.
+  fileexists=.false.
+  INQUIRE(File=EXTERNAL_FORCING_FILENAME, Exist=fileexists)
+  if(.not. fileexists) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* external_bottom_forcing file *"
+    write(*,*) "* does not exist in folder.    *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  ! Read once first to find out forcing stopping time, number of points at z=0, and associate each index to a iglob_before_perio.
+  ! TODO: There must be a way to do this more efficiently.
+  allocate(EXTFORC_MAP_ibbp_TO_LOCAL(nglob_DG),stat=istat)
+  if(istat/=0) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Allocation of                *"
+    write(*,*) "* EXTFORC_MAP_ibbp_TO_LOCAL    *"
+    write(*,*) "* has failed.                  *"
+    write(*,*) "********************************"
+    stop
+  endif
+  EXTFORC_MAP_ibbp_TO_LOCAL=HUGE(0) ! Safeguard.
+  tmp_t_old=-HUGEVAL;
+  counting_nx=.true.
+  nx=0;
+  forcing_min_x=HUGEVAL; ! Start at +inf, will be updated
+  forcing_max_x=-HUGEVAL; ! Start at -inf, will be updated
+  OPEN(100, file=EXTERNAL_FORCING_FILENAME)
+  DO
+    READ(100,*,iostat=io) t, x, val ! In fact we don't care about val here.
+    if(counting_nx .and. t==tmp_t_old) then ! This if is entered only for first time step (see else below).
+      ! Find the ibool_before_perio corresponding to the current x.
+      do ispec = 1, nspec
+        ! For DG elements, go through GLL points one by one.
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            ibbp=ibool_before_perio(i, j, ispec)
+            z = coord(2, ibbp) ! Get z-coordinate of GLL point.
+            if(z/=0.) then
+              cycle
+            else
+              if(abs(x-coord(1, ibbp))<1e-7) then
+                EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)=nx
+              endif
+            endif
+          enddo ! Enddo on i.
+        enddo ! Enddo on j.
+      enddo ! Enddo on ispec.
+      nx=nx+1 ! Count.
+    else
+      if(counting_nx .and. tmp_t_old>-HUGEVAL) then
+        nx=nx+1 ! Add last one.
+        counting_nx=.false. ! Deactivate counting.
+      endif
+    endif
+    if(x<forcing_min_x) then
+      forcing_min_x=x
+    endif
+    if(x>forcing_max_x) then
+      forcing_max_x=x
+    endif
+    tmp_t_old=t
+    IF (io/=0) EXIT
+  ENDDO
+  close(100)
+  EXTERNAL_FORCING_MAXTIME=t ! Save maximum time.
+  
+  !NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2)) ! Use this if up-sampling is needed (large files).
+  NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2)) ! Use this if simple sampling is enough (ok-sized files).
+  !write(*,*) t, DT, NSTEPFORCING, forcing_min_x, forcing_max_x, nx,stage_time_scheme ! DEBUG
+  
+  allocate(EXTERNAL_FORCING(NSTEPFORCING, nx),stat=istat)
+  if(istat/=0) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Allocation of                *"
+    write(*,*) "* EXTERNAL_FORCING has failed. *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  ! Re-read and save values.
+  it=1
+  ix=1
+  OPEN(100, file=EXTERNAL_FORCING_FILENAME)
+  DO
+    READ(100,*,iostat=io) t, x, val
+    if(.false. .and. it>1245) then
+      write(*,*) it, t, ix, x, val ! DEBUG
+    endif
+    EXTERNAL_FORCING(it, ix)=val
+    ix=ix+1
+    if(mod(ix,nx+1)==0) then
+      ix=1
+      it=it+1
+    endif
+    IF (io/=0) EXIT
+  ENDDO
+  close(100)
+  
+  ! DEBUG
+  !write(*,*) EXTERNAL_FORCING(floor((DT+2*DT/stage_time_scheme)/DT+1),:)
+  if(.false.) then
+    do ispec = 1, nspec
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          ibbp=ibool_before_perio(i, j, ispec)
+          z = coord(2, ibbp)
+          if(z/=0.) then
+            cycle
+          else
+            write(*,*) coord(1,ibbp), z, ibbp, EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)
+          endif
+        enddo ! Enddo on i.
+      enddo ! Enddo on j.
+    enddo ! Enddo on ispec.
+  endif
+  if(.false.) then
+    write(*,*) "this must be 0"
+    write(*,*) EXTERNAL_FORCING(1,:)
+    write(*,*) "this must be non 0"
+    write(*,*) EXTERNAL_FORCING(2,:)
+    write(*,*) "this must be non 0"
+    write(*,*) EXTERNAL_FORCING(3,:)
+  endif
+  !stop
+end subroutine prepare_external_forcing
 
 ! ------------------------------------------------------------ !
 ! compute_interface_unknowns                                   !

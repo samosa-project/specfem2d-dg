@@ -45,6 +45,8 @@ echo
 echo ">> Store setup to the 'OUTPUT_FILES' folder."
 cp DATA/Par_file OUTPUT_FILES/
 cp DATA/SOURCE OUTPUT_FILES/
+cp "atmospheric_model.dat" OUTPUT_FILES/
+cp "external_bottom_forcing.dat" OUTPUT_FILES/
 # Save model config
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
 cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90

@@ -81,6 +81,7 @@ module specfem_par
   ! DG related quantities.
   !---------------------------------------------------------------------
   character(len=100), parameter :: EXTERNAL_DG_ONLY_MODEL_FILENAME = './atmospheric_model.dat'
+  character(len=100), parameter :: EXTERNAL_FORCING_FILENAME = './external_bottom_forcing.dat'
   
   ! Stretching absorbing boundary conditions.
   logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH ! Self-explanatory.
@@ -162,6 +163,14 @@ module specfem_par
   
   ! Microbarom forcing: memory variables for phase random walk.
   real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME
+  ! External forcing.
+  ! First, one should check if:
+  !   EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec))
+  ! and check it is not equal to HUGE(0). Then, in order to access forcing at time timelocal and at point (i,j,ispec), access:
+  !   EXTERNAL_FORCING(floor(timelocal/dt+1),EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec)))
+  real(kind=CUSTOM_REAL) :: EXTERNAL_FORCING_MAXTIME
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: EXTERNAL_FORCING ! Array of bottom forcing values. Dimensions: NSTEP (including multiplication with stage_time_scheme), NX (number of points on bottom boundary).
+  integer, dimension(:), allocatable :: EXTFORC_MAP_ibbp_TO_LOCAL ! Mapper from ibool_before_perio to local indexing.
   
   ! MPI: Transfers' buffers.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P

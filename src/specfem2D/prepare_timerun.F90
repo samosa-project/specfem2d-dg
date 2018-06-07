@@ -121,9 +121,22 @@
       stop 'kek'
     endif
     
-    if(myrank==0) write(IMAIN,*) '> Done preparing stretching absorbing boundary conditions for the DG elements.'
+    if(myrank==0) then
+      write(IMAIN,*) '> Done preparing stretching absorbing boundary conditions for the DG elements.'
+    endif
     call flush_IMAIN()
   endif ! Endif on ABC_STRETCH.
+  
+  ! Prepare bottom forcing read from external file.
+  if(USE_DISCONTINUOUS_METHOD .and. TYPE_FORCING==10) then
+    if(myrank==0) then
+      write(IMAIN,*) "Preparing bottom forcing from external file."
+    endif
+    call prepare_external_forcing() ! See 'boundary_terms_DG.f90'.
+    if(myrank==0) then
+      write(IMAIN,*) "> Done preparing bottom forcing from external file."
+    endif
+  endif ! Endif on TYPE_FORCING==10.
 
   ! prepares mass matrices
   call prepare_timerun_mass_matrix()

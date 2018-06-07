@@ -64,7 +64,7 @@
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy,vs_val,vp_val,rho_val
   character(len=150) :: inputname
   integer :: nlines_header, nblines_model
-  logical fileexists
+  logical :: fileexists
 
 
   if (tomo_material > 0) MODEL = 'tomo'
@@ -219,7 +219,6 @@
     ! Check existence of model file.
     fileexists=.false.
     INQUIRE(File=EXTERNAL_DG_ONLY_MODEL_FILENAME, Exist=fileexists)
-    write(*,*) fileexists
     if(.not. fileexists) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
