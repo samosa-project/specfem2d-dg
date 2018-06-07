@@ -1532,6 +1532,15 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   DO i=1,nlines_header
     ! Read and skip in header.
     READ(100,*,iostat=io)
+    if(io/=0) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Cannot read atmospheric      *"
+      write(*,*) "* model file.                  *"
+      write(*,*) "********************************"
+      stop
+    endif
   enddo
   do i=1,nlines_model
     ! Read values.

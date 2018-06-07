@@ -18,3 +18,7 @@ Mxx                             = 0.d0       # Only for moment tensor source. Mx
 Mzz                             = 0.d0       # Only for moment tensor source. Mzz component.
 Mxz                             = 0.d0       # Only for moment tensor source. Mxz component.
 factor                          = 1.d0       # Amplification factor (unit depending on the equation in which it is included).
+
+# Remark for quake simulations: one should give M_0 and not M_w (either in Mxx, Mzz, and Mxz or in factor).
+# M_0 = 10^(3*M_w/2 + 9.05) [N.m].
+# M_w = (2/3)*log(M_0*10^7) - 10.7 (with M_0 in [N.m]).

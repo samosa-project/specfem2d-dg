@@ -50,6 +50,7 @@
     tomo_material,myrank, &
     ! MODIF DG
     windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, USE_DISCONTINUOUS_METHOD,&
+    EXTERNAL_DG_ONLY_MODEL_FILENAME,&
     !TEST
     ibool_before_perio
 
@@ -63,6 +64,7 @@
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy,vs_val,vp_val,rho_val
   character(len=150) :: inputname
   integer :: nlines_header, nblines_model
+  logical fileexists
 
 
   if (tomo_material > 0) MODEL = 'tomo'
@@ -214,6 +216,23 @@
                                windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG)
   
   else if (trim(MODEL)=='external_DG') then
+    ! Check existence of model file.
+    fileexists=.false.
+    INQUIRE(File=EXTERNAL_DG_ONLY_MODEL_FILENAME, Exist=fileexists)
+    write(*,*) fileexists
+    if(.not. fileexists) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Atmospheric model file does  *"
+      write(*,*) "* not exist in folder. Copy    *"
+      write(*,*) "* the atmospheric model file   *"
+      write(*,*) "* in the simulation folder, or *"
+      write(*,*) "* set MODEL to a different     *"
+      write(*,*) "* value in the parameter file. *"
+      write(*,*) "********************************"
+      stop
+    endif
     call external_model_DG_only_find_nblines(nlines_header, nblines_model)
     call define_external_model_DG_only(nlines_header, nblines_model)
     
