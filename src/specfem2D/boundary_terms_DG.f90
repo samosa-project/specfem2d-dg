@@ -374,7 +374,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     ! (custom forcing case for    !
     ! user).                      !
     ! --------------------------- !
-    ! The Matlab script 'utils_new/forcings.m' contains some tests for some of those forcings, in order to make hardcoding a little easier.
+    ! The Matlab script 'utils_new/forcings_test.m' contains some tests for some of those forcings, in order to make hardcoding a little easier.
     if(TYPE_FORCING == 9) then
       ! Tsunami forcing.
       if(.false.) then        
