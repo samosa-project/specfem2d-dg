@@ -5,7 +5,7 @@
 #---------------------------------------------------------------------#
 
 # Title of job.
-title                           = test_coupling
+title                           = default_example_DG_solid
 
 # Type of simulation.
 # 1: forward
@@ -35,7 +35,7 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 2500
+NSTEP                           = 2000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 1d-4
 
@@ -55,11 +55,11 @@ P_SV                            = .true.
 GPU_MODE                        = .false.
 
 # Available models.
-#   default: define model using nbmodels below
-#   ascii: read model from ascii database file
-#   binary: read model from binary database file
-#   external: define model using define_external_model subroutine
-#   legacy: read model from model_velocity.dat_input
+#   default:     define model using nbmodels below.
+#   ascii:       read model from ascii database file.
+#   binary:      read model from binary database file.
+#   external:    define model using 'define_external_model' subroutine.
+#   legacy:      read model from 'model_velocity.dat_input'.
 #   external_DG: read DG model from 'atmospheric_model.dat' (generated with 'utils_new/Atmospheric_Models/Earth/wrapper/msisehwm'), and other models with "Velocity and Density Models" below.
 MODEL                           = default
 
@@ -74,15 +74,15 @@ SAVE_MODEL                      = default
 #---------------------------------------------------------------------#
 
 # attenuation parameters
-ATTENUATION_VISCOELASTIC_SOLID  = .false.        # turn attenuation (viscoelasticity) on or off for non-poroelastic solid parts of the model
-ATTENUATION_PORO_FLUID_PART     = .false.        # turn viscous attenuation on or off for the fluid part of poroelastic parts of the model
-Q0                              = 1              # quality factor for viscous attenuation
-freq0                           = 0.05           # frequency for viscous attenuation
+ATTENUATION_VISCOELASTIC_SOLID  = .false.        # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
+ATTENUATION_PORO_FLUID_PART     = .false.        # Poroelastic materials only. Turn on or off viscous attenuation for the fluid part of poroelastic parts of the model.
+Q0                              = 1              # Poroelastic materials only. Quality factor for the viscous attenuation.
+freq0                           = 0.05           # Poroelastic materials only. Frequency for the viscous attenuation.
 
-# for viscoelastic attenuation
-N_SLS                           = 2              # number of standard linear solids for attenuation (3 is usually the minimum)
-f0_attenuation                  = 5.196152422706633 # (Hz) relevant only if source is a Dirac or a Heaviside, otherwise it is f0 the dominant frequency of the source in the DATA/SOURCE file
-READ_VELOCITIES_AT_f0           = .true.        # shift velocities to account for physical dispersion (see user manual for more information)
+# For viscoelastic attenuation (only used if ATTENUATION_VISCOELASTIC_SOLID==.true.).
+N_SLS                           = 2              # Number of standard linear solids for attenuation (3 is usually the minimum).
+f0_attenuation                  = 1.             # Relevant only if source is a Dirac or a Heaviside. Otherwise, this will take the value of f0 the dominant frequency of the source. Peak frequency of quality factor of attenuation. Unit: Hz.
+READ_VELOCITIES_AT_f0           = .false.        # Set to .true. to shift to account for physical dispersion (the velocities set in the materials below then correspond to those at f0_attenuation frequency). If set to .false., do not shift (the velocities set in the materials below then correspond to those at infinite frequency, and are used as are). See 'shift_velocities_from_f0' subroutine in 'attenuation_model.f90' and user manual ('Notes_on_viscoelasticity_and_compatibility_with_Carcione_analytical_solution.pdf') for more information.
 
 # to undo attenuation for sensitivity kernel calculations or forward runs with SAVE_FORWARD
 # use the flag below. It performs undoing of attenuation in an exact way for sensitivity kernel calculations
@@ -97,62 +97,65 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-REMOVE_DG_FLUID_TO_SOLID        = .true.        # Removes the effect of the fluid on the solid.
+REMOVE_DG_FLUID_TO_SOLID        = .false.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
 CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydrostatic state. Causes the pressure output to be in perturbation only.
 
-# Fluid model
+# Fluid model (if MODEL\='external').
 USE_ISOTHERMAL_MODEL            = .false.
-SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. [m].
-surface_density                 = 1.4            # $\rho_0$. [kg.m^(-3)]. If USE_ISOTHERMAL_MODEL==true, corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 340.0          # $c$. Only used if USE_ISOTHERMAL_MODEL==.false. (if set to .true., $c^2$=SCALE_HEIGHT*gravity*constant_p/constant_v).
-wind                            = 0.0            # Horizontal wind. [m.s^(-1)].
+SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
+surface_density                 = 1.4            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
+sound_velocity                  = 340.0          # $c$. Unit: m.s^{-1}.
+wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true..
-dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. [kg.s^(-1).m^(-1)]. Choose 1.25d-5 for dry air at 20 °C.
-thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. [kg.m.s^(-3).K^(-1)]. Choose 0.025 for dry air at 20 °C.
-tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. [s].
-tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. [s].
-constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 1005 for dry air between -40 and 40 °C.
-constant_v                      = 717.3447537473 # $c_v$, isochoric specific heat capacity. [m^2.s^(-2).K^(-1)]. Choose 717.3447537473 for dry air between -40 and 25 °C (in order to have gamma=1.401) or 717.8571428571 for dry air between 25 and 40 °C (in order to have gamma=1.400).
+dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
+thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
+tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.
+tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. Unit: s.
+constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 1005 for dry air between -40 and 40 °C.
+constant_v                      = 717.3447537473 # $c_v$, isochoric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 717.3447537473 for dry air between -40 and 25 °C (in order to have gamma=1.401) or 717.8571428571 for dry air between 25 and 40 °C (in order to have gamma=1.400).
 
 # ID of the DG region (refering to "Velocity and Density Models" below).
 id_region_DG                    = 2
 
 # Fluid-solid interface
-coord_interface                 = 0.0            # Only used if USE_ISOTHERMAL_MODEL==.true.. z-coordinate of the fluid-solid interface, in order not to interfere with the vertical scaling.
+coord_interface                 = 0.0            # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
 TYPE_SOURCE_DG                  = 3
 
-# Absorbing boundary conditions.
-ABC_STRETCH_TOP    = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_LEFT   = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_BOTTOM = .false.                     # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_RIGHT  = .false.                     # Use buffer-based stretching method on that boundary?
+# Stretched buffer absorbing boundary conditions. Not finalised, use at own risk.
+# Note: those are not fully working when using horizontal wind.
+ABC_STRETCH_TOP         = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_LEFT        = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_BOTTOM      = .false.                # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_RIGHT       = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_TOP_LBUF    = 10.                    # Length of the buffer used for the buffer-based stretching method.
 ABC_STRETCH_LEFT_LBUF   = 10.                    # Length of the buffer used for the buffer-based stretching method.
 ABC_STRETCH_BOTTOM_LBUF = 10.                    # Length of the buffer used for the buffer-based stretching method.
 ABC_STRETCH_RIGHT_LBUF  = 10.                    # Length of the buffer used for the buffer-based stretching method.
 
 # Source spatial function.
-USE_SPREAD_SSF   = .false.                        # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used.
-SPREAD_SSF_SAVE  = .false.                       # Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
-SPREAD_SSF_SIGMA = 0.3d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
+USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
+SPREAD_SSF_SAVE  = .false.                       # Can generate many files when using many CPUs, and huge files when using many elements, use with caution. Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
+SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
 
 # Source time function.
 REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BETTER_PRESSURE==.false. and time_function_type==3 (see source_input). Analytically removes the discontinuity introduced at initial time (since Gaussians have non-compact support). Alternatively, leave this to .false. and set USER_T0 to a better value (see below).
 
-# Bottom forcing function
-# 0: none
-# 1: only time gaussian derivative
-# 2: time and space gaussian derivative
+# Bottom forcing function.
+#  0: none
+#  1: only time gaussian derivative
+#  2: time and space gaussian derivative
+#  9: hardcoded custom forcing (set it up directly in the code, see "boundary_terms_DG.f90")
+# 10: read from 'external_bottom_forcing.dat' (generated with 'utils_new/forcings.m'). The lines of this file should be formatted as 't x value', using the same DT as above and points x should correspond to the mesh. The time values in this file will be read as time values from beginning of simulation, thus including any time shift induced by non-Dirac sources (i.e. 'negative times').
 TYPE_FORCING                    = 0
-main_spatial_period             = 1.0
-main_time_period                = 1.0
-forcing_initial_loc             = 1.0
-forcing_initial_time            = 1.0
+main_spatial_period             = 1. # Self-explaining. Unit: m.
+main_time_period                = 1. # Self-explaining. Unit: s.
+forcing_initial_loc             = 0. # Self-explaining. Unit: m.
+forcing_initial_time            = 0. # Self-explaining. Unit: s.
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -193,18 +196,18 @@ subsamp_seismos                 = 1
 # so far, this option can only be used if all the receivers are in acoustic elements
 USE_TRICK_FOR_BETTER_PRESSURE   = .false.
 
-# Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway.
+# Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway. A good rule of thumb would be NSTEP = (f0 * dt * Np)^{-1} in order to have Np points per period, where f0 is the fundamental frequency of the source time function.
 NSTEP_BETWEEN_OUTPUT_SEISMOS    = 25
 
 # Compute the field int_0^t v^2 dt for a set of GLL points and write it to file. Use
-# the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms
+# the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms. Points in the stretching buffers (in DG elements) are not taken into account.
 COMPUTE_INTEGRATED_ENERGY_FIELD = .false.
 
-# Time shift to use. This input must be a positive value.
+# Global time shift to use. This input must be a positive value.
 # This corresponds to the quantity of time to simulate before the earliest source's spike. The earliest source's spike is always assumed to be at t=0. Hence the simulation will always begin at "negative times".
-# If set to zero, the solver will automatically compute a value (originally 1.20 * T0 where T0 is the fundamental period of the earliest source, see "set_source_parameters.f90") and use it. If set to a value lesser than the solver's computed one, an error message will occur and the solver will stop. If set to a value greater than the solver's computed one, the solver will use the user's one.
+# If left at zero, the solver will automatically compute a value (originally 1.20 * T0 where T0 is the fundamental period of the earliest source, see "set_source_parameters.f90"), add to it the earliest source time shift, and use that as global time shift. If set to a value lesser than the solver's computed one, an error message will occur and the solver will stop. If set to a value greater than the solver's computed one, the solver will use the user's one.
 # If you do not know what you are doing, leave this to zero.
-# For time_function_type==3 (see source_input) and USE_TRICK_FOR_BETTER_PRESSURE=.false., a discontinuity at initial time is introduced (since Gaussians have non-compact support). In order for this discontinuity to be of order of magnitude 10^(-r), choose USER_T0=((r*ln(10)+ln(factor))/(pi^2*f^2))^0.5, where factor is the amplification factor, and f is the fundamental frequency.
+# For time_function_type==3 (see source_input) and USE_TRICK_FOR_BETTER_PRESSURE=.false., a discontinuity at initial time is introduced (since Gaussians have non-compact support). In order for this discontinuity to be of order of magnitude 10^(-r), choose USER_T0=((r*ln(10)+ln(factor))/(pi^2*f^2))^0.5+T_S, where factor is the amplification factor, f is the fundamental frequency, and T_S is the earliest source time shift.
 USER_T0                         = 0.0d0
 
 # Seismogram formats.
@@ -217,30 +220,18 @@ SU_FORMAT                       = .false.        # Single precision binary in Se
 use_existing_STATIONS           = .false.
 
 # Number of receiver sets (i.e. number of receiver lines to create below).
-nreceiversets                   = 3
+nreceiversets                   = 1
 
 # Orientation.
 anglerec                        = 0.0d0          # Angle to rotate components at receivers.
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 # First receiver set: number of receivers, first receiver's x coordinate in meters, first receiver's z coordinate in meters, last receiver's x coordinate in meters (ignored if 1 receiver), and last receiver's z coordinate in meters (ignored if 1 receiver).
-nrec                            =   6
+nrec                            =   4
 xdeb                            =   0.0d0
-zdeb                            = -20.0d0
+zdeb                            =  10.0d0
 xfin                            =   0.0d0
-zfin                            =  30.0d0
-record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface.
-nrec                            =   5
-xdeb                            = -50.0d0
-zdeb                            =  -1.0d0
-xfin                            =  50.0d0
-zfin                            =  -1.0d0
-record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface.
-nrec                            =   5
-xdeb                            = -50.0d0
-zdeb                            =   1.0d0
-xfin                            =  50.0d0
-zfin                            =   1.0d0
+zfin                            =  40.0d0
 record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface.
 
 #---------------------------------------------------------------------#
@@ -270,7 +261,7 @@ STACEY_ABSORBING_CONDITIONS     = .true.
 
 # Periodic boundary conditions?
 ADD_PERIODIC_CONDITIONS         = .false.
-PERIODIC_HORIZ_DIST             = 100.
+PERIODIC_HORIZ_DIST             = 100.d0
 
 
 #---------------------------------------------------------------------#
@@ -287,6 +278,7 @@ nbmodels                        = 2
 #   anistoropic: model_number 2  rho  c11  c13 c15 c33 c35    c55 c12 c23 c25 0    0    0
 #   poroelastic: model_number 3  rhos rhof phi c   kxx kxz    kzz Ks  Kf  Kfr etaf mufr Qmu
 #   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
+# Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the 'Attenuation' section above as wanted.
 1 1 1560   652  150 0 0 40 20 0 0 0 0 0 0
 2 1 1.164  349. 0.  0 0 10 10 0 0 0 0 0 0
 
@@ -330,7 +322,7 @@ interfacesfile                  = ../interfaces_input
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 xmin                            = -50.0d0
 xmax                            =  50.0d0
-nx                              =  100
+nx                              =  50
 
 # Absorbing boundary parameters (see STACEY_ABSORBING_CONDITIONS above)
 absorbbottom                    = .true.
@@ -348,8 +340,8 @@ absorbleft                      = .true.
 nbregions                       = 2
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 100 1 20 1
-1 100 21 50 2
+1 100 1 25 1
+1 100 26 50 2
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -363,8 +355,8 @@ NSTEP_BETWEEN_OUTPUT_INFO       = 200
 # Generate a GNUPLOT file containing the grid, and a script to plot it?
 output_grid_Gnuplot             = .false.
 # Dump the grid in an ASCII text file consisting of a set of X,Y,Z points?
-output_grid_ASCII               = .false.        
-# Compute and output total acoustic and elastic energy curves (slows down the code significantly)?
+output_grid_ASCII               = .false.
+# Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .false.
 
 #---------------------------------------------------------------------#
@@ -386,11 +378,11 @@ cutsnaps                        = 1.
 # JPEG Snapshots              #
 #-----------------------------#
 output_color_image              = .true.         # Draw JPEG color snapshot?
-imagetype_JPEG                  = 5              #    display 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
-                                                 # DG display 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=pressure 5=Energy 6=Temperature 7=Density 8=sqrt(rho)*veloc_Ux 9=sqrt(rho)*veloc_Uz 10=none
+imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
+                                                 # DG display: 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz 10=none
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
-CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
+CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5d0          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
 DRAW_SOURCES_AND_RECEIVERS      = .true.         # Display sources as orange crosses and receivers as green squares?
 DRAW_WATER_IN_BLUE              = .true.         # display acoustic layers as constant blue in JPEG images, because they likely correspond to water in the case of ocean acoustics or in the case of offshore oil industry experiments (if off, display them as greyscale, as for elastic or poroelastic elements, for instance for acoustic-only oil industry models of solid media)

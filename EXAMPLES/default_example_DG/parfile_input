@@ -5,7 +5,7 @@
 #---------------------------------------------------------------------#
 
 # Title of job.
-title                           = full_DG_square
+title                           = default_example_DG
 
 # Type of simulation.
 # 1: forward
@@ -37,7 +37,7 @@ ngnod                           = 9
 # Total number of time steps.
 NSTEP                           = 2000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 4d-4
+DT                              = 1d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order)
@@ -120,21 +120,22 @@ constant_v                      = 717.3447537473 # $c_v$, isochoric specific hea
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = -50.0          # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
+coord_interface                 = 0.0            # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
 TYPE_SOURCE_DG                  = 3
 
-# Absorbing boundary conditions.
+# Stretched buffer absorbing boundary conditions. Not finalised, use at own risk.
+# Note: those are not fully working when using horizontal wind.
 ABC_STRETCH_TOP         = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_LEFT        = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_BOTTOM      = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_RIGHT       = .false.                # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_TOP_LBUF    = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
-ABC_STRETCH_LEFT_LBUF   = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
-ABC_STRETCH_BOTTOM_LBUF = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
-ABC_STRETCH_RIGHT_LBUF  = 1.                     # Length of the buffer used for the buffer-based stretching method. Unit: m.
+ABC_STRETCH_TOP_LBUF    = 10.                    # Length of the buffer used for the buffer-based stretching method.
+ABC_STRETCH_LEFT_LBUF   = 10.                    # Length of the buffer used for the buffer-based stretching method.
+ABC_STRETCH_BOTTOM_LBUF = 10.                    # Length of the buffer used for the buffer-based stretching method.
+ABC_STRETCH_RIGHT_LBUF  = 10.                    # Length of the buffer used for the buffer-based stretching method.
 
 # Source spatial function.
 USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
@@ -251,7 +252,7 @@ save_ASCII_kernels              = .true.
 
 # Perfectly matched layer boundary conditions?
 PML_BOUNDARY_CONDITIONS         = .false.
-NELEM_PML_THICKNESS             = 3
+NELEM_PML_THICKNESS             = 10
 ROTATE_PML_ACTIVATE             = .false.
 ROTATE_PML_ANGLE                = 30.0d0
 
@@ -260,7 +261,7 @@ STACEY_ABSORBING_CONDITIONS     = .false.
 
 # Periodic boundary conditions?
 ADD_PERIODIC_CONDITIONS         = .false.
-PERIODIC_HORIZ_DIST             = 100.0d0
+PERIODIC_HORIZ_DIST             = 100.d0
 
 
 #---------------------------------------------------------------------#
@@ -338,7 +339,7 @@ absorbleft                      = .false.
 nbregions                       = 1
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 50 1 50 1
+1 50 1 25 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -352,7 +353,7 @@ NSTEP_BETWEEN_OUTPUT_INFO       = 200
 # Generate a GNUPLOT file containing the grid, and a script to plot it?
 output_grid_Gnuplot             = .false.
 # Dump the grid in an ASCII text file consisting of a set of X,Y,Z points?
-output_grid_ASCII               = .false.        
+output_grid_ASCII               = .false.
 # Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .false.
 
@@ -379,7 +380,7 @@ imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=disp
                                                  # DG display: 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz 10=none
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
-CONSTANT_MAX_AMPLITUDE_TO_USE   = 1.17d4         # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
+CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5d0          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
 DRAW_SOURCES_AND_RECEIVERS      = .true.         # Display sources as orange crosses and receivers as green squares?
 DRAW_WATER_IN_BLUE              = .true.         # display acoustic layers as constant blue in JPEG images, because they likely correspond to water in the case of ocean acoustics or in the case of offshore oil industry experiments (if off, display them as greyscale, as for elastic or poroelastic elements, for instance for acoustic-only oil industry models of solid media)
