@@ -41,6 +41,8 @@ echo
 echo "> Storing output (`date`)."
 echo
 cp ./DATA/*SOURCE* ./DATA/*STATIONS* ../../src/specfem2D/boundary_terms_DG.f90 ./OUTPUT_FILES
+cp "atmospheric_model.dat" ./OUTPUT_FILES/
+cp "external_bottom_forcing.dat" ./OUTPUT_FILES/
 
 # Batch.
 echo
