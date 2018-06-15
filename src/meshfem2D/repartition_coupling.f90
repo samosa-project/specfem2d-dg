@@ -395,7 +395,7 @@
   
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
-  
+    
     if(debug_finding .and. mod(el, floor(nelmnts/100.))==0) then
       ! DEBUG, only here to make sure periodic points detection does not crash on huge meshes.
       if(el>0) write(*,*) "> DEBUG OF PERIODIC ELEMENTS' DETECTION: ELEMENT ", el, ", ", (100.*el/nelmnts), '% DONE.'
