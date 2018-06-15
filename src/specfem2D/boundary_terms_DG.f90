@@ -176,7 +176,8 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
         assign_external_model,myrank, &
         DT, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
-        EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL ! External forcing.
+        EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL,& ! External forcing.
+        forcing_min_x, forcing_max_x ! External forcing.
 
   implicit none
   
@@ -479,6 +480,27 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
           !if(abs(timelocal-0.16)<0.1 .and. abs(x+10.)<3.) then
           !  write(*,*) timelocal, x, veloc_z_DG_P
           !endif
+        else
+          if(x>=forcing_min_x .and. x<=forcing_max_x) then
+            ! This block is entered if forcing should happen (t < max_t and min_x < x < max_x), but can't be read (externalforcingid==HUGE(0)).
+            ! Prompt an error.
+            write(*,*) "********************************"
+            write(*,*) "*            ERROR             *"
+            write(*,*) "********************************"
+            write(*,*) "* External bottom forcing      *"
+            write(*,*) "* should happen, but does not  *"
+            write(*,*) "* happen. Maybe some points    *"
+            write(*,*) "* were not paired well, or     *"
+            write(*,*) "* time to index conversion     *"
+            write(*,*) "* fails.                       *"
+            write(*,*) "* x_min = ", forcing_min_x
+            write(*,*) "* x     = ", x
+            write(*,*) "* x_max = ", forcing_max_x
+            write(*,*) "* t     = ", timelocal
+            write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME
+            write(*,*) "********************************"
+            stop
+          endif
         endif
       endif
     endif ! Endif on TYPEFORCING==10
@@ -504,16 +526,17 @@ subroutine prepare_external_forcing()
   use constants,only: CUSTOM_REAL, HUGEVAL
 
   use specfem_par, only: EXTERNAL_FORCING_FILENAME, EXTERNAL_FORCING_MAXTIME,&
+                         forcing_min_x, forcing_max_x, &
                          EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL, DT,&
-                         nglob_DG,coord,nspec,NGLLX,NGLLZ,&
+                         nglob_DG,coord,nspec,NGLLX,NGLLZ,myrank,&
                          only_DG_acoustic,ibool_before_perio!,stage_time_scheme
 
   implicit none
 
   ! Local variables.
   logical :: fileexists, counting_nx
-  real(kind=CUSTOM_REAL) :: t, x, z, val, tmp_t_old, forcing_min_x, forcing_max_x
-  integer :: io, istat,NSTEPFORCING,nx,it,ix,ibbp,ispec,i,j
+  real(kind=CUSTOM_REAL) :: t, x, z, val, tmp_t_old
+  integer :: io, istat,NSTEPFORCING,nx,it,ix,ibbp,ispec,i,j,nx_paired
   
   if(.not. only_DG_acoustic) then
     write(*,*) "********************************"
@@ -553,15 +576,26 @@ subroutine prepare_external_forcing()
     stop
   endif
   EXTFORC_MAP_ibbp_TO_LOCAL=HUGE(0) ! Safeguard.
-  tmp_t_old=-HUGEVAL;
+  
+  if(myrank==0) then
+    write(*,*) "  First scan: counting and pairing."
+  endif
+  tmp_t_old=0.
   counting_nx=.true.
-  nx=0;
-  forcing_min_x=HUGEVAL; ! Start at +inf, will be updated
-  forcing_max_x=-HUGEVAL; ! Start at -inf, will be updated
+  nx=0 ! Counter for number of spatial points found in file.
+  nx_paired=0 ! Counter for points actually paired with their SPECFEM-DG counterparts. Safeguard.
+  forcing_min_x=HUGEVAL ! Start at +inf, will be updated
+  forcing_max_x=-HUGEVAL ! Start at -inf, will be updated
   OPEN(100, file=EXTERNAL_FORCING_FILENAME)
   DO
-    READ(100,*,iostat=io) t, x, val ! In fact we don't care about val here.
-    if(counting_nx .and. t==tmp_t_old) then ! This if is entered only for first time step (see else below).
+    READ(100,*,iostat=io) t, x, val ! In fact, we do not care about val here.
+    !write(*,*) t, tmp_t_old
+    if(counting_nx .and. t>tmp_t_old) then
+      !nx=nx+1 ! Add last one.
+      counting_nx=.false. ! Deactivate counting.
+    endif
+    if(counting_nx) then ! This if is entered only for first time step (see else below).
+      nx=nx+1 ! Count.
       ! Find the ibool_before_perio corresponding to the current x.
       do ispec = 1, nspec
         ! For DG elements, go through GLL points one by one.
@@ -572,24 +606,22 @@ subroutine prepare_external_forcing()
             if(z/=0.) then
               cycle
             else
-              if(abs(x-coord(1, ibbp))<1e-7) then
+              if(.true. .and. abs(x-coord(1, ibbp))<10.) then ! DEBUG
+                write(*,*) t, x, coord(1, ibbp), abs(x-coord(1, ibbp)), nx
+              endif
+              if(abs(x-coord(1, ibbp))<1e-4) then
                 EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)=nx
+                nx_paired=nx_paired+1
               endif
             endif
           enddo ! Enddo on i.
         enddo ! Enddo on j.
       enddo ! Enddo on ispec.
-      nx=nx+1 ! Count.
-    else
-      if(counting_nx .and. tmp_t_old>-HUGEVAL) then
-        nx=nx+1 ! Add last one.
-        counting_nx=.false. ! Deactivate counting.
-      endif
     endif
-    if(x<forcing_min_x) then
+    if(x<=forcing_min_x) then
       forcing_min_x=x
     endif
-    if(x>forcing_max_x) then
+    if(x>=forcing_max_x) then
       forcing_max_x=x
     endif
     tmp_t_old=t
@@ -597,6 +629,28 @@ subroutine prepare_external_forcing()
   ENDDO
   close(100)
   EXTERNAL_FORCING_MAXTIME=t ! Save maximum time.
+  write(*,*) nx, " mesh points were found in file, and ", nx_paired,&
+             " SPECFEM mesh points were paired to them."
+  write(*,*) "  Because of the DG implementation, duplicates can occur without problem."
+  if(nx_paired<nx) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Not all spatial points read  *"
+    write(*,*) "* from external file were      *"
+    write(*,*) "* paired with SPECFEM          *"
+    write(*,*) "* counterparts: *"
+    write(*,*) "* nx        = ", nx
+    write(*,*) "* nx_paired = ", nx_paired
+    write(*,*) "* Consider recompiling the     *"
+    write(*,*) "* external file with matching  *"
+    write(*,*) "* spatial mesh. See also       *"
+    write(*,*) "* import routine,              *"
+    write(*,*) "* 'prepare_external_forcing'   *"
+    write(*,*) "* in 'boundary_terms_DG.f90'.  *"
+    write(*,*) "********************************"
+    stop
+  endif
   
   !NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2)) ! Use this if up-sampling is needed (large files).
   NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2)) ! Use this if simple sampling is enough (ok-sized files).
@@ -614,6 +668,9 @@ subroutine prepare_external_forcing()
   endif
   
   ! Re-read and save values.
+  if(myrank==0) then
+    write(*,*) "  Second scan: saving values."
+  endif
   it=1
   ix=1
   OPEN(100, file=EXTERNAL_FORCING_FILENAME)

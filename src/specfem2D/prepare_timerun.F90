@@ -130,7 +130,7 @@
   ! Prepare bottom forcing read from external file.
   if(USE_DISCONTINUOUS_METHOD .and. TYPE_FORCING==10) then
     if(myrank==0) then
-      write(IMAIN,*) "Preparing bottom forcing from external file."
+      write(IMAIN,*) "> Preparing bottom forcing from external file."
     endif
     call prepare_external_forcing() ! See 'boundary_terms_DG.f90'.
     if(myrank==0) then

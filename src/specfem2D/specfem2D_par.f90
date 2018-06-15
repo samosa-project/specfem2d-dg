@@ -168,7 +168,7 @@ module specfem_par
   !   EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec))
   ! and check it is not equal to HUGE(0). Then, in order to access forcing at time timelocal and at point (i,j,ispec), access:
   !   EXTERNAL_FORCING(floor(timelocal/dt+1),EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec)))
-  real(kind=CUSTOM_REAL) :: EXTERNAL_FORCING_MAXTIME
+  real(kind=CUSTOM_REAL) :: EXTERNAL_FORCING_MAXTIME, forcing_min_x, forcing_max_x
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: EXTERNAL_FORCING ! Array of bottom forcing values. Dimensions: NSTEP (including multiplication with stage_time_scheme), NX (number of points on bottom boundary).
   integer, dimension(:), allocatable :: EXTFORC_MAP_ibbp_TO_LOCAL ! Mapper from ibool_before_perio to local indexing.
   
