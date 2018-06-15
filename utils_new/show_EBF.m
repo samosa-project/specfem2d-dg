@@ -36,7 +36,6 @@ clear('a');
 
 % Interpolate the point cloud.
 disp(['Interpolating (can be very long for large files).']);
-figure(1000);
 F = scatteredInterpolant(t, x, d);
 
 % Plot.
@@ -45,5 +44,6 @@ tt = min(t(:)):gst:max(t(:));
 tx = min(x(:)):gsx:max(x(:));
 [X, Z] = meshgrid(tt, tx);
 D = F(X, Z);
+figure();
 surf(X, Z, D, 'edgecolor', 'interp', 'facecolor', 'interp'); view([0, 0, 1]); axis([min(t), max(t), min(x), max(x)]);
 xlabel('$t$'); ylabel('$x$'); title("External Bottom Forcing ");

@@ -180,12 +180,13 @@ tSPCFM = 0:dtSPCFM / nstageSPCFM:MAXTIME*1.1;
 % mesh.               %
 %%%%%%%%%%%%%%%%%%%%%%%
 % This array must reproduce exactly mesh at z=0 (with GLL points).
-xSPCFM = linspace(- 45e3, 45.d3, 1060 + 1);
+xSPCFM = linspace(- 45e3, 45e3, 1060 + 1);
 GLL = [0, 0.345346329292028 / 2, 0.5, 1.654653670707980 / 2]; % UGLY METHOD, I'M SORRY
 xSPCFMwGLL = [];
 for i = 1:length(xSPCFM) - 1
   xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(i) + (xSPCFM(i + 1) - xSPCFM(i)) * GLL];
 end
+xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(end)];
 % If an external mesh is used, the positions of points at z=0 must be entered here instead.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Prepare meshgrid    %
@@ -232,28 +233,29 @@ end
 % Path to file.       %
 %%%%%%%%%%%%%%%%%%%%%%%
 EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
-EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing.dat'];
 %%%%%%%%%%%%%%%%%%%%%%%
 % Test data.          %
 %%%%%%%%%%%%%%%%%%%%%%%
-% EXPORTFILENAME='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/external_bottom_forcing.dat';
-% tSPCFM=0:4e-4:1;
-% xSPCFM=linspace(-50,50,51);
-% GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
-% xSPCFMwGLL=[];
-% for i=1:length(xSPCFM)-1
-%   xSPCFMwGLL=[xSPCFMwGLL,xSPCFM(i)+(xSPCFM(i+1)-xSPCFM(i))*GLL];
-% end
-% [TSPCFM,XSPCFM]=meshgrid(tSPCFM,xSPCFMwGLL);
-% MAXTIME=0.5;
-% MINX=-25;
-% MAXX=25;
-% LAPO=7.5; apox = 0.25 .* (1. - erf((XSPCFM - MAXX + 0.5 * LAPO) / (0.25 * LAPO))) .* (1 + erf((XSPCFM - MINX - 0.5 * LAPO) / (0.25 * LAPO)));
-% TAPO=0.1; apot0 = 0.5 .* (1 + erf((TSPCFM - 0.5 * TAPO) / (0.25 * TAPO))); apot = 0.5 .* (1. - erf((TSPCFM - MAXTIME + 0.5 * TAPO) / (0.25 * TAPO))); apot0(:,1)=0;
-% % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/8).*sin(TSPCFM*12.5); % Test forcing function.
-% % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/(0.25*8)).*sin(TSPCFM*4*12.5); % Test forcing function.
-% % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*apox.*apot0.*apot; % Test forcing function.
-% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(TSPCFM*2*pi/0.25).*apox.*apot0.*apot; % Test forcing function.
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/';
+EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/stratobaro_test_EBF/';
+tSPCFM=0:4e-4:1;
+xSPCFM=linspace(-50,50,51);
+GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
+xSPCFMwGLL=[];
+for i=1:length(xSPCFM)-1
+  xSPCFMwGLL=[xSPCFMwGLL,xSPCFM(i)+(xSPCFM(i+1)-xSPCFM(i))*GLL];
+end
+xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(end)];
+[TSPCFM,XSPCFM]=meshgrid(tSPCFM,xSPCFMwGLL);
+MAXTIME=0.5;
+MINX=-25;
+MAXX=25;
+LAPO=7.5; apox = 0.25 .* (1. - erf((XSPCFM - MAXX + 0.5 * LAPO) / (0.25 * LAPO))) .* (1 + erf((XSPCFM - MINX - 0.5 * LAPO) / (0.25 * LAPO)));
+TAPO=0.1; apot0 = 0.5 .* (1 + erf((TSPCFM - 0.5 * TAPO) / (0.25 * TAPO))); apot = 0.5 .* (1. - erf((TSPCFM - MAXTIME + 0.5 * TAPO) / (0.25 * TAPO))); apot0(:,1)=0;
+% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/8).*sin(TSPCFM*12.5); % Test forcing function.
+% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/(0.25*8)).*sin(TSPCFM*4*12.5); % Test forcing function.
+% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*apox.*apot0.*apot; % Test forcing function.
+FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(TSPCFM*2*pi/0.25).*apox.*apot0.*apot; % Test forcing function.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Detect relevant     %
 % indices, and print  %
@@ -261,6 +263,7 @@ EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing.dat'];
 % values to file.     %
 %%%%%%%%%%%%%%%%%%%%%%%
 if(0)
+  EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing.dat'];
   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
