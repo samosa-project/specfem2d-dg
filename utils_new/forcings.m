@@ -159,6 +159,16 @@ apot = apot0 .* apot;
 apot(1) = 0; % Tweak to make sure forcing starts at 0.
 apox([1,end])=0; % Tweak to make sure forcing starts at 0.
 FORCING = s_vel_new .* apox'.*apot;
+% Ask user to verify forcing is ok.
+forcok=-1;
+disp(['  Forcing spans [',num2str(MINX), ', ', num2str(MAXX), '] m and [0, ',num2str(MAXTIME),'] s.']);
+while(not(ismember(forcok,[0,1])))
+  forcok=input('  Is that ok (0 for no, 1 for yes)? > ');
+end
+if(forcok==0)
+  error('  Forcing was not ok, re-chose parametrisation in script.');
+end
+clear('forcok');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2) Interpolate on the       %
@@ -170,7 +180,6 @@ FORCING = s_vel_new .* apox'.*apot;
 %%%%%%%%%%%%%%%%%%%%%%%
 % SPECFEM  time.      %
 %%%%%%%%%%%%%%%%%%%%%%%
-NSTEPSPCFM = 8000;
 dtSPCFM = 1.5d-2;
 nstageSPCFM = 1;
 t0SPCFM = - 2 * dtSPCFM;
@@ -180,13 +189,24 @@ tSPCFM = 0:dtSPCFM / nstageSPCFM:MAXTIME*1.1;
 % mesh.               %
 %%%%%%%%%%%%%%%%%%%%%%%
 % This array must reproduce exactly mesh at z=0 (with GLL points).
-xSPCFM = linspace(- 45e3, 45e3, 1060 + 1);
+nx = 1060;
+xSPCFM = linspace(- 45e3, 45e3, nx + 1);
 GLL = [0, 0.345346329292028 / 2, 0.5, 1.654653670707980 / 2]; % UGLY METHOD, I'M SORRY
 xSPCFMwGLL = [];
 for i = 1:length(xSPCFM) - 1
   xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(i) + (xSPCFM(i + 1) - xSPCFM(i)) * GLL];
 end
 xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(end)];
+% Ask user to verify mesh is ok.
+meshok=-1;
+disp(['  Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
+while(not(ismember(meshok,[0,1])))
+  meshok=input('  Is that ok (0 for no, 1 for yes)? > ');
+end
+if(meshok==0)
+  error('  Mesh was not ok, re-chose parametrisation in script.');
+end
+clear('meshok');
 % If an external mesh is used, the positions of points at z=0 must be entered here instead.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Prepare meshgrid    %
@@ -214,8 +234,9 @@ end
 % warnings.           %
 %%%%%%%%%%%%%%%%%%%%%%%
 dxSPCFM = mean(diff(xSPCFMwGLL));
-disp(['dxSPCFM/dx = ', num2str(dxSPCFM / dx)]);
-disp(['dtSPCFM/dt = ', num2str(dtSPCFM / dt)]);
+disp('  Interpolation resolution:');
+disp(['    dxSPCFM/dx = ', num2str(dxSPCFM / dx)]);
+disp(['    dtSPCFM/dt = ', num2str(dtSPCFM / dt)]);
 if (dxSPCFM / dx > 5)
   disp(['[WARNING] dxSPCFM/dx = ', num2str(dxSPCFM / dx), ' is high, subsampling can generate unwanted behaviour.']);
 end
@@ -238,24 +259,24 @@ EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON
 %%%%%%%%%%%%%%%%%%%%%%%
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/';
 EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/stratobaro_test_EBF/';
-tSPCFM=0:4e-4:1;
-xSPCFM=linspace(-50,50,51);
-GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
-xSPCFMwGLL=[];
-for i=1:length(xSPCFM)-1
-  xSPCFMwGLL=[xSPCFMwGLL,xSPCFM(i)+(xSPCFM(i+1)-xSPCFM(i))*GLL];
-end
-xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(end)];
-[TSPCFM,XSPCFM]=meshgrid(tSPCFM,xSPCFMwGLL);
-MAXTIME=0.5;
-MINX=-25;
-MAXX=25;
-LAPO=7.5; apox = 0.25 .* (1. - erf((XSPCFM - MAXX + 0.5 * LAPO) / (0.25 * LAPO))) .* (1 + erf((XSPCFM - MINX - 0.5 * LAPO) / (0.25 * LAPO)));
-TAPO=0.1; apot0 = 0.5 .* (1 + erf((TSPCFM - 0.5 * TAPO) / (0.25 * TAPO))); apot = 0.5 .* (1. - erf((TSPCFM - MAXTIME + 0.5 * TAPO) / (0.25 * TAPO))); apot0(:,1)=0;
-% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/8).*sin(TSPCFM*12.5); % Test forcing function.
-% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/(0.25*8)).*sin(TSPCFM*4*12.5); % Test forcing function.
-% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*apox.*apot0.*apot; % Test forcing function.
-FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(TSPCFM*2*pi/0.25).*apox.*apot0.*apot; % Test forcing function.
+% tSPCFM=0:4e-4:1;
+% xSPCFM=linspace(-50,50,51);
+% GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
+% xSPCFMwGLL=[];
+% for i=1:length(xSPCFM)-1
+%   xSPCFMwGLL=[xSPCFMwGLL,xSPCFM(i)+(xSPCFM(i+1)-xSPCFM(i))*GLL];
+% end
+% xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(end)];
+% [TSPCFM,XSPCFM]=meshgrid(tSPCFM,xSPCFMwGLL);
+% MAXTIME=0.5;
+% MINX=-25;
+% MAXX=25;
+% LAPO=7.5; apox = 0.25 .* (1. - erf((XSPCFM - MAXX + 0.5 * LAPO) / (0.25 * LAPO))) .* (1 + erf((XSPCFM - MINX - 0.5 * LAPO) / (0.25 * LAPO)));
+% TAPO=0.1; apot0 = 0.5 .* (1 + erf((TSPCFM - 0.5 * TAPO) / (0.25 * TAPO))); apot = 0.5 .* (1. - erf((TSPCFM - MAXTIME + 0.5 * TAPO) / (0.25 * TAPO))); apot0(:,1)=0;
+% % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/8).*sin(TSPCFM*12.5); % Test forcing function.
+% % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/(0.25*8)).*sin(TSPCFM*4*12.5); % Test forcing function.
+% % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*apox.*apot0.*apot; % Test forcing function.
+% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(TSPCFM*2*pi/0.25).*apox.*apot0.*apot; % Test forcing function.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Detect relevant     %
 % indices, and print  %
@@ -264,6 +285,20 @@ FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(TSPCFM*2*pi/0.25).*apox
 %%%%%%%%%%%%%%%%%%%%%%%
 if(0)
   EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing.dat'];
+  % Ask user to verify export path is ok.
+  pathok=-1;
+  disp(['  Export path is ''',EXPORTFILENAME,'''.']);
+  while(not(ismember(pathok,[0,1])))
+    pathok=input('  Is that ok (0 for no, 1 for yes)? > ');
+  end
+  if(pathok==0)
+    error('  Export path was not ok, re-chose in script.');
+  end
+  clear('pathok');
+  % Export.
+  bytespervalue=12.956059264925035;
+  expectedsize=prod(size(FORCING_INTERP))*bytespervalue;
+  disp([' File will be ', num2str(expectedsize), ' bytes (',num2str(expectedsize/1024),' kB, ',num2str(expectedsize/1048576),' MB).']);
   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));

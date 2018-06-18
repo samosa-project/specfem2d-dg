@@ -78,8 +78,14 @@ for i=1:nstat
 end
 
 % Plotting tools.
-dist_over_ptp=max(diff(distance(istattab(isort))))/max(peak2peak(data_v(isort,:),2));
-if(dist_over_ptp>1e15); error("Variable dist_over_ptp is > 1e15, probably coming from the signal being very small everywhere."); end
+if(nstat==1)
+  dist_over_ptp=1;
+else
+  dist_over_ptp=max(diff(distance(istattab(isort))))/max(peak2peak(data_v(isort,:),2));
+end
+if(dist_over_ptp>1e15)
+  error("Variable dist_over_ptp is > 1e15, probably coming from the signal being very small everywhere.");
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure.                     %
