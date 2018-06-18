@@ -476,7 +476,14 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       if(timelocal<EXTERNAL_FORCING_MAXTIME) then
         externalforcingid=EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec))
         if(externalforcingid/=HUGE(0)) then
+          ! Getting time step ID:
+          !   floor(timelocal/DT+1) if one value per time step was saved
+          !   floor(timelocal/(DT/stage_time_scheme)+1) if one value per time sub-step was saved
           veloc_z_DG_P=EXTERNAL_FORCING(floor(timelocal/DT+1),externalforcingid)
+          
+          !if(abs(timelocal-3.5)<0.1) then
+          !  write(*,*) veloc_z_DG_P, rho_DG_P
+          !endif
           !if(abs(timelocal-0.16)<0.1 .and. abs(x+10.)<3.) then
           !  write(*,*) timelocal, x, veloc_z_DG_P
           !endif
@@ -528,7 +535,7 @@ subroutine prepare_external_forcing()
   use specfem_par, only: EXTERNAL_FORCING_FILENAME, EXTERNAL_FORCING_MAXTIME,&
                          forcing_min_x, forcing_max_x, &
                          EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL, DT,&
-                         nglob_DG,coord,nspec,NGLLX,NGLLZ,myrank,&
+                         nglob_DG,coord,nspec,NGLLX,NGLLZ,myrank,&!NPROC,&
                          only_DG_acoustic,ibool_before_perio!,stage_time_scheme
 
   implicit none
@@ -536,7 +543,7 @@ subroutine prepare_external_forcing()
   ! Local variables.
   logical :: fileexists, counting_nx
   real(kind=CUSTOM_REAL) :: t, x, z, val, tmp_t_old
-  integer :: io, istat,NSTEPFORCING,nx,it,ix,ibbp,ispec,i,j,nx_paired
+  integer :: io, istat,NSTEPFORCING,nx,it,ix,ibbp,ispec,i,j,nx_paired,nx_paired_tot
   
   if(.not. only_DG_acoustic) then
     write(*,*) "********************************"
@@ -606,7 +613,7 @@ subroutine prepare_external_forcing()
             if(z/=0.) then
               cycle
             else
-              if(.true. .and. abs(x-coord(1, ibbp))<10.) then ! DEBUG
+              if(.false. .and. abs(x-coord(1, ibbp))<10.) then ! DEBUG
                 write(*,*) t, x, coord(1, ibbp), abs(x-coord(1, ibbp)), nx
               endif
               if(abs(x-coord(1, ibbp))<1e-4) then
@@ -629,28 +636,45 @@ subroutine prepare_external_forcing()
   ENDDO
   close(100)
   EXTERNAL_FORCING_MAXTIME=t ! Save maximum time.
-  write(*,*) nx, " mesh points were found in file, and ", nx_paired,&
-             " SPECFEM mesh points were paired to them."
-  write(*,*) "  Because of the DG implementation, duplicates can occur without problem."
-  if(nx_paired<nx) then
+  
+  !write(*,*) "nx_paired, nx_paired_tot", nx_paired, nx_paired_tot
+  
+  if(myrank==0) then
+    write(*,*) "  File:", nx, " mesh points were found."
+  endif
+  write(*,*) "  CPU ", myrank, ": ", nx_paired, " SPECFEM mesh points were paired."
+  
+  call sum_all_all_i(nx_paired, nx_paired_tot)
+  if(myrank==0) then
+    write(*,*) "  Across CPUs: ", nx_paired_tot, "SPECFEM mesh points were paired."
+    write(*,*) "  Because of the DG implementation, duplicates can occur without problem."
+  endif
+
+  if(nx_paired_tot<nx) then
+    ! TODO: work on that condition. For instance, find exactly the number of expected duplicates.
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
     write(*,*) "********************************"
     write(*,*) "* Not all spatial points read  *"
     write(*,*) "* from external file were      *"
     write(*,*) "* paired with SPECFEM          *"
-    write(*,*) "* counterparts: *"
+    write(*,*) "* counterparts:                *"
+    write(*,*) "* proc      = ", myrank
     write(*,*) "* nx        = ", nx
-    write(*,*) "* nx_paired = ", nx_paired
+    write(*,*) "* nx_paired = ", nx_paired_tot
     write(*,*) "* Consider recompiling the     *"
     write(*,*) "* external file with matching  *"
-    write(*,*) "* spatial mesh. See also       *"
-    write(*,*) "* import routine,              *"
+    write(*,*) "* spatial mesh (see            *"
+    write(*,*) "* 'utils_new/forcings.m').     *"
+    write(*,*) "* Using mesh points directly   *"
+    write(*,*) "* read from databases could    *"
+    write(*,*) "* also be a safer method. See  *"
+    write(*,*) "* also the import routine,     *"
     write(*,*) "* 'prepare_external_forcing'   *"
     write(*,*) "* in 'boundary_terms_DG.f90'.  *"
     write(*,*) "********************************"
     stop
-  endif
+  endif ! Endif on nx_paired and nx.
   
   !NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2)) ! Use this if up-sampling is needed (large files).
   NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2)) ! Use this if simple sampling is enough (ok-sized files).

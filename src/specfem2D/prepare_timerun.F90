@@ -137,6 +137,7 @@
       write(IMAIN,*) "> Done preparing bottom forcing from external file."
     endif
   endif ! Endif on TYPE_FORCING==10.
+  call flush_IMAIN()
 
   ! prepares mass matrices
   call prepare_timerun_mass_matrix()
