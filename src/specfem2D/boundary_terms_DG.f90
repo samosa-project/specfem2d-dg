@@ -177,7 +177,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         assign_external_model,myrank, &
         DT, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
         EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL,& ! External forcing.
-        forcing_min_x, forcing_max_x ! External forcing.
+        EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT! External forcing.
 
   implicit none
   
@@ -477,9 +477,8 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         externalforcingid=EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec))
         if(externalforcingid/=HUGE(0)) then
           ! Getting time step ID:
-          !   floor(timelocal/DT+1) if one value per time step was saved
-          !   floor(timelocal/(DT/stage_time_scheme)+1) if one value per time sub-step was saved
-          veloc_z_DG_P=EXTERNAL_FORCING(floor(timelocal/DT+1),externalforcingid)
+          veloc_z_DG_P=EXTERNAL_FORCING(floor(timelocal/EXTFORC_FILEDT+1),externalforcingid)
+          ! Note: with tests done during loading, EXTFORC_FILEDT is either DT or DT/stage_time_scheme, which is consistent with the line above.
           
           !if(abs(timelocal-3.5)<0.1) then
           !  write(*,*) veloc_z_DG_P, rho_DG_P
@@ -488,7 +487,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
           !  write(*,*) timelocal, x, veloc_z_DG_P
           !endif
         else
-          if(x>=forcing_min_x .and. x<=forcing_max_x) then
+          if(x>=EXTFORC_MINX .and. x<=EXTFORC_MAXX) then
             ! This block is entered if forcing should happen (t < max_t and min_x < x < max_x), but can't be read (externalforcingid==HUGE(0)).
             ! Prompt an error.
             write(*,*) "********************************"
@@ -500,9 +499,9 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
             write(*,*) "* were not paired well, or     *"
             write(*,*) "* time to index conversion     *"
             write(*,*) "* fails.                       *"
-            write(*,*) "* x_min = ", forcing_min_x
+            write(*,*) "* x_min = ", EXTFORC_MINX
             write(*,*) "* x     = ", x
-            write(*,*) "* x_max = ", forcing_max_x
+            write(*,*) "* x_max = ", EXTFORC_MAXX
             write(*,*) "* t     = ", timelocal
             write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME
             write(*,*) "********************************"
@@ -533,10 +532,11 @@ subroutine prepare_external_forcing()
   use constants,only: CUSTOM_REAL, HUGEVAL
 
   use specfem_par, only: EXTERNAL_FORCING_FILENAME, EXTERNAL_FORCING_MAXTIME,&
-                         forcing_min_x, forcing_max_x, &
+                         EXTFORC_MINX, EXTFORC_MAXX, &
                          EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL, DT,&
+                         EXTFORC_FILEDT,&
                          nglob_DG,coord,nspec,NGLLX,NGLLZ,myrank,&!NPROC,&
-                         only_DG_acoustic,ibool_before_perio!,stage_time_scheme
+                         only_DG_acoustic,ibool_before_perio,stage_time_scheme
 
   implicit none
 
@@ -585,14 +585,14 @@ subroutine prepare_external_forcing()
   EXTFORC_MAP_ibbp_TO_LOCAL=HUGE(0) ! Safeguard.
   
   if(myrank==0) then
-    write(*,*) "  First scan: counting and pairing."
+    write(*,*) "  First scan: counting number of points, figuring file time step, and pairing file points to SPECFEM points."
   endif
   tmp_t_old=0.
   counting_nx=.true.
   nx=0 ! Counter for number of spatial points found in file.
   nx_paired=0 ! Counter for points actually paired with their SPECFEM-DG counterparts. Safeguard.
-  forcing_min_x=HUGEVAL ! Start at +inf, will be updated
-  forcing_max_x=-HUGEVAL ! Start at -inf, will be updated
+  EXTFORC_MINX=HUGEVAL ! Start at +inf, will be updated
+  EXTFORC_MAXX=-HUGEVAL ! Start at -inf, will be updated
   OPEN(100, file=EXTERNAL_FORCING_FILENAME)
   DO
     READ(100,*,iostat=io) t, x, val ! In fact, we do not care about val here.
@@ -600,6 +600,7 @@ subroutine prepare_external_forcing()
     if(counting_nx .and. t>tmp_t_old) then
       !nx=nx+1 ! Add last one.
       counting_nx=.false. ! Deactivate counting.
+      EXTFORC_FILEDT=t-tmp_t_old ! Save file dt.
     endif
     if(counting_nx) then ! This if is entered only for first time step (see else below).
       nx=nx+1 ! Count.
@@ -625,11 +626,11 @@ subroutine prepare_external_forcing()
         enddo ! Enddo on j.
       enddo ! Enddo on ispec.
     endif
-    if(x<=forcing_min_x) then
-      forcing_min_x=x
+    if(x<=EXTFORC_MINX) then
+      EXTFORC_MINX=x
     endif
-    if(x>=forcing_max_x) then
-      forcing_max_x=x
+    if(x>=EXTFORC_MAXX) then
+      EXTFORC_MAXX=x
     endif
     tmp_t_old=t
     IF (io/=0) EXIT
@@ -638,7 +639,7 @@ subroutine prepare_external_forcing()
   EXTERNAL_FORCING_MAXTIME=t ! Save maximum time.
   
   !write(*,*) "nx_paired, nx_paired_tot", nx_paired, nx_paired_tot
-  
+    
   if(myrank==0) then
     write(*,*) "  File:", nx, " mesh points were found."
   endif
@@ -676,9 +677,29 @@ subroutine prepare_external_forcing()
     stop
   endif ! Endif on nx_paired and nx.
   
-  !NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2)) ! Use this if up-sampling is needed (large files).
-  NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2)) ! Use this if simple sampling is enough (ok-sized files).
-  !write(*,*) t, DT, NSTEPFORCING, forcing_min_x, forcing_max_x, nx,stage_time_scheme ! DEBUG
+  !write(*,*) "observed dt from file: ", file_dt, DT/stage_time_scheme ! DEBUG
+  if(EXTFORC_FILEDT==DT/stage_time_scheme) then ! Up-sampling (large files)
+    NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2))
+  else
+    if(EXTFORC_FILEDT==DT) then ! Normal sampling (ok files).
+      NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2))
+    else
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* File time step does not      *"
+      write(*,*) "* match simulation time step   *"
+      write(*,*) "* or simulation time substeps  *"
+      write(*,*) "* (RK substeps).               *"
+      write(*,*) "* file_dt              = ", EXTFORC_FILEDT
+      write(*,*) "* DT                   = ", DT
+      write(*,*) "* DT/stage_time_scheme = ", DT/stage_time_scheme
+      write(*,*) "********************************"
+      stop
+    endif
+  endif
+  
+  !write(*,*) t, DT, NSTEPFORCING, EXTFORC_MINX, EXTFORC_MAXX, nx,stage_time_scheme ! DEBUG
   
   allocate(EXTERNAL_FORCING(NSTEPFORCING, nx),stat=istat)
   if(istat/=0) then
@@ -693,7 +714,7 @@ subroutine prepare_external_forcing()
   
   ! Re-read and save values.
   if(myrank==0) then
-    write(*,*) "  Second scan: saving values."
+    write(*,*) "  Second scan: saving values of forcing for each point and each time step."
   endif
   it=1
   ix=1
