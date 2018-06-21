@@ -14,18 +14,15 @@ set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
+tic
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Inputs.                                                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% NX = input('Number of points along X:');
-% % NY = input('Number of points along Y:');
-% NY = NX;
-% nt     = input('Number of time steps:');
-% DELTAT = input('Time step DELTAT :');
-
 NX = 150+1;
 NY = 20+1;
-nt = 500;
+% nt = 500;
+nt = 100;
 DT = 0.01;
 IT_IMAGE = 10;
 % is_backward = false;
@@ -34,14 +31,15 @@ dump_fields = false;
 DX = 5.;
 size_x = NX*DX;
 size_y = NY*DX;
-% DELTAX = size_x/(NX-1);
 x = linspace(0,size_x,NX);
 y = linspace(0,size_y,NY);
 tt = 0:DT:(nt-1)*DT;
 [XX,YY]=meshgrid(x,y);
 factor_source=0;
-
 customzlim=[-1,1]*350;
+
+global include_diffusive_terms
+include_diffusive_terms = 1; % If 0, linearised Euler. If 1, linearised Navier-Stokes.
 
 % other variables
 % x0=1;
@@ -54,10 +52,24 @@ customzlim=[-1,1]*350;
 % figure;
 % plot(x,u,x,Flux_analytical)
 
-% Display
-%  figure;
-%  plot(x,u,x,Flux_analytical)
-%  legend('Numerical solution', 'Analytical')
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Constants.                                                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+global g_z mu lambda kappa gamma_atmos soundspeed
+g_z = 9.81; % Gravity.
+% g_z = 0; % Deactivate gravity.
+mu = 1.25e-5; % Dynamic viscosity for dry air at 20 °C.
+lambda = (2/3)*mu; % Second viscosity lambda=zeta-(2/3)mu, with zeta=(2/3)mu generally speaking.
+kappa = 0.025; % Thermal conductivity for dry air at 20 °C.
+gamma_atmos=1.4; % Classical atmospheric $\gamma$.
+% soundspeed=349; % Sound speed.
+soundspeed=140; % Sound speed. Artificially slow, for CFL, for tests.
+
+global deriv % Handle to derivation function (for more practical tests). 2 & 3 are ok, 3 seems to perform best.
+% deriv=@(DX,NX,S,FWD) deriv_u_func(DX, NX, S, FWD)';
+% deriv=@(DX,NX,S,FWD) deriv_u_func2(DX, NX, S, FWD)';
+deriv=@(DX,NX,S,FWD) deriv_u_func3(DX, NX, S, FWD)';
+% deriv=@(DX,NX,S,FWD) deriv_u_func4(DX, NX, S, FWD)';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialisation.                                             %
@@ -98,37 +110,56 @@ j_seismo = round(length(y)/2); % Recording station y location.
 % rk_a =           [0., 0.5, 0.5, 1.];
 % rk_b = 1. / 6. * [1., 2.,  2.,  1.];
 % it_scheme_range = 1:4;
-% % [Carpenter and Kennedy, 1994] Carpenter, M. H. and Kennedy, C. A. (1994). Fourth-order 2n-storage runge-kutta schemes.
-% rk_a = [0., -567301805773.0/1357537059087.0, -2404267990393.0/2016746695238.0, -3550918686646.0/2091501179385.0, -1275806237668.0/842570457699.0];
-% rk_b = [1432997174477.0/9575080441755.0, 5161836677717.0/13612068292357.0, 1720146321549.0/2090206949498.0, 3134564353537.0/4481467310338.0, 2277821191437.0/14882151754819.0];
-% rk_c = [0., 1432997174477.0/9575080441755.0, 2526269341429.0/6820363962896.0, 2006345519317.0/3224310063776.0, 2802321613138.0/2924317926251.0];
-% it_scheme_range = 1:5;
-% [Berland et al., 2006] Berland, J., Bogey, C., and Bailly, C. (2006). Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm. Computers & Fluids, 35(10):1459–1463.
-rk_a = [0,             -0.737101392796, -1.634740794341, -0.744739003780, -1.469897351522, -2.813971388035];
-rk_b = [0.03291860514,  0.823256998200,  0.381530948900,  0.200092213184,  1.718581042715,  0.27];
-rk_c = [0,              0.032918605146,  0.249351723343,  0.466911705055,  0.582030414044,  0.847252983783];
-it_scheme_range = 1:6;
+% [Carpenter and Kennedy, 1994] Carpenter, M. H. and Kennedy, C. A. (1994). Fourth-order 2n-storage runge-kutta schemes.
+rk_a = [0., -567301805773.0/1357537059087.0, -2404267990393.0/2016746695238.0, -3550918686646.0/2091501179385.0, -1275806237668.0/842570457699.0];
+rk_b = [1432997174477.0/9575080441755.0, 5161836677717.0/13612068292357.0, 1720146321549.0/2090206949498.0, 3134564353537.0/4481467310338.0, 2277821191437.0/14882151754819.0];
+rk_c = [0., 1432997174477.0/9575080441755.0, 2526269341429.0/6820363962896.0, 2006345519317.0/3224310063776.0, 2802321613138.0/2924317926251.0];
+it_scheme_range = 1:5;
+% % [Berland et al., 2006] Berland, J., Bogey, C., and Bailly, C. (2006). Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm. Computers & Fluids, 35(10):1459–1463.
+% rk_a = [0,             -0.737101392796, -1.634740794341, -0.744739003780, -1.469897351522, -2.813971388035];
+% rk_b = [0.03291860514,  0.823256998200,  0.381530948900,  0.200092213184,  1.718581042715,  0.27];
+% rk_c = [0,              0.032918605146,  0.249351723343,  0.466911705055,  0.582030414044,  0.847252983783];
+% it_scheme_range = 1:6;
 
 % Initial fields.
-gamma_atmos=1.4; % Classical atmospheric $\gamma$.
-c=140; % Artificial sound speed value for CFL.
 [drho, rho0dvx, rho0dvy, dE] = initialise_fields_LEuler(NX,NY); % Basically, zeros everywhere.
-
-V0X=10; % Initial x-velocity.
-initial_state = zeros(4,NX,NY); % Matrix for intial state.
-initial_state(1,:,:)= 1.4*ones(NX,NY); % Initial density (classical atmospheric ground density).
-initial_state(2,:,:)= V0X.*ones(NX,NY); % Initial x-velocity.
-initial_state(3,:,:)= 0.*ones(NX,NY); % Initial y-velocity.
-P0 = (c.^2).*initial_state(1,:,:)./gamma_atmos; % Initial pressure (ideal gas hypothesis).
-initial_state(4,:,:) = P0./(gamma_atmos-1.); % Initial energy.
+global RHO0 V0X V0Y E0 P0 % Set initial fields.
+RHO0 = 1.4*ones(NX,NY); % Initial density (classical atmospheric ground density).
+V0X = 10.*ones(NX,NY); % Initial x-velocity.
+V0Y = 0.*ones(NX,NY); % Initial y-velocity.
+P0 = (soundspeed.^2).*RHO0./gamma_atmos; % Initial pressure (ideal gas hypothesis).
+E0 = P0./(gamma_atmos-1.);
 
 % Source term.
+global isource jsource VSTF
 VSTF = factor_source*STF(tt); % Compute source time function (STF).
 % isource = round(length(x)/1.5); % Source x location.
 % jsource = round(length(y)/2.5); % Source y location.
 isource = round(length(x)*0.25); % Source x location.
 jsource = round(length(y)*0.5); % Source y location.
- 
+
+% Compute derivatives of initial fields.
+global DXV0X DXV0Y DYV0X DYV0Y DIVV0
+DXV0X=zeros(size(V0X)); % FOR DIFFUSIVE ONLY.
+DXV0Y=zeros(size(V0Y)); % FOR DIFFUSIVE ONLY.
+DYV0X=zeros(size(V0X)); % CONVECTIVE
+DYV0Y=zeros(size(V0Y)); % FOR DIFFUSIVE ONLY
+if(include_diffusive_terms)
+  for i = 1:NX
+    DXV0X(i,:) = deriv(DX, NY, V0X(i,1:NY), 1)'; % FOR DIFFUSIVE ONLY
+    DXV0Y(i,:) = deriv(DX, NY, V0Y(i,1:NY), 1)'; % FOR DIFFUSIVE ONLY
+  end
+end
+for j = 1:NY
+  DYV0X(:,j) = deriv(DX, NX, V0X(1:NX,j), 1)'; % CONVECTIVE
+  if(include_diffusive_terms)
+    DYV0Y(:,j) = deriv(DX, NX, V0Y(1:NX,j), 1)'; % FOR DIFFUSIVE ONLY
+  end
+end
+if(include_diffusive_terms)
+  DIVV0=DXV0X+DYV0Y; % FOR DIFFUSIVE ONLY
+end
+
 % Time range (forward, eventually vs. backward).
 it_range     = 1:nt;
 % if(is_backward)
@@ -165,7 +196,7 @@ for it = it_range
     t = (it-1 + rk_c(subit))*DT; % Local time (t_n+DT*c_i).
     
     % Compute RHS using previous state variable as input and add source terms.
-    [RHS_drho, RHS_rho0dvx, RHS_rho0dvy, RHS_dE] = compute_RHS(it, DX, drho(:,:), rho0dvx(:,:), rho0dvy(:,:), dE(:,:), initial_state, gamma_atmos, c, forward, isource, jsource, VSTF);
+    [RHS_drho, RHS_rho0dvx, RHS_rho0dvy, RHS_dE] = compute_RHS(it, DX, drho(:,:), rho0dvx(:,:), rho0dvy(:,:), dE(:,:), forward);
     
     % Update auxiliary variable.
     % Note: "RHS_*" variables are updated at each iteration and sub-iteration (see below), and are zero at very first iteration (it=1, subit=1).
@@ -184,7 +215,7 @@ for it = it_range
 
     % Apply boundary conditions to auxiliary variables.
 %     [aux_drho(1,:,:),aux_rho0dvx(1,:,:),aux_rho0dvy(1,:,:),aux_dE(1,:,:)] = apply_bc(aux_drho(1,:,:),aux_rho0dvx(1,:,:),aux_rho0dvy(1,:,:),aux_dE(1,:,:),gamma_atmos,c,t);
-    [aux_drho(:,:),aux_rho0dvx(:,:),aux_rho0dvy(:,:),aux_dE(:,:)] = apply_bc(aux_drho(:,:),aux_rho0dvx(:,:),aux_rho0dvy(:,:),aux_dE(:,:),gamma_atmos,c,t);
+    [aux_drho(:,:),aux_rho0dvx(:,:),aux_rho0dvy(:,:),aux_dE(:,:)] = apply_bc(aux_drho(:,:),aux_rho0dvx(:,:),aux_rho0dvy(:,:),aux_dE(:,:),gamma_atmos,soundspeed,t);
 
 %         if(it_RK4 > 1)
 %            forward = ~forward;
@@ -209,7 +240,7 @@ for it = it_range
     rho0dvx(:,:) = rho0dvx(:,:) + rk_b(subit)*aux_rho0dvx;
     rho0dvy(:,:) = rho0dvy(:,:) + rk_b(subit)*aux_rho0dvy;
     dE(:,:) = dE(:,:) + rk_b(subit)*aux_dE;
-    [drho,rho0dvx,rho0dvy,dE] = apply_bc(drho,rho0dvx,rho0dvy,dE,gamma_atmos,c,t);
+    [drho,rho0dvx,rho0dvy,dE] = apply_bc(drho,rho0dvx,rho0dvy,dE,gamma_atmos,soundspeed,t);
   end
 
   % Synthetics.
@@ -235,11 +266,11 @@ for it = it_range
 %     pcolor(XX',YY',squeeze(qplot)); % Lighter at execution.
     
     surf(XX',YY',squeeze(qplot)); % Prettier.
-    DDD=get(gca,'Children'); DDD=DDD.ZData;
-    if(max(max(DDD))-min(min(DDD))>0)
-      set(gca, 'dataaspectratio', [1,1,3*(max(max(DDD))-min(min(DDD)))/(max(x)-min(x))]); clear('DDD');
-    end
-    zlim(customzlim);
+%     DDD=get(gca,'Children'); DDD=DDD.ZData;
+%     if(max(max(DDD))-min(min(DDD))>0)
+%       set(gca, 'dataaspectratio', [1,1,3*(max(max(DDD))-min(min(DDD)))/(max(x)-min(x))]); clear('DDD');
+%     end
+%     zlim(customzlim);
     
     xlabel('$x$ (m)'); ylabel('$y$ (m)');
     shading flat;
@@ -285,3 +316,5 @@ end
 %        tt(i),sis1(i),sis21(i),sis22(i),sis3(i));
 % end
 % fclose(fid)
+
+toc
