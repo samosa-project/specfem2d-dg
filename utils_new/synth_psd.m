@@ -42,8 +42,8 @@ signal = raw_s; signal_name = "vertical velocity"; unit="(m/s)";
 
 % Select time frame.
 % TODO: ask for user input.
-% select_time_l=raw_t(1); select_time_u=raw_t(end);
-select_time_l=raw_t(1); select_time_u=48;
+select_time_l=raw_t(1); select_time_u=raw_t(end);
+% select_time_l=raw_t(1); select_time_u=48;
 % select_time_l=0; select_time_u=2.9;
 
 % Select.

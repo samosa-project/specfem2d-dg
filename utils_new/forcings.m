@@ -36,18 +36,45 @@ set(groot, 'defaultSurfaceEdgeColor', 'none');
 %%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.         %
 %%%%%%%%%%%%%%%%%%%%%%%
-N = 21; % Points per period.
+% Forcing related.
+Nt = 951; % Points per temporal period.
+Nx = 11; % Points per spatial period.
 T0 = 14; % Temporal period.
 nT0 = 10.5; % Number of temporal periods.
 L0 = 200; % Spatial period.
 nL0 = 160; % Number of spatial periods (total).
 A1 = 1;
 A2 = 1;
+MINX = - 0.5 * nL0 * L0; % Set forcing maximum x here.
+MAXX = 0.5 * nL0 * L0; % Set forcing maximum x here.
+MAXTIME = nT0 * T0; % Set forcing maximum time here.
+
+% SPECFEM-DG related.
+nstageSPCFM = 1;
+dtSPCFM = 1.5d-2; % Set DT as in parfile.
+t0SPCFM = - 2 * dtSPCFM; % Set initial time shift.
+nx = 1060; % Set nx as in parfile.
+xSPCFM = linspace(- 45e3, 45e3, nx + 1); % Set x span as in parfile.
+% If an external mesh is used, the positions of points at z=0 must be implemented in the section "SPECFEM x mesh" below, instead.
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % Ranges.             %
 %%%%%%%%%%%%%%%%%%%%%%%
-dt = T0 / N; % Temporal resolution.
-dx = L0 / N; % Spatial resolution.
+dt = T0 / Nt; % Temporal resolution.
+dx = L0 / Nx; % Spatial resolution.
+% Ask user to verify if creation steps are ok.
+dtxok=-1;
+dxSPCFM=min(diff(xSPCFM));
+disp(['  dt=',num2str(dt),', dtSPCFM=',num2str(dtSPCFM),'. One should have dt<=dtSPCFM.']);
+disp(['  dx=',num2str(dx),', dxSPCFM=',num2str(dxSPCFM),'. One should have dx<=dxSPCFM.']);
+while(not(ismember(dtxok,[0,1])))
+  dtxok=input('  Continue (0 for no, 1 for yes)? > ');
+end
+if(dtxok==0)
+  error('  dt was not ok, re-chose parametrisation in script.');
+end
+clear('dtxok');
+
 % Temporal frequency range.
 f_max = 0.5 / dt;
 df = 1 / (nT0 * T0);
@@ -62,24 +89,31 @@ x = - 0.5 * nL0 * L0:dx:0.5 * nL0 * L0;
 % 2D ranges.
 [T, X] = meshgrid(t, x);
 [F, K] = meshgrid(f, k);
+disp(['Meshgrid is (', num2str(size(F)), '). Large meshes can be long to proceed with.']);
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % First draft of      %
 % signal.             %
 %%%%%%%%%%%%%%%%%%%%%%%
+disp(['Creating draft of signal in spacetime range.']);
 k_0 = 2 * pi / L0;
 w_0 = 2 * pi / T0;
 s_displ = A1*cos(k_0 * X + w_0 * T + pi/2) + A2*cos(k_0 * X - w_0 * T - pi/2); % Interfering monofrequency waves, displacement (pi/2 phase shifts in order not to generate discontinuities).
 % s = A1*sin(k_0 * X - w_0 * T) + A2*sin(-k_0 * X - w_0 * T); % Interfering monofrequency waves, velocity.
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % Send to frequency   %
 % range.              %
 %%%%%%%%%%%%%%%%%%%%%%%
+disp(['Sending to frequency range.']);
 S_displ = fftshift(fft2(s_displ));
 S_displ_R = real(S_displ);
 S_displ_I = imag(S_displ);
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.          %
 %%%%%%%%%%%%%%%%%%%%%%%
+disp(['Starting treatment on frequency range.']);
 % Convolve reals with wide Gaussian, replace imaginaries with random phase.
 % sig=1; % Spread of Gaussian mask (should be <2);
 % GMask=fspecial('gaussian', (floor(min((w_0/(2*pi))/df,(k_0/(2*pi))/dk))-1)*[1,1],0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
@@ -107,11 +141,14 @@ S_displ_new_I = S_displ_new_I + conj(fliplr(S_displ_new_I)); % Mirroring.
 S_displ_new = S_displ_new_R + 1j * S_displ_new_I; % To be sent back to spacetime range.
 S_displ_new_R = real(S_displ_new); % For plotting purposes only.
 S_displ_new_I = imag(S_displ_new); % For plotting purposes only.
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % Send back to        %
 % spacetime range.    %
 %%%%%%%%%%%%%%%%%%%%%%%
+disp(['Sending back to spacetime range.']);
 s_displ_new = real(ifft2(fftshift(S_displ_new)));
+disp(['Filtering noise.']);
 % Low-pass in time.
 fcut = min(20 / T0,0.99*f_max); % Must be < f_max=0.5/dt;
 for ix = 1:length(x)
@@ -145,14 +182,19 @@ end
 % displacement to     %
 % signal in velocity. %
 %%%%%%%%%%%%%%%%%%%%%%%
+disp(['Displacement amplitude is [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
+ampli=max(abs(min(min(s_displ_new))),abs(max(max(s_displ_new)))); % Maximum amplitude of forcing.
+ampli_aim=2; % Aimed peak-to-peak amplitude.
+s_displ_new=s_displ_new*ampli_aim/ampli; % Rescale.
+disp(['Displacement amplitude is now [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
 [s_vel_new,~]=gradient(s_displ_new,t,x);
+disp(['Forcing amplitude is [',num2str(min(min(s_vel_new))),', ',num2str(max(max(s_vel_new))),']']);
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % Apodisation.        %
 %%%%%%%%%%%%%%%%%%%%%%%
-MINX = - 0.5 * nL0 * L0;
-MAXX = 0.5 * nL0 * L0;
+disp(['Applying apodisation.']);
 n = 5; apox = 0.25 .* (1. - erf((x - MAXX + 0.5 * n * L0) / (0.25 * n * L0))) .* (1 + erf((x - MINX - 0.5 * n * L0) / (0.25 * n * L0))); % Apodisation over n spatial period on each side.
-MAXTIME = nT0 * T0;
 n = 1; apot0 = 0.5 .* (1 + erf((t - 0.5 * n * T0) / (0.25 * n * T0))); % Apodisation over n temporal periods at beginning.
 n = 1.5; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.25 * n * T0))); % Apodisation over n temporal periods at end.
 apot = apot0 .* apot;
@@ -178,19 +220,13 @@ clear('forcok');
 % and SPECFEM mesh).
 
 %%%%%%%%%%%%%%%%%%%%%%%
-% SPECFEM  time.      %
+% SPECFEM time.       %
 %%%%%%%%%%%%%%%%%%%%%%%
-dtSPCFM = 1.5d-2;
-nstageSPCFM = 1;
-t0SPCFM = - 2 * dtSPCFM;
-tSPCFM = 0:dtSPCFM / nstageSPCFM:MAXTIME*1.1;
+tSPCFM = 0:dtSPCFM/nstageSPCFM:MAXTIME+5*dtSPCFM; % Span a bit more than what is needed.
 %%%%%%%%%%%%%%%%%%%%%%%
-% Reproduce SPECFEM x %
-% mesh.               %
+% SPECFEM x mesh.     %
 %%%%%%%%%%%%%%%%%%%%%%%
 % This array must reproduce exactly mesh at z=0 (with GLL points).
-nx = 1060;
-xSPCFM = linspace(- 45e3, 45e3, nx + 1);
 GLL = [0, 0.345346329292028 / 2, 0.5, 1.654653670707980 / 2]; % UGLY METHOD, I'M SORRY
 xSPCFMwGLL = [];
 for i = 1:length(xSPCFM) - 1
@@ -207,11 +243,11 @@ if(meshok==0)
   error('  Mesh was not ok, re-chose parametrisation in script.');
 end
 clear('meshok');
-% If an external mesh is used, the positions of points at z=0 must be entered here instead.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Prepare meshgrid    %
 % and interpolate.    %
 %%%%%%%%%%%%%%%%%%%%%%%
+xSPCFMwGLL=xSPCFMwGLL(xSPCFMwGLL>=MINX-5*dxSPCFM & xSPCFMwGLL<=MAXX+5*dxSPCFM); % Remove useless points to the side, but span a bit more than what is needed.
 [TSPCFM, XSPCFM] = meshgrid(tSPCFM, xSPCFMwGLL);
 FORCING_INTERP = interp2(T, X, FORCING, TSPCFM, XSPCFM); % Linear interpolation.
 FORCING_INTERP(isnan(FORCING_INTERP)) = 0; % Set zeros instead of NaNs outside of microbarom zone.
@@ -229,20 +265,6 @@ end
 if(0==1)
   pcolor(TSPCFM, XSPCFM, FORCING_INTERP); shading interp; axis([min(t), max(t), min(x), max(x)]);
 end
-%%%%%%%%%%%%%%%%%%%%%%%
-% Output automatic    %
-% warnings.           %
-%%%%%%%%%%%%%%%%%%%%%%%
-dxSPCFM = mean(diff(xSPCFMwGLL));
-disp('  Interpolation resolution:');
-disp(['    dxSPCFM/dx = ', num2str(dxSPCFM / dx)]);
-disp(['    dtSPCFM/dt = ', num2str(dtSPCFM / dt)]);
-if (dxSPCFM / dx > 5)
-  disp(['[WARNING] dxSPCFM/dx = ', num2str(dxSPCFM / dx), ' is high, subsampling can generate unwanted behaviour.']);
-end
-if (dtSPCFM / dt > 5)
-  disp(['[WARNING] dtSPCFM/dt = ', num2str(dtSPCFM / dt), ' is high, subsampling can generate unwanted behaviour.']);
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3) Export to file.          %
@@ -258,7 +280,7 @@ EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON
 % Test data.          %
 %%%%%%%%%%%%%%%%%%%%%%%
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/';
-EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/stratobaro_test_EBF/';
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/stratobaro_test_EBF/';
 % tSPCFM=0:4e-4:1;
 % xSPCFM=linspace(-50,50,51);
 % GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
@@ -298,13 +320,15 @@ if(0)
   % Export.
   bytespervalue=12.956059264925035;
   expectedsize=prod(size(FORCING_INTERP))*bytespervalue;
-  disp([' File will be ', num2str(expectedsize), ' bytes (',num2str(expectedsize/1024),' kB, ',num2str(expectedsize/1048576),' MB).']);
-  itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
-  ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
-  ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
+  disp([' File will be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1024),' kB, ',num2str(expectedsize/1048576),' MB).']);
+%   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
+%   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
+%   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
   f_new = fopen(EXPORTFILENAME, 'w');
-  for it = 1:itstop
-    for ix = ixmin:ixmax
+%   for it = 1:itstop
+%     for ix = ixmin:ixmax
+  for it = 1:length(tSPCFM)
+    for ix = 1:length(xSPCFMwGLL)
       fprintf(f_new, '%.5e %.8e %.5e', TSPCFM(1, it), XSPCFM(ix, 1), FORCING_INTERP(ix, it));
       fprintf(f_new, "\n");
     end
