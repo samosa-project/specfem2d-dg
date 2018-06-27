@@ -4,8 +4,8 @@
 # For each interface, give the number of points defining it, and coordinates (x, z) for each point.
 # Interface 1 (bottom of the mesh):
  2
- -50.d0 0.d0
-  50.d0 0.d0
+ -50.d0 -50.d0
+  50.d0 -50.d0
 # Interface 2 (top of the mesh):
  2
  -50.d0 50.d0
@@ -14,4 +14,4 @@
 # For each layer (number of interfaces - 1), give the number of spectral elements in the vertical direction.
 # Recommended: N = f_0 * Np * th / vp, where N is the number of elements, f_0 the highest expected frequency, Np the wanted number of points per wavelength, th the layer's thickness, vp the layer's P-wave speed.
 # Layer 1 (bottom and only layer):
- 25
+ 50

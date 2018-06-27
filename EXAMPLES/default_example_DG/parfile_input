@@ -120,7 +120,7 @@ constant_v                      = 717.3447537473 # $c_v$, isochoric specific hea
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = 0.0            # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
+coord_interface                 = -50.0            # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
@@ -339,7 +339,7 @@ absorbleft                      = .false.
 nbregions                       = 1
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 50 1 25 1
+1 50 1 50 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
