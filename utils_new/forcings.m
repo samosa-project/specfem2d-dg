@@ -38,8 +38,10 @@ set(groot, 'defaultSurfaceEdgeColor', 'none');
 %%%%%%%%%%%%%%%%%%%%%%%
 % Forcing related.
 Nt = 951; % Points per temporal period.
+% Nt = 11; % Points per temporal period.
 Nx = 11; % Points per spatial period.
-T0 = 14; % Temporal period.
+% T0 = 14; % Temporal period.
+T0 = 12.5; % Temporal period.
 nT0 = 10.5; % Number of temporal periods.
 L0 = 200; % Spatial period.
 nL0 = 160; % Number of spatial periods (total).
@@ -119,8 +121,10 @@ disp(['Starting treatment on frequency range.']);
 % GMask=fspecial('gaussian', (floor(min((w_0/(2*pi))/df,(k_0/(2*pi))/dk))-1)*[1,1],0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
 % GMask=fspecial('gaussian', [floor((w_0/(2*pi))/df),floor((k_0/(2*pi))/dk)]-1,0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
 % GMask=fspecial('gaussian', [floor((k_0/(2*pi))/dk),floor((w_0/(2*pi))/df)]-1,0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
-sig_T = ((1 / T0) / 3) / 1.5; % Width of the Gaussian mask in time.
-sig_X = ((1 / L0) / 3) / 1.5; % Width of the Gaussian mask in space.
+% invspread = 1.5; % Inverse spread factor (the higher the less spread).
+invspread = 3; % Inverse spread factor (the higher the less spread).
+sig_T = ((1 / T0) / 3) / invspread; % Width of the Gaussian mask in time.
+sig_X = ((1 / L0) / 3) / invspread; % Width of the Gaussian mask in space.
 [Fgm, Kgm] = meshgrid(0:df:2 / T0, 0:dk:2 / L0);
 GMask = exp(- ((Fgm - 1 / T0) .^ 2 / (2 * sig_T ^ 2) + (Kgm - 1 / L0) .^ 2 / (2 * sig_X ^ 2)));
 GMask = GMask / max(max(GMask)); % Normalise, not to mess with maximum amplitude.
@@ -318,9 +322,9 @@ if(0)
   end
   clear('pathok');
   % Export.
-  bytespervalue=12.956059264925035;
+  bytespervalue=39.985880510267151;
   expectedsize=prod(size(FORCING_INTERP))*bytespervalue;
-  disp([' File will be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1024),' kB, ',num2str(expectedsize/1048576),' MB).']);
+  disp([' File will be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
 %   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
 %   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
 %   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
@@ -332,8 +336,8 @@ if(0)
       fprintf(f_new, '%.5e %.8e %.5e', TSPCFM(1, it), XSPCFM(ix, 1), FORCING_INTERP(ix, it));
       fprintf(f_new, "\n");
     end
-    if (ismember(it, floor((1:10) * 0.1 * itstop)))
-       disp(['Writing to file (', num2str(ceil(it / itstop * 100)), ' % complete).']);
+    if (ismember(it, floor((1:10) * 0.1 * length(tSPCFM))))
+       disp(['Writing to file (', num2str(ceil(it / length(tSPCFM) * 100)), ' % complete).']);
     end
   end
   fclose('all');
