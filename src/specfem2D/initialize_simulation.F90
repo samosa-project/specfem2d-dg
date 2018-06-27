@@ -106,10 +106,13 @@
     if(ier /= 0) stop 'Error allocating some DG array (see initialize_simulation.F90).'
     allocate(ibool_before_perio(NGLLX,NGLLZ,nspec), stat=ier)
     if(ier /= 0) stop 'Error allocating ibool_before_perio array.'
-    allocate(Vandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
-             invVandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
-             Drx(NGLLX*NGLLZ,NGLLX*NGLLZ), &
-             Drz(NGLLX*NGLLZ,NGLLX*NGLLZ), stat=ier)
+    if(USE_SLOPE_LIMITER) then
+      ! The Vandermonde matrices are only used when the slope limiter is.
+      allocate(Vandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
+               invVandermonde(NGLLX*NGLLZ,NGLLX*NGLLZ), &
+               Drx(NGLLX*NGLLZ,NGLLX*NGLLZ), &
+               Drz(NGLLX*NGLLZ,NGLLX*NGLLZ), stat=ier)
+    endif ! Endif on USE_SLOPE_LIMITER.
     if(ier /= 0) stop 'Error allocating some DG array (see initialize_simulation.F90).'
     allocate(ispec_is_acoustic_coupling_el(NGLLX,NGLLZ,nspec,3), stat=ier)
     if(ier /= 0) stop 'Error allocating ispec_is_acoustic_coupling_el array.'

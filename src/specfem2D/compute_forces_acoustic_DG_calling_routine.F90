@@ -45,34 +45,35 @@ subroutine compute_forces_acoustic_DG_main()
 
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.0000001_CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
-  real(kind=CUSTOM_REAL), dimension(5) :: rk4a, rk4b, rk4c
+  real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: rk4a, rk4b, rk4c
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x
   integer :: i,j,ispec
   
   logical CHECK_NONPOSITIVITY, CHECK_NONPOSITIVITY_ON_ALL_PROCS, CHECK_NONPOSITIVITY_FIND_POINT
-  
-  ! TODO: make those parameters in the parameter file.
-  ! Note: CHECK_NONPOSITIVITY_ON_ALL_PROCS=.true. and CHECK_NONPOSITIVITY_FIND_POINT=.true. is computationaly very heavy.
-  CHECK_NONPOSITIVITY=.true.               ! Set to .true. to enable nonpositivity checking.
-  CHECK_NONPOSITIVITY_ON_ALL_PROCS=.false. ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .false. for checking only on proc 0. Set to .true. for checking on all procs.
-  CHECK_NONPOSITIVITY_FIND_POINT=.false.   ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .true. to find where nonpositivity was encountered.
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
     return
   endif
   
+  ! Those are debug switches. They are computationaly very heavy and should not be used on every simulation.
+  ! CHECK_NONPOSITIVITY_ON_ALL_PROCS=.true. and CHECK_NONPOSITIVITY_FIND_POINT=.true. are particularly heavy.
+  CHECK_NONPOSITIVITY=.false.              ! Set to .true. to enable nonpositivity checking.
+  CHECK_NONPOSITIVITY_ON_ALL_PROCS=.false. ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .false. for checking only on proc 0. Set to .true. for checking on all procs.
+  CHECK_NONPOSITIVITY_FIND_POINT=.false.   ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .true. to find where nonpositivity was encountered.
+  
   ! Intialisation.
   if(it == 1 .AND. i_stage == 1) then
-    ! Slope limiter initialisation.
-    ! TODO: put this in an "if(USE_SLOPE_LIMITER)"? In other words, check wether or not the Vandermonde matrix is used when the slope limiter is not.
-    call setUpVandermonde()
+    if(USE_SLOPE_LIMITER) then
+      ! The Vandermonde matrices are only used when the slope limiter is.
+      call setUpVandermonde()
+    endif
     
     resu_rhovx   = ZEROl
     resu_rhovz   = ZEROl
@@ -85,9 +86,11 @@ subroutine compute_forces_acoustic_DG_main()
     dot_E(:)     = ZEROl
     dot_e1(:)    = ZEROl
     
-    allocate(save_pressure(nglob_DG))
-    save_pressure = ZEROl
+    ! DEBUG.
+    !allocate(save_pressure(nglob_DG))
+    !save_pressure = ZEROl
     
+    ! Allocate model arrays.
     if(.not. assign_external_model) then
       deallocate(gravityext, muext, etaext, kappa_DG, &
                  tau_epsilon, tau_sigma)
@@ -99,35 +102,37 @@ subroutine compute_forces_acoustic_DG_main()
                tau_sigma(NGLLX, NGLLZ, nspec)) 
     endif
     
-    allocate(rhovx_init(nglob_DG), &
-             rhovz_init(nglob_DG), &
-             E_init(nglob_DG), &
-             rho_init(nglob_DG))
     
+    ! Prepare MPI buffers.
     call prepare_MPI_DG()
-
+    
+    ! Allocate acoustic coupling array.
     allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
     ispec_is_acoustic_coupling_ac = -1
     if(.not. only_DG_acoustic) then
       call find_DG_acoustic_coupling()
     endif
     
-    !stop
+    ! Initialise auxiliary tensors.
     T_DG = ZEROl
     V_DG = ZEROl
     
     call initial_condition_DG()
 
-    !if(timelocal == 0) then
+    ! Allocate and set initial fields.
+    allocate(rhovx_init(nglob_DG), &
+             rhovz_init(nglob_DG), &
+             E_init(nglob_DG),     &
+             rho_init(nglob_DG)     )
     rhovx_init = rhovx_DG
     rhovz_init = rhovz_DG
     E_init     = E_DG
     rho_init   = rho_DG
     p_DG_init  = (gammaext_DG - ONE)*( E_DG &
-        - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
-    T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
+                 - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
+    T_init = (E_DG/rho_DG - HALF*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
     
-    ! When elastic-DG simulations, p_DG = 0 in elastic elements and 1/p_DG will not be properly defined
+    ! When elastic-DG simulations, p_DG = 0 in elastic elements and 1/p_DG will not be properly defined. Use a hack.
     where(p_DG_init <= 0._CUSTOM_REAL) p_DG_init = 1._CUSTOM_REAL
     
 #ifdef USE_MPI
@@ -136,16 +141,18 @@ subroutine compute_forces_acoustic_DG_main()
     endif
 #endif
 
-  endif !if(it == 1 .AND. i_stage == 1)
+  endif ! Endif on (it == 1) and (i_stage == 1).
   
+  ! Call time scheme coefficients and cast them.
   rk4a = real(rk4a_d, kind=CUSTOM_REAL)
   rk4b = real(rk4b_d, kind=CUSTOM_REAL)
   rk4c = real(rk4c_d, kind=CUSTOM_REAL)
   
+  ! Compute current time.
   timelocal = (it-1)*deltat + rk4c(i_stage)*deltat
   
   ! TODO: introduce a verbosity parameter in order to prevent unwanted flooding of the terminal.
-  if(myrank == 0 .AND. mod(it, 50)==0) then
+  if(myrank == 0 .AND. mod(it, 100)==0) then
     WRITE(*,*) "****************************************************************"
     WRITE(*,"(a,i9,a,i1,a,e23.16,a,i3,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, &
     ". Informations for process number ", myrank, "."
@@ -183,38 +190,36 @@ subroutine compute_forces_acoustic_DG_main()
   
   if (time_stepping_scheme == 3) then
     ! Use RK4.
-    save_pressure = (gammaext_DG - ONEl)*( E_DG &
-        - (HALFl)*(ONEl/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     
-    ! DEBUG
-    !write(*,*) "MULTIPLY BY INVERSE MASS MATRIX"
+    ! DEBUG.
+    !save_pressure = (gammaext_DG - ONEl)*( E_DG &
+    !    - (HALFl)*(ONEl/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     
-    ! Inverse mass matrix
+    ! Inverse mass matrix multiplication, in order to obtain actual RHS.
     dot_rho(:)   = dot_rho(:)   * rmass_inverse_acoustic_DG(:)
     dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
     dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
     dot_E(:)     = dot_E(:)     * rmass_inverse_acoustic_DG(:)
-    !dot_e1(:)    = dot_e1(:) * rmass_inverse_acoustic_DG(:)
+    dot_e1(:)    = dot_e1(:) * rmass_inverse_acoustic_DG(:)
     
-    ! RK5-low dissipation Update
-    resu_rho = rk4a(i_stage)*resu_rho + deltat*dot_rho
+    ! Time scheme low-storage update. See e.g. Eq. (2) of J. Berland, C. Bogey, and C. Bailly, “Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm,” Comput. Fluids, vol. 35, no. 10, pp. 1459–1463, 2006.
+    resu_rho   = rk4a(i_stage)*resu_rho   + deltat*dot_rho
     resu_rhovx = rk4a(i_stage)*resu_rhovx + deltat*dot_rhovx
     resu_rhovz = rk4a(i_stage)*resu_rhovz + deltat*dot_rhovz
-    resu_E = rk4a(i_stage)*resu_E + deltat*dot_E
-    resu_e1 = rk4a(i_stage)*resu_e1 + deltat*dot_e1
+    resu_E     = rk4a(i_stage)*resu_E     + deltat*dot_E
+    resu_e1    = rk4a(i_stage)*resu_e1    + deltat*dot_e1
+    rho_DG     = rho_DG   + rk4b(i_stage)*resu_rho
+    rhovx_DG   = rhovx_DG + rk4b(i_stage)*resu_rhovx
+    rhovz_DG   = rhovz_DG + rk4b(i_stage)*resu_rhovz
+    E_DG       = E_DG     + rk4b(i_stage)*resu_E
+    e1_DG    = e1_DG    + rk4b(i_stage)*resu_e1
     
-    rho_DG   = rho_DG + rk4b(i_stage)*resu_rho
-    rhovx_DG = rhovx_DG + rk4b(i_stage)*resu_rhovx
-    rhovz_DG = rhovz_DG + rk4b(i_stage)*resu_rhovz
-    E_DG     = E_DG + rk4b(i_stage)*resu_E
-    e1_DG    = e1_DG + rk4b(i_stage)*resu_e1
-    
-    ! If we want to compute kernels we save regularly.
+    ! If we want to compute kernels, we save regularly.
     if(.false.) then
       call save_forward_solution()
     endif
     
-    ! Check non-positivity.
+    ! Eventually check non-positivity.
     if(CHECK_NONPOSITIVITY) then
       if(     CHECK_NONPOSITIVITY_ON_ALL_PROCS &
          .or. ((.not. CHECK_NONPOSITIVITY_ON_ALL_PROCS) .and. myrank==0) &
@@ -248,7 +253,6 @@ subroutine compute_forces_acoustic_DG_main()
     endif ! Endif on CHECK_NONPOSITIVITY.
   else
     stop "Time stepping scheme not implemented for the discontinuous Galerkin method."
-    ! TODO: Implement the other time stepping schemes?
   endif
   
   ! --------------------------- !
@@ -454,22 +458,17 @@ subroutine prepare_MPI_DG()
     allocate(MPI_transfer_iface(NGLLX, 4, nspec,2))
     
     do ispec = 1, nspec
-    
-    do i = 1, NGLLX
-    do j = 1, NGLLZ
-    
-        iglob_DG = ibool_DG(i, j, ispec)
-    
-        link_ij_iglob(iglob_DG,1) = i
-        link_ij_iglob(iglob_DG,2) = j
-        link_ij_iglob(iglob_DG,3) = ispec
-        
-        if((i == 1 .AND. (j == 1 .OR. j == NGLLZ)) .OR. (i == NGLLX .AND. (j == 1 .OR. j == NGLLZ))) &
-                is_corner(i,j) = .true.
-    
-    enddo
-    enddo
-    
+      do i = 1, NGLLX
+        do j = 1, NGLLZ
+          iglob_DG = ibool_DG(i, j, ispec)
+          link_ij_iglob(iglob_DG,1) = i
+          link_ij_iglob(iglob_DG,2) = j
+          link_ij_iglob(iglob_DG,3) = ispec
+          if((i == 1 .AND. (j == 1 .OR. j == NGLLZ)) .OR. (i == NGLLX .AND. (j == 1 .OR. j == NGLLZ))) then
+            is_corner(i,j) = .true.
+          endif
+        enddo
+      enddo
     enddo
     
     buffer_recv_faces_vector_DG_i = -1.
@@ -679,15 +678,11 @@ subroutine prepare_MPI_DG()
     MPI_iglob    = 0
     
     do iinterface = 1, ninterface_acoustic_DG
-
-    ! gets interface index in the range of all interfaces [1,ninterface]
-    num_interface = inum_interfaces_acoustic_DG(iinterface)
-
-    ! loops over all interface points
-    do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
-    
-       ! WRITE(*,*) "-------------->", myrank, ipoin, iinterface
-    
+      ! gets interface index in the range of all interfaces [1,ninterface]
+      num_interface = inum_interfaces_acoustic_DG(iinterface)
+      ! loops over all interface points
+      do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
+        ! WRITE(*,*) "-------------->", myrank, ipoin, iinterface ! DEBUG
         iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
         
         i = link_ij_iglob(iglob,1)
@@ -710,39 +705,38 @@ subroutine prepare_MPI_DG()
         iface_corner  = -1
         neighbor_corner = -1
         if(is_corner(i,j)) then
-                iface1_corner   = link_ijispec_iface(i,j,ispec,1,2)
-                iface_corner    = link_ijispec_iface(i,j,ispec,2,2)
-                neighbor_corner = neighbor_DG_iface(iface1_corner,iface_corner,ispec,3)
+          iface1_corner   = link_ijispec_iface(i,j,ispec,1,2)
+          iface_corner    = link_ijispec_iface(i,j,ispec,2,2)
+          neighbor_corner = neighbor_DG_iface(iface1_corner,iface_corner,ispec,3)
         endif
         
-       one_other_node_is_found = .false.
-       one_other_node_is_found_corner = .false.
+        one_other_node_is_found = .false.
+        one_other_node_is_found_corner = .false.
         do iface1 = 1,NGLLX
-        
-                i_try = link_iface_ijispec(iface1, iface, ispec, 1)
-                j_try = link_iface_ijispec(iface1, iface, ispec, 2)
-                
-                coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
-                coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
-                
-                if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
-                    (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) then
-                        one_other_node_is_found = .true.
-                endif
-                        
-                if(is_corner(i,j)) then
-                i_try = link_iface_ijispec(iface1, iface_corner, ispec, 1)
-                j_try = link_iface_ijispec(iface1, iface_corner, ispec, 2)
-                
-                coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
-                coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
-                
-                if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
-                    (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) &
-                        one_other_node_is_found_corner = .true.
-                
-                endif
-        enddo       
+          i_try = link_iface_ijispec(iface1, iface, ispec, 1)
+          j_try = link_iface_ijispec(iface1, iface, ispec, 2)
+          
+          coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
+          coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
+          
+          if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
+              (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) then
+            one_other_node_is_found = .true.
+          endif
+                  
+          if(is_corner(i,j)) then
+            i_try = link_iface_ijispec(iface1, iface_corner, ispec, 1)
+            j_try = link_iface_ijispec(iface1, iface_corner, ispec, 2)
+            
+            coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
+            coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
+            
+            if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
+                (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) then
+              one_other_node_is_found_corner = .true.
+            endif
+          endif
+        enddo ! Enddo on iface1.
         
         iface1 = link_ijispec_iface(i,j,ispec,1,1)
         
@@ -752,30 +746,24 @@ subroutine prepare_MPI_DG()
         if( (neighbor == -1 .OR. neighbor_corner == -1) .AND. &
                  (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
                         .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
-
-        
-        if(one_other_node_is_found) then
-        MPI_transfer_iface(iface1,iface,ispec,1) = ipoin 
-        MPI_transfer_iface(iface1,iface,ispec,2) = num_interface 
+          if(one_other_node_is_found) then
+            MPI_transfer_iface(iface1,iface,ispec,1) = ipoin 
+            MPI_transfer_iface(iface1,iface,ispec,2) = num_interface 
+          endif
+          if(one_other_node_is_found_corner) then
+            MPI_transfer_iface(iface1_corner,iface_corner,ispec,1) = ipoin 
+            MPI_transfer_iface(iface1_corner,iface_corner,ispec,2) = num_interface
+          endif
         endif
-        
-        if(one_other_node_is_found_corner) then
-        MPI_transfer_iface(iface1_corner,iface_corner,ispec,1) = ipoin 
-        MPI_transfer_iface(iface1_corner,iface_corner,ispec,2) = num_interface
-        endif
-        
-       endif
-        
-    enddo
-    
-    enddo
+      enddo ! Enddo on ipoin.
+    enddo ! Enddo on iinterface.
     
 end subroutine prepare_MPI_DG
 
 ! ------------------------------------------------------------ !
 ! setUpVandermonde                                             !
 ! ------------------------------------------------------------ !
-! Setup Vandermonde matrices and derivation matrix for slope limiter purposes.
+! Setup Vandermonde matrices. Only used when the slope limiter is.
 
 subroutine setUpVandermonde()
     use constants, only: CUSTOM_REAL,NGLLX,NGLLZ
@@ -788,7 +776,7 @@ end subroutine setUpVandermonde
 ! ------------------------------------------------------------ !
 ! compute_Vander_matrices                                      !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Compute Vandermonde matrices. Only used when the slope limiter is.
 
 subroutine compute_Vander_matrices(np, V1D, V1D_inv, Drx, Drz)
   
@@ -804,10 +792,10 @@ subroutine compute_Vander_matrices(np, V1D, V1D_inv, Drx, Drz)
   
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.00001_CUSTOM_REAL
   double precision, dimension(np, np) :: V1D_d, V1D_inv_d
   double precision :: p, pd, pm1, pdm1, pm2, pdm2, p2, pd2
@@ -819,8 +807,7 @@ subroutine compute_Vander_matrices(np, V1D, V1D_inv, Drx, Drz)
   Drx     = ZEROl
   Drz     = ZEROl
   V1D_d   = 0d0
-  
-  ! NEW MATRIcES
+  ! NEW MATRICES
   k = 0
   do m = 1,NGLLX
     do n = 1,NGLLZ
@@ -839,7 +826,6 @@ subroutine compute_Vander_matrices(np, V1D, V1D_inv, Drx, Drz)
   enddo
     enddo
   enddo
-  
   call FINDInv(V1D_d, V1D_inv_d, np, errorflag)
   do j=1,np
     do i=1,np
@@ -847,19 +833,18 @@ subroutine compute_Vander_matrices(np, V1D, V1D_inv, Drx, Drz)
         if(abs(V1D_inv(i,j)) < threshold) V1D_inv(i,j) = ZEROl
     enddo
   enddo
-  
 end subroutine compute_Vander_matrices
 
 ! ------------------------------------------------------------ !
 ! FINDInv                                                      !
 ! ------------------------------------------------------------ !
-  !Subroutine to find the inverse of a square matrix
-  !Author : Louisda16th a.k.a Ashwith J. Rego
-  !Reference : Algorithm has been well explained in:
-  !http://math.uww.edu/~mcfarlat/inverse.htm 
-  !http://www.tutor.ms.unimelb.edu.au/matrix/matrix_inverse.html
+! Subroutine to find the inverse of a square matrix
+! Author : Louisda16th a.k.a Ashwith J. Rego
+! Reference : Algorithm has been well explained in:
+! http://math.uww.edu/~mcfarlat/inverse.htm 
+! http://www.tutor.ms.unimelb.edu.au/matrix/matrix_inverse.html
 
-  SUBROUTINE FINDInv(matrix, inverse, n, errorflag)
+SUBROUTINE FINDInv(matrix, inverse, n, errorflag)
   ! TODO: Replace the inner code of this routine (or better, directly the calls to it) by a LAPACK call.
 
   use constants,only: CUSTOM_REAL
@@ -955,53 +940,40 @@ end subroutine compute_Vander_matrices
   END DO
   errorflag = 0
   RETURN
-  END SUBROUTINE FINDInv
+END SUBROUTINE FINDInv
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   subroutine build_veloc_boundary_DG(veloc_vector_acoustic_DG_coupling)    
-    
-    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-    
-    use specfem_par,only: ispec_is_acoustic, ispec_is_acoustic_DG, nspec, nglob, ibool, potential_dot_acoustic, &
-        hprime_xx, hprime_zz, xix, xiz, gammax, gammaz
-
-    implicit none 
-    
-    real(kind=CUSTOM_REAL), dimension(nglob,2) :: veloc_vector_acoustic_DG_coupling
-    integer :: i, j, k, ispec
-    real(kind=CUSTOM_REAL) :: xixl, xizl, gammaxl, gammazl, dux_dxi, dux_dgamma
-
-    veloc_vector_acoustic_DG_coupling = 0.
-
-    do ispec = 1,nspec
-
-    ! acoustic spectral element
-    if (ispec_is_acoustic(ispec) .AND. .not. ispec_is_acoustic_DG(ispec)) then
-
-      ! first double loop over GLL points to compute and store gradients
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-
-            xixl = xix(i, j, ispec)
-            xizl = xiz(i, j, ispec)
-            gammaxl = gammax(i, j, ispec)
-            gammazl = gammaz(i, j, ispec)
-
-            do k = 1,NGLLX
-                dux_dxi    = dux_dxi    + potential_dot_acoustic(ibool(k,j,ispec)) * hprime_xx(i,k)
-                dux_dgamma = dux_dgamma + potential_dot_acoustic(ibool(i,k,ispec)) * hprime_zz(j,k)
-            enddo
-
-            ! derivatives of potential
-            veloc_vector_acoustic_DG_coupling(ibool(i, j, ispec), 1) = dux_dxi * xixl + dux_dgamma * gammaxl
-            veloc_vector_acoustic_DG_coupling(ibool(i, j, ispec), 2) = dux_dxi * xizl + dux_dgamma * gammazl
-        enddo
-     enddo
-     
-    endif
-    
-    enddo
-
-  end subroutine 
-
+! ------------------------------------------------------------ !
+! build_veloc_boundary_DG                                      !
+! ------------------------------------------------------------ !
+! Routine used nowhere (except in compute_forces_acoustic_calling_routine, but in an if(.false.)).
+!  subroutine build_veloc_boundary_DG(veloc_vector_acoustic_DG_coupling)    
+!    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+!    use specfem_par,only: ispec_is_acoustic, ispec_is_acoustic_DG, nspec, nglob, ibool, potential_dot_acoustic, &
+!        hprime_xx, hprime_zz, xix, xiz, gammax, gammaz
+!    implicit none 
+!    real(kind=CUSTOM_REAL), dimension(nglob,2) :: veloc_vector_acoustic_DG_coupling
+!    integer :: i, j, k, ispec
+!    real(kind=CUSTOM_REAL) :: xixl, xizl, gammaxl, gammazl, dux_dxi, dux_dgamma
+!    veloc_vector_acoustic_DG_coupling = 0.
+!    do ispec = 1,nspec
+!    ! acoustic spectral element
+!    if (ispec_is_acoustic(ispec) .AND. .not. ispec_is_acoustic_DG(ispec)) then
+!      ! first double loop over GLL points to compute and store gradients
+!      do j = 1,NGLLZ
+!        do i = 1,NGLLX
+!            xixl = xix(i, j, ispec)
+!            xizl = xiz(i, j, ispec)
+!            gammaxl = gammax(i, j, ispec)
+!            gammazl = gammaz(i, j, ispec)
+!            do k = 1,NGLLX
+!                dux_dxi    = dux_dxi    + potential_dot_acoustic(ibool(k,j,ispec)) * hprime_xx(i,k)
+!                dux_dgamma = dux_dgamma + potential_dot_acoustic(ibool(i,k,ispec)) * hprime_zz(j,k)
+!            enddo
+!            ! derivatives of potential
+!            veloc_vector_acoustic_DG_coupling(ibool(i, j, ispec), 1) = dux_dxi * xixl + dux_dgamma * gammaxl
+!            veloc_vector_acoustic_DG_coupling(ibool(i, j, ispec), 2) = dux_dxi * xizl + dux_dgamma * gammazl
+!        enddo
+!     enddo
+!    endif
+!    enddo
+!  end subroutine

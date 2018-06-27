@@ -117,10 +117,10 @@
       endif
     endif
     
-    if(.false.) then
-    call build_veloc_boundary_DG(veloc_vector_acoustic_DG_coupling)  
-    call assemble_MPI_vector_ac(veloc_vector_acoustic_DG_coupling  )
-    endif
+    !if(.false.) then
+    !  call build_veloc_boundary_DG(veloc_vector_acoustic_DG_coupling)  
+    !  call assemble_MPI_vector_ac(veloc_vector_acoustic_DG_coupling  )
+    !endif
     
   endif
 #endif

@@ -107,13 +107,21 @@ subroutine iterate_time()
       ! Updates wavefields using Newmark time scheme.
       call update_displacement_scheme()
       ! Acoustic domains.
-      if (ACOUSTIC_SIMULATION) then
-        if (.not. GPU_MODE) then
-          if(any_acoustic_DG) call compute_forces_acoustic_DG_main()
-          if(.not. only_DG_acoustic) call compute_forces_acoustic_main()
-          if (SIMULATION_TYPE == 3) call compute_forces_acoustic_main_backward()
+      if(ACOUSTIC_SIMULATION) then
+        if(.not. GPU_MODE) then
+          if(any_acoustic_DG) then
+            call compute_forces_acoustic_DG_main()
+          endif
+          if(.not. only_DG_acoustic) then
+            call compute_forces_acoustic_main()
+          endif
+          if(SIMULATION_TYPE == 3) then
+            call compute_forces_acoustic_main_backward()
+          endif
         else
-          if (any_acoustic) call compute_forces_acoustic_GPU()
+          if(any_acoustic) then
+            call compute_forces_acoustic_GPU()
+          endif
         endif
       endif
 
