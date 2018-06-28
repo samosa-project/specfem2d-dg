@@ -174,6 +174,20 @@
     stage_time_scheme = 4
     ! MODIF DG
     stage_time_scheme = 5
+  else if (time_stepping_scheme == 4) then
+    stage_time_scheme = 3
+    ! For now, implemented only for DG. See 'read_mesh_databases.F90' for the error prompt when using time_stepping_scheme with non fully DG simulations.
+  else
+    if(myrank==0) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* This time_stepping_scheme is *"
+      write(*,*) "* not implemented.             *"
+      write(*,*) "* time_stepping_scheme ", time_stepping_scheme
+      write(*,*) "********************************"
+      stop
+    endif
   endif
 
   ! converts percentage

@@ -1802,7 +1802,8 @@
     ispec_is_anisotropic,ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic, ispec_is_acoustic_DG, &
     porosity,anisotropy,kmato, &
     nspec,P_SV,count_nspec_acoustic,PML_BOUNDARY_CONDITIONS, id_region_DG, only_DG_acoustic, any_acoustic_DG, &
-    USE_DISCONTINUOUS_METHOD
+    USE_DISCONTINUOUS_METHOD,&
+    time_stepping_scheme
 
   implicit none
 
@@ -1850,14 +1851,25 @@
     
   enddo ! of do ispec = 1,nspec
   
-  if(USE_DISCONTINUOUS_METHOD) then
   only_DG_acoustic = .false.
-  if(count_nspec_acoustic_DG == count_nspec_acoustic) &
-        only_DG_acoustic = .true.
+  if(USE_DISCONTINUOUS_METHOD) then
+    if(count_nspec_acoustic_DG == count_nspec_acoustic) then
+      only_DG_acoustic = .true.
+    endif
   endif
-  !WRITE(*,*) ">>>> count_nspec_acoustic_DG", count_nspec_acoustic_DG, count_nspec_acoustic, &
-  !      only_DG_acoustic
-  !stop 'TOTO'
+  
+  ! Prompt an error for time_stepping_scheme 4 if simulation is not fully DG.
+  if(time_stepping_scheme==4 .and. .not. only_DG_acoustic) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot use                   *"
+    write(*,*) "* time_stepping_scheme 4 (yet) *"
+    write(*,*) "* if simulation is not fully   *"
+    write(*,*) "* DG.                          *"
+    write(*,*) "********************************"
+    stop
+  endif
 
   ! safety checks
   if (.not. P_SV .and. .not. any_elastic) then

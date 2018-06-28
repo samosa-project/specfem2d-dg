@@ -51,7 +51,7 @@ subroutine compute_forces_acoustic_DG_main()
   !real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: threshold = 0.0000001_CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
-  real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: rk4a, rk4b, rk4c
+  real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x
   integer :: i,j,ispec
   
@@ -144,12 +144,32 @@ subroutine compute_forces_acoustic_DG_main()
   endif ! Endif on (it == 1) and (i_stage == 1).
   
   ! Call time scheme coefficients and cast them.
-  rk4a = real(rk4a_d, kind=CUSTOM_REAL)
-  rk4b = real(rk4b_d, kind=CUSTOM_REAL)
-  rk4c = real(rk4c_d, kind=CUSTOM_REAL)
+  if (time_stepping_scheme == 3) then
+    ! 5 stages.
+    scheme_A = real(rk4a_d, kind=CUSTOM_REAL)
+    scheme_B = real(rk4b_d, kind=CUSTOM_REAL)
+    scheme_C = real(rk4c_d, kind=CUSTOM_REAL)
+  else if (time_stepping_scheme == 4) then
+    ! 3 stages.
+    scheme_A = real(ls33rk_a, kind=CUSTOM_REAL)
+    scheme_B = real(ls33rk_b, kind=CUSTOM_REAL)
+    scheme_C = real(ls33rk_c, kind=CUSTOM_REAL)
+    !write(*,*) "scheme_A", scheme_A, "scheme_B", scheme_B, "scheme_C", scheme_C ! DEBUG.
+  else
+    if(myrank==0) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* This time_stepping_scheme is *"
+      write(*,*) "* not implemented for DG yet.  *"
+      write(*,*) "* time_stepping_scheme ", time_stepping_scheme
+      write(*,*) "********************************"
+      stop
+    endif
+  endif
   
   ! Compute current time.
-  timelocal = (it-1)*deltat + rk4c(i_stage)*deltat
+  timelocal = (it-1)*deltat + scheme_C(i_stage)*deltat
   
   ! TODO: introduce a verbosity parameter in order to prevent unwanted flooding of the terminal.
   if(myrank == 0 .AND. mod(it, 100)==0) then
@@ -188,7 +208,7 @@ subroutine compute_forces_acoustic_DG_main()
                                   dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
                                   timelocal)
   
-  if (time_stepping_scheme == 3) then
+  if (time_stepping_scheme == 3 .or. time_stepping_scheme == 4) then
     ! Use RK4.
     
     ! DEBUG.
@@ -200,19 +220,19 @@ subroutine compute_forces_acoustic_DG_main()
     dot_rhovx(:) = dot_rhovx(:) * rmass_inverse_acoustic_DG(:)
     dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
     dot_E(:)     = dot_E(:)     * rmass_inverse_acoustic_DG(:)
-    dot_e1(:)    = dot_e1(:) * rmass_inverse_acoustic_DG(:)
+    dot_e1(:)    = dot_e1(:)    * rmass_inverse_acoustic_DG(:)
     
     ! Time scheme low-storage update. See e.g. Eq. (2) of J. Berland, C. Bogey, and C. Bailly, “Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm,” Comput. Fluids, vol. 35, no. 10, pp. 1459–1463, 2006.
-    resu_rho   = rk4a(i_stage)*resu_rho   + deltat*dot_rho
-    resu_rhovx = rk4a(i_stage)*resu_rhovx + deltat*dot_rhovx
-    resu_rhovz = rk4a(i_stage)*resu_rhovz + deltat*dot_rhovz
-    resu_E     = rk4a(i_stage)*resu_E     + deltat*dot_E
-    resu_e1    = rk4a(i_stage)*resu_e1    + deltat*dot_e1
-    rho_DG     = rho_DG   + rk4b(i_stage)*resu_rho
-    rhovx_DG   = rhovx_DG + rk4b(i_stage)*resu_rhovx
-    rhovz_DG   = rhovz_DG + rk4b(i_stage)*resu_rhovz
-    E_DG       = E_DG     + rk4b(i_stage)*resu_E
-    e1_DG    = e1_DG    + rk4b(i_stage)*resu_e1
+    resu_rho   = scheme_A(i_stage)*resu_rho   + deltat*dot_rho
+    resu_rhovx = scheme_A(i_stage)*resu_rhovx + deltat*dot_rhovx
+    resu_rhovz = scheme_A(i_stage)*resu_rhovz + deltat*dot_rhovz
+    resu_E     = scheme_A(i_stage)*resu_E     + deltat*dot_E
+    resu_e1    = scheme_A(i_stage)*resu_e1    + deltat*dot_e1
+    rho_DG     = rho_DG   + scheme_B(i_stage)*resu_rho
+    rhovx_DG   = rhovx_DG + scheme_B(i_stage)*resu_rhovx
+    rhovz_DG   = rhovz_DG + scheme_B(i_stage)*resu_rhovz
+    E_DG       = E_DG     + scheme_B(i_stage)*resu_E
+    e1_DG      = e1_DG    + scheme_B(i_stage)*resu_e1
     
     ! If we want to compute kernels, we save regularly.
     if(.false.) then
@@ -252,7 +272,17 @@ subroutine compute_forces_acoustic_DG_main()
       endif ! Endif on CHECK_NONPOSITIVITY_ON_ALL_PROCS.
     endif ! Endif on CHECK_NONPOSITIVITY.
   else
-    stop "Time stepping scheme not implemented for the discontinuous Galerkin method."
+    if(myrank==0) then
+      ! Safeguard only, as normally the error prompted before (see above).
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* This time_stepping_scheme is *"
+      write(*,*) "* not implemented for DG yet.  *"
+      write(*,*) "* time_stepping_scheme ", time_stepping_scheme
+      write(*,*) "********************************"
+      stop
+    endif
   endif
   
   ! --------------------------- !

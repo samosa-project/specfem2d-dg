@@ -40,10 +40,11 @@ NSTEP                           = 2000
 DT                              = 1d-4
 
 # Time stepping scheme.
-# 1: Newmark (2nd order)
-# 2: LDDRK4-6 (4th-order 6-stage low storage Runge-Kutta)
-# 3: classical RK4 4th-order 4-stage Runge-Kutta
+# 1: Newmark (2nd order).
+# 2: LDDRK4-6 (6-stage 4th-order low storage Runge-Kutta, 10.1016/j.compfluid.2005.04.003). Low-dissipation and low-dispersion.
+# 3: 56LSRK4 (5-stage 4th-order low storage Runge-Kutta, http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf).
 time_stepping_scheme            = 3
+# Remark: the number of stages is equal to the number of calls per timestep to the force functions. Note also that for DG simulations, the force functions are particularly computationally heavy.
 
 # Axisymmetric (2.5D) simulation? If set to false, simulation stays Cartesian planar (2D).
 AXISYM                          = .false.

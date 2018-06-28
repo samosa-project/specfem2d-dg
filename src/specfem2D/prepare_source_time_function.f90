@@ -38,17 +38,19 @@
 ! Prepares source_time_function array.
 
 subroutine prepare_source_time_function()
-  use constants,only: IMAIN,ZERO,ONE,TWO,HALF,PI,QUARTER,SOURCE_DECAY_MIMIC_TRIANGLE
+  use constants,only: IMAIN,ZERO,ONE,TWO,HALF,PI,QUARTER,SOURCE_DECAY_MIMIC_TRIANGLE,&
+                      ls33rk_c,rk4c_d
   use specfem_par, only: AXISYM,NSTEP,NSOURCES,source_time_function, &
                          time_function_type,name_of_source_file,burst_band_width,f0_source,tshift_src,factor, &
                          aval,t0,nb_proc_source,deltat,stage_time_scheme,C_LDDRK,is_proc_source, &
-                         USE_TRICK_FOR_BETTER_PRESSURE,myrank, USE_SPREAD_SSF, REMOVE_STF_INITIAL_DISCONTINUITY
+                         USE_TRICK_FOR_BETTER_PRESSURE,myrank, USE_SPREAD_SSF, REMOVE_STF_INITIAL_DISCONTINUITY,&
+                         time_stepping_scheme
   implicit none
 
   ! local parameters
   double precision :: stf_used, timeval, DecT, Tc, omegat, omega_coa,time,coeff, t_used, Nc
   double precision, dimension(NSOURCES) :: hdur,hdur_gauss
-  double precision, dimension(5) :: rk4c_d
+  !double precision, dimension(5) :: rk4c_d
   double precision, external :: netlib_specfun_erf
   integer :: it,i_source,ier,num_file
   integer :: i_stage
@@ -64,6 +66,13 @@ subroutine prepare_source_time_function()
     c_RK(3) = 0.5d0 * deltat
     c_RK(4) = 1.0d0 * deltat
   endif
+  ! For time_stepping_scheme==3 (54LSRK).
+  ! Deleted and imported rk4c_d from constants module directly.
+  !rk4c_d(1) = 0d0
+  !rk4c_d(2) = 1432997174477.0/9575080441755.0 
+  !rk4c_d(3) = 2526269341429.0/6820363962896.0 
+  !rk4c_d(4) = 2006345519317.0/3224310063776.0 
+  !rk4c_d(5) = 2802321613138.0/2924317926251.0
 
   ! user output
   if (is_proc_source(1) == 1) then
@@ -115,16 +124,12 @@ subroutine prepare_source_time_function()
       do it = 1,NSTEP
 
         ! compute current time
-        if (stage_time_scheme == 1) timeval = (it-1)*deltat
-        
-        rk4c_d(1) = 0d0
-        rk4c_d(2) = 1432997174477.0/9575080441755.0 
-        rk4c_d(3) = 2526269341429.0/6820363962896.0 
-        rk4c_d(4) = 2006345519317.0/3224310063776.0 
-        rk4c_d(5) = 2802321613138.0/2924317926251.0
-        if (stage_time_scheme == 5) timeval = (it-1)*deltat+rk4c_d(i_stage)*deltat
-        if (stage_time_scheme == 4) timeval = (it-1)*deltat+c_RK(i_stage)*deltat
-        if (stage_time_scheme == 6) timeval = (it-1)*deltat+C_LDDRK(i_stage)*deltat
+        ! TODO: Conditions on stage_time_scheme should be converted to conditions on time_stepping_scheme.
+        if (stage_time_scheme == 1)  timeval = (it-1                     )*deltat ! Which time_stepping_scheme?
+        if (stage_time_scheme == 4)  timeval = (it-1 + c_RK(i_stage)     )*deltat ! For a RK4 (implemented where?).
+        if (time_stepping_scheme==4) timeval = (it-1 + ls33rk_c(i_stage) )*deltat ! For time_stepping_scheme==4 (33LSRK).
+        if (stage_time_scheme == 5)  timeval = (it-1 + rk4c_d(i_stage)   )*deltat ! For time_stepping_scheme==3 (54LSRK).
+        if (stage_time_scheme == 6)  timeval = (it-1 + C_LDDRK(i_stage)  )*deltat ! For time_stepping_scheme==2 (54LSRK).
 
         t_used = timeval - t0 - tshift_src(i_source)
         stf_used = 0.d0

@@ -680,6 +680,17 @@ subroutine prepare_external_forcing()
   !write(*,*) "observed dt from file: ", file_dt, DT/stage_time_scheme ! DEBUG
   if(EXTFORC_FILEDT==DT/stage_time_scheme) then ! Up-sampling (large files)
     NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2))
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* Uniform up-sampling is not   *"
+    write(*,*) "* recommended as it heavily    *"
+    write(*,*) "* depends on the time scheme   *"
+    write(*,*) "* that is used. Indeed,        *"
+    write(*,*) "* sub-steps are generally not  *"
+    write(*,*) "* uniformally split (see       *"
+    write(*,*) "* Runge-Kutta c coefficients). *"
+    write(*,*) "********************************"
   else
     if(EXTFORC_FILEDT==DT) then ! Normal sampling (ok files).
       NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2))

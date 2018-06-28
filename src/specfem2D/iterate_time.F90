@@ -104,8 +104,10 @@ subroutine iterate_time()
     endif
 
     do i_stage = 1, stage_time_scheme
-      ! Updates wavefields using Newmark time scheme.
+      ! Updates wavefields using time scheme.
       call update_displacement_scheme()
+      
+      !write(*,*) "stage_time_scheme", i_stage, stage_time_scheme ! DEBUG.
       ! Acoustic domains.
       if(ACOUSTIC_SIMULATION) then
         if(.not. GPU_MODE) then
@@ -156,7 +158,7 @@ subroutine iterate_time()
           if (any_poroelastic) call exit_MPI(myrank,'poroelastic not implemented in GPU MODE yet')
         endif
       endif
-    enddo ! stage_time_scheme (LDDRK or RK)
+    enddo ! Enddo on stage_time_scheme.
 
     ! reads in lastframe for adjoint/kernels calculation
     if (SIMULATION_TYPE == 3 .and. it == 1) then
