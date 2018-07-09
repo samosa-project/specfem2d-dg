@@ -43,7 +43,7 @@ DT                              = 1d-4
 # 1: Newmark (2nd order).
 # 2: LDDRK4-6 (6-stage 4th-order low storage Runge-Kutta, 10.1016/j.compfluid.2005.04.003). Low-dissipation and low-dispersion.
 # 3: 56LSRK4 (5-stage 4th-order low storage Runge-Kutta, http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf).
-# 4: 33LSRK (3-stage 3th-order low storage Runge-Kutta, http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf). Only implemented for fully DG simulations.
+# 4: 33LSRK (3-stage 3rd-order low storage Runge-Kutta, http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf). Only implemented for fully DG simulations.
 time_stepping_scheme            = 3
 # Remark: the number of stages is equal to the number of calls per timestep to the force functions. Note also that for DG simulations, the force functions are particularly computationally heavy.
 
