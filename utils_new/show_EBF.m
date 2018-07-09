@@ -24,6 +24,9 @@ if (not(strcmp(folder(end), '/')))
 end
 gst = input('  Time grid size (s)? > ');
 gsx = input('  Space grid size (m)? > ');
+maxt = input('  Maximum t (s, Inf for all)? > ');
+minx = input('  Minimum x (m, -Inf for all)? > ');
+maxx = input('  Maximum x (m, Inf for all)? > ');
 
 % Load the data.
 EBFFILE = [folder, 'external_bottom_forcing.dat'];
@@ -33,6 +36,8 @@ t = a(:, 1);
 x = a(:, 2);
 d = a(:, 3);
 clear('a');
+% selt=(t<maxt); t=t(selt); selx=(x>=minx & x<=maxx); x=x(selx);
+% sel=(t<maxt & x>=minx & x<=maxx); t=t(sel); x=x(sel); d=d(sel);
 
 % Interpolate the point cloud.
 disp(['Interpolating (can be very long for large files).']);
@@ -40,10 +45,12 @@ F = scatteredInterpolant(t, x, d);
 
 % Plot.
 disp(['Plotting.']);
-tt = min(t(:)):gst:max(t(:));
-tx = min(x(:)):gsx:max(x(:));
+% tt = min(t(:)):gst:max(t(:));
+% tx = min(x(:)):gsx:max(x(:));
+tt = min(t(:)):gst:min(max(t(:)),maxt);
+tx = max(min(x(:)),minx):gsx:min(max(x(:)),maxx);
 [X, Z] = meshgrid(tt, tx);
 D = F(X, Z);
 figure();
-surf(X, Z, D, 'edgecolor', 'interp', 'facecolor', 'interp'); view([0, 0, 1]); axis([min(t), max(t), min(x), max(x)]);
+surf(X, Z, D, 'edgecolor', 'interp', 'facecolor', 'interp'); view([0, 0, 1]); axis([min(tt), max(tt), min(tx), max(tx)]);
 xlabel('$t$'); ylabel('$x$'); title("External Bottom Forcing ");

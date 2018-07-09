@@ -381,7 +381,9 @@ if (0 == 1)
     amp(ii) = max(Zamp(ii, :)) - min(Zamp(ii, :));
   end
   figure();
-  plot(dist_to_sources, amp);
+%   plot(xstattab(istattab), amp);
+  plot(ystattab(istattab), amp);
+%   plot(dist_to_sources(istattab), amp);
 end
 
 % Seismic Hammer, hard soil.
