@@ -35,7 +35,7 @@
 
   use specfem_par
   use specfem_par_noise
-  use constants, only: rk4a_d, rk4b_d, rk4c_d
+  use constants, only: rk4a_d, rk4b_d, rk4c_d, ls33rk_a, ls33rk_b, ls33rk_c
 
   implicit none
 
