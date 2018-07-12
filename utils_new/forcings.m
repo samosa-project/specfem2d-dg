@@ -37,14 +37,10 @@ set(groot, 'defaultSurfaceEdgeColor', 'none');
 % Parameters.         %
 %%%%%%%%%%%%%%%%%%%%%%%
 % Forcing related.
-% Nt = 833; % Points per temporal period.
-% Nt = 11; % Points per temporal period.
-Nx = 4; % Points per spatial period.
 % T0 = 14; % Temporal period.
 T0 = 12.5; % Temporal period.
-% nT0 = 10.5; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 nT0 = 10; % Number of temporal periods (must be integer to prevent FFT misbehaving).
-% nT0 = 5; % Number of temporal periods (must be integer to prevent FFT misbehaving).
+% nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 L0 = 200; % Spatial period.
 nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
@@ -62,17 +58,21 @@ A = 1; % Amplitude of waves displacement for draft signal (peak-to-peak is 2 tim
 A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 
 % Apodisation related.
+activate_apo = 1; % Activate apodisations.
+activate_apo = 0; % Deactivate apodisations.
 napoxlr=10; % Number of periods for space apodisation on left/right sides.
 napot0=1; % Number of periods for time apodisation at t=0.
 napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 
 % SPECFEM-DG related.
-dt = 1.5d-2; % Set DT as in parfile.
-nx = 1060; % Set nx as in parfile.
-% nx = 1500; % Set nx as in parfile.
-xmin = -45e3;
-xmax = 45e3;
 % If an external mesh is used, the positions of points at z=0 must be implemented in the section "SPECFEM x mesh" below, instead.
+dt = 1.5d-2; % Set DT as in parfile.
+% nx = 1060; % Set nx as in parfile.
+% xmin = -45e3; xmax = 45e3; % Set as in parfile.
+nx = 377; % Set nx as in parfile.
+xmin = MINX; xmax = MAXX; % Set as in parfile.
+% periodise = 0;
+periodise = 1;
 
 disp(['Preparing meshgrids.']);
 
@@ -205,6 +205,9 @@ spectrum_displ_new = spectrum_displ_R_convolved .* RPhase;
 spectrum_displ_new_R = real(spectrum_displ_new); % Save real part.
 spectrum_displ_new_I = imag(spectrum_displ_new); % Extract imaginary part.
 spectrum_displ_new_I = spectrum_displ_new_I + conj(fliplr(spectrum_displ_new_I)); % Mirroring imaginary part.
+if(periodise)
+  spectrum_displ_new_I = spectrum_displ_new_I + conj(flipud(spectrum_displ_new_I)); % Mirroring imaginary part.
+end
 spectrum_displ_new = spectrum_displ_new_R + 1j * spectrum_displ_new_I; % To be sent back to spacetime range.
 spectrum_displ_new_R = real(spectrum_displ_new); % For plotting purposes only.
 spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
@@ -266,19 +269,31 @@ disp(['  Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))
 ampli=max(abs(min(min(veloc))),abs(max(max(veloc))));
 veloc=veloc*A_aimed/ampli;
 disp(['  Velocity is now in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),']']);
+if(periodise)
+%   disp(['  Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
+  % Make sure one side is equal to the other.
+  veloc(1,:)=mean(veloc([1,end],:),1);
+  veloc(end,:)=veloc(1,:);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Apodisation.        %
 %%%%%%%%%%%%%%%%%%%%%%%
-disp(['Applying apodisation.']);
-n=napoxlr; apox = 0.25 .* (1. - erf((x - MAXX + 0.5 * n * L0) / (0.18 * n * L0))) .* (1 + erf((x - MINX - 0.5 * n * L0) / (0.25 * n * L0))); % Apodisation over n spatial period on each side.
-n=napot0; apot0 = 0.5 .* (1 + erf((t - 0.5 * n * T0) / (0.18 * n * T0))); % Apodisation over n temporal periods at beginning.
-% n = 1.5; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.25 * n * T0))); % Apodisation over n temporal periods at end.
-n=napotend; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.18 * n * T0))); % Apodisation over n temporal periods at end.
-apot = apot0 .* apot;
-apot([1,end]) = 0; % Tweak to make sure forcing starts at 0.
-apox([1,end])=0; % Tweak to make sure forcing starts at 0.
-veloc = veloc .* apox'.*apot;
+if(periodise)
+  disp("Deactivating apodisation due to periodisation.");
+  activate_apo = 0; % Deactivate apodisation.
+end
+if(activate_apo)
+  disp(['Applying apodisation.']);
+  n=napoxlr; apox = 0.25 .* (1. - erf((x - MAXX + 0.5 * n * L0) / (0.18 * n * L0))) .* (1 + erf((x - MINX - 0.5 * n * L0) / (0.25 * n * L0))); % Apodisation over n spatial period on each side.
+  n=napot0; apot0 = 0.5 .* (1 + erf((t - 0.5 * n * T0) / (0.18 * n * T0))); % Apodisation over n temporal periods at beginning.
+  % n = 1.5; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.25 * n * T0))); % Apodisation over n temporal periods at end.
+  n=napotend; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.18 * n * T0))); % Apodisation over n temporal periods at end.
+  apot = apot0 .* apot;
+  apot([1,end]) = 0; % Tweak to make sure forcing starts at 0.
+  apox([1,end])=0; % Tweak to make sure forcing starts at 0.
+  veloc = veloc .* apox'.*apot;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2) Interpolate on the       %
@@ -301,12 +316,12 @@ veloc_specfem(isnan(veloc_specfem)) = 0; % Set zeros instead of NaNs outside of 
 % of the quality of   %
 % interpolation).     %
 %%%%%%%%%%%%%%%%%%%%%%%
-if (not(any(size(veloc) > 5000) || any(size(veloc_specfem) > 5000)))
+if(0)
   figure();
   subplot(121); surf(T, X, veloc, 'edgecolor', 'flat', 'facecolor', 'flat'); view([0, 0, 1]); axis([min(t), max(t), min(x), max(x)]); title("Uniform grid");
   subplot(122); surf(T_specfem, X_specfem, veloc_specfem, 'edgecolor', 'flat', 'facecolor', 'flat'); view([0, 0, 1]); axis([min(t), max(t), min(x), max(x)]); title("SPECFEM grid");
 end
-if(0==1)
+if(0)
   pcolor(T_specfem, X_specfem, veloc_specfem); shading interp; axis([min(t), max(t), min(x), max(x)]);
 end
 disp(['Velocity forcing on SPECFEM meshgrid is ready.']);
@@ -320,7 +335,8 @@ disp(['Velocity forcing on SPECFEM meshgrid is ready.']);
 %%%%%%%%%%%%%%%%%%%%%%%
 % Path to file.       %
 %%%%%%%%%%%%%%%%%%%%%%%
-EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
+EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/microbaroms_periodic/';
 %%%%%%%%%%%%%%%%%%%%%%%
 % Test data.          %
 %%%%%%%%%%%%%%%%%%%%%%%

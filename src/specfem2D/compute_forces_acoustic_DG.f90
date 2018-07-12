@@ -428,7 +428,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
       ! but only on exterior        !
       ! points.                     !
       ! --------------------------- !
-      do  iface = 1, 4 
+      do  iface = 1, 4
        do  iface1 = 1, NGLLX
           i = link_iface_ijispec(iface1,iface,ispec,1)
           j = link_iface_ijispec(iface1,iface,ispec,2)
