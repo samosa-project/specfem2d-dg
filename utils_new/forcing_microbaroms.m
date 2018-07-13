@@ -59,7 +59,7 @@ A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Vel
 
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
-activate_apo = 0; % Deactivate apodisations.
+% activate_apo = 0; % Deactivate apodisations.
 napoxlr=10; % Number of periods for space apodisation on left/right sides.
 napot0=1; % Number of periods for time apodisation at t=0.
 napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
@@ -279,10 +279,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 % Apodisation.        %
 %%%%%%%%%%%%%%%%%%%%%%%
-if(periodise)
-  disp("Deactivating apodisation due to periodisation.");
-  activate_apo = 0; % Deactivate apodisation.
-end
 if(activate_apo)
   disp(['Applying apodisation.']);
   n=napoxlr; apox = 0.25 .* (1. - erf((x - MAXX + 0.5 * n * L0) / (0.18 * n * L0))) .* (1 + erf((x - MINX - 0.5 * n * L0) / (0.25 * n * L0))); % Apodisation over n spatial period on each side.
@@ -292,6 +288,12 @@ if(activate_apo)
   apot = apot0 .* apot;
   apot([1,end]) = 0; % Tweak to make sure forcing starts at 0.
   apox([1,end])=0; % Tweak to make sure forcing starts at 0.
+  
+  if(periodise)
+    disp("Deactivating spatial apodisation due to periodisation.");
+    apox = 1; % Deactivate apodisation.
+  end
+  
   veloc = veloc .* apox'.*apot;
 end
 
@@ -329,6 +331,7 @@ disp(['Velocity forcing on SPECFEM meshgrid is ready.']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3) Export to file.          %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(['Exporting to file.']);
 % Here, format shoud be compatible with the reading which is done in
 % the subroutine 'prepare_external_forcing' in 'boundary_terms_DG.f90'.
 
@@ -366,8 +369,19 @@ EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON
 % corresponding       %
 % values to file.     %
 %%%%%%%%%%%%%%%%%%%%%%%
-if(0)
-  disp(['Writing velocity forcing on SPECFEM meshgrid is ready.']);
+% Ask user.
+exportok=-1;
+% disp(['  Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
+while(not(ismember(exportok,[0,1])))
+  bytespervalue=39.985880510267151;
+  expectedsize=prod(size(veloc_specfem))*bytespervalue;
+  disp(['  File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
+  exportok=input('  Export to file (0 for no, 1 for yes)? > ');
+end
+if(exportok==0)
+  error('  Exporting disabled.');
+else
+  disp(['Exporting is ready.']);
   EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing.dat'];
   % Ask user to verify export path is ok.
   pathok=-1;
@@ -380,9 +394,6 @@ if(0)
   end
   clear('pathok');
   % Export.
-  bytespervalue=39.985880510267151;
-  expectedsize=prod(size(veloc_specfem))*bytespervalue;
-  disp(['  File will be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
 %   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
 %   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
 %   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
