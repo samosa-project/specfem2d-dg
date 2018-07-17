@@ -80,7 +80,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
   real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
   real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
-  integer :: ispec, i, j, k, iglob, iglob_unique
+  integer :: ispec, i,j, k,iglob, iglob_unique
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: temp_rho_1, temp_rho_2, &
                                                      temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
                                                      temp_E_1, temp_E_2, &
@@ -180,18 +180,18 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
       ! --------------------------- !
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
-          jacobianl = jacobian(i, j, ispec)
-          xixl = xix(i, j, ispec)
-          xizl = xiz(i, j, ispec)
-          gammaxl = gammax(i, j, ispec)
-          gammazl = gammaz(i, j, ispec)
+          iglob = ibool_DG(i,j,ispec)
+          jacobianl = jacobian(i,j,ispec)
+          xixl = xix(i,j,ispec)
+          xizl = xiz(i,j,ispec)
+          gammaxl = gammax(i,j,ispec)
+          gammazl = gammaz(i,j,ispec)
           
-          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! Here are updated the operator \nabla and the jacobian, but only if stretching is activated and we are in a buffer.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             ! The jacobian of the stretching transformation is updated following the same rationale.
-            iglob_unique = ibool_before_perio(i, j, ispec);
+            iglob_unique = ibool_before_perio(i,j,ispec);
             ya_x_l=stretching_ya(1, iglob_unique)
             ya_z_l=stretching_ya(2, iglob_unique)
             xixl = ya_x_l * xixl
@@ -209,8 +209,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           ! Mass conservation.
           temp_unknown = rhovx_DG(iglob)
           temp_unknown2 = rhovz_DG(iglob)
-          temp_rho_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
-          temp_rho_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
+          temp_rho_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
+          temp_rho_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
           
           ! x-Momentum.
           if(.not. CONSTRAIN_HYDROSTATIC) then
@@ -219,8 +219,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
           temp_unknown2 = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
-          temp_rhovx_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rhovx_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_rhovx_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_rhovx_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           ! z-Momentum.
           temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
@@ -229,8 +229,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           else
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
-          temp_rhovz_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rhovz_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_rhovz_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_rhovz_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           ! Energy.
           if(.not. CONSTRAIN_HYDROSTATIC) then
@@ -240,8 +240,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             temp_unknown = veloc_x_DG(iglob)*(E_DG(iglob) + (p_DG(iglob) - p_DG_init(iglob)))
             temp_unknown2 = veloc_z_DG(iglob)*(E_DG(iglob) + (p_DG(iglob) - p_DG_init(iglob)))
           endif
-          temp_E_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_E_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          temp_E_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_E_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           
           ! Viscous stress tensor's contributions.
           dux_dx = V_DG(1, 1, iglob)
@@ -251,112 +251,112 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           
           !DEBUG
           !if(.false.) then
-          !  x=coord(1, ibool_before_perio(i, j, ispec))
-          !  z=coord(2, ibool_before_perio(i, j, ispec))
+          !  x=coord(1, ibool_before_perio(i,j,ispec))
+          !  z=coord(2, ibool_before_perio(i,j,ispec))
           !  if(abs(z-30.)<0.5 .and. abs(x-9.)<2.) then
           !    write(*,*) x, z, dux_dx, dux_dz, duz_dx, duz_dz
           !  endif
           !endif
           
-          if(muext(i, j, ispec) > 0 .OR. &
-             etaext(i, j, ispec) > 0 .OR. &
-             kappa_DG(i, j, ispec) > 0) then
+          if(muext(i,j,ispec) > 0 .OR. &
+             etaext(i,j,ispec) > 0 .OR. &
+             kappa_DG(i,j,ispec) > 0) then
           
             dT_dx  = T_DG(1, iglob)
             dT_dz  = T_DG(2, iglob)
             
             ! This vector, [temp_unknown, temp_unknown2], is the first line of the viscous Navier-Stokes tensor (\Sigma_v).
-            temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
-            temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
-            temp_rhovx_1(i, j) = temp_rhovx_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-            temp_rhovx_2(i, j) = temp_rhovx_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            temp_unknown = muext(i,j,ispec)*TWO*dux_dx + (etaext(i,j,ispec) - (TWO/3.)*muext(i,j,ispec))*(dux_dx + duz_dz) 
+            temp_unknown2 = muext(i,j,ispec)*( dux_dz + duz_dx )
+            temp_rhovx_1(i,j) = temp_rhovx_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_rhovx_2(i,j) = temp_rhovx_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
             
             ! Use the values stored in temp_unknown and temp_unknown2 to compute the x component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true.).
             temp_unknown  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
-            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xixl * temp_unknown) 
-            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown) 
+            temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xixl * temp_unknown) 
+            temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown) 
             
             ! This vector, [temp_unknown, temp_unknown2], is the second line of the viscous Navier-Stokes tensor (\Sigma_v).
-            temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
-            temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz)
-            temp_rhovz_1(i, j) = temp_rhovz_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
-            temp_rhovz_2(i, j) = temp_rhovz_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
+            temp_unknown = muext(i,j,ispec)*( dux_dz + duz_dx )
+            temp_unknown2 = muext(i,j,ispec)*TWO*duz_dz + (etaext(i,j,ispec) - (TWO/3.)*muext(i,j,ispec))*(dux_dx + duz_dz)
+            temp_rhovz_1(i,j) = temp_rhovz_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
+            temp_rhovz_2(i,j) = temp_rhovz_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
             
             ! Use the values stored in temp_unknown and temp_unknown2 to compute the z component of the first part of the viscous energy vector (\Sigma_v\cdot\vect{v}, or \Sigma'_v\cdot\vect{v} if CONSTRAIN_HYDROSTATIC==.true.).
             temp_unknown2  = veloc_x_DG(iglob)*temp_unknown + veloc_z_DG(iglob)*temp_unknown2
-            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xizl * temp_unknown2)
-            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammazl * temp_unknown2)
+            temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xizl * temp_unknown2)
+            temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammazl * temp_unknown2)
             
             ! Add the heat contributions (second part of the viscous energy tensor, \kappa\nabla T, or \kappa\nabla{T'} if CONSTRAIN_HYDROSTATIC==.true.).
-            temp_unknown  = kappa_DG(i, j, ispec)*dT_dx
-            temp_unknown2 = kappa_DG(i, j, ispec)*dT_dz
-            temp_E_1(i, j) = temp_E_1(i, j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-            temp_E_2(i, j) = temp_E_2(i, j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            temp_unknown  = kappa_DG(i,j,ispec)*dT_dx
+            temp_unknown2 = kappa_DG(i,j,ispec)*dT_dz
+            temp_E_1(i,j) = temp_E_1(i,j) - wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_E_2(i,j) = temp_E_2(i,j) - wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           endif
           
           ! Gravity (and in fact, everything not inside the divergence operator in the strong form, except sources) contributions (separated from the rest).
-          temp_nondiv_rho(i, j) = ZERO
-          temp_nondiv_rhovx(i, j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec))* jacobianl
+          temp_nondiv_rho(i,j) = ZERO
+          temp_nondiv_rhovx(i,j) = -rho_DG(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec))* jacobianl
           if(.not. CONSTRAIN_HYDROSTATIC) then
-            temp_nondiv_rhovz(i, j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec))* jacobianl
+            temp_nondiv_rhovz(i,j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec))* jacobianl
           else
-            temp_nondiv_rhovz(i, j) = -(rho_DG(iglob) - rho_init(iglob)) * potential_dphi_dz_DG(ibool(i, j, ispec)) * jacobianl 
+            temp_nondiv_rhovz(i,j) = -(rho_DG(iglob) - rho_init(iglob)) * potential_dphi_dz_DG(ibool(i,j,ispec)) * jacobianl 
           endif
           if(.not. CONSTRAIN_HYDROSTATIC) then
-            temp_nondiv_E(i, j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
-                                veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl
+            temp_nondiv_E(i,j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) + &
+                                veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)))* jacobianl
           else
             ! By constraining hydrostaticity, remark that an additional term appears outside the divergence ($p_0\nabla\cdot{\vect{v}'}$).
-            temp_nondiv_E(i, j) = &
+            temp_nondiv_E(i,j) = &
                                   -(rho_DG(iglob) - rho_init(iglob))*&
-                                    (veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i, j, ispec)) + &
-                                     veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i, j, ispec)))* jacobianl         
-            temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl
+                                    (veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) + &
+                                     veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)))* jacobianl         
+            temp_nondiv_E(i,j) = temp_nondiv_E(i,j) - p_DG_init(iglob)*(dux_dx + duz_dz)* jacobianl
           endif
           ! Memory variable evolution.
-          temp_nondiv_E(i, j) = temp_nondiv_E(i, j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
-                              * ( (tau_epsilon(i, j, ispec)/tau_sigma(i, j, ispec)) - ONE ) &
+          temp_nondiv_E(i,j) = temp_nondiv_E(i,j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
+                              * ( (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) - ONE ) &
                               * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
           
           ! TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! ARTIFICIAL ADVECTION on top buffer
           !if(.false.) then
-          !  x=coord(1, ibool_before_perio(i, j, ispec))
-          !  z=coord(2, ibool_before_perio(i, j, ispec))
+          !  x=coord(1, ibool_before_perio(i,j,ispec))
+          !  z=coord(2, ibool_before_perio(i,j,ispec))
           !  if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
           !     .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
           !     .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
           !     .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
-          !    !temp_nondiv_rho(i, j) = temp_nondiv_rho(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rho_DG(iglob)
-          !    !temp_nondiv_rhovx(i, j) = temp_nondiv_rhovx(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovx_DG(iglob)
-          !    !temp_nondiv_rhovz(i, j) = temp_nondiv_rhovz(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovz_DG(iglob)
-          !    !temp_nondiv_E(i, j) = temp_nondiv_E(i, j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*E_DG(iglob)
-          !    temp_nondiv_rho(i, j) = temp_nondiv_rho(i, j) + 10.*rho_DG(iglob)
-          !    temp_nondiv_rhovx(i, j) = temp_nondiv_rhovx(i, j) + 10.*rhovx_DG(iglob)
-          !    temp_nondiv_rhovz(i, j) = temp_nondiv_rhovz(i, j) + 10.*rhovz_DG(iglob)
-          !    temp_nondiv_E(i, j) = temp_nondiv_E(i, j) + 10.*E_DG(iglob)
+          !    !temp_nondiv_rho(i,j) = temp_nondiv_rho(i,j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rho_DG(iglob)
+          !    !temp_nondiv_rhovx(i,j) = temp_nondiv_rhovx(i,j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovx_DG(iglob)
+          !    !temp_nondiv_rhovz(i,j) = temp_nondiv_rhovz(i,j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*rhovz_DG(iglob)
+          !    !temp_nondiv_E(i,j) = temp_nondiv_E(i,j) + ((z-mesh_zmax)/ABC_STRETCH_LBUF+ONE)*10.*E_DG(iglob)
+          !    temp_nondiv_rho(i,j) = temp_nondiv_rho(i,j) + 10.*rho_DG(iglob)
+          !    temp_nondiv_rhovx(i,j) = temp_nondiv_rhovx(i,j) + 10.*rhovx_DG(iglob)
+          !    temp_nondiv_rhovz(i,j) = temp_nondiv_rhovz(i,j) + 10.*rhovz_DG(iglob)
+          !    temp_nondiv_E(i,j) = temp_nondiv_E(i,j) + 10.*E_DG(iglob)
           !  endif
           !endif
           ! TEST PRIORI DAMPING on top buffer
           !if(.false.) then
-          !  x=coord(1, ibool_before_perio(i, j, ispec))
-          !  z=coord(2, ibool_before_perio(i, j, ispec))
+          !  x=coord(1, ibool_before_perio(i,j,ispec))
+          !  z=coord(2, ibool_before_perio(i,j,ispec))
           !  if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
           !     .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
           !     .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
           !     .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
-          !    call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
+          !    call boundary_condition_DG(i,j,ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
           !            veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
           !    
           !    if(ABC_STRETCH_TOP) then
           !      if((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE>ZERO .and. (z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE<=ONE) then
-          !        temp_nondiv_rho(i, j) = temp_nondiv_rho(i, j)&
+          !        temp_nondiv_rho(i,j) = temp_nondiv_rho(i,j)&
           !                               + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( rho_DG(iglob) - rho_DG_P)
-          !        temp_nondiv_rhovx(i, j) = temp_nondiv_rhovx(i, j)&
+          !        temp_nondiv_rhovx(i,j) = temp_nondiv_rhovx(i,j)&
           !                                 + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( rhovx_DG(iglob) - rhovx_DG_P)
-          !        temp_nondiv_rhovz(i, j) = temp_nondiv_rhovz(i, j)&
+          !        temp_nondiv_rhovz(i,j) = temp_nondiv_rhovz(i,j)&
           !                                 + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( rhovz_DG(iglob) - rhovz_DG_P)
-          !        temp_nondiv_E(i, j) = temp_nondiv_E(i, j)&
+          !        temp_nondiv_E(i,j) = temp_nondiv_E(i,j)&
           !                             + ((z-mesh_zmax)/ABC_STRETCH_TOP_LBUF+ONE)**2.*10.*( E_DG(iglob) - E_DG_P)
           !      endif
           !    endif
@@ -366,8 +366,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           
           ! Memory variable evolution.
           ! TODO: Describe more precisely.
-          dot_e1(iglob) = dot_e1(iglob) - (ONE/tau_sigma(i, j, ispec)) &
-                          *( (ONE - (tau_sigma(i, j, ispec)/tau_epsilon(i, j, ispec))) * (dux_dx + duz_dz) + e1_DG(iglob) )
+          dot_e1(iglob) = dot_e1(iglob) - (ONE/tau_sigma(i,j,ispec)) &
+                          *( (ONE - (tau_sigma(i,j,ispec)/tau_epsilon(i,j,ispec))) * (dux_dx + duz_dz) + e1_DG(iglob) )
         enddo
       enddo
       
@@ -375,30 +375,30 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
       ! The integration by quadrature on the GLL points leads to three sums. See in particular Komatitsch (Méthodes spectrales et éléments spectraux pour l'équation de l'élastodynamique 2D et 3D en milieu hétérogène), Annexe 3.A.
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
+          iglob = ibool_DG(i,j,ispec)
           do k = 1, NGLLX
             dot_rho(iglob) = dot_rho(iglob) + &
-                             (temp_rho_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                              temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+                             (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                              temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
             dot_rhovx(iglob) = dot_rhovx(iglob) + &
-                               (temp_rhovx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+                               (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
             dot_rhovz(iglob) = dot_rhovz(iglob) + &
-                               (temp_rhovz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+                               (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
             dot_E(iglob) = dot_E(iglob) + &
-                           (temp_E_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                            temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+                           (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                            temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
           enddo ! Enddo on k.
           
           wzl = real(wzgll(j), kind=CUSTOM_REAL)
           wxl = real(wxgll(i), kind=CUSTOM_REAL)
           
           ! Terms outside divergence operator.
-          dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i, j) * wxl * wzl
-          dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i, j) * wxl * wzl
-          dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i, j) * wxl * wzl
-          dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i, j) * wxl * wzl
+          dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i,j) * wxl * wzl
+          dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i,j) * wxl * wzl
+          dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i,j) * wxl * wzl
+          dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i,j) * wxl * wzl
           
           ! DEBUG: DEACTIVATE INTERNAL (ALL EXCEPT FLUXES) EVOLUTION.
           !dot_rho(iglob) = 0.
@@ -412,11 +412,11 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
       !if(.false. .and. timelocal>=2e-5 .and. timelocal<8e-5) then
       !  do j = 1, NGLLZ
       !    do i = 1, NGLLX
-      !      if(coord(1, ibool(i, j, ispec)) > 59. &
-      !         .and. coord(1, ibool(i, j, ispec)) < 60. &
-      !         .and. coord(2, ibool(i, j, ispec)) > 59.5) then ! DEBUG
-      !        iglob = ibool_DG(i, j, ispec)
-      !        write(*,*) timelocal, coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)), veloc_z_DG(iglob)
+      !      if(coord(1, ibool(i,j,ispec)) > 59. &
+      !         .and. coord(1, ibool(i,j,ispec)) < 60. &
+      !         .and. coord(2, ibool(i,j,ispec)) > 59.5) then ! DEBUG
+      !        iglob = ibool_DG(i,j,ispec)
+      !        write(*,*) timelocal, coord(1, ibool(i,j,ispec)), coord(2, ibool(i,j,ispec)), veloc_z_DG(iglob)
       !      endif
       !    enddo
       !  enddo
@@ -435,7 +435,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           
           ! Step 1: prepare the normals' parameters (nx, nz, weight, etc.).
           ! Interior point
-          iglobM = ibool_DG(i, j, ispec)
+          iglobM = ibool_DG(i,j,ispec)
           
           ! TEST WITH IFACE FORMULATION
           nx     = nx_iface(iface, ispec)
@@ -466,7 +466,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           endif
           
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
-          call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
+          call compute_interface_unknowns(i,j,ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                   Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
                   neighbor, &
@@ -492,10 +492,10 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                        abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
                        + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))
           
-          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
             ! TODO: Do it more clearly.
-            iglob_unique=ibool_before_perio(i, j, ispec)
+            iglob_unique=ibool_before_perio(i,j,ispec)
             !weight=weight*(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
             
             !nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
@@ -517,9 +517,9 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           duz_dz = ZERO
           dT_dx = ZERO
           dT_dz = ZERO
-          if(muext(i, j, ispec) > 0 .OR. &
-             etaext(i, j, ispec) > 0 .OR. &
-             kappa_DG(i, j, ispec)  > 0) then
+          if(muext(i,j,ispec) > 0 .OR. &
+             etaext(i,j,ispec) > 0 .OR. &
+             kappa_DG(i,j,ispec)  > 0) then
             dux_dx = HALF*(V_DG(1, 1, iglobM) + Vxx_DG_P)
             dux_dz = HALF*(V_DG(1, 2, iglobM) + Vxz_DG_P)
             duz_dx = HALF*(V_DG(2, 1, iglobM) + Vzx_DG_P)
@@ -568,8 +568,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           ! 1st line of \Sigma_v.
           ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the x-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
-          temp_unknown = muext(i, j, ispec)*TWO*dux_dx + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz) 
-          temp_unknown2 = muext(i, j, ispec)*( dux_dz + duz_dx )
+          temp_unknown = muext(i,j,ispec)*TWO*dux_dx + (etaext(i,j,ispec) - (TWO/3.)*muext(i,j,ispec))*(dux_dx + duz_dz) 
+          temp_unknown2 = muext(i,j,ispec)*( dux_dz + duz_dx )
           ! Dot product.
           !flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           !dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
@@ -602,8 +602,8 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           ! 2nd line of \Sigma_v.
           ! The vector [temp_unknown, temp_unknown2] represents the mean average flux at the boundary of the z-momentum.
           ! Recall: dux_dx, duz_dx, dux_dz, and duz_dz already contain the 0.5 factor to put the flux under mean average form.
-          temp_unknown = muext(i, j, ispec)*( dux_dz + duz_dx )
-          temp_unknown2 = muext(i, j, ispec)*TWO*duz_dz + (etaext(i, j, ispec) - (TWO/3.)*muext(i, j, ispec))*(dux_dx + duz_dz)
+          temp_unknown = muext(i,j,ispec)*( dux_dz + duz_dx )
+          temp_unknown2 = muext(i,j,ispec)*TWO*duz_dz + (etaext(i,j,ispec) - (TWO/3.)*muext(i,j,ispec))*(dux_dx + duz_dz)
           ! Dot product.
           !flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           !dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
@@ -637,7 +637,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           ! Energy equation's heat flux' contribution (last remaining term, viscous).
           ! Recall: dT_dx already contains the 0.5 factor to put the flux under mean average form.
           dot_E(iglobM) = dot_E(iglobM) &
-                          + weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
+                          + weight*( kappa_DG(i,j,ispec)*( dT_dx*nx + dT_dz*nz ) )
           
           ! DEBUG: DEACTIVATE FLUXES.
           !dot_rho(iglobM) = 0.
@@ -677,7 +677,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
   implicit none
   
   ! local parameters
-  integer :: ispec,i, j,k, iglob, iglobM, iglobP, iglob_unique
+  integer :: ispec,i,j,k,iglob, iglobM, iglobP, iglob_unique
   real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
@@ -747,16 +747,16 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
       ! --------------------------- !
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
-          jacobianl = jacobian(i, j, ispec)
-          xixl = xix(i, j, ispec)
-          xizl = xiz(i, j, ispec)
-          gammaxl = gammax(i, j, ispec)
-          gammazl = gammaz(i, j, ispec)
+          iglob = ibool_DG(i,j,ispec)
+          jacobianl = jacobian(i,j,ispec)
+          xixl = xix(i,j,ispec)
+          xizl = xiz(i,j,ispec)
+          gammaxl = gammax(i,j,ispec)
+          gammazl = gammaz(i,j,ispec)
           
-          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! See beginning of subroutine compute_forces_acoustic_DG for detailed explanations.
-            iglob_unique=ibool_before_perio(i, j, ispec)
+            iglob_unique=ibool_before_perio(i,j,ispec)
             ya_x_l=stretching_ya(1, iglob_unique)
             ya_z_l=stretching_ya(2, iglob_unique)
             xixl = ya_x_l * xixl
@@ -787,38 +787,38 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
             !  etc.
             ! and "desintegrate" those values by multiplying the obtained vector by the inverse mass matrix. As explained before, the integrals are computed by using the divergence theorem and taking into account the surface terms.
             
-            ! Viscous stress tensors
+            ! Compute inner contributions.
             if(.not. CONSTRAIN_HYDROSTATIC) then
-              temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * T(iglob)) 
-              temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * T(iglob)) 
-              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * veloc_x_DG(iglob))
-              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * veloc_x_DG(iglob))
-              temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * veloc_z_DG(iglob)) 
-              temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * veloc_z_DG(iglob)) 
+              temp_Tx_1(i,j)  = wzl * jacobianl * (xixl * T(iglob)) 
+              temp_Tz_1(i,j)  = wzl * jacobianl * (xizl * T(iglob)) 
+              temp_Vxx_1(i,j) = wzl * jacobianl * (xixl * veloc_x_DG(iglob))
+              temp_Vxz_1(i,j) = wzl * jacobianl * (xizl * veloc_x_DG(iglob))
+              temp_Vzx_1(i,j) = wzl * jacobianl * (xixl * veloc_z_DG(iglob)) 
+              temp_Vzz_1(i,j) = wzl * jacobianl * (xizl * veloc_z_DG(iglob)) 
               
-              temp_Tx_2(i, j)  = wxl * jacobianl * (gammaxl * T(iglob)) 
-              temp_Tz_2(i, j)  = wxl * jacobianl * (gammazl * T(iglob)) 
-              temp_Vxx_2(i, j) = wxl * jacobianl * (gammaxl * veloc_x_DG(iglob)) 
-              temp_Vxz_2(i, j) = wxl * jacobianl * (gammazl * veloc_x_DG(iglob)) 
-              temp_Vzx_2(i, j) = wxl * jacobianl * (gammaxl * veloc_z_DG(iglob)) 
-              temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * veloc_z_DG(iglob)) 
+              temp_Tx_2(i,j)  = wxl * jacobianl * (gammaxl * T(iglob)) 
+              temp_Tz_2(i,j)  = wxl * jacobianl * (gammazl * T(iglob)) 
+              temp_Vxx_2(i,j) = wxl * jacobianl * (gammaxl * veloc_x_DG(iglob)) 
+              temp_Vxz_2(i,j) = wxl * jacobianl * (gammazl * veloc_x_DG(iglob)) 
+              temp_Vzx_2(i,j) = wxl * jacobianl * (gammaxl * veloc_z_DG(iglob)) 
+              temp_Vzz_2(i,j) = wxl * jacobianl * (gammazl * veloc_z_DG(iglob)) 
             else
               vx_init = rhovx_init(iglob)/rho_init(iglob)
               vz_init = rhovz_init(iglob)/rho_init(iglob)
               
-              temp_Tx_1(i, j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)))
-              temp_Tz_1(i, j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)))
-              temp_Vxx_1(i, j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init))
-              temp_Vxz_1(i, j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob)))
-              temp_Vzx_1(i, j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init))
-              temp_Vzz_1(i, j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init))
+              temp_Tx_1(i,j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)))
+              temp_Tz_1(i,j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)))
+              temp_Vxx_1(i,j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init))
+              temp_Vxz_1(i,j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob))) ! Some hypothesis on initial velocity is used here.
+              temp_Vzx_1(i,j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init))
+              temp_Vzz_1(i,j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init))
               
-              temp_Tx_2(i, j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)))
-              temp_Tz_2(i, j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)))
-              temp_Vxx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init))
-              temp_Vxz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob)))
-              temp_Vzx_2(i, j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init))
-              temp_Vzz_2(i, j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init))
+              temp_Tx_2(i,j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)))
+              temp_Tz_2(i,j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)))
+              temp_Vxx_2(i,j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init))
+              temp_Vxz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob))) ! Some hypothesis on initial velocity is used here.
+              temp_Vzx_2(i,j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init))
+              temp_Vzz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init))
             endif
           else
             ! In that case, we want to compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k directly as it.
@@ -843,44 +843,43 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
             dT_dxi     = ZEROl
             dT_dgamma  = ZEROl
             
-            ! first double loop over GLL points to compute and store gradients
-            ! we can merge the two loops because NGLLX == NGLLZ
+            ! Compute derivatives in unit element \Lambda.
+            ! Note: we can merge the two loops because NGLLX=NGLLZ.
             do k = 1, NGLLX
               if(.not. CONSTRAIN_HYDROSTATIC) then
-                dux_dxi    = dux_dxi    + veloc_x_DG(ibool_DG(k, j,ispec)) * real(hprime_xx(i, k), kind=CUSTOM_REAL)
-                dux_dgamma = dux_dgamma + veloc_x_DG(ibool_DG(i, k, ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                duz_dxi    = duz_dxi    + veloc_z_DG(ibool_DG(k, j,ispec)) * real(hprime_xx(i, k), kind=CUSTOM_REAL)
-                duz_dgamma = duz_dgamma + veloc_z_DG(ibool_DG(i, k, ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dT_dxi     = dT_dxi    + T(ibool_DG(k, j,ispec)) * real(hprime_xx(i, k), kind=CUSTOM_REAL)
-                dT_dgamma  = dT_dgamma + T(ibool_DG(i, k, ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dux_dxi    = dux_dxi    + veloc_x_DG(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dux_dgamma = dux_dgamma + veloc_x_DG(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                duz_dxi    = duz_dxi    + veloc_z_DG(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                duz_dgamma = duz_dgamma + veloc_z_DG(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dT_dxi     = dT_dxi     + T(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dT_dgamma  = dT_dgamma  + T(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               else
-                vx_init = rhovx_init(ibool_DG(k, j,ispec))/rho_init(ibool_DG(k, j,ispec))
-                dux_dxi = dux_dxi + (veloc_x_DG(ibool_DG(k, j,ispec)) - vx_init) &
-                                    * real(hprime_xx(i, k), kind=CUSTOM_REAL)
-                vx_init = rhovx_init(ibool_DG(i, k, ispec))/rho_init(ibool_DG(i, k, ispec))       
-                dux_dgamma = dux_dgamma + (veloc_x_DG(ibool_DG(i, k, ispec)) - vx_init) &
+                vx_init = rhovx_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
+                dux_dxi = dux_dxi + (veloc_x_DG(ibool_DG(k,j,ispec)) - vx_init) &
+                                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                vx_init = rhovx_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))       
+                dux_dgamma = dux_dgamma + (veloc_x_DG(ibool_DG(i,k,ispec)) - vx_init) &
                                           * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                vz_init = rhovz_init(ibool_DG(k, j,ispec))/rho_init(ibool_DG(k, j,ispec))
-                duz_dxi = duz_dxi + (veloc_z_DG(ibool_DG(k, j,ispec)) - vz_init) &
-                                    * real(hprime_xx(i, k), kind=CUSTOM_REAL)
-                vz_init = rhovz_init(ibool_DG(i, k, ispec))/rho_init(ibool_DG(i, k, ispec))
-                duz_dgamma = duz_dgamma + (veloc_z_DG(ibool_DG(i, k, ispec)) - vz_init) &
+                vz_init = rhovz_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
+                duz_dxi = duz_dxi + (veloc_z_DG(ibool_DG(k,j,ispec)) - vz_init) &
+                                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                vz_init = rhovz_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))
+                duz_dgamma = duz_dgamma + (veloc_z_DG(ibool_DG(i,k,ispec)) - vz_init) &
                                           * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dT_dxi = dT_dxi + (T(ibool_DG(k, j,ispec)) - T_init(ibool_DG(k, j,ispec))) &
-                                  * real(hprime_xx(i, k), kind=CUSTOM_REAL)
-                dT_dgamma = dT_dgamma + (T(ibool_DG(i, k, ispec)) - T_init(ibool_DG(i, k, ispec))) &
+                dT_dxi = dT_dxi + (T(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
+                                  * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dT_dgamma = dT_dgamma + (T(ibool_DG(i,k,ispec)) - T_init(ibool_DG(i,k,ispec))) &
                                          * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
             enddo
 
-            ! Derivatives of velocities.
+            ! Compute derivatives in element \Omega using the chain rule.
             dux_dx = ( dux_dxi * xixl + dux_dgamma * gammaxl )
             dux_dz = ( dux_dxi * xizl + dux_dgamma * gammazl )
             duz_dx = ( duz_dxi * xixl + duz_dgamma * gammaxl )
             duz_dz = ( duz_dxi * xizl + duz_dgamma * gammazl )
-            ! Derivatives of temperature.
-            dT_dx = ( dT_dxi * xixl + dT_dgamma * gammaxl )
-            dT_dz = ( dT_dxi * xizl + dT_dgamma * gammazl )
+            dT_dx  = ( dT_dxi * xixl + dT_dgamma * gammaxl )
+            dT_dz  = ( dT_dxi * xizl + dT_dgamma * gammazl )
             
             temp_Tx  = dT_dx * jacobianl
             temp_Tz  = dT_dz * jacobianl
@@ -902,28 +901,27 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
       if(ADD_SURFACE_TERMS) then
         do j = 1, NGLLZ
           do i = 1, NGLLX
-            iglob = ibool_DG(i, j, ispec)
-            ! along x direction and z direction
-            ! and assemble the contributions
+            iglob = ibool_DG(i,j,ispec)
+            ! Assemble the contributions using the inner contributions.
             do k = 1, NGLLX
               grad_Tx(iglob) = grad_Tx(iglob) - &
-                               (temp_Tx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                               temp_Tx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+                               (temp_Tx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_Tx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               grad_Tz(iglob) = grad_Tz(iglob) - &
-                               (temp_Tz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                               temp_Tz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+                               (temp_Tz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                temp_Tz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               grad_Vxx(iglob) = grad_Vxx(iglob) - &
-                                (temp_Vxx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_Vxx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+                                (temp_Vxx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                 temp_Vxx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               grad_Vxz(iglob) = grad_Vxz(iglob) - &
-                                (temp_Vxz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_Vxz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+                                (temp_Vxz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                 temp_Vxz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               grad_Vzx(iglob) = grad_Vzx(iglob) - &
-                                (temp_Vzx_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_Vzx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+                                (temp_Vzx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                 temp_Vzx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               grad_Vzz(iglob) = grad_Vzz(iglob) - &
-                                (temp_Vzz_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
-                                temp_Vzz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL))
+                                (temp_Vzz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                 temp_Vzz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             enddo
           enddo
         enddo
@@ -938,7 +936,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
             j = link_iface_ijispec(iface1,iface,ispec,2)
 
             ! Interior point
-            iglobM = ibool_DG(i, j, ispec)
+            iglobM = ibool_DG(i,j,ispec)
             
             rho_DG_P     = ZEROl
             rhovx_DG_P   = ZEROl
@@ -968,10 +966,10 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
               neighbor(3) = ispec_neighbor
             endif
           
-            if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+            if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
               ! Update flux with stretching components. See explanation in the surface terms part in the subroutine above.
               ! TODO: Do that more clearly.
-              iglob_unique=ibool_before_perio(i, j, ispec)
+              iglob_unique=ibool_before_perio(i,j,ispec)
               weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
             endif
             
@@ -981,7 +979,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
             endif
             
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
-            call compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
+            call compute_interface_unknowns(i,j,ispec, rho_DG_P, rhovx_DG_P, &
                     rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                     Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
                     neighbor,&

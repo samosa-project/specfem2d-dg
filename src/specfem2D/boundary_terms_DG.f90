@@ -483,7 +483,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
           !if(abs(timelocal-3.5)<0.1) then
           !  write(*,*) veloc_z_DG_P, rho_DG_P
           !endif
-          !if(abs(timelocal-0.16)<0.1 .and. abs(x+10.)<3.) then
+          !if(abs(timelocal-0.16)<0.2 .and. abs(abs(x)-50.)<0.4) then
           !  write(*,*) timelocal, x, veloc_z_DG_P
           !endif
         else
@@ -678,36 +678,21 @@ subroutine prepare_external_forcing()
   endif ! Endif on nx_paired and nx.
   
   !write(*,*) "observed dt from file: ", file_dt, DT/stage_time_scheme ! DEBUG
-  if(EXTFORC_FILEDT==DT/stage_time_scheme) then ! Up-sampling (large files)
-    NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/(DT/stage_time_scheme)+2))
-    write(*,*) "********************************"
-    write(*,*) "*           WARNING            *"
-    write(*,*) "********************************"
-    write(*,*) "* Uniform up-sampling is not   *"
-    write(*,*) "* recommended as it heavily    *"
-    write(*,*) "* depends on the time scheme   *"
-    write(*,*) "* that is used. Indeed,        *"
-    write(*,*) "* sub-steps are generally not  *"
-    write(*,*) "* uniformally split (see       *"
-    write(*,*) "* Runge-Kutta c coefficients). *"
-    write(*,*) "********************************"
+  if(EXTFORC_FILEDT==DT) then ! Normal sampling (ok files).
+    NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2))
   else
-    if(EXTFORC_FILEDT==DT) then ! Normal sampling (ok files).
-      NSTEPFORCING = int(floor(EXTERNAL_FORCING_MAXTIME/DT+2))
-    else
-      write(*,*) "********************************"
-      write(*,*) "*            ERROR             *"
-      write(*,*) "********************************"
-      write(*,*) "* File time step does not      *"
-      write(*,*) "* match simulation time step   *"
-      write(*,*) "* or simulation time substeps  *"
-      write(*,*) "* (RK substeps).               *"
-      write(*,*) "* file_dt              = ", EXTFORC_FILEDT
-      write(*,*) "* DT                   = ", DT
-      write(*,*) "* DT/stage_time_scheme = ", DT/stage_time_scheme
-      write(*,*) "********************************"
-      stop
-    endif
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* File time step does not      *"
+    write(*,*) "* match simulation time step   *"
+    write(*,*) "* or simulation time substeps  *"
+    write(*,*) "* (RK substeps).               *"
+    write(*,*) "* file_dt              = ", EXTFORC_FILEDT
+    write(*,*) "* DT                   = ", DT
+    write(*,*) "* DT/stage_time_scheme = ", DT/stage_time_scheme
+    write(*,*) "********************************"
+    stop
   endif
   
   !write(*,*) t, DT, NSTEPFORCING, EXTFORC_MINX, EXTFORC_MAXX, nx,stage_time_scheme ! DEBUG
