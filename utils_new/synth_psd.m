@@ -132,6 +132,8 @@ xlim([WPSD_f(1), WPSD_f(end)]);
 xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
 title(WPSD_txt);
 
+disp(sprintf("Amplitude of signal: %1.6e",max(timeseries_to_plot)-min(timeseries_to_plot)));
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clear variables.             %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

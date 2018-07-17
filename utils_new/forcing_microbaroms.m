@@ -49,13 +49,18 @@ MAXX = 0.5 * nL0 * L0; % Set forcing maximum x here.
 MAXTIME = nT0 * T0; % Set forcing maximum time here.
 
 % Frequency range related.
-invspread = 1.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 1.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 3; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+invspread = 6; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 1e2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 
 % Amplitude related.
 A = 1; % Amplitude of waves displacement for draft signal (peak-to-peak is 2 times that).
 % A_aimed=A/2; % Aimed amplitude for displacement (peak-to-peak is 2 times that).
-A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
+% A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
+A_aimed=1; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
@@ -69,7 +74,8 @@ napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 dt = 1.5d-2; % Set DT as in parfile.
 % nx = 1060; % Set nx as in parfile.
 % xmin = -45e3; xmax = 45e3; % Set as in parfile.
-nx = 377; % Set nx as in parfile.
+% nx = 377; % Set nx as in parfile.
+nx = 400; % Set nx as in parfile.
 xmin = MINX; xmax = MAXX; % Set as in parfile.
 % periodise = 0;
 periodise = 1;
@@ -81,6 +87,9 @@ disp(['Preparing meshgrids.']);
 % forcing.            %
 %%%%%%%%%%%%%%%%%%%%%%%
 t = 0:dt:MAXTIME+5*dt; % Span a bit more than what is needed.
+% if(mod(size(t,2),2)==0)
+%   t=[t,t(end)+dt]; % In order to be sure to have odd number of points.
+% end
 %%%%%%%%%%%%%%%%%%%%%%%
 % Space, SPECFEM.     %
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -100,6 +109,11 @@ x_specfem_with_GLL = [x_specfem_with_GLL, x_specfem(end)];
 max_dx_specfem = max(diff(x_specfem_with_GLL));
 x=linspace(x_specfem_with_GLL(1),x_specfem_with_GLL(end),floor((x_specfem_with_GLL(end)-x_specfem_with_GLL(1))/max_dx_specfem)+1);
 dx=mean(diff(x));
+if(periodise)
+  % When periodising, we want to force extremities to have the same value. This is done later, below.
+  % Because of this, we remove for all FFT computations the last SPECFEM point.
+  x = x(1:end-1);
+end
 %%%%%%%%%%%%%%%%%%%%%%%
 % Check steps.        %
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -201,14 +215,23 @@ spectrum_displ_new = spectrum_displ_R_convolved .* RPhase;
 % SnR=conv2(SR,GMask,'same');
 % SnI=SI+(2*rand(size(S))-1)*0.01*(max(max(SI))-min(min(SI)))*0.1;
 % Sn=SnR+1j*SnI;
-% Mirror and convolve imaginary part in frequency.
-spectrum_displ_new_R = real(spectrum_displ_new); % Save real part.
-spectrum_displ_new_I = imag(spectrum_displ_new); % Extract imaginary part.
-spectrum_displ_new_I = spectrum_displ_new_I + conj(fliplr(spectrum_displ_new_I)); % Mirroring imaginary part.
-if(periodise)
-  spectrum_displ_new_I = spectrum_displ_new_I + conj(flipud(spectrum_displ_new_I)); % Mirroring imaginary part.
-end
-spectrum_displ_new = spectrum_displ_new_R + 1j * spectrum_displ_new_I; % To be sent back to spacetime range.
+
+% % Mirror and convolve imaginary part in frequency.
+% spectrum_displ_new_R = real(spectrum_displ_new); % Save real part.
+% spectrum_displ_new_I = imag(spectrum_displ_new); % Extract imaginary part.
+% spectrum_displ_new_I = spectrum_displ_new_I + conj(fliplr(spectrum_displ_new_I)); % Mirroring imaginary part.
+% if(periodise)
+%   spectrum_displ_new_I = spectrum_displ_new_I + conj(flipud(spectrum_displ_new_I)); % Mirroring imaginary part.
+% end
+% spectrum_displ_new = spectrum_displ_new_R + 1j * spectrum_displ_new_I; % To be sent back to spacetime range.
+% % Mirror whole spectrum.
+% spectrum_displ_new = spectrum_displ_new + conj(fliplr(spectrum_displ_new)); % Mirroring imaginary part.
+% if(periodise)
+%   spectrum_displ_new = spectrum_displ_new + conj(flipud(spectrum_displ_new)); % Mirroring imaginary part.
+% end
+% spectrum_displ_new_R = real(spectrum_displ_new); % Save real part.
+% spectrum_displ_new_I = imag(spectrum_displ_new); % Extract imaginary part.
+
 spectrum_displ_new_R = real(spectrum_displ_new); % For plotting purposes only.
 spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
 
@@ -217,7 +240,7 @@ spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
 % spacetime range.    %
 %%%%%%%%%%%%%%%%%%%%%%%
 disp(['Sending back to spacetime range.']);
-displ = real(ifft2(fftshift(spectrum_displ_new)));
+displ = ifft2(ifftshift(spectrum_displ_new), 'symmetric');
 % if(0)
 %   disp(['Filtering noise.']);
 %   % Low-pass in time.
@@ -269,12 +292,12 @@ disp(['  Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))
 ampli=max(abs(min(min(veloc))),abs(max(max(veloc))));
 veloc=veloc*A_aimed/ampli;
 disp(['  Velocity is now in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),']']);
-if(periodise)
-%   disp(['  Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
-  % Make sure one side is equal to the other.
-  veloc(1,:)=mean(veloc([1,end],:),1);
-  veloc(end,:)=veloc(1,:);
-end
+% if(periodise)
+% %   disp(['  Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
+%   % Make sure one side is equal to the other.
+%   veloc(1,:)=mean(veloc([1,end],:),1);
+%   veloc(end,:)=veloc(1,:);
+% end
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Apodisation.        %
@@ -309,6 +332,12 @@ disp(['Interpolating on SPECFEM meshgrid.']);
 % and interpolate.    %
 %%%%%%%%%%%%%%%%%%%%%%%
 % xSPCFMwGLL=xSPCFMwGLL(xSPCFMwGLL>=MINX-5*dxSPCFM & xSPCFMwGLL<=MAXX+5*dxSPCFM); % Remove useless points to the side, but span a bit more than what is needed.
+if(periodise)
+  % Add anew the last point to mesh, and make extremities of forcing match.
+  x = [x, x_specfem(end)];
+  veloc=[veloc;veloc(1,:)];
+  [T,X]=meshgrid(t,x); % Update meshgrid.
+end
 [T_specfem, X_specfem] = meshgrid(t, x_specfem_with_GLL); % Meshgrid SPECFEM.
 veloc_specfem = interp2(T, X, veloc, T_specfem, X_specfem); % Linear interpolation.
 veloc_specfem(isnan(veloc_specfem)) = 0; % Set zeros instead of NaNs outside of microbarom zone.
@@ -343,26 +372,27 @@ EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON
 %%%%%%%%%%%%%%%%%%%%%%%
 % Test data.          %
 %%%%%%%%%%%%%%%%%%%%%%%
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/';
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/stratobaro_test_EBF/';
-% tSPCFM=0:4e-4:1;
-% xSPCFM=linspace(-50,50,51);
+% % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/';
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_EBF/';
+% t=0:4e-4:1;
+% x_specfem=linspace(-50,50,51);
 % GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
-% xSPCFMwGLL=[];
-% for i=1:length(xSPCFM)-1
-%   xSPCFMwGLL=[xSPCFMwGLL,xSPCFM(i)+(xSPCFM(i+1)-xSPCFM(i))*GLL];
+% x_specfem_with_GLL=[];
+% for i=1:length(x_specfem)-1
+%   x_specfem_with_GLL=[x_specfem_with_GLL,x_specfem(i)+(x_specfem(i+1)-x_specfem(i))*GLL];
 % end
-% xSPCFMwGLL = [xSPCFMwGLL, xSPCFM(end)];
-% [TSPCFM,XSPCFM]=meshgrid(tSPCFM,xSPCFMwGLL);
-% MAXTIME=0.5;
-% MINX=-25;
-% MAXX=25;
-% LAPO=7.5; apox = 0.25 .* (1. - erf((XSPCFM - MAXX + 0.5 * LAPO) / (0.25 * LAPO))) .* (1 + erf((XSPCFM - MINX - 0.5 * LAPO) / (0.25 * LAPO)));
-% TAPO=0.1; apot0 = 0.5 .* (1 + erf((TSPCFM - 0.5 * TAPO) / (0.25 * TAPO))); apot = 0.5 .* (1. - erf((TSPCFM - MAXTIME + 0.5 * TAPO) / (0.25 * TAPO))); apot0(:,1)=0;
+% x_specfem_with_GLL = [x_specfem_with_GLL, x_specfem(end)];
+% [T_specfem,X_specfem]=meshgrid(t,x_specfem_with_GLL);
+% % MAXTIME=0.5; MINX=-25; MAXX=25;
+% MAXTIME=1; MINX=-50; MAXX=50;
+% % LAPO=7.5; apox = 0.25 .* (1. - erf((X_specfem - MAXX + 0.5 * LAPO) / (0.25 * LAPO))) .* (1 + erf((X_specfem - MINX - 0.5 * LAPO) / (0.25 * LAPO)));
+% apox=1;
+% TAPO=0.25; apot0 = 0.5 .* (1 + erf((T_specfem - 0.5 * TAPO) / (0.25 * TAPO))); apot = 0.5 .* (1. - erf((T_specfem - MAXTIME + 0.5 * TAPO) / (0.25 * TAPO))); apot0(:,1)=0;
 % % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/8).*sin(TSPCFM*12.5); % Test forcing function.
 % % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(XSPCFM/(0.25*8)).*sin(TSPCFM*4*12.5); % Test forcing function.
 % % FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*apox.*apot0.*apot; % Test forcing function.
-% FORCING_INTERP=(abs(XSPCFM)<MAXX).*(TSPCFM<MAXTIME).*sin(TSPCFM*2*pi/0.25).*apox.*apot0.*apot; % Test forcing function.
+% veloc_specfem=(abs(X_specfem)<=MAXX).*(T_specfem<=MAXTIME).*sin(T_specfem*2*pi/0.25).*apox.*apot0.*apot; % Test forcing function.
+% veloc_specfem=A_aimed*sin(2*pi*X_specfem./L0).*sin(2*pi*T_specfem./T0).*apox'.*apot;
 %%%%%%%%%%%%%%%%%%%%%%%
 % Detect relevant     %
 % indices, and print  %

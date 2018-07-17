@@ -47,6 +47,13 @@ unknown = 'BXZ'; % _z.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoBaro, 66, June, 12:00
 fig_title = strcat('Microbaroms, lat66, June, 12:00');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_656744_straight_1mps_isp6/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_656505_straight_1e-2mps_isp6/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_656465_straight_1mps_test/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_655513_analytic/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_655494_alright/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_655487/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE'); OFd = strcat(rootd, '/microbaroms_periodic/OUTPUT_FILES_655369_unstable/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_650851/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_644923_EBF_ispread3/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641616_EBF_ispread1.5/');
@@ -56,7 +63,7 @@ fig_title = strcat('Microbaroms, lat66, June, 12:00');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES_test1/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_637450_long_EBF_crash/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_634307_testexternalforcing/');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
@@ -303,7 +310,7 @@ for istat = 1:nstat
     else
       error(['coord_units = ', coord_units, 'not implemented.']);
     end
-    plot(Ztime(1, :), Zamp(istat, :));
+    plot(Ztime(istat, :), Zamp(istat, :));
     % Cosmetics.
     if (istat == 1)
       title(fig_title)
