@@ -35,6 +35,7 @@
   subroutine prepare_timerun_wavefields()
 
   use specfem_par
+  use specfem_par_LNS
 
   implicit none
 
@@ -322,16 +323,31 @@
     ! Dummy allocation.
     nglob_DG_loc = 1
   endif
-  allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc))
-  allocate(resu_rho(nglob_DG_loc), resu_rhovx(nglob_DG_loc), resu_rhovz(nglob_DG_loc), resu_E(nglob_DG_loc), resu_e1(nglob_DG_loc))
+  ! TODO: why allocate when not using DG?
+  allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc)) ! RHS.
+  allocate(resu_rho(nglob_DG_loc), resu_rhovx(nglob_DG_loc), resu_rhovz(nglob_DG_loc), resu_E(nglob_DG_loc), resu_e1(nglob_DG_loc)) ! Auxiliary registers.
   allocate(rho_DG(nglob_DG_loc), p_DG(nglob_DG_loc), rhovx_DG(nglob_DG_loc), rhovz_DG(nglob_DG_loc), &
-        veloc_x_DG(nglob_DG_loc), veloc_z_DG(nglob_DG_loc), E_DG(nglob_DG_loc), e1_DG(nglob_DG_loc))
+        veloc_x_DG(nglob_DG_loc), veloc_z_DG(nglob_DG_loc), E_DG(nglob_DG_loc), e1_DG(nglob_DG_loc)) ! State.
   allocate(p_DG_init(nglob_DG_loc), T_init(nglob_DG_loc), V_DG(2,2,nglob_DG_loc), T_DG(2,nglob_DG_loc))
   allocate(rmass_inverse_acoustic_DG(nglob_DG_loc))
   rho_DG   = 0.
   rhovx_DG = 0.
   rhovz_DG = 0.
   E_DG     = 0.
+  
+  if (USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG)) ! State.
+    allocate(LNS_rho0dv(2,nglob_DG)) ! State.
+    allocate(LNS_dp(nglob_DG), LNS_dT(nglob_DG)) ! Pressure and temperature perturbation.
+    allocate(LNS_dm(2,nglob_DG)) ! Momentum (1st order) perturbation.
+    allocate(RHS_drho(nglob_DG), RHS_rho0dvx(nglob_DG), RHS_rho0dvz(nglob_DG), RHS_dE(nglob_DG)) ! RHS.
+    allocate(aux_drho(nglob_DG), aux_rho0dvx(nglob_DG), aux_rho0dvz(nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
+    allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.
+    allocate(LNS_v0(2,nglob_DG)) ! Initial state.
+    allocate(nabla_v0(2,2,nglob_DG)) ! Gradient of initial velocity.
+    allocate(sigma_v_0(3,nglob_DG)) ! Initial viscous stress tensor.
+    allocate(LNS_dummy_1d(nglob_DG), LNS_dummy_2d(2,nglob_DG), LNS_dummy_3d(2,2,nglob_DG)) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
+  endif
   
   !allocate(this_iglob_is_acous(nglob))
   

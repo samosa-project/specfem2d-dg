@@ -186,8 +186,8 @@ ACOUSTIC_FORCING                = .false.        # acoustic forcing of an acoust
 #---------------------------------------------------------------------#
 
 # Receiver set parameters for recording stations (i.e. recording points). Depends on the type of region in which they are inserted.
-# non-DG: 1 records displacement, 2 velocity, 3 acceleration,       4 pressure, 5 curl of displacement, 6 fluid potential
-#     DG: 1 records velocity,     2 pressure, 3 sqrt(rho)*velocity, 4 none,     5 none,                 6 none
+# non-DG: 1 records displacement, 2 velocity, 3 acceleration,  4 pressure, 5 curl of displacement, 6 fluid potential
+#     DG: 1 records v_z,          2 pressure, 3 sqrt(rho)*v_z, 4 none,     5 none,                 6 none
 seismotype                      = 2              
                                                  
 
