@@ -1140,7 +1140,7 @@
                                                                  windx, windz, pext, gammaext, etaext, muext, kappa_DG)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
-  use specfem_par,only: nglob_DG, ibool_DG, Htabext_DG, cp, cnu, coord_interface, &
+  use specfem_par,only: nglob_DG, ibool_DG, Htabext_DG, cp, c_V, coord_interface, &
         poroelastcoef,density,kmato, ispec_is_acoustic_DG, ispec_is_elastic
 
   implicit none
@@ -1223,11 +1223,11 @@
   ! tmp4 = kappa
   gamma_atmos(i) = 0.
   read(10,*) z_atmos(i),density_atmos(i),tmp1,vp_atmos(i),p_atmos(i),Htab(i),gravity_atmos(i),Nsq_atmos(i),kappa_atmos(i),&
-                mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, cnu, gamma_atmos(i)!, cp, cnu
+                mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, c_V, gamma_atmos(i)!, cp, c_V
  !  0.00 1.262524e+00   2.8451e+02 3.429393e+02 1.03112516e+05 9.32550391e+03 9.81392765e+00 5.48688753e-04 7.25211799e-01 1.25579500e-05 4.01909674e-05 0.00000000e+00 7.78566957e-01 
 !  write(*,'(6e16.7)') z_atmos(i),density_atmos(i),vp_atmos(i),gravity_atmos(i),tmp1,tmp2
   !WRITE(*,*) ">>>", z_atmos(i),density_atmos(i),tmp1,vp_atmos(i),p_atmos(i),Htab(i),gravity_atmos(i),Nsq_atmos(i),kappa_atmos(i),&
-  !              mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, cnu
+  !              mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, c_V
   enddo
   !stop 'TOTO'
   allocate(Htabext_DG(nglob_DG))
@@ -1467,7 +1467,7 @@ end subroutine external_model_DG_only_find_nblines
 subroutine define_external_model_DG_only(nlines_header, nlines_model)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
-  use specfem_par,only: ibool_DG, cp, cnu, coord_interface, &
+  use specfem_par,only: ibool_DG, cp, c_V, coord_interface, &
         ispec_is_elastic,ispec_is_acoustic_DG,&!Htabext_DG&
         mesh_zmax,tau_sigma, tau_epsilon,&
         rhoext,vpext,vsext,&
@@ -1681,7 +1681,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   
   ! TODO: Correctly affect those variables.
   cp = cp_model(1)
-  cnu = cv_model(1)
+  c_V = cv_model(1)
   
   rhoext = ZERO
   vpext = ZERO

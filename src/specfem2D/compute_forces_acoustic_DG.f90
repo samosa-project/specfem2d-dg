@@ -61,7 +61,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                          !ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF, ABC_STRETCH_TOP_LBUF, ABC_STRETCH_BOTTOM_LBUF,&
                          !mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
                          !coord, &
-                         ibool_before_perio,stretching_buffer!,cnu
+                         ibool_before_perio,stretching_buffer!,c_V
                          
   implicit none
 
@@ -668,7 +668,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
                          wxgll,wzgll, ibool_DG, &
                          hprimewgll_zz, hprimewgll_xx, &
                          hprime_xx, hprime_zz, rmass_inverse_acoustic_DG, &
-                         cnu, &
+                         c_V, &
                          ibool_before_perio,&
                          rhovx_init, rhovz_init, rho_init, T_init, CONSTRAIN_HYDROSTATIC, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
@@ -722,13 +722,13 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
   
   ADD_SURFACE_TERMS = .true. ! If set to .true., use Green's identity to compute the volume integral as another volume integral and surface terms. If set to .false., compute the volume integral as is.
   
-  !T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
+  !T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V
   
   !MPI_iglob = 1
   
   veloc_x_DG = rhovx_DG/rho_DG
   veloc_z_DG = rhovz_DG/rho_DG
-  T = (E_DG/rho_DG - HALF*(veloc_x_DG**2 + veloc_z_DG**2))/(cnu)
+  T = (E_DG/rho_DG - HALF*(veloc_x_DG**2 + veloc_z_DG**2))/c_V
   
   grad_Tx  = ZEROl
   grad_Tz  = ZEROl

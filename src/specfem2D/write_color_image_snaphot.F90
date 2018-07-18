@@ -48,7 +48,7 @@
                         displ_elastic,veloc_elastic,accel_elastic, &
                         displs_poroelastic,velocs_poroelastic,accels_poroelastic,&! density_p, &
                         E_DG,rhovz_DG,rhovx_DG,rho_DG, nglob_DG, gamma_euler, &
-                        rho_DG, rhovz_DG, E_DG, rhovx_DG, cnu, T_init,p_DG_init,gammaext_DG, T_init, E_init, &
+                        rho_DG, rhovz_DG, E_DG, rhovx_DG, c_V, T_init,p_DG_init,gammaext_DG, T_init, E_init, &
                         ispec_is_acoustic_DG, nglob, any_acoustic_DG!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
 
   ! PML arrays
@@ -121,7 +121,7 @@
       endif
       if(imagetype_JPEG == 6) then
         ! If ||v|| is plotted in elastic elements, plot temperature in DG elements.
-        vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu) - coef*T_init)
+        vector_DG_temp = ((E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V - coef*T_init)
       endif
     endif
     !WRITE(*,*) "TEST", imagetype_JPEG, coef, CONSTRAIN_HYDROSTATIC ! DEBUG

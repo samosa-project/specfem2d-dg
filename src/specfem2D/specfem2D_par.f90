@@ -187,7 +187,7 @@ module specfem_par
   real(kind=CUSTOM_REAL) :: SCALE_HEIGHT, gravity_cte_DG, &
                             dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
   ! Isobaric and isochoric specific heat capacities from parameter file.
-  real(kind=CUSTOM_REAL) :: cp, cnu
+  real(kind=CUSTOM_REAL) :: cp, c_V
   
   ! Slope limiter paramater from parameter file.
   real(kind=CUSTOM_REAL) :: MINMOD_FACTOR

@@ -281,7 +281,7 @@
   read(IIN,*) cp
   
   read(IIN,"(a80)") datlin
-  read(IIN,*) cnu
+  read(IIN,*) c_V
   
   read(IIN,"(a80)") datlin
   read(IIN,*) id_region_DG

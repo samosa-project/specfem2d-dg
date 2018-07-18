@@ -168,7 +168,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
 
   use specfem_par, only: ibool_before_perio, ibool_DG, coord, &
         rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
-        etaext, muext, coord_interface, kappa_DG, cp, cnu, &
+        etaext, muext, coord_interface, kappa_DG, cp, c_V, &
         tau_epsilon, tau_sigma, &
         gravity_cte_DG, dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_eps_cte_DG, tau_sig_cte_DG, SCALE_HEIGHT, &
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
@@ -203,9 +203,9 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   ! Hydrostatic solution
   !real(kind=CUSTOM_REAL) :: RR, p0, rho0
   ! Density current
-  !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0
+  !real(kind=CUSTOM_REAL) :: cp, c_V, exner, RR, p0, rho0, rs, theta, theta0
   ! Linear mountains
-  !real(kind=CUSTOM_REAL) :: cp, cnu, exner, RR, p0, rho0, rs, theta, theta0, Nsq
+  !real(kind=CUSTOM_REAL) :: cp, c_V, exner, RR, p0, rho0, rs, theta, theta0, Nsq
   ! Tsunami
   real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
   ! Microbaroms.
@@ -218,8 +218,8 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
   !real(kind=CUSTOM_REAL) :: Tl, Tu, p0, rho0, RR, rs!, theta, thetaprime, pibar
   !real(kind=CUSTOM_REAL) :: Tl, Tu, p0, RR, rs, theta0, Nsq, rho0
-  !real(kind=CUSTOM_REAL) :: cp, cnu, R, P0, N, theta0, exner, theta
-  !real(kind=CUSTOM_REAL) :: x0, z0, r, rs, p0, RR, cnu, cp, theta0, exner
+  !real(kind=CUSTOM_REAL) :: cp, c_V, R, P0, N, theta0, exner, theta
+  !real(kind=CUSTOM_REAL) :: x0, z0, r, rs, p0, RR, c_V, cp, theta0, exner
   !real(kind=CUSTOM_REAL) :: x0, z0, r, theta, RR, p0!, exner, theta0
   !real(kind=CUSTOM_REAL) :: &
   !      lz, vs, vs_x, vs_z, Ms, p_1, rho_1, veloc_x_1, veloc_z_1, p_2, rho_2, veloc_x_2, veloc_z_2 
@@ -245,7 +245,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       !etaext(i, j, ispec) = (4/3)*muext(i, j, ispec)
       !kappa_DG(i, j, ispec) = 0.025!kappa_DG(i, j, ispec) / 10.!0.2
       !cp = 7/2
-      !cnu = 5/2
+      !c_V = 5/2
       !tau_epsilon(i, j, ispec) = 1.
       !tau_sigma(i, j, ispec) = 1.!0.4013
       potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
@@ -264,7 +264,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       if(USE_ISOTHERMAL_MODEL) then
         gravityext(i, j, ispec) = real(gravity_cte_DG, kind=CUSTOM_REAL)
       endif
-      gammaext_DG(ibool_DG(i, j, ispec)) = cp/cnu
+      gammaext_DG(ibool_DG(i, j, ispec)) = cp/c_V
       muext(i, j, ispec) = dynamic_viscosity_cte_DG
       etaext(i, j, ispec) = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG
       kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG
@@ -789,7 +789,7 @@ end subroutine prepare_external_forcing
                          DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
                          buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P, NPROC, &
                          buffer_DG_Vxx_P, buffer_DG_Vzz_P, buffer_DG_Vxz_P, buffer_DG_Vzx_P, buffer_DG_Tz_P, buffer_DG_Tx_P, &
-                         p_DG_init, gammaext_DG, muext, etaext, kappa_DG, ibool, cnu, &
+                         p_DG_init, gammaext_DG, muext, etaext, kappa_DG, ibool, c_V, &
                          buffer_DG_gamma_P, coord,  &
                          rho_init, rhovx_init, rhovz_init, E_init, &
                          potential_dot_dot_acoustic, &
@@ -931,7 +931,7 @@ end subroutine prepare_external_forcing
         rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
         rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
 
-        T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
+        T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
         
       else ! if(ispec_is_acoustic_coupling_ac(i, j, ispec))
         ! --------------------------- !
@@ -963,7 +963,7 @@ end subroutine prepare_external_forcing
         veloc_z_DG_P = rhovz_DG_P/rho_DG_P
         p_DG_P = (gamma_P - ONE)*( E_DG_P &
                  - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
-        T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/(cnu)
+        T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/c_V
 
       endif
                     
@@ -1063,7 +1063,7 @@ end subroutine prepare_external_forcing
       rhovz_DG_P = rho_DG_P*veloc_z_DG_P
       
       ! Deduce temperature.
-      T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
+      T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
 
     else
       ! --------------------------- !
@@ -1185,8 +1185,8 @@ end subroutine prepare_external_forcing
       endif
       
       ! Deduce temperature.
-      T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/(cnu)
-      !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu) ! DEBUG
+      T_P = (E_DG_P/rho_DG_P - 0.5*(veloc_x_DG_P**2 + veloc_z_DG_P**2))/c_V
+      !T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V ! DEBUG
       !Tx_DG_P = -T_DG_iM(1) ! DEBUG
       !Tz_DG_P = -T_DG_iM(2) ! DEBUG
     endif
@@ -1249,7 +1249,7 @@ end subroutine prepare_external_forcing
     E_DG_P       = p_DG_P/(gammaext_DG(iglobM) - 1.) + HALF*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )
     rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
     rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
-    T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
+    T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
   else
     ! --------------------------- !
     ! neighbor(3) != -1,          !
@@ -1278,13 +1278,13 @@ end subroutine prepare_external_forcing
       Tx_DG_P = T_DG_iP(1)
       Tz_DG_P = T_DG_iP(2)
     endif
-    T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/(cnu)
+    T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/c_V
   endif
   
   !close(10)
   
   ! Temperature computation
-  !T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/(cnu)
-  ! (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/(cnu)
+  !T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/c_V
+  ! (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
   
   end subroutine compute_interface_unknowns

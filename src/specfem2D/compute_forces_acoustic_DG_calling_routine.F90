@@ -130,7 +130,7 @@ subroutine compute_forces_acoustic_DG_main()
     rho_init   = rho_DG
     p_DG_init  = (gammaext_DG - ONE)*( E_DG &
                  - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
-    T_init = (E_DG/rho_DG - HALF*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/(cnu)
+    T_init = (E_DG/rho_DG - HALF*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V
     
     ! When elastic-DG simulations, p_DG = 0 in elastic elements and 1/p_DG will not be properly defined. Use a hack.
     where(p_DG_init <= 0._CUSTOM_REAL) p_DG_init = 1._CUSTOM_REAL
