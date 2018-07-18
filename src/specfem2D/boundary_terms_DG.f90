@@ -198,7 +198,6 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   !real(kind=CUSTOM_REAL) :: x0, z0, r, beta
   ! Forcing
   real(kind=CUSTOM_REAL) :: to, perio, lambdo, xo
-  
   !real(kind=CUSTOM_REAL) :: mu_visco, eta_visco
   ! Hydrostatic solution
   !real(kind=CUSTOM_REAL) :: RR, p0, rho0
@@ -849,12 +848,13 @@ end subroutine prepare_external_forcing
   p_DG_iM       = (gammaext_DG(iglobM) - ONE)*( E_DG_iM &
         - (HALF)*rho_DG_iM*( veloc_x_DG_iM**2 + veloc_z_DG_iM**2 ) )
   
+  ! Extract derivatives.
+  Tx_DG_P  = -T_DG_iM(1)
+  Tz_DG_P  = -T_DG_iM(2)
   Vxx_DG_P = -V_DG_iM(1, 1)
   Vzz_DG_P = -V_DG_iM(2, 2)
   Vxz_DG_P = -V_DG_iM(1, 2)
   Vzx_DG_P = -V_DG_iM(2, 1)
-  Tx_DG_P  = -T_DG_iM(1)
-  Tz_DG_P  = -T_DG_iM(2)
   
   gamma_P = gammaext_DG(iglobM)
   

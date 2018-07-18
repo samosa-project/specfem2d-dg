@@ -881,6 +881,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
             dT_dx  = ( dT_dxi * xixl + dT_dgamma * gammaxl )
             dT_dz  = ( dT_dxi * xizl + dT_dgamma * gammazl )
             
+            ! Useless variables?
             temp_Tx  = dT_dx * jacobianl
             temp_Tz  = dT_dz * jacobianl
             temp_Vxx = dux_dx * jacobianl

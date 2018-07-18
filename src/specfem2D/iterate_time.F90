@@ -45,6 +45,7 @@ subroutine iterate_time()
   use specfem_par
   use specfem_par_gpu
   use specfem_par_noise,only: NOISE_TOMOGRAPHY,save_everywhere
+  use specfem_par_LNS, only: USE_LNS
 
   implicit none
 
@@ -84,6 +85,25 @@ subroutine iterate_time()
 
   call synchronize_all() ! Synchronize all processes to make sure everybody is ready to start time loop.
 
+  ! Information on run.
+  if(any_acoustic) then
+    write(IMAIN,*) "Acoustic zones exist."
+    if(any_acoustic_DG) then
+      write(IMAIN,*) " |-> using DG."
+      if(USE_LNS) then
+        write(IMAIN,*) "     |-> using LNS."
+      else
+        write(IMAIN,*) "     |-> using FNS."
+      endif
+    else
+      write(IMAIN,*) " |-> using potential method."
+    endif
+  endif
+  if(any_elastic) then
+    write(IMAIN,*) "Elastic zones exist."
+  endif
+  call flush_IMAIN()
+
   if (myrank == 0) then
     write(IMAIN,*)
     write(IMAIN,*) 'Starting time iteration loop...'
@@ -112,7 +132,11 @@ subroutine iterate_time()
       if(ACOUSTIC_SIMULATION) then
         if(.not. GPU_MODE) then
           if(any_acoustic_DG) then
-            call compute_forces_acoustic_DG_main()
+            if(USE_LNS) then
+              call compute_forces_acoustic_LNS_main()
+            else
+              call compute_forces_acoustic_DG_main()
+            endif
           endif
           if(.not. only_DG_acoustic) then
             call compute_forces_acoustic_main()
