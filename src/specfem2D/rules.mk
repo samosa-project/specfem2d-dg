@@ -52,6 +52,7 @@ specfem2D_TARGETS = \
 
 specfem2D_OBJECTS = \
 	$O/specfem2D_par.spec_module.o \
+	$O/specfem2D_par_LNS.spec_module.o \
 	$O/acoustic_forcing_boundary.spec.o \
 	$O/assemble_MPI.spec.o \
 	$O/attenuation_model.spec.o \
@@ -81,6 +82,7 @@ specfem2D_OBJECTS = \
 	$O/slope_limiter_DG.spec.o \
 	$O/compute_forces_acoustic_DG.spec.o \
 	$O/compute_forces_acoustic_DG_calling_routine.spec.o \
+	$O/compute_forces_acoustic_LNS_calling_routine.spec.o \
 	$O/compute_forces_gravitoacoustic.spec.o \
 	$O/compute_forces_gravitoacoustic_calling_routine.spec.o \
 	$O/compute_forces_poroelastic_calling_routine.spec.o \
@@ -172,6 +174,7 @@ specfem2D_OBJECTS = \
 specfem2D_MODULES = \
 	$(FC_MODDIR)/constants.$(FC_MODEXT) \
 	$(FC_MODDIR)/specfem_par.$(FC_MODEXT) \
+	$(FC_MODDIR)/specfem_par_LNS.$(FC_MODEXT) \
 	$(FC_MODDIR)/specfem_par_gpu.$(FC_MODEXT) \
 	$(FC_MODDIR)/specfem_par_movie.$(FC_MODEXT) \
 	$(FC_MODDIR)/specfem_par_noise.$(FC_MODEXT) \
