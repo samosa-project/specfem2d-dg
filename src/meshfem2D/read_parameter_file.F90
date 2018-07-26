@@ -784,13 +784,29 @@
   
   
   if(USE_DISCONTINUOUS_METHOD) then
+    if(AXISYM) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Axisymmetric simulations     *"
+      write(*,*) "* with DG are not supported.   *"
+      write(*,*) "* Consider setting up an       *"
+      write(*,*) "* acoustic region instead.     *"
+      write(*,*) "********************************"
+      stop
+    endif
+    
     if(TYPE_FORCING==9 .and. main_spatial_period>=xmax_param-xmin_param) then
       write(*,*) "********************************"
       write(*,*) "*           WARNING            *"
       write(*,*) "********************************"
       write(*,*) "* TYPE_FORCING==9 and          *"
       write(*,*) "* main_spatial_period >        *"
-      write(*,*) "* xmax_param-xmin_param.       *"
+      write(*,*) "* xmax_param-xmin_param: Main  *"
+      write(*,*) "* spatial period of the bottom *"
+      write(*,*) "* forcing is larger than the   *"
+      write(*,*) "* domain lateral size. Be sure *"
+      write(*,*) "* of what you're doing.        *"
       write(*,*) "********************************"
     endif
     

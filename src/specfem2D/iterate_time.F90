@@ -86,23 +86,25 @@ subroutine iterate_time()
   call synchronize_all() ! Synchronize all processes to make sure everybody is ready to start time loop.
 
   ! Information on run.
-  if(any_acoustic) then
-    write(IMAIN,*) "Acoustic zones exist."
-    if(any_acoustic_DG) then
-      write(IMAIN,*) " |-> using DG."
-      if(USE_LNS) then
-        write(IMAIN,*) "     |-> using LNS."
+  if(myrank==0) then
+    if(any_acoustic) then
+      write(IMAIN,*) "Acoustic zones exist."
+      if(any_acoustic_DG) then
+        write(IMAIN,*) " |-> using DG."
+        if(USE_LNS) then
+          write(IMAIN,*) "     |-> using LNS."
+        else
+          write(IMAIN,*) "     |-> using FNS."
+        endif
       else
-        write(IMAIN,*) "     |-> using FNS."
+        write(IMAIN,*) " |-> using potential method."
       endif
-    else
-      write(IMAIN,*) " |-> using potential method."
     endif
+    if(any_elastic) then
+      write(IMAIN,*) "Elastic zones exist."
+    endif
+    call flush_IMAIN()
   endif
-  if(any_elastic) then
-    write(IMAIN,*) "Elastic zones exist."
-  endif
-  call flush_IMAIN()
 
   if (myrank == 0) then
     write(IMAIN,*)
