@@ -8,7 +8,7 @@ git update-index --assume-unchanged ./bin/!(*.*)
 
 git update-index --assume-unchanged ./obj/*.o
 
-git update-index --assume-unchanged ./obj/{parameter_file_par,specfem_par,specfem_par_noise}.mod
+git update-index --assume-unchanged ./obj/*.mod
 
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/bin/!(*.*)
 

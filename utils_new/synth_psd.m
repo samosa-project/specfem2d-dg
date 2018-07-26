@@ -21,6 +21,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % TODO: ask for user input.
 raw_t=Ztime;
 raw_s=Zamp;
+% raw_t=stf_from_run(:, 1)'; raw_s=stf_from_run(:, 2)';
 % raw_t=data_leo_t(1,:);raw_s=data_leo_v(1,:);
 % OKQ0
 % raw_t=data_voon_t{4};raw_s=data_voon_v{4}'; fig_tit='Voon 15';
@@ -53,8 +54,8 @@ end
 % signal_name = "SIGNAL"; signal_unit="UNIT";
 signal_name = "$\delta P$"; signal_unit="Pa";
 
+avgwpsds=-1;
 if(nstat>1)
-  avgwpsds=-1;
   while(not(length(avgwpsds)==1 && ismember(avgwpsds,[0,1,2])))
     avgwpsds=input('  Multiple data found. Choose first (0), average WPSDs (1), or compute WPSD of average signal (2)? > ');
   end
