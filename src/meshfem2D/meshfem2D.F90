@@ -441,7 +441,7 @@
     print *
 
     ! reads in source descriptions
-    call read_source_file(NSOURCES)
+    call read_source_file(NSOURCES)    
 
     ! reads in tangential detection
     call read_mesh_tangential_curve_file()
@@ -563,6 +563,24 @@
        print *
        print *,'Position (x,z) of the source = ',xs(i_source),zs(i_source)
        print *
+    
+       ! Safeguard for axisymmetric simulations.
+       if(AXISYM .and. xs(i_source)/=xmin_param) then
+         write(*,*) "********************************"
+         write(*,*) "*           WARNING            *"
+         write(*,*) "********************************"
+         write(*,*) "* This is an axisymmetric      *"
+         write(*,*) "* simulation, and this source  *"
+         write(*,*) "* is not on the axis. Set xs   *"
+         write(*,*) "* (from source input file) =   *"
+         write(*,*) "* xmin (from parameter file),  *"
+         write(*,*) "* or be sure of what you are   *"
+         write(*,*) "* doing.                       *"
+         write(*,*) "* xs   = ", xs(i_source)
+         write(*,*) "* xmin = ", xmin_param
+         write(*,*) "********************************"
+         stop
+       endif
     enddo
 
     !--- compute position of the receivers and write the STATIONS file
