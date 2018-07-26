@@ -47,7 +47,7 @@ DT                              = 1d-4
 time_stepping_scheme            = 3
 # Remark: the number of stages is equal to the number of calls per timestep to the force functions. Note also that for DG simulations, the force functions are particularly computationally heavy.
 
-# Axisymmetric (2.5D) simulation? If set to false, simulation stays Cartesian planar (2D).
+# Axisymmetric (2.5D) simulation? If set to false, simulation stays Cartesian planar (2D). Only the Newmark scheme is implemented for AXISYM.
 AXISYM                          = .false.
 
 # Set the type of calculation (P-SV or SH/membrane waves).
@@ -259,10 +259,10 @@ ROTATE_PML_ACTIVATE             = .false.
 ROTATE_PML_ANGLE                = 30.0d0
 
 # Stacey absorbing boundary conditions?
-STACEY_ABSORBING_CONDITIONS     = .false.
+STACEY_ABSORBING_CONDITIONS     = .false. # Stacey conditions are not supported for AXISYM.
 
 # Periodic boundary conditions?
-ADD_PERIODIC_CONDITIONS         = .false.
+ADD_PERIODIC_CONDITIONS         = .false. # Periodic conditions are not supported for AXISYM.
 PERIODIC_HORIZ_DIST             = 100.d0
 
 
@@ -325,11 +325,11 @@ xmin                            = -50.0d0
 xmax                            =  50.0d0
 nx                              =  50
 
-# Absorbing boundary parameters (see STACEY_ABSORBING_CONDITIONS above)
+# Absorbing boundary parameters (to be used with PML_BOUNDARY_CONDITIONS or STACEY_ABSORBING_CONDITIONS above).
 absorbbottom                    = .false.
 absorbright                     = .false.
 absorbtop                       = .false.
-absorbleft                      = .false.
+absorbleft                      = .false. # Absorbing boundary conditions on the left side are not supported for AXISYM, since the left boundary is the axis of symmetry.
 
 #-----------------------------#
 # Definition of the different #
