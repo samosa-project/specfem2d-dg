@@ -86,8 +86,8 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
-fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/');
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/');
@@ -97,11 +97,13 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(roo
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % original
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
+fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661601_full_dec1m/'); % Same as 593960 but axisymmetric.
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
 % Quake, 45.
 % fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
@@ -243,8 +245,8 @@ for istat = 1:nstat
 
   % Switch on type of display.
   if (type_display == 1)
-    % Original SPECFEM2D's sismogram is displacement.
-    extension = "semd"; % Because original SPECFEM2D's sismogram is displacement.
+    % Original SPECFEM2D's synthetic is displacement.
+    extension = "semd"; % Because original SPECFEM2D's synthetic is displacement.
     % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
     if (strcmp(unknown, 'BXZ'))
       unknown_name = 'vertical {$u_z$ (m), $v_z$ (m/s)}';
@@ -254,12 +256,20 @@ for istat = 1:nstat
       error("The variable 'unknown' has a non - standard value.");
     end
   elseif (type_display == 2)
-    % Original SPECFEM2D's sismogram is velocity.
-    extension = "semv"; % Because original SPECFEM2D's sismogram is velocity.
+    % Original SPECFEM2D's synthetic is velocity.
+    extension = "semv"; % Because original SPECFEM2D's synthetic is velocity.
     if (strcmp(unknown, 'BXZ'))
       unknown_name = '{$v_z$ (m/s), $\delta P$ (Pa)}';
     elseif (strcmp(unknown, 'BXX'))
       unknown_name = '{$v_x$ (m/s), $\delta P$ (Pa)}';
+    else
+      error("The variable 'unknown' has a non - standard value.");
+    end
+  elseif (type_display == 4)
+    % Original SPECFEM2D's synthetic is pressure.
+    extension = "semp"; % Because original SPECFEM2D's synthetic is pressure.
+    if (strcmp(unknown, 'PRE'))
+      unknown_name = '$\delta P$ (Pa)';
     else
       error("The variable 'unknown' has a non - standard value.");
     end
@@ -389,11 +399,12 @@ if (0 == 1)
   for ii = 1:length(Zamp(:, 1))
     amp(ii) = max(Zamp(ii, :)) - min(Zamp(ii, :));
   end
+%   [sorted_dist,isort]=sort(xstattab(istattab));
+  [sorted_dist,isort]=sort(ystattab(istattab));
+%   [sorted_dist,isort]=sort(dist_to_sources(istattab));
+  sorted_amp=amp(isort);
   figure();
-%   plot(xstattab(istattab), amp);
-% plot(ystattab(istattab), amp);
-  semilogy(ystattab(istattab), amp);
-%   plot(dist_to_sources(istattab), amp);
+  loglog(sorted_dist, sorted_amp);
 end
 
 % Seismic Hammer, hard soil.
