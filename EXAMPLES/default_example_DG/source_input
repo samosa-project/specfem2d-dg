@@ -13,11 +13,11 @@ burst_band_width                = 200.d0     # Only for time_function_type 9. Ba
 
 f0                              = 30.d0      # Dominant source frequency (Hz). Only for time_function_type!=4 and !=5 (for time_function_type==4 or ==5, f0 is hardcoded as 1/(10*dt) in set_source_parameters.f90).
 tshift                          = 0.d0       # Time shift for that source. The source's spike will occur (T0+tshift) seconds after the simulation's beginning, where T0=max(USER_T0, 1.2/f0).
-anglesource                     = 0.d0       # Only for a force. Angle of the source.
+anglesource                     = 0.d0       # Only for a force. Angle of the source (degrees). 0 is upwards, 180 is downwards.
 Mxx                             = 0.d0       # Only for moment tensor source. Mxx component.
 Mzz                             = 0.d0       # Only for moment tensor source. Mzz component.
 Mxz                             = 0.d0       # Only for moment tensor source. Mxz component.
-factor                          = 1.d0       # Amplification factor (unit depending on the equation in which it is included).
+factor                          = 1.d0       # Amplification factor. Input negative values at own risk (with force source, it simply flips the angle by 180°).
 
 # Remark for quake simulations: one should give M_0 and not M_w (either in Mxx, Mzz, and Mxz or in factor).
 # M_0 = 10^(3*M_w/2 + 9.05) [N.m].
