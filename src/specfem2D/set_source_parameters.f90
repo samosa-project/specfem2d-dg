@@ -41,7 +41,8 @@
 
   use specfem_par, only : myrank,NSOURCES,source_type,time_function_type, &
                           x_source,z_source,Mxx,Mzz,Mxz,f0_source,tshift_src,factor,anglesource,aval, &
-                          t0,initialfield,deltat,USER_T0
+                          t0,initialfield,deltat,USER_T0,&
+                          AXISYM
 
   implicit none
 
@@ -94,7 +95,31 @@
 
     ! for the source time function
     aval(i_source) = PI*PI*f0_source(i_source)*f0_source(i_source)
-
+    
+    ! Axisymmetric simulations force source angle correction, with a hack somewhat ugly.
+    ! Explanation:
+    ! In classical SPECFEM (AXISYM==.false.), anglesource=0 makes the force upward, thus the acceleration upward, thus the vertical velocity positive. Conjugately, anglesource=180 the force downward, thus the acceleration downward, thus the vertical velocity negative.
+    ! Somehow, in axisymmetric SPECFEM (AXISYM==.true.), anglesource=0 made the force downward (=> velocity negative).
+    ! In order to keep conventions, we flip anglesource if AXISYM==.true., that is we add 180°. Since with AXISYM==.true., the radial component is ignored (see 'check_compatibility_axisym' in 'axisymmetric_routines.f90'), this only flips the vertical component.
+    if(AXISYM .and. source_type(i_source) == 1) then
+      anglesource(i_source) = anglesource(i_source) + 180.d0
+      ! Inform user.
+      if (myrank == 0) then
+        write(*,*) "    ********************************"
+        write(*,*) "    *           WARNING            *"
+        write(*,*) "    ********************************"
+        write(*,*) "    * Axisymmetric simulation:     *"
+        write(*,*) "    * trick to preserve            *"
+        write(*,*) "    * conventions on force source  *"
+        write(*,*) "    * angle was used. See routine  *"
+        write(*,*) "    * 'set_source_parameters' in   *"
+        write(*,*) "    * 'set_source_parameters.f90'. *"
+        write(*,*) "    ********************************"
+        write(*,*) ""
+        call flush_IMAIN()
+      endif
+    endif
+    
     ! convert angle from degrees to radians
     anglesource(i_source) = anglesource(i_source) * PI / 180.d0
 
