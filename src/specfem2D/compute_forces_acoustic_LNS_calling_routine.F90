@@ -224,8 +224,8 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! Compute gradients.
   LNS_dv=ZEROcr
-  where(LNS_drho/=ZEROcr) LNS_dv(1,:)=LNS_rho0dv(1,:)/LNS_drho
-  where(LNS_drho/=ZEROcr) LNS_dv(2,:)=LNS_rho0dv(1,:)/LNS_drho
+  where(LNS_rho0/=ZEROcr) LNS_dv(1,:)=LNS_rho0dv(1,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
+  where(LNS_rho0/=ZEROcr) LNS_dv(2,:)=LNS_rho0dv(1,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT) ! Dummy variables are not optimal, but prevent from duplicating
   ! Compute \Sigma_v'.
   call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
@@ -249,10 +249,10 @@ subroutine compute_forces_acoustic_LNS_main()
     aux_rho0dvz = scheme_A(i_stage)*aux_rho0dvz + deltat*RHS_rho0dvz
     aux_dE      = scheme_A(i_stage)*aux_dE      + deltat*RHS_dE
     ! Update the state register.
-    LNS_drho        = LNS_drho    + scheme_B(i_stage)*aux_drho
+    LNS_drho        = LNS_drho        + scheme_B(i_stage)*aux_drho
     LNS_rho0dv(1,:) = LNS_rho0dv(1,:) + scheme_B(i_stage)*aux_rho0dvx
     LNS_rho0dv(2,:) = LNS_rho0dv(2,:) + scheme_B(i_stage)*aux_rho0dvz
-    LNS_dE          = LNS_dE      + scheme_B(i_stage)*aux_dE
+    LNS_dE          = LNS_dE          + scheme_B(i_stage)*aux_dE
     
     ! Eventually check non-positivity.
     if(CHECK_NONPOSITIVITY) then
@@ -377,7 +377,7 @@ end subroutine initial_state_LNS
 ! IN:
 !   \nabla v, gradient of v, (1,1) being dxvx, (1,2) dzvx, (2,1) dxvz, and (2,2) dzvz.
 ! OUT:
-!   \Sigma_v(v)
+!   \Sigma_v(v), as a size 3 vector since the stress tensor is symmetric: 1<->(1,1), 2<->(1,2)&(2,1), and 3<->(2,2).
 
 subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
                                              sigma_v)
@@ -423,7 +423,7 @@ end subroutine LNS_compute_viscous_stress_tensor
 !   nabla_TF, gradient of TF, (1,1) being dxTFx, (1,2) dzTFx, (2,1) dxTFz, and (2,2) dzTFz. Only makes sense if swTF is active.
 !   nabla_SF, gradient of SF, (1) being dxSF, and (2) dzSF. Only makes sense if swSF is active.
 ! NOTES:
-!   See doi:10.1016/j.jcp.2007.12.009, section 4.3.2.
+!   See doi:10.1016/j.jcp.2007.12.009, section 4.3.2 for the "desintegration method".
    
 subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_SF)
   use constants ! TODO: select variables to use.
