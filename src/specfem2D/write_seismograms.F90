@@ -51,7 +51,10 @@
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: pressure_element
   ! curl in an element
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: curl_element
-
+  
+  ! Dummy array. Used in calls to 'compute_vector_one_element' for the DG argument when the DG method is deactivated. This is needed for compatibility with Intel compilers, since an array is needed as argument. With other compilers, a simple "0." was sufficient.
+  real(kind=CUSTOM_REAL), dimension(1) :: dummy_array_for_DG_args_when_not_DG
+  
   ! checks subsampling recurrence
   if (mod(it-1,subsamp_seismos) == 0) then
 
@@ -99,7 +102,7 @@
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
                                               potential_gravito,displ_elastic,displs_poroelastic, &
-                                              0.,&
+                                              dummy_array_for_DG_args_when_not_DG,&
                                               ispec,vector_field_element)
             endif
           case (2)
@@ -125,7 +128,7 @@
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                               potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                              0., &
+                                              dummy_array_for_DG_args_when_not_DG, &
                                               ispec,vector_field_element)
             endif
           case (3)
@@ -150,7 +153,7 @@
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                               potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                              0., &
+                                              dummy_array_for_DG_args_when_not_DG, &
                                               ispec,vector_field_element)
             endif
           case (4)
