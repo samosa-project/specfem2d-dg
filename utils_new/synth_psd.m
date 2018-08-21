@@ -19,11 +19,14 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: ask for user input.
-raw_t=Ztime;
-raw_s=Zamp;
+raw_t=Ztime; raw_s=Zamp;
 % raw_t=stf_from_run(:, 1)'; raw_s=stf_from_run(:, 2)';
 % raw_t=data_leo_t(1,:);raw_s=data_leo_v(1,:);
 % OKQ0
+% raw_t=data_voon_t{1};raw_s=data_voon_v{1}'; fig_tit='Voon 53m'; nstat=1;
+% raw_t=data_voon_t{12};raw_s=data_voon_v{12}'; fig_tit='Voon 102m'; nstat=1;
+% raw_t=data_voon_t{14};raw_s=data_voon_v{14}'; fig_tit='Voon 151m'; nstat=1;
+% raw_t=data_voon_t{17};raw_s=data_voon_v{17}'; fig_tit='Voon 297m'; nstat=1;
 % raw_t=data_voon_t{4};raw_s=data_voon_v{4}'; fig_tit='Voon 15';
 % raw_t=data_voon_t{5};raw_s=data_voon_v{5}'; fig_tit='Voon 30';
 % raw_t=data_voon_t{6};raw_s=data_voon_v{6}'; fig_tit='Voon 45';

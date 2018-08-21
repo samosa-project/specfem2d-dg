@@ -86,7 +86,7 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
@@ -96,12 +96,12 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
-% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % original
+rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % Original (used in paper).
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
-fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/'); % Original (used in paper).
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661601_full_dec1m/'); % Same as 593960 but axisymmetric.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
@@ -115,6 +115,7 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd
 
 % Tests.
 % fig_title = 'test';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/axisym_test'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_external_forcing'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES_observesignalinbuffer_cstrhdr/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
@@ -399,8 +400,8 @@ if (0 == 1)
   for ii = 1:length(Zamp(:, 1))
     amp(ii) = max(Zamp(ii, :)) - min(Zamp(ii, :));
   end
-%   [sorted_dist,isort]=sort(xstattab(istattab));
-  [sorted_dist,isort]=sort(ystattab(istattab));
+  [sorted_dist,isort]=sort(xstattab(istattab));
+%   [sorted_dist,isort]=sort(ystattab(istattab));
 %   [sorted_dist,isort]=sort(dist_to_sources(istattab));
   sorted_amp=amp(isort);
   figure();
