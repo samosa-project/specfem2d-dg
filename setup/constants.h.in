@@ -326,36 +326,31 @@
 !!
 !!-----------------------------------------------------------
 
-! Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm
-!
-! reference:
-! J. Berland, C. Bogey, and C. Bailly.
-! Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm.
-! Computers and Fluids, 35:1459-1463, 2006
-!
-! see: http://www.sciencedirect.com/science/article/pii/S0045793005000575?np=y
-
+! Low-Dissipation and Low-Dispersion Six-Stage Fourth-Order Low-Storage RK (64LSRK)
+! Reference:
+! [1] J. Berland, C. Bogey, and C. Bailly, “Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm,” Comput. Fluids, vol. 35, no. 10, pp. 1459–1463, 2006.
+!     DOI: 10.1016/j.compfluid.2005.04.003
 ! maximum number of stages for optimized (for reduced storage) LDDRK4-6 Runge-Kutta time scheme
   integer, parameter :: NSTAGE = 6
-
 ! coefficients from Table 1, Berland et al. (2006)
 ! (parameters used in LDDRK scheme, from equation (2) of Berland et al.)
   real(kind=CUSTOM_REAL), dimension(NSTAGE), parameter :: ALPHA_LDDRK = &
     (/0.0_CUSTOM_REAL,-0.737101392796_CUSTOM_REAL, -1.634740794341_CUSTOM_REAL,&
       -0.744739003780_CUSTOM_REAL,-1.469897351522_CUSTOM_REAL,-2.813971388035_CUSTOM_REAL/)
-
   real(kind=CUSTOM_REAL), dimension(NSTAGE), parameter :: BETA_LDDRK = &
     (/0.032918605146_CUSTOM_REAL,0.823256998200_CUSTOM_REAL,0.381530948900_CUSTOM_REAL,&
       0.200092213184_CUSTOM_REAL,1.718581042715_CUSTOM_REAL,0.27_CUSTOM_REAL/)
-
   real(kind=CUSTOM_REAL), dimension(NSTAGE), parameter :: C_LDDRK = &
     (/0.0_CUSTOM_REAL,0.032918605146_CUSTOM_REAL,0.249351723343_CUSTOM_REAL,&
       0.466911705055_CUSTOM_REAL,0.582030414044_CUSTOM_REAL,0.847252983783_CUSTOM_REAL/)
-      
+
   ! MODIF DG
   real(kind=CUSTOM_REAL), parameter :: gamma_euler = 1.4
-  
-  ! RK4 coefficients.
+
+! Five-Stage Fourth-Order Low-Storage RK (54LSRK)
+! Reference:
+! [1] M. H. Carpenter and A. Kennedy, “Fourth-Order 2N-Storage Runge-Kutta Schemes,” Nasa Tech. Memo., vol. 109112, pp. 1–26, 1994.
+!     URL: http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf
   real(kind=CUSTOM_REAL), parameter, dimension(5) :: rk4a_d = (/0._CUSTOM_REAL,&
           -567301805773.0_CUSTOM_REAL/1357537059087.0_CUSTOM_REAL,&
           -2404267990393.0_CUSTOM_REAL/2016746695238.0_CUSTOM_REAL,&
@@ -375,4 +370,23 @@
           2006345519317.0_CUSTOM_REAL/3224310063776.0_CUSTOM_REAL,&
           2802321613138.0_CUSTOM_REAL/2924317926251.0_CUSTOM_REAL /)
 
-
+! Three-Stage Third-Order Low-Storage RK (33LSRK)
+! References:
+! [1] J. H. Williamson, “Low-storage Runge-Kutta schemes,” J. Comput. Phys., vol. 35, no. 1, pp. 48–56, 1980.
+!     DOI: 10.1016/0021-9991(80)90033-9
+! [2] M. H. Carpenter and A. Kennedy, “Fourth-Order 2N-Storage Runge-Kutta Schemes,” Nasa Tech. Memo., vol. 109112, pp. 1–26, 1994.
+!     URL: http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf
+  real(kind=CUSTOM_REAL), parameter, dimension(3) :: ls33rk_a = (/&
+          0._CUSTOM_REAL,&
+          -5.0_CUSTOM_REAL/9.0_CUSTOM_REAL,&
+          -153.0_CUSTOM_REAL/128.0_CUSTOM_REAL/)
+  
+  real(kind=CUSTOM_REAL), parameter, dimension(3) :: ls33rk_b = (/&
+          1.0_CUSTOM_REAL/3.0_CUSTOM_REAL,&
+          15.0_CUSTOM_REAL/16.0_CUSTOM_REAL,&
+          8.0_CUSTOM_REAL/15.0_CUSTOM_REAL/)
+  
+  real(kind=CUSTOM_REAL), parameter, dimension(3) :: ls33rk_c = (/&
+          0._CUSTOM_REAL,&
+          1.0_CUSTOM_REAL/3.0_CUSTOM_REAL,&
+          3.0_CUSTOM_REAL/4.0_CUSTOM_REAL/)
