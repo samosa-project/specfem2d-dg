@@ -357,14 +357,15 @@ subroutine initial_state_LNS(rho0, v0, E0)
   do ispec = 1, nspec
     do j = 1, NGLLZ
       do i = 1, NGLLX
-       iglob = ibool_DG(i, j, ispec)
-       call boundary_condition_DG(i, j, ispec, ZEROcr, rho_P, LNS_dummy_1d, LNS_dummy_1d, E_P, &
-                                  veloc_x_P, veloc_z_P, LNS_dummy_1d, LNS_dummy_1d)
-       ! TODO: Ultimately, implement a dedicated subroutine.
-       rho0(iglob) = rho_P
-       v0(1,iglob) = veloc_x_P
-       v0(2,iglob) = veloc_z_P
-       E0(iglob)   = E_P
+        iglob = ibool_DG(i, j, ispec)
+        call boundary_condition_DG(i, j, ispec, ZEROcr, rho_P, LNS_dummy_1d(1), LNS_dummy_1d(1), E_P, &
+                                  veloc_x_P, veloc_z_P, LNS_dummy_1d(1), LNS_dummy_1d(1))
+        ! TODO: Ultimately, implement a dedicated subroutine instead of using a call to a DG routine with dummy variables.
+        ! Note: the '(1)' after dummy variables is somewhat a hack for Intel compilers, and might not be the brightest idea. Since a dedicated subroutine is to be implemented at some point, I leave that as is. I'm sorry.
+        rho0(iglob) = rho_P
+        v0(1,iglob) = veloc_x_P
+        v0(2,iglob) = veloc_z_P
+        E0(iglob)   = E_P
       enddo
     enddo
   enddo
@@ -433,8 +434,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   implicit none
   
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: SF
-  real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(out) :: TF
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: SF
+  real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: TF
   logical, intent(in) :: swTF, swSF, swMETHOD
   real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(out) :: nabla_SF
   real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(out) :: nabla_TF
