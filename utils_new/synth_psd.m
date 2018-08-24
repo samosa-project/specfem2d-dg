@@ -69,7 +69,7 @@ if(nstat>1)
       IDs_to_process=1;
     case 1
       disp('  Averaging Welch PSDs. Be wary of the stations you use.');
-      WPSD_txt=strcat("Averaged Welch PSD of " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
+      WPSD_txt=strcat("Average of Welch PSDs of " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
       IDs_to_process=1:nstat;
     case 2
       disp('  Computing Welch PSD of average signal. Be wary of the stations you use.');
