@@ -199,8 +199,8 @@
      write(*,*) "*           WARNING            *"
      write(*,*) "********************************"
      write(*,*) "* The algorithm used is in     *"
-     write(*,*) "* O(NPROC^2*NELEMS). This step *"
-     write(*,*) "* can be extremely long for    *"
+     write(*,*) "* O(2*NPROC^2*NELEMS). This    *"
+     write(*,*) "* step is extremely long for   *"
      write(*,*) "* huge meshes and/or a high    *"
      write(*,*) "* number of CPUS.              *"
      write(*,*) "* NPROC  = ", NPROC
@@ -208,10 +208,10 @@
      write(*,*) "********************************"
      if (ngnod == 9) then
         call Construct_interfaces(NPROC, elmnts_bis, &
-                                  nbmodels, phi, num_material)
+                                  nbmodels, phi, num_material) ! See "part_unstruct.F90".
      else
         call Construct_interfaces(NPROC, elmnts, &
-                                  nbmodels, phi, num_material)
+                                  nbmodels, phi, num_material) ! See "part_unstruct.F90".
      endif
      allocate(my_interfaces(0:ninterfaces-1))
      allocate(my_nb_interfaces(0:ninterfaces-1))
