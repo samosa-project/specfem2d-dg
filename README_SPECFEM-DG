@@ -6,7 +6,7 @@
 1) Configure SCOTCH:
   Try:
     ./config_scotch.sh
-  If it fails, we need to setup a bit more. Move to "./specfem-dg/src/meshfem2D".
+  If it fails, we need to setup a bit more. Move to "./src/meshfem2D".
   
   Check that the symbolic link "scotch" aims at the (last version) provided SCOTCH folder:
     readlink -f scotch
@@ -15,14 +15,14 @@
 
   Get back to "./specfem-dg". Try again:
     ./config_scotch.sh
-  If it fails, we need to setup a bit more. Move to "./specfem-dg/src/meshfem2D/scotch/src" in order to choose the appropriate Makefile. First, check your architecture:
+  If it fails, we need to setup a bit more. Move to "./src/meshfem2D/scotch/src" in order to choose the appropriate Makefile. First, check your architecture:
     arch
   Copy the appropriate makefile from the "./Make.inc" folder. For example, on EOS (CALMIP) machines:
     cp ./Make.inc/Makefile.inc.x86-64_pc_linux2 Makefile.inc
 
   Error "undefined reference to `clock_gettime'": check the glibc version installed on the system with:
     ldd --version
-  If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
+  If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "./src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
   
   Error "/usr/bin/ld: cannot find -lz": install the "zlib-dev" package.
   
@@ -46,8 +46,8 @@
 5) The simulations' method of execution varies whether you are on a local machine or on a cluster. On a local machine, running the script provided in the folders which are under "./EXAMPLE" should be enough. On a cluster, please report to its documentation.
 ###############################
 
-# Remarks. ####################
-1) Configure your own simulation: it happens in the "./specfem-dg/EXAMPLES/" folder.
+# Running. ####################
+1) Configure your own simulation: it happens in the "./EXAMPLES/" folder.
 1.1) Configure global parameters in the file "./EXAMPLES/my_simulation/PARFILE".
 1.2) Adapt the mesh in the file "./EXAMPLES/my_simulation/INTERFACESFILE"
 1.3) Configure source parameters in the file "./EXAMPLES/ma_simulation/SOURCEFILE"
@@ -55,9 +55,15 @@
 1.5) Run the simulation using the "./EXAMPLES/my_simulation/run_this_example.sh" script.
 
 2) [DEVELOPEMENT] Configure boundary conditions.
-2.1) Modify the source file "./specfem-dg/src/specfem2d/boundary_terms.f90" according to the wanted boundary conditions.
+2.1) Modify the source file "./src/specfem2d/boundary_terms.f90" according to the wanted boundary conditions.
 2.2) Recompile SPECFEM-DG:
        make
      or:
        make clean; make all
+###############################
+
+# Runtime errors. #############
+*) Issue:    MPI buffers seem to misbehave. Solver does not crash.
+   Cause:    Message passing routines might have a problem.
+   Solution: A solution raised by the CEA hotline was to reduce optimisation/vectorisation options during compilation, which might be too aggressive by default. Edit "./Makefile". Replace "-O3 -xHost" gradually by "-O2 -xHost", "-xHost", "-O3 -xSSE4.2", "-O2 -xSSE4.2", "-O3", "-O2", and nothing. This might be only usable on Intel machines and for Intel compilers.
 ###############################
