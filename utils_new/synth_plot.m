@@ -29,6 +29,38 @@ data_v=Zamp;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ask for user input.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+rescale=-1;
+while(rescale==-1)
+  rescale=input('  Rescale (0 for no, new value for yes)? > ');
+end
+if(rescale~=0)
+  data_v=data_v*rescale;
+  disp(['  [WARNING] Data was rescaled by a factor ',num2str(rescale),'.']);
+end
+
+filter_data=-1;
+% while(not(ismember(filter_data,[0,1,2,3])))
+%   filter_data=input('  Filter (0 for no, 1 for high-pass, 2 for low-pass, 3 for band-pass)? > ');
+while(not(ismember(filter_data,[0,1])))
+  filter_data=input('  Filter (0 for no, 1 for high-pass)? > ');
+end
+if(filter_data~=0)
+  filter_fcutoff=-1;
+  while(filter_fcutoff<=0)
+    filter_fcutoff=input('  Filter cutoff frequency? > ');
+  end
+  switch filter_data
+    case 1
+      for(i=1:nstat)
+        [~, data_v_HP] = custom_filter(data_t(i,:), data_v(i,:), filter_fcutoff);
+        data_v(i,:)=data_v_HP;
+      end
+      disp(['  [WARNING] Data was high-pass filtered, with cutoff frequency ',num2str(filter_fcutoff),'.']);
+      clear('data_v_HP');
+    otherwise
+      disp(['  [ERROR] Filtering type not implemented.']);
+  end
+end
 fign=-1;
 fign=input('  Figure number? > ');
 colour=-1;
@@ -117,10 +149,11 @@ while(scale~=0)
   xlim([min(data_t(1:nstat, 1)), max(data_t(1:nstat, end))]);
   xlabel('time (s)');
   ylabel(strcat("$",dist_symbol," + \left(",coef_string,"\right)\times$", unknown_name));
-  scale=input('  Rechoose coefficient? (0 for no, new value for yes)? > ');
+  scale=input('  Rechoose coefficient (0 for no, new value for yes)? > ');
 end
 
 ylabel(strcat(dist_name," $",dist_symbol,"$ ", dist_unit));%, " $\longrightarrow$"));
+set(gca, 'TickLabelInterpreter','latex');
 
 % Time axis limits.
 tmin=input(['  t_min (',num2str(min(min(data_t))),' now)? > ']);
@@ -128,7 +161,7 @@ tmax=input(['  t_max (',num2str(max(max(data_t))),' now)? > ']);
 if(isempty(tmin))
   tmin=min(min(data_t));
 end
-if(isempty(tmax));
+if(isempty(tmax))
   tmax=max(max(data_t));
 end
 xlim([tmin, tmax]);
