@@ -138,7 +138,9 @@
           !WRITE(*,*) myrank,"COORD",coord(:,iglob)
           
           ! MODIF DG
-          iglob_DG = ibool_DG(ix,iz,ispec)
+          if(USE_DISCONTINUOUS_METHOD) then
+            iglob_DG = ibool_DG(ix,iz,ispec)
+          endif
 
           if (.not. mask_ibool_ext_mesh(iglob)) then
             ! masks point as being accounted for
@@ -166,11 +168,11 @@
           else
           
             if(USE_DISCONTINUOUS_METHOD) then
-            ! acoustic element
-            nglob_interface_acoustic_DG = nglob_interface_acoustic_DG + 1
-            ! MODIF DG
-            ibool_interfaces_acoustic_DG(nglob_interface_acoustic_DG,num_interface) = iglob_DG
-            is_MPI_interface_DG(iglob_DG) = .true.
+              ! acoustic element
+              nglob_interface_acoustic_DG = nglob_interface_acoustic_DG + 1
+              ! MODIF DG
+              ibool_interfaces_acoustic_DG(nglob_interface_acoustic_DG,num_interface) = iglob_DG
+              is_MPI_interface_DG(iglob_DG) = .true.
             endif
             
             ! If at convex corner "x" one has two MPI neighbors (N1 and N2)
