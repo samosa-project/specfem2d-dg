@@ -41,7 +41,7 @@
     make clean; make all
   Error "undefined reference to `clock_gettime'": check the glibc version installed on the system with:
     ldd --version
-  If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
+  If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the cdccdcdcdcdclibraries' line ("LDFLAGS").
 
 5) The simulations' method of execution varies whether you are on a local machine or on a cluster. On a local machine, running the script provided in the folders which are under "./EXAMPLE" should be enough. On a cluster, please report to its documentation.
 ###############################
@@ -63,7 +63,7 @@
 ###############################
 
 # Runtime errors. #############
-*) Issue:    MPI buffers seem to misbehave. Solver does not crash.
+*) Issue:    MPI buffers seem to misbehave, but solver does not crash.
    Cause:    Message passing routines might have a problem.
-   Solution: A solution raised by the CEA hotline was to reduce optimisation/vectorisation options during compilation, which might be too aggressive by default. Edit "./Makefile". Replace "-O3 -xHost" gradually by "-O2 -xHost", "-xHost", "-O3 -xSSE4.2", "-O2 -xSSE4.2", "-O3", "-O2", and nothing. This might be only usable on Intel machines and for Intel compilers.
+   Solution: A solution raised by the CEA hotline was to reduce optimisation/vectorisation options during compilation, which might be too aggressive by default. Edit "./Makefile". Replace "-O3 -xHost" gradually by "-O2 [-xHost]", "-O3 -xSSE4.2", "-O2 -xSSE4.2", and "" (nothing). This might be only usable on Intel machines and for Intel compilers.
 ###############################
