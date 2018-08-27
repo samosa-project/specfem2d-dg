@@ -54,3 +54,5 @@ D = F(X, Z);
 figure();
 surf(X, Z, D, 'edgecolor', 'interp', 'facecolor', 'interp'); view([0, 0, 1]); axis([min(tt), max(tt), min(tx), max(tx)]);
 xlabel('$t$'); ylabel('$x$'); title("External Bottom Forcing ");
+colorbar;
+set(gca, 'TickLabelInterpreter','latex');

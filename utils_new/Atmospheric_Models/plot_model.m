@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [] = plot_model(output_file, marker, colour, atmalts)
+function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   format compact;
   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
   set(0, 'defaultTextFontSize', 26); set(0, 'defaultAxesFontSize', 28);
@@ -14,9 +14,9 @@ function [] = plot_model(output_file, marker, colour, atmalts)
   
   [Z, RHO, T, C, ~, ~, ...
    ~, NSQ, ~, ~, ~, ~, ~, W, ~, ~, GAMMA] = ...
-   extract_data(output_file, 3, 0, 0);
+   extract_data(atmospheric_model_file, 3, 0, 0);
 
-  [datestr, posstr, ~, d, s, ~, ~, F107A, F107, AP] = extract_data_setup(output_file);
+  [datestr, posstr, ~, d, s, ~, ~, F107A, F107, AP] = extract_data_setup(atmospheric_model_file);
   apf107str=strcat("F10.7 avg. = ", sprintf("%.1f",F107A), ", F10.7 = ", sprintf("%.1f",F107), ", AP = ", sprintf("%.1f",AP));
   
   T=T-273.15;
