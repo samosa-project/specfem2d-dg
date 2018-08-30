@@ -3,6 +3,7 @@
 
 parfile_input_name="parfile_input"
 source_input_name="source_input"
+interfacefileName="interfaces_input"
 
 # Read the number of processes to use from the value of the "NPROC" line in the parfile.
 NPROC=$(grep -e "NPROC *= *[0-9]*" $parfile_input_name | grep -oe "[0-9]*")
@@ -43,10 +44,11 @@ ln -s ../../bin/xspecfem2D
 # Stores setup.
 echo
 echo ">> Store setup to the 'OUTPUT_FILES' folder."
-cp DATA/Par_file OUTPUT_FILES/
-cp DATA/SOURCE OUTPUT_FILES/
-cp "atmospheric_model.dat" OUTPUT_FILES/
-cp "external_bottom_forcing.dat" OUTPUT_FILES/
+cp ./DATA/Par_file ./OUTPUT_FILES/input_parfile
+cp ./DATA/SOURCE ./OUTPUT_FILES/input_source
+cp ./$interfacefileName OUTPUT_FILES/input_interfaces
+cp ./atmospheric_model.dat ./OUTPUT_FILES/input_atmospheric_model.dat
+cp ./external_bottom_forcing.dat ./OUTPUT_FILES/input_EBF.dat
 # Save model config
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
 cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
