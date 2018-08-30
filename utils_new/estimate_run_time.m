@@ -4,6 +4,8 @@
 % Last modified: See file metadata.
 % Usage:         Fill section "Parameters" according to the calculation to
 %                be performed.
+%                Use the scripts in './utils_new/extract_run_information'
+%                to fill data used for estimation (function 'load' below).
 % Notes:         The method (N-D nearest point search) is approximate and
 %                does not take into account the fact that some parameters
 %                have more impact than others. All in all, it is a very
@@ -19,16 +21,16 @@ format longG;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 275;
+nstations   = 82;
 nstepseismo = 50;
 
-neltot      = 225000;
+neltot      = 224000;
 neldg       = 150000;
 
 nstepsnap   = 500;
-nsteptot    = 30000;
+nsteptot    = 20000;
 
-nproc       = 80;
+nproc       = 64;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,6 +38,8 @@ nproc       = 80;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 point=[nstations,neldg/neltot,nstepsnap/nsteptot,nstepseismo/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
 
+disp([num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
+disp(" ");
 disp('[n_stations, percent_DG, percent_snap, percent_synth, n_elems_per_proc]');
 disp(strcat("Current point:            [ ", sprintf("%.3e ", point), "]."));
 idp=dsearchn(data,point);
@@ -112,6 +116,8 @@ function [x,t,RUNINFO]=load()
   RUN_RAWDATA(i,:)=[266162   266162 0.345  16000  256 250 114 50   4076]; RUNINFO{i}={655513,'microbaroms periodic with EBF'}; i=i+1;
   RUN_RAWDATA(i,:)=[102150        0 0.443  30000   32 500  80 50    757]; RUNINFO{i}={660223,'SH soft axisym'}; i=i+1;
   RUN_RAWDATA(i,:)=[102150        0 0.443  30000   32 500  80 50    744]; RUNINFO{i}={661601,'SH hard axisym'}; i=i+1;
+  RUN_RAWDATA(i,:)=[225000   150000 0.443  12250   32 500  82 50  10802]; RUNINFO{i}={668888,'SH soft first layer tweaked stopped 12kit'}; i=i+1;
+  RUN_RAWDATA(i,:)=[224000   150000 0.443  20000   64 500  82 50   7802]; RUNINFO{i}={668888,'SH soft first layer retweaked'}; i=i+1;
 
   col_dgpercent=1;
   col_snappercent=2;
