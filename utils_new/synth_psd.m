@@ -10,16 +10,18 @@
 % close all;
 % clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
+set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 18);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
+
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: ask for user input.
-raw_t=Ztime; raw_s=Zamp;
+raw_t=Ztime; raw_s=Zamp; cd(OFd);
 % raw_t=stf_from_run(:, 1)'; raw_s=stf_from_run(:, 2)';
 % raw_t=data_leo_t(1,:);raw_s=data_leo_v(1,:);
 % OKQ0
@@ -129,12 +131,15 @@ plot(time, timeseries_to_plot);
 xlim([time(1), time(end)]);
 xlabel("$t$ (s)"); ylabel(timeseries_txt);
 title(timeseries_txt);
+set(gca, 'TickLabelInterpreter','latex');
 
 figure();
 loglog(WPSD_f, WPSD_to_plot);
 xlim([WPSD_f(1), WPSD_f(end)]);
 xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
 title(WPSD_txt);
+set(gca, 'TickLabelInterpreter','latex');
+grid;
 
 disp(sprintf("Amplitude of signal: %1.6e",max(timeseries_to_plot)-min(timeseries_to_plot)));
 

@@ -64,7 +64,10 @@ end
 fign=-1;
 fign=input('  Figure number? > ');
 colour=-1;
-colour=input('  Colour choice? ([0, 0.447, 0.741] for nice blue, [0.851, 0.325, 0.098] for nice orange, or classical notations) > ');
+colour=input('  Colour choice? ([0, 0.447, 0.741] for nice blue, [0.851, 0.325, 0.098] for nice orange, or classical notations) > ','s');
+if(length(colour)>1)
+  eval(['colour=',colour]);
+end
 dist_unit="-1";
 while(~ismember(dist_unit,["m", "km"]))
   dist_unit=input('  Distance unit (m, km)? > ', 's');
@@ -152,7 +155,7 @@ while(scale~=0)
   scale=input('  Rechoose coefficient (0 for no, new value for yes)? > ');
 end
 
-ylabel(strcat(dist_name," $",dist_symbol,"$ ", dist_unit));%, " $\longrightarrow$"));
+ylabel(strcat(dist_name," $",dist_symbol,"$ ", dist_unit, ' $\longrightarrow$'));%, " $\longrightarrow$"));
 set(gca, 'TickLabelInterpreter','latex');
 
 % Time axis limits.
