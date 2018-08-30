@@ -30,19 +30,23 @@ neldg       = 150000;
 nstepsnap   = 500;
 nsteptot    = 20000;
 
-nproc       = 64;
+nproc       = 32;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Computation of estimate.    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+weigth=[1,100,5,1,50]; % Importance of each parameter.
+meandata=mean(data,1);
+
 point=[nstations,neldg/neltot,nstepsnap/nsteptot,nstepseismo/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
 
 disp([num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
 disp(" ");
 disp('[n_stations, percent_DG, percent_snap, percent_synth, n_elems_per_proc]');
 disp(strcat("Current point:            [ ", sprintf("%.3e ", point), "]."));
-idp=dsearchn(data,point);
+% idp=dsearchn(data,point);
+idp=dsearchn((data-meandata)./weigth,(point-meandata)./weigth); % Optimised search.
 disp(strcat("Closest data point found: [ ", sprintf("%.3e ", data(idp,:)), "] (",inf{idp}{2},")."));
 time=t(idp);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
