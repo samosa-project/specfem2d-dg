@@ -53,7 +53,11 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoBaro, 66, June, 12:00
-% fig_title = strcat('Microbaroms, lat66, June, 12:00');
+fig_title = strcat('Microbaroms, lat66, June, 12:00');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656744_straight_1mps_isp6/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656505_straight_1e-2mps_isp6/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656465_straight_1mps_test/');
@@ -93,7 +97,7 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
-fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
@@ -103,7 +107,7 @@ fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; 
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
-rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % Original (used in paper).
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % Original (used in paper).
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
@@ -349,16 +353,18 @@ for istat = 1:nstat
     hold on;
     if (normalise_ylims)
       % Update y-axis scale.
-      ax = gca;
-      if (ax.YLim(1) < min_ylim_minus)
-        min_ylim_minus = ax.YLim(1);
+      if (ax(istat).YLim(1) < min_ylim_minus)
+        min_ylim_minus = ax(istat).YLim(1);
       end
-      if (ax.YLim(2) > max_ylim_plus)
-        max_ylim_plus = ax.YLim(2);
+      if (ax(istat).YLim(2) > max_ylim_plus)
+        max_ylim_plus = ax(istat).YLim(2);
       end
-      linkaxes(ax, 'y');
     end
-    ax = gca; linkaxes(ax, 'x');
+    if (normalise_ylims)
+      linkaxes(ax);
+    else
+      linkaxes(ax, 'x');
+    end
   end
 end
 
@@ -383,7 +389,8 @@ disp(" ");
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clear variables.             %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear('A', 'ans', 'ax', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'normalise_ylims', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
+% clear('A', 'ans', 'ax', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'normalise_ylims', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
+clear('A', 'ans', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
 if (factor == 1)
   clear('factor');
 end

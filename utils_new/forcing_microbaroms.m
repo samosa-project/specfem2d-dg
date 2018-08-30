@@ -42,7 +42,8 @@ T0 = 12.5; % Temporal period.
 nT0 = 10; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 L0 = 200; % Spatial period.
-nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
+% nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
+nL0 = 80; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 MINX = - 0.5 * nL0 * L0; % Set forcing maximum x here.
 MAXX = 0.5 * nL0 * L0; % Set forcing maximum x here.
@@ -57,15 +58,17 @@ invspread = 6; % Inverse spread factor for Gaussian convolution in frequency ran
 % invspread = 1e2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 
 % Amplitude related.
-A = 1; % Amplitude of waves displacement for draft signal (peak-to-peak is 2 times that).
+% A = 1; % Amplitude of waves displacement for draft signal (peak-to-peak is 2 times that).
 % A_aimed=A/2; % Aimed amplitude for displacement (peak-to-peak is 2 times that).
 % A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
-A_aimed=1; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
+% A_aimed=1; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
+A_aimed=7; % Aimed amplitude for displacement (peak-to-peak is 2 times that). [m].
 
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
 % activate_apo = 0; % Deactivate apodisations.
 napoxlr=10; % Number of periods for space apodisation on left/right sides.
+% napoxlr=2; % Number of periods for space apodisation on left/right sides.
 napot0=1; % Number of periods for time apodisation at t=0.
 napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 
@@ -75,13 +78,18 @@ dt = 1.5d-2; % Set DT as in parfile.
 % nx = 1060; % Set nx as in parfile.
 % xmin = -45e3; xmax = 45e3; % Set as in parfile.
 % nx = 377; % Set nx as in parfile.
-nx = 400; % Set nx as in parfile.
-xmin = MINX; xmax = MAXX; % Set as in parfile.
-% periodise = 0;
-periodise = 1;
+nx = 1350; % Set nx as in parfile.
+% xmin = MINX; xmax = MAXX; % Set as in parfile.
+xmin = -48e3; xmax = 48e3; % Set as in parfile.
+periodise = 0; % Set this if microbaroms do not touch lateral edges of mesh.
+% periodise = 1; % Set this if microbaroms do touch lateral edges of mesh.
+
+% Path to file for export.
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_periodic/';
+EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_patch/';
 
 disp(['Preparing meshgrids.']);
-
 %%%%%%%%%%%%%%%%%%%%%%%
 % Time, SPECFEM and   %
 % forcing.            %
@@ -117,6 +125,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 % Check steps.        %
 %%%%%%%%%%%%%%%%%%%%%%%
+meshok=-1;
+while(not(ismember(meshok,[0,1])))
+  meshok=input(['  SPECFEM grid is xmin=',num2str(xmin),', xmax=',num2str(xmax),', nx=',num2str(nx),'. This has to match parfile. Is that so (0 for no, 1 for yes)? > ']);
+end
+if(meshok==0)
+  error('  Mesh was not ok, re-chose parametrisation in script.');
+end
+clear('meshok');
 disp(['  dt=',num2str(dt),', that is ',num2str(floor(T0/dt)),' iterations per main time period.']);
 disp(['  dx=',num2str(dx),', that is ',num2str(floor(L0/dx)),' elements per main spatial period.']);
 disp(['  dx=',num2str(dx),', max(dxSPCFM)=',num2str(max_dx_specfem),'. One should have dx>=dxSPCFM to prevent aliasing.']);
@@ -194,7 +210,6 @@ spectrum_displ_R = real(spectrum_displ);
 %%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.          %
 %%%%%%%%%%%%%%%%%%%%%%%
-disp(['Convolving spectrum in frequency range and adding random phase.']);
 % Convolve reals with wide Gaussian, replace imaginaries with random phase.
 % sig=1; % Spread of Gaussian mask (should be <2);
 % GMask=fspecial('gaussian', (floor(min((w_0/(2*pi))/df,(k_0/(2*pi))/dk))-1)*[1,1],0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
@@ -202,6 +217,7 @@ disp(['Convolving spectrum in frequency range and adding random phase.']);
 % GMask=fspecial('gaussian', [floor((k_0/(2*pi))/dk),floor((w_0/(2*pi))/df)]-1,0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
 sig_T = ((1 / T0) / 3) / invspread; % Width of the Gaussian mask in time.
 sig_X = ((1 / L0) / 3) / invspread; % Width of the Gaussian mask in space.
+disp(['Convolving spectrum in frequency range and adding random phase. sigma_T=',num2str(sig_T),', sigma_X=',num2str(sig_X),'.']);
 [Fgm, Kgm] = meshgrid(0:df:2 / T0, 0:dk:2 / L0);
 GMask = exp(- ((Fgm - 1 / T0) .^ 2 / (2 * sig_T ^ 2) + (Kgm - 1 / L0) .^ 2 / (2 * sig_X ^ 2)));
 GMask = GMask / max(max(GMask)); % Normalise, not to mess with maximum amplitude.
@@ -239,8 +255,9 @@ spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
 % Send back to        %
 % spacetime range.    %
 %%%%%%%%%%%%%%%%%%%%%%%
-disp(['Sending back to spacetime range.']);
+disp('Sending back to spacetime range.');
 displ = ifft2(ifftshift(spectrum_displ_new), 'symmetric');
+displ = displ - mean(mean(displ)); % Ensure underlying displacement is zero-mean.
 % if(0)
 %   disp(['Filtering noise.']);
 %   % Low-pass in time.
@@ -280,18 +297,19 @@ end
 % and adjust          %
 % amplitude.          %
 %%%%%%%%%%%%%%%%%%%%%%%
-disp(['Converting to velocity and adjusting amplitude.']);
+disp('Converting to velocity and adjusting amplitude.');
 % disp(['Displacement amplitude is [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
 % ampli=max(abs(min(min(s_displ_new))),abs(max(max(s_displ_new)))); % Maximum amplitude of forcing.
 % s_displ_new=s_displ_new*A_aimed/ampli; % Rescale.
 % disp(['Displacement amplitude is now [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
 % [s_vel_new,~]=gradient(s_displ_new,t,x);
 % disp(['Forcing amplitude in velocity is [',num2str(min(min(s_vel_new))),', ',num2str(max(max(s_vel_new))),']']);
+disp(['  Displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
+ampli_displ=max(abs(min(min(displ))),abs(max(max(displ))));
+displ=displ*A_aimed/ampli_displ; % Scale displacement to aimed wave height.
+disp(['  Rescaled displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
 [veloc,~]=gradient(displ,t,x);
-disp(['  Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),']']);
-ampli=max(abs(min(min(veloc))),abs(max(max(veloc))));
-veloc=veloc*A_aimed/ampli;
-disp(['  Velocity is now in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),']']);
+disp(['  Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),'].']);
 % if(periodise)
 % %   disp(['  Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
 %   % Make sure one side is equal to the other.
@@ -310,14 +328,31 @@ if(activate_apo)
   n=napotend; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.18 * n * T0))); % Apodisation over n temporal periods at end.
   apot = apot0 .* apot;
   apot([1,end]) = 0; % Tweak to make sure forcing starts at 0.
-  apox([1,end])=0; % Tweak to make sure forcing starts at 0.
+  apox([1,end]) = 0; % Tweak to make sure forcing starts at 0.
   
   if(periodise)
     disp("Deactivating spatial apodisation due to periodisation.");
     apox = 1; % Deactivate apodisation.
   end
   
-  veloc = veloc .* apox'.*apot;
+  veloc = veloc - mean(mean(veloc)); % Make sure velocity is zero-mean in order to ensure underlying displacement is zero-mean.
+  veloc = veloc .* apox'.*apot; % Apply apodisation to make sure forcing is zero at beginning and end, and eventually on sides.
+end
+
+disp(['Verifying zero-mean, zero-start, and zero-end.']);
+mmveloc=mean(mean(veloc));
+disp(['  Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
+disp(['                              at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+disp(['  Mean of velocity: ',num2str(mmveloc),'.']);
+while(mmveloc>1e-18)
+  disp(['  Tweaking again.']);
+  veloc=veloc-mean(mean(veloc));
+  veloc(:,[1,end])=0;
+  veloc([1,end],:)=0;
+  mmveloc=mean(mean(veloc));
+  disp(['  Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
+  disp(['                              at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+  disp(['  Mean of velocity: ',num2str(mmveloc),'.']);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,12 +398,6 @@ disp(['Velocity forcing on SPECFEM meshgrid is ready.']);
 disp(['Exporting to file.']);
 % Here, format shoud be compatible with the reading which is done in
 % the subroutine 'prepare_external_forcing' in 'boundary_terms_DG.f90'.
-
-%%%%%%%%%%%%%%%%%%%%%%%
-% Path to file.       %
-%%%%%%%%%%%%%%%%%%%%%%%
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
-EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/microbaroms_periodic/';
 %%%%%%%%%%%%%%%%%%%%%%%
 % Test data.          %
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -412,7 +441,8 @@ if(exportok==0)
   error('  Exporting disabled.');
 else
   disp(['Exporting is ready.']);
-  EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing.dat'];
+  datestr_of_now=datestr(now,'_yymmdd_hhMMss');
+  EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing',datestr_of_now,'.dat'];
   % Ask user to verify export path is ok.
   pathok=-1;
   disp(['  Export path is ''',EXPORTFILENAME,'''.']);
@@ -424,6 +454,8 @@ else
   end
   clear('pathok');
   % Export.
+  system(['cp ',mfilename('fullpath'),'.m ',EXPORTFILEDIR,mfilename,datestr_of_now,'.m']);
+  disp('Copied current script to export folder for parameter saving.');
 %   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
 %   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
 %   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
