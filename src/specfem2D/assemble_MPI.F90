@@ -300,18 +300,16 @@
 
   end subroutine assemble_MPI_vector_ac
 
-!-----------------------------------------------
-! Assembling potential_dot_dot for acoustic elements :
-! the buffers are filled, the ISEND and IRECV are started here, then
-! contributions are added.
-! The previous version included communication overlap using persistent
-! communication, but the merging of the outer and inner elements rendered
-! overlap no longer possible, while persistent communications were removed
-! because trace tool MPITrace does not yet instrument those.
-! Particular care should be taken concerning possible optimisations of the
-! communication scheme.
-!-----------------------------------------------
-  subroutine assemble_MPI_vector_DG(array_val1, buffer_DG_P)
+! ------------------------------------------------------------ !
+! assemble_MPI_vector_DG                                       !
+! ------------------------------------------------------------ !
+! This routine is used in the Discontinuous Galerkin (DG) extensions. Thus, it is not really an 'assembly' routine, since the points at interfaces do not overlap in discontinuous Galerkin methods. Rather, it stores values at interfaces between cores in dedicated buffers. Those buffers are later used in order to compute interface fluxes (see e.g. the routine 'compute_interfaces_unknowns' in 'boundary_terms_DG.f90').
+! IN:
+!   array_val1, a quantity's variable. Shape (:). Size (nglob).
+! OUT:
+!   buffer_DG_P, a buffer containing the values of the considered quantity at all GLL points on each interface between cores. Shape (:,:). Size (NGLLX*A,B), where A is the maximum number of elements on one interface between cores, and B is the number of interfaces between cores.
+
+subroutine assemble_MPI_vector_DG(array_val1, buffer_DG_P)
 
   use mpi
 
@@ -330,7 +328,8 @@
 
   include "precision.h"
 
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: array_val1
+  !real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: array_val1
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: array_val1 ! In fact, for DG, other side of buffer is only read, not modified (to the contrary of classical acoustic, which uses CG). At least, not modified yet, it will be later, using interfaces' fluxes.
   real(kind=CUSTOM_REAL), dimension(NGLLX*max_interface_size,ninterface), intent(out) :: &
         buffer_DG_P
 
@@ -339,6 +338,7 @@
   integer :: ier, nb_values
   
   ! initializes buffers
+  buffer_DG_P = 0._CUSTOM_REAL ! Make sure the output buffer contains nothing by default.
   buffer_send_faces_vector_DG(:,:) = 0._CUSTOM_REAL
   buffer_recv_faces_vector_DG(:,:) = 0._CUSTOM_REAL
   
@@ -373,7 +373,7 @@
              tab_requests_send_recv_DG(iinterface), ier)
         
     if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
+      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_DG')
     endif
 
     ! starts a non-blocking receive
@@ -383,7 +383,7 @@
              tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), ier)
      
     if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
+      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector_DG')
     endif
 
   enddo
@@ -393,7 +393,12 @@
   do iinterface = 1, ninterface_acoustic_DG*2
 
     call MPI_Wait(tab_requests_send_recv_DG(iinterface), &
+    !call MPI_Wait(tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), & ! DEBUG: Wasn't that before, maybe cause of the MPI communications bug on CEA machines?
                   MPI_STATUS_IGNORE, ier)
+    ! DEBUG
+    !if (ier /= MPI_SUCCESS) then
+    !  call exit_MPI(myrank,'MPI_IWAIT unsuccessful in assemble_MPI_vector_DG')
+    !endif
   enddo
   
   ! assembles the array values
@@ -404,14 +409,21 @@
 
     ! loops over all interface points
     do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
-    
+      ! Note: buffer_DG_P is used only on interfaces, to the contrary of the continuous Galerkin 'array_val1' in the other routines.
       buffer_DG_P(ipoin,num_interface) = buffer_recv_faces_vector_DG(ipoin,iinterface)
       
     enddo
 
   enddo
   
-  end subroutine assemble_MPI_vector_DG
+  ! DEBUG: Wasn't there before, maybe cause of the MPI communications bug on CEA machines?
+  ! waits for MPI requests to complete (send)
+  ! just to make sure that all sending is done
+  !do iinterface = 1, ninterface_acoustic_DG
+  !  call MPI_Wait(tab_requests_send_recv_DG(iinterface), MPI_STATUS_IGNORE, ier)
+  !enddo
+  
+end subroutine assemble_MPI_vector_DG
 
 !-----------------------------------------------
 ! Assembling accel_elastic for elastic elements :
