@@ -460,7 +460,7 @@ subroutine prepare_MPI_DG()
     integer :: iinterface, ipoin, num_interface, iglob, &
         i, j, ispec, iglob_DG, nb_values, ier
     integer, dimension(nglob_DG, 3) :: link_ij_iglob
-    integer, dimension(nglob_DG) :: MPI_iglob
+    !integer, dimension(nglob_DG) :: MPI_iglob ! Removed because used nowhere.
     
     double precision, dimension(NGLLX*max_interface_size,ninterface) :: &
         buffer_recv_faces_vector_DG_i, &
@@ -704,9 +704,10 @@ subroutine prepare_MPI_DG()
       !            MPI_STATUS_IGNORE, ier)
     enddo
     
-    MPI_transfer_iface = -1
-    MPI_iglob    = 0
+    MPI_transfer_iface = -1 ! By default, specify that for the triplet (iface1,iface,ispec), the values should not be sought in another partition.
+    !MPI_iglob    = 0 ! Removed because used nowhere.
     
+    ! Loop on interfaces between partitions to find correspondances of faces between partitions.
     do iinterface = 1, ninterface_acoustic_DG
       ! gets interface index in the range of all interfaces [1,ninterface]
       num_interface = inum_interfaces_acoustic_DG(iinterface)
@@ -777,10 +778,11 @@ subroutine prepare_MPI_DG()
                  (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
                         .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
           if(one_other_node_is_found) then
-            MPI_transfer_iface(iface1,iface,ispec,1) = ipoin 
-            MPI_transfer_iface(iface1,iface,ispec,2) = num_interface 
+            MPI_transfer_iface(iface1,iface,ispec,1) = ipoin ! Specifies that point ispec on face (iface1,iface) is point ipoin (on interface num_interface).
+            MPI_transfer_iface(iface1,iface,ispec,2) = num_interface ! Specifies that point ispec on face (iface1,iface) is (point ipoin) on interface num_interface.
           endif
           if(one_other_node_is_found_corner) then
+            ! Same as above, but for corner point.
             MPI_transfer_iface(iface1_corner,iface_corner,ispec,1) = ipoin 
             MPI_transfer_iface(iface1_corner,iface_corner,ispec,2) = num_interface
           endif

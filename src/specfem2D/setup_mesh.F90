@@ -367,153 +367,145 @@
       !    |----------------|
       !            3
   
-      iface = 1
-      do i = 1,1
+    iface = 1
+    do i = 1,1
       do j = 1,NGLLZ
-      ! Compute local face number
-      link_iface_ijispec(j,iface,ispec,1) = i
-      link_iface_ijispec(j,iface,ispec,2) = j
-      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
-      link_ijispec_iface(i,j,ispec,1,1) = j
-      link_ijispec_iface(i,j,ispec,2,1) = iface
-      else
-      link_ijispec_iface(i,j,ispec,1,2) = j
-      link_ijispec_iface(i,j,ispec,2,2) = iface
-      endif
-      enddo
-      enddo
-      
-      iface = 2
-      do i = NGLLX,NGLLX
+        ! Compute local face number
+        link_iface_ijispec(j,iface,ispec,1) = i
+        link_iface_ijispec(j,iface,ispec,2) = j
+        if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+          link_ijispec_iface(i,j,ispec,1,1) = j
+          link_ijispec_iface(i,j,ispec,2,1) = iface
+        else
+          link_ijispec_iface(i,j,ispec,1,2) = j
+          link_ijispec_iface(i,j,ispec,2,2) = iface
+        endif
+      enddo ! Enddo on j.
+    enddo ! Enddo on i.
+        
+    iface = 2
+    do i = NGLLX,NGLLX
       do j = 1,NGLLZ
-      ! Compute local face number
-      link_iface_ijispec(j,iface,ispec,1) = i
-      link_iface_ijispec(j,iface,ispec,2) = j
-      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
-      link_ijispec_iface(i,j,ispec,1,1) = j
-      link_ijispec_iface(i,j,ispec,2,1) = iface
-      else
-      link_ijispec_iface(i,j,ispec,1,2) = j
-      link_ijispec_iface(i,j,ispec,2,2) = iface
-      endif
-      enddo
-      enddo
-      
-      iface = 3
-      do i = 1,NGLLX
+        ! Compute local face number
+        link_iface_ijispec(j,iface,ispec,1) = i
+        link_iface_ijispec(j,iface,ispec,2) = j
+        if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+          link_ijispec_iface(i,j,ispec,1,1) = j
+          link_ijispec_iface(i,j,ispec,2,1) = iface
+        else
+          link_ijispec_iface(i,j,ispec,1,2) = j
+          link_ijispec_iface(i,j,ispec,2,2) = iface
+        endif
+      enddo ! Enddo on j.
+    enddo ! Enddo on i.
+        
+    iface = 3
+    do i = 1,NGLLX
       do j = 1,1
-      ! Compute local face number
-      link_iface_ijispec(i,iface,ispec,1) = i
-      link_iface_ijispec(i,iface,ispec,2) = j
-      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
-      link_ijispec_iface(i,j,ispec,1,1) = i
-      link_ijispec_iface(i,j,ispec,2,1) = iface
-      else
-      link_ijispec_iface(i,j,ispec,1,2) = i
-      link_ijispec_iface(i,j,ispec,2,2) = iface
-      endif
-      enddo
-      enddo
-      
+        ! Compute local face number
+        link_iface_ijispec(i,iface,ispec,1) = i
+        link_iface_ijispec(i,iface,ispec,2) = j
+        if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+          link_ijispec_iface(i,j,ispec,1,1) = i
+          link_ijispec_iface(i,j,ispec,2,1) = iface
+        else
+          link_ijispec_iface(i,j,ispec,1,2) = i
+          link_ijispec_iface(i,j,ispec,2,2) = iface
+        endif
+      enddo ! Enddo on j.
+    enddo ! Enddo on i.
+        
       iface = 4
-      do i = 1,NGLLX
+    do i = 1,NGLLX
       do j = NGLLZ,NGLLZ
-      ! Compute local face number
-      link_iface_ijispec(i,iface,ispec,1) = i
-      link_iface_ijispec(i,iface,ispec,2) = j
-      if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
-      link_ijispec_iface(i,j,ispec,1,1) = i
-      link_ijispec_iface(i,j,ispec,2,1) = iface
-      else
-      link_ijispec_iface(i,j,ispec,1,2) = i
-      link_ijispec_iface(i,j,ispec,2,2) = iface
-      endif
-      enddo
-      enddo
-      
-  enddo
+        ! Compute local face number
+        link_iface_ijispec(i,iface,ispec,1) = i
+        link_iface_ijispec(i,iface,ispec,2) = j
+        if(link_ijispec_iface(i,j,ispec,1,1) == -1) then
+          link_ijispec_iface(i,j,ispec,1,1) = i
+          link_ijispec_iface(i,j,ispec,2,1) = iface
+        else
+          link_ijispec_iface(i,j,ispec,1,2) = i
+          link_ijispec_iface(i,j,ispec,2,2) = iface
+        endif
+      enddo ! Enddo on j.
+    enddo ! Enddo on i.
+  enddo ! Enddo on ispec.
   
   ! Create neighboring elements for DG flux comm. 
-   do ispec = 1,nspec
-   
-     do iface = 1,4
-     
+  do ispec = 1,nspec
+    do iface = 1,4
       do i1face = 1,NGLLX
-      
-      i = link_iface_ijispec(i1face,iface,ispec,1)
-      j = link_iface_ijispec(i1face,iface,ispec,2)
-      
-      neighbor_DG_iface(i1face,iface,ispec,:) = -1
-      
-      ! Skip non acoustic (thus non fluid) elements
-      if (.not. ispec_is_acoustic(ispec)) cycle
-      if (.not. ispec_is_acoustic_DG(ispec)) cycle
-
-      iglob = ibool(i,j,ispec)
-      found = .false.
-      ! Find neighbor by going through every mesh node
-      do ispec2 = 1,nspec
-      
-            ! Skip non acoustic (thus non fluid) elements
-            if (.not. ispec_is_acoustic(ispec2)) cycle
-            if (.not. ispec_is_acoustic_DG(ispec2)) cycle
-      
-            ! Ignore current element we are working on
-            if(ispec2 == ispec) cycle
-            ! If we already found the neighbor we exit the loop
-            if(found) exit
-            
-            !do j2 = 1,NGLLZ
-            do iface2 = 1,4
-            
-              ! If we already found the neighbor we exit the loop
-              if(found) exit
-              
-              do i2face = 1,NGLLX
-              
+        i = link_iface_ijispec(i1face,iface,ispec,1)
+        j = link_iface_ijispec(i1face,iface,ispec,2)
+        neighbor_DG_iface(i1face,iface,ispec,:) = -1
+        ! Skip non acoustic (thus non fluid) elements
+        if (.not. ispec_is_acoustic(ispec)) then
+          cycle
+        endif
+        if (.not. ispec_is_acoustic_DG(ispec)) then
+          cycle
+        endif
+        iglob = ibool(i,j,ispec)
+        found = .false.
+        ! Find neighbor by going through every mesh node
+        do ispec2 = 1,nspec
+          ! Skip non acoustic (thus non fluid) elements
+          if (.not. ispec_is_acoustic(ispec2)) then
+            cycle
+          endif
+          if (.not. ispec_is_acoustic_DG(ispec2)) then
+            cycle
+          endif
+          ! Ignore current element we are working on.
+          if(ispec2 == ispec) then
+            cycle
+          endif
+          ! If we already found the neighbor we exit the loop.
+          if(found) then
+            exit
+          endif
+          !do j2 = 1,NGLLZ
+          do iface2 = 1,4
+            ! If we already found the neighbor we exit the loop (safeguard, since it should already have happened).
+            if(found) then
+              exit
+            endif
+            do i2face = 1,NGLLX
               i2 = link_iface_ijispec(i2face,iface2,ispec2,1)
               j2 = link_iface_ijispec(i2face,iface2,ispec2,2)
               iglob2 = ibool(i2,j2,ispec2)
-              
               ! If same coordinates => Neighbor found
               if( iglob == iglob2 ) then !.AND. &
-                 
-                 i1face_try = i1face + 1
-                 if(i1face == 5) i1face_try = i1face - 1
-                 iglob3_try = ibool(link_iface_ijispec(i1face_try,iface,ispec,1), &
-                        link_iface_ijispec(i1face_try,iface,ispec,2),&
-                        ispec)
-                        
-                 one_other_is_found = .false.
-                 do i3 = 1,NGLLX
-                 
-                 iglob3 = ibool(link_iface_ijispec(i3,iface2,ispec2,1), &
-                        link_iface_ijispec(i3,iface2,ispec2,2),&
-                        ispec2)
-                 if(iglob3 == iglob3_try) one_other_is_found = .true. 
-                 
-                 enddo
-                 
-                 if(one_other_is_found) then
-                        neighbor_DG_iface(i1face,iface,ispec,1) = i2face
-                        neighbor_DG_iface(i1face,iface,ispec,2) = iface2
-                        neighbor_DG_iface(i1face,iface,ispec,3) = ispec2
-                        found = .true.
-                 endif
-                 
-              endif
-              
-              
-              
-              enddo
-            enddo
-            
-      enddo
-      
-      enddo
-    enddo
-    
-  enddo
+                i1face_try = i1face + 1
+                if(i1face == 5) then
+                  i1face_try = i1face - 1
+                endif
+                iglob3_try = ibool(link_iface_ijispec(i1face_try,iface,ispec,1), &
+                                   link_iface_ijispec(i1face_try,iface,ispec,2), &
+                                   ispec)
+                one_other_is_found = .false.
+                do i3 = 1,NGLLX
+                  iglob3 = ibool(link_iface_ijispec(i3,iface2,ispec2,1), &
+                  link_iface_ijispec(i3,iface2,ispec2,2),&
+                  ispec2)
+                  if(iglob3 == iglob3_try) then
+                    one_other_is_found = .true.
+                  endif
+                enddo ! Enddo on i3.
+                if(one_other_is_found) then
+                  neighbor_DG_iface(i1face,iface,ispec,1) = i2face
+                  neighbor_DG_iface(i1face,iface,ispec,2) = iface2
+                  neighbor_DG_iface(i1face,iface,ispec,3) = ispec2
+                  found = .true.
+                endif ! Endif on one_other_is_found.
+              endif ! Endif on iglob == iglob2.
+            enddo ! Enddo on i2face.
+          enddo ! Enddo on iface2.
+        enddo ! Enddo on ispec2.
+      enddo ! Enddo on i1face.
+    enddo ! Enddo on iface.
+  enddo ! Enddo on ispec.
   
   call setup_mesh_surface_DG()
   

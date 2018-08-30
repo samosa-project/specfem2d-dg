@@ -864,11 +864,13 @@ end subroutine prepare_external_forcing
   
   if(neighbor(3) == -1 ) then
     ! --------------------------- !
-    ! neighbor(3) == -1           !
+    ! neighbor(3) == -1, edge is  !
+    ! an 'outside' edge.          !
     ! --------------------------- !
+    ! That is, either its corresponding edge is in another partition, or the edge is a coupling (with another material) edge (also in another partition, by construction), or the edge is on the outer boundary of the computational domain.
     
-    ipoin         = -1
-    num_interface = -1
+    ipoin         = -1 ! By default, specify that for the triplet (iface1,iface,ispec), the values should not be sought in another partition. That is, either the edge is a coupling (with another material) edge, or an edge on the outer boundary of the computational domain.
+    num_interface = -1 ! Initialised to this value, but should not be used anywhere as is.
     if(NPROC > 1) then
       ipoin         = MPI_transfer_iface(iface1, iface, ispec, 1)
       num_interface = MPI_transfer_iface(iface1, iface, ispec, 2)
@@ -876,18 +878,19 @@ end subroutine prepare_external_forcing
     
     if(ipoin > -1) then
       ! --------------------------- !
-      ! neighbor(3) == -1           !
-      !   not diagonal corner       !
-      !   element and not outside   !
-      !   element.                  !
+      ! ipoin > -1, values should   !
+      ! be sought in another        !
+      ! partition, thus on an       !
+      ! interface, thus DG buffers  !
+      ! should be used.             !
       ! --------------------------- !
       
       if(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0 .AND. .false.) then
         ! --------------------------- !
-        ! COUPLING ACOUSTIC           !
-        ! POTENTIAL - FLUID           !
+        ! MPI acoustic potential      !
+        ! neighbour.                  !
         ! --------------------------- !
-        ! TODO: Decide what to do with this case (we are in a 'if(.false.)').
+        ! TODO: Decide what to do with this case (we are in an 'if(.false.)').
         
         ! We already know the "real" flux at boundary.
         exact_interface_flux = .true.
@@ -933,29 +936,30 @@ end subroutine prepare_external_forcing
 
         T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
         
-      else ! if(ispec_is_acoustic_coupling_ac(i, j, ispec))
+      else ! Happens everytime (since 'if' above is an 'if(.false.)').
         ! --------------------------- !
-        ! CLASSICAL MPI NEIGHBOR (NOT !
-        ! ACOUSTIC)                   !
+        ! MPI acoustic DG neighbour   !
+        ! (not acoustic potential     !
+        ! neighbour).                 !
         ! --------------------------- !
         
-        ! Get all values from the buffer.
+        ! Get all values from the MPI buffers.
         rho_DG_P     = buffer_DG_rho_P(ipoin, num_interface)
         E_DG_P       = buffer_DG_E_P(ipoin, num_interface)
         rhovx_DG_P   = buffer_DG_rhovx_P(ipoin, num_interface)
         rhovz_DG_P   = buffer_DG_rhovz_P(ipoin, num_interface)
-        gamma_P = buffer_DG_gamma_P(ipoin,num_interface)
+        gamma_P      = buffer_DG_gamma_P(ipoin,num_interface)
         if(muext(i, j, ispec) > 0 .OR. &
            etaext(i, j, ispec) > 0 .OR. &
            kappa_DG(i, j, ispec) > 0) then
-          ! If there is viscosity, get the values from the buffer.
+          ! If there is viscosity, get the values from the MPI buffers.
           ! If not, values as initialised above are kept.
           Vxx_DG_P = buffer_DG_Vxx_P(ipoin, num_interface)
           Vzz_DG_P = buffer_DG_Vzz_P(ipoin, num_interface)
           Vxz_DG_P = buffer_DG_Vxz_P(ipoin, num_interface)
           Vzx_DG_P = buffer_DG_Vzx_P(ipoin, num_interface)
-          Tx_DG_P = buffer_DG_Tx_P(ipoin, num_interface)
-          Tz_DG_P = buffer_DG_Tz_P(ipoin, num_interface)
+          Tx_DG_P  = buffer_DG_Tx_P(ipoin, num_interface)
+          Tz_DG_P  = buffer_DG_Tz_P(ipoin, num_interface)
         endif
         
         ! Deduce velocities, pressure, and temperature.
@@ -969,8 +973,8 @@ end subroutine prepare_external_forcing
                     
     elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
       ! --------------------------- !
-      ! neighbor(3) == -1           !
-      !   acoustic forcing          !
+      ! ipoin == -1                 !
+      !   (+) acoustic forcing      !
       ! --------------------------- !
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
@@ -982,8 +986,8 @@ end subroutine prepare_external_forcing
          
     elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
       ! --------------------------- !
-      ! neighbor(3) == -1           !
-      !   elastic coupling          !
+      ! ipoin == -1                 !
+      !   (+) elastic coupling      !
       ! --------------------------- !
       ! TODO: Clean up all this part.
       
@@ -1067,8 +1071,8 @@ end subroutine prepare_external_forcing
 
     else
       ! --------------------------- !
-      ! neighbor(3) == -1           !
-      !   classical boundary        !
+      ! ipoin == -1                 !
+      !   classical outer boundary  !
       !   conditions                !
       ! --------------------------- !
     
@@ -1114,7 +1118,7 @@ end subroutine prepare_external_forcing
       ! TODO: Decide what to do with those.
       if(coord(2, ibool(i, j, ispec)) == 20000. .AND. .false.) then
         ! --------------------------- !
-        ! neighbor(3) == -1           !
+        ! ipoin == -1                 !
         !   classical boundary        !
         !   conditions,               !
         !     characteristic based BC,!
@@ -1151,7 +1155,7 @@ end subroutine prepare_external_forcing
       endif
       if(coord(2, ibool(i, j, ispec)) == 0. .AND. .false.) then
         ! --------------------------- !
-        ! neighbor(3) == -1           !
+        ! ipoin == -1           !
         !   classical boundary        !
         !   conditions,               !
         !     characteristic based BC,!
@@ -1192,8 +1196,8 @@ end subroutine prepare_external_forcing
     endif
   elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0 .AND. .false.) then
     ! --------------------------- !
-    ! neighbor(3) != -1,          !
-    !   acoustic coupling.        !
+    ! neighbor(3) /= -1           !
+    !   (+) acoustic coupling.    !
     ! --------------------------- !
     ! TODO: Decide what to do with this case.
     !!elseif(.false.) then
@@ -1207,8 +1211,9 @@ end subroutine prepare_external_forcing
     !  WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
     !endif
     ! Only for density
-    call boundary_condition_DG(i_ac, j_ac, ispec_ac, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-    veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
+    call boundary_condition_DG(i_ac, j_ac, ispec_ac, timelocal, rho_DG_P, &
+                               rhovx_DG_P, rhovz_DG_P, E_DG_P, &
+                               veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
     !!rho_DG_P = rho_DG_iM
     !!duz_dxi    = ZERO
     !!duz_dgamma = ZERO
@@ -1250,11 +1255,12 @@ end subroutine prepare_external_forcing
     rhovx_DG_P   = rho_DG_P*veloc_x_DG_P
     rhovz_DG_P   = rho_DG_P*veloc_z_DG_P
     T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
-  else
+  else ! Happens everytime (since 'else if' above is an 'if(.false.)').
     ! --------------------------- !
-    ! neighbor(3) != -1,          !
-    !   not an outside edge,      !
-    !   thus values are known.    !
+    ! neighbor(3) /= -1           !
+    !   (+) not an 'outside' edge !
+    !       (thus values are      !
+    !       already known)        !
     ! --------------------------- !
     exact_interface_flux = .false.
     iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
