@@ -14,13 +14,12 @@ if [[ $# -ne 5 ]]; then
   echo "  - the project number (##### in gen#####), and"
   echo "  - the partition (see ccc_mpinfo)."
   echo "> Script will now exit."
-  echo "> [TEMP] pn 10476, skylake 48, hybrid 48, xlarge 112, (knl 68)"
   echo
   exit -1
 fi
 
 echo
-echo "> Example '$2' will be sent to execution, over $1 tasks, with $3 seconds time limit, on project 'gen$4' and partition $5."
+echo "> Example '$2' will be sent to execution, over $1 tasks, with $3 seconds time limit, on project 'gen$4'."
 echo
 
 # Loads the modules necessary to the execution of the script (and only those).
@@ -40,15 +39,13 @@ echo
 echo "> Storing output (`date`)."
 echo
 cp ./DATA/*SOURCE* ./DATA/*STATIONS* ../../src/specfem2D/boundary_terms_DG.f90 ./OUTPUT_FILES
-cp "atmospheric_model.dat" ./OUTPUT_FILES/
-cp "external_bottom_forcing.dat" ./OUTPUT_FILES/
 
 # Batch.
 echo
 echo "> Sending solver to queue (`date`)."
 #echo "> [DEBUG] Command line: ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q standard -A gen$4 -x ../batch_example_job.sh"
 echo
-ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q $5 -A gen$4 -m work -x ../batch_example_job.sh
+ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q $5 -A gen$4 -x ../batch_example_job.sh
 
 # Check exit status.
 exit_status=$?
@@ -57,6 +54,5 @@ if [ $exit_status -ne 0 ]; then
   exit $exit_status
 else
   echo "> Use 'ccc_mpp -u USERNAME' to check status of running jobs."
-  echo "> Use 'ccc_malter ID -T ###' to reduce job time limit to ### seconds (where ID is obtained by checking status of running jobs). Usable only on RUNNING jobs."
   echo "> Use 'ccc_mdel ID' to terminate job (where ID is obtained by checking status of running jobs)."
 fi

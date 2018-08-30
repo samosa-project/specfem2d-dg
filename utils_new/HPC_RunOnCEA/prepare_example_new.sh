@@ -3,6 +3,7 @@
 
 parfileName="parfile_input"
 sourcefileName="source_input"
+interfacefileName="interfaces_input"
 
 if [[ $# -ne 1 ]]; then
 echo
@@ -17,8 +18,6 @@ simulationDir=$1 # This simulation's directory.
 
 echo
 echo "> Preparing example '$simulationDir' (`date`)."
-echo
-echo "> (This will take about 5 minutes.)"
 echo
 
 cd ./$simulationDir/
@@ -47,9 +46,15 @@ rm -f xmeshfem2D xspecfem2D
 ln -s ../../bin/xmeshfem2D
 ln -s ../../bin/xspecfem2D
 
-# Stores setup files.
-cp DATA/Par_file OUTPUT_FILES/
-cp DATA/SOURCE OUTPUT_FILES/
+# Stores input files.
+echo
+echo "> Storing input files."
+echo
+cp ./DATA/Par_file OUTPUT_FILES/input_parfile
+cp ./DATA/SOURCE OUTPUT_FILES/input_source
+cp ./$interfacefileName OUTPUT_FILES/input_interfaces
+cp ./atmospheric_model.dat ./OUTPUT_FILES/input_atmospheric_model.dat
+cp ./external_bottom_forcing.dat ./OUTPUT_FILES/input_EBF.dat
 
 # Save model configuration.
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90

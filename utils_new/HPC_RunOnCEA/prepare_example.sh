@@ -1,6 +1,10 @@
 #!/bin/bash
 # Runs mesher in serial.
 
+parfileName="Par_file_fluid_solid"
+sourcefileName="SOURCE_fluid_solid"
+interfacefileName="interfaces"
+
 if [[ $# -ne 1 ]]; then
 echo
 echo "> 1 argument needed:"
@@ -35,13 +39,8 @@ rm -rf OUTPUT_FILES/*
 
 # Sets up local DATA/ directory.
 cd DATA/
-ln -s ../Par_file_fluid_solid Par_file
-ln -s ../SOURCE_fluid_solid SOURCE
-cd ../
-
-# Cleans current output files.
-rm -rf OUTPUT_FILES/*
-
+ln -s ../$parfileName Par_file
+ln -s ../$sourcefileName SOURCE
 cd $currentdir
 
 # Links executables.
@@ -50,12 +49,18 @@ ln -s ../../bin/xmeshfem2D
 ln -s ../../bin/xspecfem2D
 
 # Stores setup files.
-cp DATA/Par_file OUTPUT_FILES/
-cp DATA/SOURCE OUTPUT_FILES/
+echo
+echo "> Storing input files."
+echo
+cp ./DATA/Par_file OUTPUT_FILES/input_parfile
+cp ./DATA/SOURCE OUTPUT_FILES/input_source
+cp ./$interfacefileName OUTPUT_FILES/input_interfaces
+cp ./atmospheric_model.dat ./OUTPUT_FILES/input_atmospheric_model.dat
+cp ./external_bottom_forcing.dat ./OUTPUT_FILES/input_EBF.dat
 
 # Save model configuration.
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
-cp ../../src/specfem2D/boundary_terms.f90 OUTPUT_FILES/boundary_terms.f90
+cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
 
 # Runs database generation.
 # TODO: change this if an external mesh is to be used.
