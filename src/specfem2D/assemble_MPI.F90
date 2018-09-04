@@ -326,7 +326,7 @@ subroutine assemble_MPI_vector_DG(array_val1, buffer_DG_P)
 
   implicit none
 
-  include "precision.h"
+  include "precision.h" ! In order to get CUSTOM_MPI_TYPE.
 
   !real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: array_val1
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: array_val1 ! In fact, for DG, other side of buffer is only read, not modified (to the contrary of classical acoustic, which uses CG). At least, not modified yet, it will be later, using interfaces' fluxes.

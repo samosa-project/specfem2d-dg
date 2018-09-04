@@ -800,6 +800,7 @@
 
   ! local parameters
   integer :: num_interface,ie,my_interfaces_read
+  integer :: ier
   character(len=80) :: datlin
 
   ! reads number of interfaces
@@ -819,19 +820,26 @@
     
     ! MODIF DG
     allocate(buffer_DG_rho_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_rhovx_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_rhovz_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_E_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_e1_P(NGLLX*max_interface_size,ninterface), &
-        ! TEST
-        buffer_DG_gamma_P(NGLLX*max_interface_size,ninterface))
+             buffer_DG_rhovx_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_rhovz_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_E_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_e1_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_gamma_P(NGLLX*max_interface_size,ninterface),stat=ier)
+    if (ier /= 0) then
+      ! Safeguard.
+      stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
+    endif
         
     allocate(buffer_DG_Tx_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_Tz_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_Vxx_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_Vzz_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_Vzx_P(NGLLX*max_interface_size,ninterface), &
-        buffer_DG_Vxz_P(NGLLX*max_interface_size,ninterface))
+             buffer_DG_Tz_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vxx_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vzz_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vzx_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vxz_P(NGLLX*max_interface_size,ninterface),stat=ier)
+    if (ier /= 0) then
+      ! Safeguard.
+      stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
+    endif
         
     allocate(ibool_interfaces_acoustic_DG(NGLLX*max_interface_size,ninterface))
     allocate(nibool_interfaces_acoustic_DG(ninterface))
@@ -851,9 +859,9 @@
     allocate(my_interfaces(1,1,1))
 
     allocate(buffer_DG_rho_P(1,1), &
-        buffer_DG_rhovx_P(1,1), &
-        buffer_DG_rhovz_P(1,1), &
-        buffer_DG_E_P(1,1))
+             buffer_DG_rhovx_P(1,1), &
+             buffer_DG_rhovz_P(1,1), &
+             buffer_DG_E_P(1,1))
     allocate(is_MPI_interface_DG(1))
 
     allocate(ibool_interfaces_acoustic(1,1))
