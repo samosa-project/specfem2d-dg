@@ -40,7 +40,7 @@ echo "  CPUs:              $NPROC."
 snapfreq=$(grep -e "NSTEP_BETWEEN_OUTPUT_IMAGES *= *[0-9]*" $parfile | grep -oe "[0-9]*")
 echo "  Snapshots saving:  $snapfreq timesteps."
 
-nbstations=$(grep "Station" $slurm | tail -1 | grep -o "[0-9][0-9]" | head -1)
+nbstations=$(grep "Station" $slurm | tail -1 | grep -P -o "[0-9]?[0-9]?[0-9]" | head -1)
 echo "  Receivers:         $nbstations."
 
 synthfreq=$(grep -e "NSTEP_BETWEEN_OUTPUT_SEISMOS *= *[0-9]*" $parfile | grep -oe "[0-9]*")
@@ -48,6 +48,7 @@ echo "  Synthetics saving: $synthfreq timesteps."
 
 dateregexep="D a t e : [0-9][0-9] - [0-9][0-9] - [0-9][0-9][0-9][0-9]"
 timeregexp="T i m e : [0-9][0-9]:[0-9][0-9]:[0-9][0-9]"
+slurmregexp="[0-9][0-9][0-9][0-9][0-9][0-9]"
 
 DATELINE1=$(grep -e "$dateregexep" $slurm | head -1)
 DATELINE2=$(grep -e "$dateregexep" $slurm | tail -1) # If job did not terminate completely, this is the same as DATELINE1.
@@ -73,7 +74,8 @@ then
   DATECANCELLED=$(grep "CANCELLED AT" $slurm | grep -oe "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" | head -1)
   STAMPCANCEL=$(date --utc --date "$DATECANCELLED" +%s)
   #echo "    End date:    $DATECANCELLED (timestamp $STAMPCANCEL, job cancelled)."
-  echo "  Elapsed seconds:   $(($STAMPCANCEL-$STAMPSTART))."
+  elapsed=$(($STAMPCANCEL-$STAMPSTART))
+  echo "  Elapsed:         $elapsed seconds."
 else
   DATEEND=$(echo $DATELINE2 | grep -oe "$dateregexep")
   #echo $DATEEND
@@ -87,6 +89,13 @@ else
   #echo $TIMEEND
   DATEEND="$YEAREND-$MONTHEND-$DAYEND $TIMEEND"
   STAMPEND=$(date --utc --date "$DATEEND" +%s)
+  elapsed=$(($STAMPEND-$STAMPSTART))
   #echo "    End date:    $DATEEND (timestamp $STAMPEND)."
-  echo "  Run duration:      $(($STAMPEND-$STAMPSTART)) seconds."
+  echo "  Run duration:    $elapsed seconds."
 fi
+
+cflrounded=$(printf %.3f $cfl)
+slurmid=$(echo $slurm | grep -o $slurmregexp | tail -1)
+foldername=$(echo $folder | grep -o "/[^/]*$" | grep -o "[^/]*")
+echo "  One-liner to copy-paste in Matlab script './utils_new/estimate_run_time.m':"
+echo "  RUN_RAWDATA(i,:)=[$nelemtot $nelemacous $cflrounded $lasttimestep $NPROC $snapfreq $nbstations $synthfreq $elapsed]; RUNINFO{i}={$slurmid,'$foldername'}; i=i+1;"
