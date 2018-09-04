@@ -191,9 +191,10 @@ if(normalise==0)
   end
   if(scale==1)
     min_amplitude_log10=floor(log10(max(max(data_v(:,:)')-min(data_v(:,:)'))));
+    curxlim=get(gca,'xlim');
     for i=1:10
-      abs=(tmax+tmin)*i/11;
-      plot(abs*[1,1],dist_over_ptp*distance(istattab(isort(1)))*[1,1]+0.5*i*10^(min_amplitude_log10)*[-1,1],'DisplayName',sprintf("%.0e",i*10^(min_amplitude_log10)));
+      absc=curxlim(1)+diff(curxlim)*i/11;
+      plot(absc*[1,1],distance(istattab(isort(1)))*[1,1]+dist_over_ptp*0.5*i*10^(min_amplitude_log10)*[-1,1],'DisplayName',sprintf("%.0e",i*10^(min_amplitude_log10)));
     end
   end
 end

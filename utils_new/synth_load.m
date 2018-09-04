@@ -53,8 +53,8 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoBaro, 66, June, 12:00
-fig_title = strcat('Microbaroms, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+% fig_title = strcat('Microbaroms, lat66, June, 12:00');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
@@ -98,6 +98,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = st
 
 % Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); renorm = 1; renorm_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); renorm = 1; renorm_factor = 236; % Same as 593959 but test with first layers changed.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
@@ -117,11 +119,13 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = st
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
 % Quake, 45.
-% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); renorm = 1; renorm_factor = 1e-3;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
 % fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); renorm = 1; renorm_factor = 1e-3;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
@@ -159,7 +163,10 @@ pos_sources = [inf, inf]; % Allocate a row for the first source's position.
 % fid = fopen([rootd, '/DATA/SOURCE']);
 fid = fopen([OFd, 'SOURCE']);
 if (fid == - 1)
-  error(strcat("Cannot open SOURCE file (", [OFd, 'SOURCE'], ').'));
+  fid = fopen([OFd, 'input_source']);
+  if (fid == - 1)
+    error(strcat("Cannot open SOURCE file (", [OFd, 'SOURCE'], ').'));
+  end
 end
 line = 0; xfound = 0; zfound = 0; stop = 0;
 while (stop == 0)
@@ -221,8 +228,8 @@ end
 istattab = input(['  Stations (Matlab format, e.g. [1, 4, 7] or 1:20)?\n  > ']);
 nstat = size(pos_stations(istattab, 1), 1);
 % Ask for geometric attenuation (relies on distance to source).
-geometric_attenuation = - 1; inputtxt = char(strcat("  Apply geometric attenuation (1/sqrt(d) factor) to data? (0 for no, 1 for yes)\n  > "));
-while (not(geometric_attenuation == 0 || geometric_attenuation == 1));
+geometric_attenuation = - 1; inputtxt = char(strcat("  Apply geometric attenuation factor to data? (0 for no, 1 for d, 2 for x, 3 for z)\n  > "));
+while (not(ismember(geometric_attenuation,[0,1,2,3])))
   geometric_attenuation = input(inputtxt);
 end
 % Ask if plot y-axis should be normalised to same scale.
@@ -307,15 +314,31 @@ for istat = 1:nstat
 
   % Renormalisation (global, and eventually geometric).
   factor = 1; % Default value.
-  if (geometric_attenuation == 1)
-    factor = factor / (dist_to_sources(istat_glob) ^ 0.5);
+  if(geometric_attenuation~=0)
+    switch geometric_attenuation
+      case 1
+        geom_att_fact=dist_to_sources(istat_glob) ^ 0.5;
+      case 2
+        geom_att_fact=xstattab(istat_glob) ^ 0.5;
+      case 3
+        geom_att_fact=ystattab(istat_glob) ^ 0.5;
+      otherwise
+        error('[ERROR] Geometric attenuation parameter not implemented.');
+    end
+    if(geom_att_fact==0)
+      geom_att_fact=1;
+    end
+    factor = factor / geom_att_fact;
   end
   if (renorm_factor ~= 1)
-    renorm = - 1;
+    renorm = -1;
     disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), "."));
     inputtxt = char(strcat("    Renormalise data for station ", num2str(istat_glob), "? (0 for no, 1 for yes) > "));
-    while (not(renorm == 0 || renorm == 1))
+    while (not(ismember(renorm,[0,1])))
       renorm = input(inputtxt);
+      if(isempty(renorm))
+        renorm=1;
+      end
     end
   end
   if (renorm == 1)
