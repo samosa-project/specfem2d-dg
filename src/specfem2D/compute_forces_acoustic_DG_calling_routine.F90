@@ -486,6 +486,7 @@ subroutine prepare_MPI_DG()
     logical :: one_other_node_is_found, one_other_node_is_found_corner
    
     allocate(MPI_transfer_iface(NGLLX, 4, nspec,2))
+    ! 4 because elements have four sides in 2D. This will change when considering 3D. Maybe consider using a variable here.
     
     do ispec = 1, nspec
       do i = 1, NGLLX
@@ -505,7 +506,6 @@ subroutine prepare_MPI_DG()
     buffer_send_faces_vector_DG_i = -1. 
     buffer_recv_faces_vector_DG_j = -1.
     buffer_send_faces_vector_DG_j = -1.   
-    
     buffer_send_faces_vector_DG_i2try = -1.
     buffer_send_faces_vector_DG_j2try = -1.
     buffer_send_faces_vector_DG_i1try = -1.
@@ -513,185 +513,160 @@ subroutine prepare_MPI_DG()
     
     ! MPI SEND INFO ABOUT DIAG ELEMENT OR NOT
     do iinterface = 1, ninterface_acoustic_DG
-
-    ! gets interface index in the range of all interfaces [1,ninterface]
-    num_interface = inum_interfaces_acoustic_DG(iinterface)
-    
-    ! loops over all interface points
-    do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
-    
+      ! gets interface index in the range of all interfaces [1,ninterface]
+      num_interface = inum_interfaces_acoustic_DG(iinterface)
+      
+      ! loops over all interface points
+      do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
         iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
-        
         i = link_ij_iglob(iglob,1)
         j = link_ij_iglob(iglob,2)
         ispec = link_ij_iglob(iglob,3)
-        
         buffer_send_faces_vector_DG_i(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
         buffer_send_faces_vector_DG_j(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !
         ! CORRIGER ICI EN RECUPERANT CORRECTEMENT LE NUMERO DE IFACE ET IFACE1 POUR LES POINTS TRY
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! RECOVER CURRENT ELEMENT PROPERTIES (IFACE1, IFACE)
         iface1 = link_ijispec_iface(i,j,ispec,1,1)
         iface1 = iface1 + 1
-        if(iface1 > 5) iface1 = link_ijispec_iface(i,j,ispec,1,1) - 1
-        iface  = link_ijispec_iface(i,j,ispec,2,1)
-        
+        if(iface1 > 5) then
+          iface1 = link_ijispec_iface(i,j,ispec,1,1) - 1
+        endif
+        iface = link_ijispec_iface(i,j,ispec,2,1)
         iface1_corner = -1
-        iface_corner  = -1
+        iface_corner = -1
         neighbor_corner = -1
         if(is_corner(i,j) .AND. link_ijispec_iface(i,j,ispec,1,2) > -1) then
-                iface1_corner   = link_ijispec_iface(i,j,ispec,1,2)
-                iface1_corner   = iface1_corner + 1
-                if(iface1_corner > 5) iface1_corner = link_ijispec_iface(i,j,ispec,1,2) - 1
-                iface_corner    = link_ijispec_iface(i,j,ispec,2,2)
-                
-                
-                i     = link_iface_ijispec(iface1_corner, iface_corner, ispec,1)
-                j     = link_iface_ijispec(iface1_corner, iface_corner, ispec,2)
-                buffer_send_faces_vector_DG_i2try(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
-                buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
-                
+          iface1_corner = link_ijispec_iface(i,j,ispec,1,2)
+          iface1_corner = iface1_corner + 1
+          if(iface1_corner > 5) then
+            iface1_corner = link_ijispec_iface(i,j,ispec,1,2) - 1
+          endif
+          iface_corner = link_ijispec_iface(i,j,ispec,2,2)
+          i = link_iface_ijispec(iface1_corner, iface_corner, ispec,1)
+          j = link_iface_ijispec(iface1_corner, iface_corner, ispec,2)
+          buffer_send_faces_vector_DG_i2try(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
+          buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
         else
-        
-                buffer_send_faces_vector_DG_i2try(ipoin,iinterface) = -1.
-                buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = -1.
-        
+          buffer_send_faces_vector_DG_i2try(ipoin,iinterface) = -1.
+          buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = -1.
         endif
-        
         !neighbor = neighbor_DG_iface(iface1,iface,ispec,3)
         i     = link_iface_ijispec(iface1, iface, ispec,1)
         j     = link_iface_ijispec(iface1, iface, ispec,2)
         buffer_send_faces_vector_DG_i1try(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
         buffer_send_faces_vector_DG_j1try(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
-        
-    enddo
-    
-    enddo
+      enddo ! Enddo on ipoin.
+    enddo ! Enddo on iinterface.
     
     do iinterface = 1, ninterface_acoustic_DG
+      ! gets interface index in the range of all interfaces [1,ninterface]
+      num_interface = inum_interfaces_acoustic_DG(iinterface)
+      nb_values = nibool_interfaces_acoustic_DG(num_interface)
+      
+      call MPI_ISEND( buffer_send_faces_vector_DG_i(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_ISEND unsuccessful in prepare_MPI_DG - i')
+      endif
 
-    ! gets interface index in the range of all interfaces [1,ninterface]
-    num_interface = inum_interfaces_acoustic_DG(iinterface)
-        
-    nb_values = nibool_interfaces_acoustic_DG(num_interface)
-    
-    call MPI_ISEND( buffer_send_faces_vector_DG_i(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(iinterface), ier)
-        
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
-    endif
+      ! starts a non-blocking receive
+      call MPI_IRECV ( buffer_recv_faces_vector_DG_i(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_IRECV unsuccessful in prepare_MPI_DG - i')
+      endif
+      
+      call MPI_ISEND( buffer_send_faces_vector_DG_j(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*2+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_ISEND unsuccessful in prepare_MPI_DG - j')
+      endif
 
-    ! starts a non-blocking receive
-    call MPI_IRECV ( buffer_recv_faces_vector_DG_i(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), ier)
-     
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
-    endif
-    
-    call MPI_ISEND( buffer_send_faces_vector_DG_j(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*2+iinterface), ier)
-        
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
-    endif
+      ! starts a non-blocking receive
+      call MPI_IRECV ( buffer_recv_faces_vector_DG_j(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*3+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_IRECV unsuccessful in prepare_MPI_DG - j')
+      endif
+               
+      call MPI_ISEND( buffer_send_faces_vector_DG_i1try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*4+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_ISEND unsuccessful in prepare_MPI_DG - i1try')
+      endif
 
-    ! starts a non-blocking receive
-    call MPI_IRECV ( buffer_recv_faces_vector_DG_j(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*3+iinterface), ier)
-     
-     if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
-    endif
-             
-    call MPI_ISEND( buffer_send_faces_vector_DG_i1try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*4+iinterface), ier)
-        
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
-    endif
+      ! starts a non-blocking receive
+      call MPI_IRECV ( buffer_recv_faces_vector_DG_i1try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*5+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_IRECV unsuccessful in prepare_MPI_DG - i1try')
+      endif
+      
+      call MPI_ISEND( buffer_send_faces_vector_DG_j1try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*6+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_ISEND unsuccessful in prepare_MPI_DG - j1try')
+      endif
 
-    ! starts a non-blocking receive
-    call MPI_IRECV ( buffer_recv_faces_vector_DG_i1try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*5+iinterface), ier)
-     
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
-    endif
-    
-    call MPI_ISEND( buffer_send_faces_vector_DG_j1try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*6+iinterface), ier)
-        
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
-    endif
+      ! starts a non-blocking receive
+      call MPI_IRECV ( buffer_recv_faces_vector_DG_j1try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*7+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_IRECV unsuccessful in prepare_MPI_DG - j1try')
+      endif
+      
+      call MPI_ISEND( buffer_send_faces_vector_DG_i2try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*8+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_ISEND unsuccessful in prepare_MPI_DG - i2try')
+      endif
 
-    ! starts a non-blocking receive
-    call MPI_IRECV ( buffer_recv_faces_vector_DG_j1try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*7+iinterface), ier)
-     
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
-    endif
-    
-    call MPI_ISEND( buffer_send_faces_vector_DG_i2try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*8+iinterface), ier)
-        
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
-    endif
+      ! starts a non-blocking receive
+      call MPI_IRECV ( buffer_recv_faces_vector_DG_i2try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*9+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_IRECV unsuccessful in prepare_MPI_DG - i2try')
+      endif
+      
+      call MPI_ISEND( buffer_send_faces_vector_DG_j2try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*10+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_ISEND unsuccessful in prepare_MPI_DG - j2try')
+      endif
 
-    ! starts a non-blocking receive
-    call MPI_IRECV ( buffer_recv_faces_vector_DG_i2try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*9+iinterface), ier)
-     
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
-    endif
-    
-    call MPI_ISEND( buffer_send_faces_vector_DG_j2try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*10+iinterface), ier)
-        
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_ISEND unsuccessful in assemble_MPI_vector_start')
-    endif
-
-    ! starts a non-blocking receive
-    call MPI_IRECV ( buffer_recv_faces_vector_DG_j2try(1,iinterface), &
-             nb_values, MPI_DOUBLE, &
-             my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
-             tab_requests_send_recv_DG(ninterface_acoustic_DG*11+iinterface), ier)
-     
-    if (ier /= MPI_SUCCESS) then
-      call exit_MPI(myrank,'MPI_IRECV unsuccessful in assemble_MPI_vector')
-    endif
-    
+      ! starts a non-blocking receive
+      call MPI_IRECV ( buffer_recv_faces_vector_DG_j2try(1,iinterface), &
+               nb_values, MPI_DOUBLE, &
+               my_neighbours(num_interface), 14, MPI_COMM_WORLD, &
+               tab_requests_send_recv_DG(ninterface_acoustic_DG*11+iinterface), ier)
+      if (ier /= MPI_SUCCESS) then
+        call exit_MPI(myrank,'MPI_IRECV unsuccessful in prepare_MPI_DG - j2try')
+      endif
     enddo
     
     ! waits for MPI requests to complete (recv)
@@ -699,7 +674,6 @@ subroutine prepare_MPI_DG()
     do iinterface = 1, 12*ninterface_acoustic_DG
       call MPI_Wait(tab_requests_send_recv_DG(iinterface), &
                   MPI_STATUS_IGNORE, ier)
-    
       !call MPI_Wait(tab_requests_send_recv_DG(iinterface + 3*ninterface_acoustic_DG), &
       !            MPI_STATUS_IGNORE, ier)
     enddo
@@ -750,8 +724,8 @@ subroutine prepare_MPI_DG()
           coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
           coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
           
-          if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
-              (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) then
+          if(     (coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) &
+             .OR. (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)) then
             one_other_node_is_found = .true.
           endif
                   
@@ -762,8 +736,8 @@ subroutine prepare_MPI_DG()
             coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
             coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
             
-            if((coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) .OR. &
-                (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)  ) then
+            if(     (coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) &
+               .OR. (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)) then
               one_other_node_is_found_corner = .true.
             endif
           endif
@@ -774,9 +748,9 @@ subroutine prepare_MPI_DG()
         coord_i_1 = coord(1,ibool(i,j,ispec))
         coord_j_1 = coord(2,ibool(i,j,ispec))
         
-        if( (neighbor == -1 .OR. neighbor_corner == -1) .AND. &
-                 (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
-                        .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
+        if(      (neighbor == -1 .OR. neighbor_corner == -1) &
+           .AND. (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
+           .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
           if(one_other_node_is_found) then
             MPI_transfer_iface(iface1,iface,ispec,1) = ipoin ! Specifies that point ispec on face (iface1,iface) is point ipoin (on interface num_interface).
             MPI_transfer_iface(iface1,iface,ispec,2) = num_interface ! Specifies that point ispec on face (iface1,iface) is (point ipoin) on interface num_interface.
