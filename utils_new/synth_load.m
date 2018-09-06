@@ -21,7 +21,7 @@ SPCFMloc = '/home/l.martire/Documents/SPECFEM/';
 % Default parameters' values. %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Those can be re-set inline for each OUTPUT_FILES directory (see "OUTPUT_FILES location" section below).
-renorm = 0; renorm_factor = 1; % Renormalisation.
+rescale_factor = 1; % Rescaling: by default, do no rescale.
 coord_units = 'km'; % Self-explanatory.
 convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordinates: x=0 above source, z=0 on surface (defined by pos_interface).
 
@@ -98,8 +98,8 @@ unknown = 'BXZ'; % _z.
 
 % Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); renorm = 1; renorm_factor = 236; % Same as 593959 but test with first layers changed.
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); renorm = 1; renorm_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
@@ -119,13 +119,13 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
 % Quake, 45.
-fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); renorm = 1; renorm_factor = 1e-3;
+% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); rescale_factor = 1e-3;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
-% fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); renorm = 1; renorm_factor = 1e-3;
+fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
@@ -312,41 +312,45 @@ for istat = 1:nstat
   % Ztime(istat, :) = Ztime(istat, :) - Ztime(istat, 1); % Make time values start at zero.
   Zamp(istat, 1:nd) = data(1:nsub:nt, 2)';
 
-  % Renormalisation (global, and eventually geometric).
-  factor = 1; % Default value.
+  % Renormalisation (global, and geometric).
+  factor = 1; % Reset to default value for each station.
   if(geometric_attenuation~=0)
+    % If geometric_attenuation was asked by user.
     switch geometric_attenuation
       case 1
-        geom_att_fact=dist_to_sources(istat_glob) ^ 0.5;
+        geom_att_fact=dist_to_sources(istat_glob) ^ 0.5; % Geometric attenuation respective to raw distance to source.
       case 2
-        geom_att_fact=xstattab(istat_glob) ^ 0.5;
+        geom_att_fact=xstattab(istat_glob) ^ 0.5; % Geometric attenuation respective to horizontal distance to source.
       case 3
-        geom_att_fact=ystattab(istat_glob) ^ 0.5;
+        geom_att_fact=ystattab(istat_glob) ^ 0.5; % Geometric attenuation respective to vertical distance to source.
       otherwise
         error('[ERROR] Geometric attenuation parameter not implemented.');
     end
     if(geom_att_fact==0)
+      % If exactly at zero distance, consider no geometric rescaling.
       geom_att_fact=1;
     end
     factor = factor / geom_att_fact;
   end
-  if (renorm_factor ~= 1)
-    renorm = -1;
-    disp(strcat("    Specified renormalisation factor is ", num2str(renorm_factor), "."));
-    inputtxt = char(strcat("    Renormalise data for station ", num2str(istat_glob), "? (0 for no, 1 for yes) > "));
-    while (not(ismember(renorm,[0,1])))
-      renorm = input(inputtxt);
-      if(isempty(renorm))
-        renorm=1;
+  if (rescale_factor ~= 1)
+    % Rescaling was asked. Check again with user.
+    renorm_statbystat = -1;
+    disp(strcat("    Specified rescale factor is ", num2str(rescale_factor), "."));
+    inputtxt = char(strcat("    Rescale data for station ", num2str(istat_glob), "? (0 for no, 1 for yes) > "));
+    while (not(ismember(renorm_statbystat,[0,1])))
+      renorm_statbystat = input(inputtxt);
+      if(isempty(renorm_statbystat))
+        renorm_statbystat=1;
       end
     end
   end
-  if (renorm == 1)
-    factor = factor * renorm_factor;
+  if (renorm_statbystat == 1)
+    % If rescaling is actually wanted by user, do it.
+    factor = factor * rescale_factor;
   end
-  Zamp(istat, :) = factor * Zamp(istat, :);
+  Zamp(istat, :) = factor * Zamp(istat, :); % Rescale.
 
-  % Enventually display.
+  % Eventually, display.
   if (display_or_load == 0)
     ax(istat) = subplot(nstat, 1, istat);
     if (strcmp(coord_units, 'km'))
@@ -420,8 +424,8 @@ end
 if (geometric_attenuation == 0)
   clear('geometric_attenuation');
 end
-if (renorm == 0)
-  clear('renorm', 'renorm_factor');
+if (renorm_statbystat == 0)
+  clear('renorm_statbystat', 'rescale_factor');
 end
 
 synth_load_was_ran=1;
@@ -455,7 +459,7 @@ end
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); renorm_factor=8.840811261618920e-04;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); rescale_factor=8.840811261618920e-04;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580185/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580228/');
@@ -512,7 +516,7 @@ end
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_591778_66j1200_regmukap0_softground_nocrash');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_583180');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_583194');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); renorm_factor=8.840811261618920e-04;
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); rescale_factor=8.840811261618920e-04;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_591776_additional_stations');fig_title = 'test_soft';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_591777_additional_stations');fig_title = 'test_hard';
 
