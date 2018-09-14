@@ -95,7 +95,7 @@
     zgamma = zgamma + dershape2D(2,ia)*zelm
 
   enddo
-
+  
   jacobian = xxi*zgamma - xgamma*zxi ! See in particular Hesthaven (doi.org/10.1007/9780387720678), section 6.1.
 
 ! the Jacobian is negative, so far this means that there is an error in the mesh
@@ -149,6 +149,22 @@
 ! close OpenDX file
     close(11)
 
+    
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Negative 2D Jacobian found.  *"
+    write(*,*) "* If ALL elements have a       *"
+    write(*,*) "* negative Jacobian, maybe all *"
+    write(*,*) "* elements are completely      *"
+    write(*,*) "* inverted, and you need to    *"
+    write(*,*) "* check point indexing. If     *"
+    write(*,*) "* your mesh comes from a GMSH  *"
+    write(*,*) "* .msh file then processed by  *"
+    write(*,*) "* './utils/Gmsh/LibGmsh2Specfem_convert_Gmsh_to_Specfem2D_official.py',"
+    write(*,*) "* consider using               *"
+    write(*,*) "* './utils_new/external_meshing/reverse_node_numbering.py'."
+    write(*,*) "********************************"
     stop 'negative 2D Jacobian, element saved in DX_first_element_with_negative_jacobian.dx'
   endif
 
