@@ -258,10 +258,13 @@
         
         ! Quick use of the loops
         if(USE_DISCONTINUOUS_METHOD) then
-        if( ispec == 1 .AND. ((j == 1 .AND. i == 1) &
-                .OR. (j == NGLLZ .AND. i == 1) &
-                .OR. (j == 1 .AND. i == NGLLX) &
-                .OR. (j == NGLLZ .AND. i == NGLLX)) ) is_corner(i,j) = .true.
+          if(      ispec == 1 & ! TODO: Why ??
+             .AND. (     (j == 1     .AND. i == 1) &
+                    .OR. (j == NGLLZ .AND. i == 1) &
+                    .OR. (j == 1     .AND. i == NGLLX) &
+                    .OR. (j == NGLLZ .AND. i == NGLLX))) then
+            is_corner(i,j) = .true.
+          endif
         endif
         
       enddo
@@ -324,49 +327,45 @@
 
   end subroutine setup_mesh_coordinates
 
-!
-!-----------------------------------------------------------------------------------
-!
+! ------------------------------------------------------------ !
+! setup_mesh_DG                                                !
+! ------------------------------------------------------------ !
+! TODO: Description.
+! 
+! Face numerotation convention:
+!            4
+!      +-----------+
+!      |           |
+!      |           |
+!    1 |           | 2
+!      |           |
+!      |           |
+!      +-----------+
+!            3
 
-
-  subroutine setup_mesh_DG()
+subroutine setup_mesh_DG()
 
   use specfem_par
 
   implicit none
 
-  ! local parameters
-
+  ! Local.
   integer :: i,j,ispec,iglob
-  
   integer :: i2,j2,ispec2,iglob2
   integer :: i3, iglob3
   logical :: found
-  
-  ! MAJOR MODIF
   integer :: iface, i1face, i1face_try, i2face, iface2, iglob3_try
   logical :: one_other_is_found
   
-  is_corner = .false.
+  is_corner = .false. ! TODO: Why ??
   
   allocate(link_iface_ijispec(NGLLX,4,nspec,2), &
-        neighbor_DG_iface(NGLLX, 4, nspec, 3), &
-        link_ijispec_iface(NGLLX, NGLLZ, nspec, 2, 2))
+           neighbor_DG_iface(NGLLX, 4, nspec, 3), &
+           link_ijispec_iface(NGLLX, NGLLZ, nspec, 2, 2))
   link_ijispec_iface = -1
+  
   ! Find iface numerotation
   do ispec = 1,nspec
-  
-      !            4
-      !    |----------------|
-      !    |                |
-      !    |                |
-      ! 1  |                | 2
-      !    |                |
-      !    |                |
-      !    |                |
-      !    |----------------|
-      !            3
-  
     iface = 1
     do i = 1,1
       do j = 1,NGLLZ
@@ -415,7 +414,7 @@
       enddo ! Enddo on j.
     enddo ! Enddo on i.
         
-      iface = 4
+    iface = 4
     do i = 1,NGLLX
       do j = NGLLZ,NGLLZ
         ! Compute local face number
@@ -509,7 +508,7 @@
   
   call setup_mesh_surface_DG()
   
-  end subroutine setup_mesh_DG
+end subroutine setup_mesh_DG
 
 !
 !-----------------------------------------------------------------------------------

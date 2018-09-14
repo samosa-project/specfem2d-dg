@@ -495,7 +495,8 @@ subroutine prepare_MPI_DG()
           link_ij_iglob(iglob_DG,1) = i
           link_ij_iglob(iglob_DG,2) = j
           link_ij_iglob(iglob_DG,3) = ispec
-          if((i == 1 .AND. (j == 1 .OR. j == NGLLZ)) .OR. (i == NGLLX .AND. (j == 1 .OR. j == NGLLZ))) then
+          if(     (i == 1 .AND. (j == 1 .OR. j == NGLLZ)) &
+             .OR. (i == NGLLX .AND. (j == 1 .OR. j == NGLLZ))) then
             is_corner(i,j) = .true.
           endif
         enddo
@@ -517,6 +518,7 @@ subroutine prepare_MPI_DG()
       num_interface = inum_interfaces_acoustic_DG(iinterface)
       
       ! loops over all interface points
+      write(*,*) "cpu",myrank,"interface",iinterface,"npts",nibool_interfaces_acoustic_DG(num_interface)!DEBUG
       do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
         iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
         i = link_ij_iglob(iglob,1)
@@ -554,8 +556,8 @@ subroutine prepare_MPI_DG()
           buffer_send_faces_vector_DG_j2try(ipoin,iinterface) = -1.
         endif
         !neighbor = neighbor_DG_iface(iface1,iface,ispec,3)
-        i     = link_iface_ijispec(iface1, iface, ispec,1)
-        j     = link_iface_ijispec(iface1, iface, ispec,2)
+        i = link_iface_ijispec(iface1, iface, ispec,1)
+        j = link_iface_ijispec(iface1, iface, ispec,2)
         buffer_send_faces_vector_DG_i1try(ipoin,iinterface) = coord(1,ibool(i,j,ispec))
         buffer_send_faces_vector_DG_j1try(ipoin,iinterface) = coord(2,ibool(i,j,ispec))
       enddo ! Enddo on ipoin.
