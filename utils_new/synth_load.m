@@ -33,7 +33,7 @@ convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordin
 %   1 for yes, sorted by x.
 %   2 for yes, sorted by z.
 %   3 for yes, sorted by d.
-plot_amplitude=0;
+plot_amplitude=1;
 
 subsample = 0; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that synthetics are nsublength (below) long.
 nsublength = 1000; % Length of sub-sampled synthetics.
@@ -53,8 +53,8 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % StratoBaro, 66, June, 12:00
-% fig_title = strcat('Microbaroms, lat66, June, 12:00');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+fig_title = strcat('Microbaroms, lat66, June, 12:00');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
@@ -124,8 +124,8 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
-fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
+% fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
@@ -332,6 +332,7 @@ for istat = 1:nstat
     end
     factor = factor / geom_att_fact;
   end
+  renorm_statbystat = -1;
   if (rescale_factor ~= 1)
     % Rescaling was asked. Check again with user.
     renorm_statbystat = -1;

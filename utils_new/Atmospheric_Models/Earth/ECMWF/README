@@ -1,0 +1,3 @@
+The coefficients in the .dat file come directly from ECMWF's L137 model definition (https://www.ecmwf.int/en/forecasts/documentation-and-support/137-model-levels).
+
+The Python script is here to ease server requests, but needs API configuration (explanations TBD).

@@ -81,11 +81,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Description: bruteforce density such that hydrostatic gap is zero.
 if(strcmp(method, 'metaheuristic'))
-  disp(['[WARNING] Metaheuristic methods can be very long.']);
+  disp(['[',mfilename,', WARNING] Metaheuristic methods can be very long.']);
   callFromOutside=1;
   algo = 'ps';
   ftol = 1e-16;
   maxit = 10000;
-  metaheuristics;
+  modify_atmos_model_metaheuristics;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
