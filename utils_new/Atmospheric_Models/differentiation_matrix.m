@@ -1,3 +1,10 @@
+% Author:        Quentin Brissaud, Léo Martire.
+% Mail:          quentinb@gps.caltech.edu
+% Description:   TODO.
+% Last modified: See file metadata.
+% Usage:         N/A.
+% Notes:         As of 2018/09/18, only used by 'modify_atmos_model.m' and 'Richardson_number.m'.
+
 function [D] = differentiation_matrix(Z, conditionning)
   % Ref.: http://acoustique.ec-lyon.fr/publi/haniquecockenpot_thesis.pdf.
   dz = Z(2) - Z(1);
@@ -66,4 +73,3 @@ function [D] = differentiation_matrix(Z, conditionning)
   end
   % D(end, end) = 1.0; D(end, 1:end-1) = 0.0; % Conditioning.
 end
-

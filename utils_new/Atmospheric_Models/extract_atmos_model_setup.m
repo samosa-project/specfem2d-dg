@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [datestr, posstr, year, daysincenewyear, secondssincenewday, lat, lon, f107a, f107, ap] = extract_data_setup(DATAFILE)
+function [datestr, posstr, year, daysincenewyear, secondssincenewday, lat, lon, f107a, f107, ap] = extract_atmos_model_setup(DATAFILE)
   fid = fopen(DATAFILE);
   if(fid==-1)
     error(strcat("Cannot open file ", DATAFILE,').'))

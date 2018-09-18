@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA] = extract_data(DATAFILE, headerlines, interpolate, interp_delta)
+function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load and store data.        %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -3,7 +3,7 @@
 % Description:   TODO.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         N/A.
+% Notes:         Modules used by 'modify_atmos_model.m'.
 
 % clear all;
 % close all;
