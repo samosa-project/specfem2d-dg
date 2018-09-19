@@ -4,7 +4,7 @@
 % Last modified: See file metadata.
 % Usage:         1) Make sure an ERA5 file was previously downloaded.
 %                2) Call the function with the path to that ERA5 file as argument.
-% Notes:         N/A.
+% Notes:         If this function fails, ncdisp(ecmwf_era5_file) can help debugging.
 
 function [points,z,T,p_half,p_full,g,w_M,w_Z]=retrieve_ECMWF(ecmwf_era5_file)
   % Default paths.
