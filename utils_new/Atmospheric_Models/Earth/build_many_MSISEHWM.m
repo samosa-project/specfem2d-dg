@@ -27,12 +27,12 @@ output_foldername = 'stratospheric';
 altitude_min = 0;
 altitude_max = 150e3;
 nsteps = 1501;
-lats =        [66.56306, 45, 23.43694, 0, -23.43694, -66.56306]; % [°], [-90, 90]. Must be paired with longitudes' vector.
-lons =        [ 0,        0,  0,       0,   0,         0      ]; % [°], [0, 360]. Must be paired with latitudes' vector.
-year = 0;
-days =        [356, 356, 173, 173]; % [ ], [0, 366]. Must be paired with seconds' vector.
-secs = 3600 * [0,    12,   0,  12]; localtime=0; % Giving UT. [s], [0, 86400]. Must be paired with days' vector.
-% LTH = [0, 12, 0, 12]; localtime=1; % Giving local time. [s], [0, 86400]. Must be paired with days' vector.
+lats  =        [66.56306, 45, 23.43694, 0, -23.43694, -66.56306]; % [°], [-90, 90]. Must be paired with longitudes' vector.
+lons  =        [ 0,        0,  0,       0,   0,         0      ]; % [°], [0, 360]. Must be paired with latitudes' vector.
+annee = 0;
+days  =        [356, 356, 173, 173]; % [ ], [0, 366]. Must be paired with seconds' vector.
+secs  = 3600 * [0,    12,   0,  12]; solar_app_time=0; % Giving UT. [s], [0, 86400]. Must be paired with days' vector.
+% LTH = [0, 12, 0, 12]; solar_app_time=1; % Giving solar apparent time. [hrs], [0, 24[. Must be paired with days' vector.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Begin treatment,            %
@@ -50,16 +50,18 @@ for i = 1:numel(lats)
   lon = lons(i);
 
   for j = 1:numel(days)
-    day = days(j);
-    if (localtime == 0)
+    jour = days(j);
+    if (solar_app_time == 0)
       % If UT is given, use it.
       sec = secs(j);
     else
-      % If local time is given, convert it to UT.
-      sec = mod(LTH(j) - lon / 15, 24) * 3600;
+      % If solar apparent time is given, convert it to UT.
+%       sec = mod(LTH(j) - lon / 15, 24) * 3600; % Old version.
+      [~,~,~,sec]=UT2SAT(LTH(j)*3600,lon,1);
     end
+    pause
  
-    daystr = pad(num2str(day), 3, 'left', "0"); % For output file name formatting.
+    daystr = pad(num2str(jour), 3, 'left', "0"); % For output file name formatting.
     secstr = pad(sprintf("%.1f",sec), 7, 'left', "0"); % For output file name formatting.
     latstr = strcat(pad(sprintf("%.5f", sign(lat)*lat), 8, 'left', "0")); % For output file name formatting.
     if (sign(lat) > 0)
@@ -69,9 +71,9 @@ for i = 1:numel(lats)
     end
     lonstr = pad(sprintf("%.5f", 270), 9, 'left', "0"); % For output file name formatting.
 %     output_file = strcat(num2str(2000 + year), "_", daystr, "_", secstr, "_", latstr, "_", lonstr, "_", num2str(altitude_min), "_", num2str(altitude_max), "_", num2str(nsteps), "_", sprintf("%.1f",projection_angle));
-    output_file=model_namer(altitude_min, altitude_max, nsteps, lat, lon, year, day, sec, output_file, output_folder, projection_angle);
+    output_file=model_namer(altitude_min, altitude_max, nsteps, lat, lon, annee, jour, sec, projection_angle);
     
-    o_f_stored=build_MSISEHWM(altitude_min, altitude_max, nsteps, lat, lon, year, day, sec, output_file, output_folder, projection_angle);
+    o_f_stored=build_MSISEHWM(altitude_min, altitude_max, nsteps, lat, lon, annee, jour, sec, output_file, output_folder, projection_angle);
   end
 end
 
