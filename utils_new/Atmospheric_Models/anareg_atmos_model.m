@@ -42,7 +42,8 @@ method='bruteforce_rho'; % Bruteforce $\rho = -\partial_z{P} / g_z$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % disp(['[INPUT] Path (relative or absolute) to datafile to be loaded? You''re in ''', pwd ,'''.']); DATAFILE = input(' > ', 's'); disp(['[INPUT] Number of header lines of datafile to be loaded? Default is 3.']); headerlines = input(' > ');
 % DATAFILE = "/home/l.martire/Documents/SPECFEM/Ongoing_Work/atmospheric/stratospheric/0_150000_1501_66.56306_0.00000_0_173_43200.00000_0.00000"; headerlines=3;
-DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/Earth/msiseecmwf_tests/msiseecmwf_2016_149__-37.00000_280.00000_0_70000_4000_0.00000"; headerlines=3;
+% DATAFILE = "/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/Earth/msiseecmwf_tests/msiseecmwf_2016_149__-37.00000_280.00000_0_70000_4000_0.00000"; headerlines=3;
+DATAFILE=input(['[',mfilename,'] Input atmospheric model file to use > '],'s'); headerlines=3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,10 +287,10 @@ if(decision==0)
 end
 
 % prefix="reg_";
-% nVISCMU=0*nVISCMU;prefix="reg+mu0_"; disp(['[',mfilename,']   [WARNING] MU WAS SET TO ZERO.']);
-nKAPPA=0*nKAPPA;prefix="reg+kappa0_"; disp(['[',mfilename,']   [WARNING] KAPPA WAS SET TO ZERO.']);
-% nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix="reg+mukappa0_"; disp(['[',mfilename,']   [WARNING] MU AND KAPPA WERE SET TO ZERO.']);
-SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL, '/');
+% nVISCMU=0*nVISCMU;prefix='reg+mu0_'; disp(['[',mfilename,']   [WARNING] MU WAS SET TO ZERO.']);
+nKAPPA=0*nKAPPA;prefix='reg+kappa0_'; disp(['[',mfilename,']   [WARNING] KAPPA WAS SET TO ZERO.']);
+% nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix='reg+mukappa0_'; disp(['[',mfilename,']   [WARNING] MU AND KAPPA WERE SET TO ZERO.']);
+SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL, '/');nDATAFILE=nDATAFILE{1};
 rewrite_atmos_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, nN.^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

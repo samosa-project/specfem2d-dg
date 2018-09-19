@@ -1,22 +1,26 @@
-% Author:        Léo Martire, Guerman Poler.
+% Author:        Léo Martire.
 % Mail:          leo.martire@outlook.com
 % Description:   Builds an atmospheric model file (directly compatible with SPECFEM) using MSISE and ECMWF models.
 % Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         N/A.
+% Usage:         1) Download an ERA5 from ECMWF's API (use the function 'prepare_call_ECMWF_API').
+%                2) Call this script.
+% Notes:         An ERA5 file must have previously been downloaded. See
+%                the provided Matlab script 'prepare_call_ECMWF_API' in
+%                order to do so.
 
 clear all;
 close all;
 clc;
 
-tmp=evalc('which extract_data');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp'); % Addpath for the 'extract_data' function.
+tmp=evalc('which extract_atmos_model');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp'); % Addpath for the 'extract_atmos_model' function.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parametrisation.            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ECMWF_DATAFILE='/home/l.martire/Downloads/Atmospheric_model/Data/ERA5/era5.nc';
+ECMWF_DATAFILE=input(['[',mfilename,'] Input ERA5 file to use > '],'s');
 threshold_ok_latlon=0.5; % If point is < 0.5 ° away, consider it ok.
 threshold_ok_time=10; % If time is < 10 minutes away, consider it ok.
-ECMWF_DATAFILE='/home/l.martire/Downloads/Atmospheric_model/Data/ERA5/era5.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Constants.                  %
