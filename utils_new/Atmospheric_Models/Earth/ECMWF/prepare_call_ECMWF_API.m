@@ -23,7 +23,7 @@ function prepare_call_ECMWF_API(start_date, end_date, times, minmax_lon, minmax_
   
   % Save calling directory.
   calling_dir=pwd;
-    
+  
   % Get user HOME and check if API key is here.
   cd('~');
   if(not(exist(apikeyfilename,'file')))

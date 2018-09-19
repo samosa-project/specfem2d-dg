@@ -38,12 +38,7 @@ disp(['[',mfilename,'] Selected ERA5 file is: ',ECMWF_DATAFILE]);
 ecmwf_lon=pts{1};
 ecmwf_lat=pts{2};
 ecmwf_time=pts{4};
-era5lonspan=['(',num2str(min(ecmwf_lon)),', ',num2str(max(ecmwf_lon)),')°E'];
-era5latspan=['(',num2str(min(ecmwf_lat)),', ',num2str(max(ecmwf_lat)),')°N'];
-era5timespan=['(',datestr(min(ecmwf_time),'YYYY/mm/dd HH:MM:SS'),', ',datestr(max(ecmwf_time),'YYYY/mm/dd HH:MM:SS'),') UT'];
-disp(['[',mfilename,'] ERA5 file spans: ',era5lonspan,',']);
-disp(['[',mfilename,']                  ',era5latspan,',']);
-disp(['[',mfilename,']                  ',era5timespan,'.']);
+[era5lonspan,era5latspan,era5timespan] = retrieve_ECMWF_span(pts);
 
 % Ask user input.
 aim_long=input(['[',mfilename,'] Input wanted longitude (must be in ',era5lonspan,') > ']);
