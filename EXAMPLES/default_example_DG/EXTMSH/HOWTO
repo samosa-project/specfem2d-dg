@@ -1,0 +1,9 @@
+How to use an external mesh?
+
+1) Define the geometry in extMesh.geo.
+
+2) Use GSMH to produce a .msh file from that .geo file.
+
+3) Use the .sh script to convert the GMSH .msh file to SPECFEM external mesh files.
+
+4) Set read_external_mesh to .true. in the parameter file.

@@ -46,9 +46,14 @@ echo
 echo ">> Store setup to the 'OUTPUT_FILES' folder."
 cp ./DATA/Par_file ./OUTPUT_FILES/input_parfile
 cp ./DATA/SOURCE ./OUTPUT_FILES/input_source
-cp ./$interfacefileName OUTPUT_FILES/input_interfaces
+cp ./$interfacefileName ./OUTPUT_FILES/input_interfaces
 cp ./atmospheric_model.dat ./OUTPUT_FILES/input_atmospheric_model.dat
-cp ./external_bottom_forcing.dat ./OUTPUT_FILES/input_EBF.dat
+if [ -e "external_bottom_forcing.dat" ]; then
+  tar -czf ./OUTPUT_FILES/input_EBF.tar ./external_bottom_forcing.dat
+fi
+if [ -d "EXTMSH" ]; then
+  tar -czf ./OUTPUT_FILES/input_EXTMSH.tar ./EXTMSH/*
+fi
 # Save model config
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
 cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
