@@ -51,6 +51,7 @@ function prepare_call_ECMWF_API(start_date, end_date, times, minmax_lon, minmax_
   disp(' ');
   disp(command);
   disp(' ');
+  disp(['  [',mfilename,'] Then, wait until request is treated.']);
 
   % cd back to previous folder.
   cd(calling_dir);

@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Script pour se connecteur sur serveur des données ECMWF et télécharger le modèle demandé
-# Plus d'informations au niveau des paramètres sur https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
-# On peut également constituer la requête grâce au catalogue http://apps.ecmwf.int/data-catalogues/era5/?class=ea
-# Afin de calculer le géopotentiel et la pression, il est nécessaire de récupérer la température, l'humidité spécifique, le logarithme de la pression surfacique et le géopotentiel au sol (IDs : 130, 133, 152, 129)
+# Author:        Guerman Poler, Léo Martire.
+# Mail:          leo.martire@outlook.com
+# Description:   Calls ECMWF API with requested parameters.
+# Last modified: See file metadata.
+# Usage:         Call this script with 5 arguments (startDate, endDate, times, areaStr, outputFileName).
+# Notes:         More information on parameters at https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation.
+#                Building the request can also be done using catalog at http://apps.ecmwf.int/data-catalogues/era5/?class=ea.
+#                In order to compute geopotential and pressure at all levels, one needs to request temperature, specific humidity, logarithm of surface pressure, and ground geopotential (IDs 130, 133, 152, and 129 as defined in Table 12 at https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation).
 
 from ecmwfapi import ECMWFDataServer
 import sys
@@ -24,6 +28,14 @@ area=sys.argv[4]
 outputFile=sys.argv[5]
 
 dateStr=(startDate+"/to/"+endDate)
+
+print('['+script_name+'] Calling API with parameters:')
+print('['+script_name+']   date:   '+dateStr)
+print('['+script_name+']   time:   '+time)
+print('['+script_name+']   area:   '+area)
+print('['+script_name+']   target: '+outputFile)
+
+exit()
 
 server = ECMWFDataServer()
 
