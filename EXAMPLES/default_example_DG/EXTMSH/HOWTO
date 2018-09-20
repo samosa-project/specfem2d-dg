@@ -2,8 +2,15 @@ How to use an external mesh?
 
 1) Define the geometry in extMesh.geo.
 
-2) Use GSMH to produce a .msh file from that .geo file.
+2) Use GMSH to produce a .msh file from that .geo file (either from command line or using the GUI).
 
-3) Use the .sh script to convert the GMSH .msh file to SPECFEM external mesh files.
+3) Use the provided .sh script to convert the GMSH .msh file to SPECFEM external mesh files.
 
-4) Set read_external_mesh to .true. in the parameter file.
+4) In the simulation's parameter file:
+4) a) Set 'read_external_mesh=.true.'.
+   b)  i) If element order was set to 1 during the meshing, set 'ngnod=4'.
+      ii) If element order was set to 2 during the meshing, set 'ngnod=9' ('ngnod=4' can also work, but is not advised).
+
+Known issues:
+*) When using the DG extension, spurious signals tend to remain on some elements' boundaries.
+>) Using structured meshes and 'USE_SPREAD_SSF=.true.' tend to mitigate that issue.
