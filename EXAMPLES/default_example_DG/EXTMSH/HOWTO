@@ -1,4 +1,6 @@
-How to use an external mesh?
+***********************************************
+* How to use an external mesh?                *
+***********************************************
 
 1) Define the geometry in extMesh.geo.
 
@@ -11,6 +13,12 @@ How to use an external mesh?
    b)  i) If element order was set to 1 during the meshing, set 'ngnod=4'.
       ii) If element order was set to 2 during the meshing, set 'ngnod=9' ('ngnod=4' can also work, but is not advised).
 
-Known issues:
+***********************************************
+* Known issues:                               *
+***********************************************
+
 *) When using the DG extension, spurious signals tend to remain on some elements' boundaries.
 >) Using structured meshes and 'USE_SPREAD_SSF=.true.' tend to mitigate that issue.
+
+*) If periodic boundary conditions are to be used ('ADD_PERIODIC_CONDITIONS=.true.' in parameter file), the mesh has to exactly match on the left and right boudary. No solution to enforce that in GMSH was found.
+>) Forcing the left and right 'lines' in the .geo file to have exactly the same characteristics should be enough to make the periodic boundary conditions work.

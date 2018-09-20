@@ -22,6 +22,8 @@ xmax=-xmin;
 zmin=0;
 zmax=20;
 
+// Define elements' length.
+Mesh.CharacteristicLengthFactor = 1; // Scaling of all elements' sizes.
 dxbot=1;
 dxtop=3;
 
