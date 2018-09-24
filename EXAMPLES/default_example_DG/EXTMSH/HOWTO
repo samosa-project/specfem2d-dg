@@ -4,12 +4,13 @@
 
 1) Define the geometry in extMesh.geo.
 
-2) Use GMSH to produce a .msh file from that .geo file (either from command line or using the GUI).
+2) Call the provided .sh script:
+   a) with argument 'auto' if you want to automatically use GMSH to produce a .msh file,
+   b) with no argument if you want to open GMSH's GUI to control the meshing process (you will need to close the GUI after meshing in order for the script to continue).
+   The script will also convert the GMSH .msh file to SPECFEM standard external mesh files.
 
-3) Use the provided .sh script to convert the GMSH .msh file to SPECFEM external mesh files.
-
-4) In the simulation's parameter file:
-4) a) Set 'read_external_mesh=.true.'.
+3) In the simulation's parameter file:
+   a) Set 'read_external_mesh=.true.'.
    b)  i) If element order was set to 1 during the meshing, set 'ngnod=4'.
       ii) If element order was set to 2 during the meshing, set 'ngnod=9' ('ngnod=4' can also work, but is not advised).
 
@@ -22,3 +23,6 @@
 
 *) If periodic boundary conditions are to be used ('ADD_PERIODIC_CONDITIONS=.true.' in parameter file), the mesh has to exactly match on the left and right boudary. No solution to enforce that in GMSH was found.
 >) Forcing the left and right 'lines' in the .geo file to have exactly the same characteristics should be enough to make the periodic boundary conditions work.
+
+*) GMSH's function "Recombine 2D" may crash when working with order 2.
+>) Set order 1, then recombine 2D, and then set order 2.
