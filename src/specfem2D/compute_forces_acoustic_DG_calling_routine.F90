@@ -503,14 +503,18 @@ subroutine prepare_MPI_DG()
       enddo
     enddo
     
-    buffer_recv_faces_vector_DG_i = -1.
-    buffer_send_faces_vector_DG_i = -1. 
-    buffer_recv_faces_vector_DG_j = -1.
-    buffer_send_faces_vector_DG_j = -1.   
+    buffer_send_faces_vector_DG_i = -1.
+    buffer_send_faces_vector_DG_j = -1.
     buffer_send_faces_vector_DG_i2try = -1.
     buffer_send_faces_vector_DG_j2try = -1.
     buffer_send_faces_vector_DG_i1try = -1.
     buffer_send_faces_vector_DG_j1try = -1.
+    buffer_recv_faces_vector_DG_i = -1.
+    buffer_recv_faces_vector_DG_j = -1.
+    buffer_recv_faces_vector_DG_i2try = -1.
+    buffer_recv_faces_vector_DG_j2try = -1.
+    buffer_recv_faces_vector_DG_i1try = -1.
+    buffer_recv_faces_vector_DG_j1try = -1.
     
     ! MPI SEND INFO ABOUT DIAG ELEMENT OR NOT
     do iinterface = 1, ninterface_acoustic_DG
@@ -518,7 +522,6 @@ subroutine prepare_MPI_DG()
       num_interface = inum_interfaces_acoustic_DG(iinterface)
       
       ! loops over all interface points
-      write(*,*) "cpu",myrank,"interface",iinterface,"npts",nibool_interfaces_acoustic_DG(num_interface)!DEBUG
       do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
         iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
         i = link_ij_iglob(iglob,1)
@@ -693,34 +696,32 @@ subroutine prepare_MPI_DG()
       num_interface = inum_interfaces_acoustic_DG(iinterface)
       ! loops over all interface points
       do ipoin = 1, nibool_interfaces_acoustic_DG(num_interface)
-        ! WRITE(*,*) "-------------->", myrank, ipoin, iinterface ! DEBUG
         iglob = ibool_interfaces_acoustic_DG(ipoin,num_interface)
         
         i = link_ij_iglob(iglob,1)
         j = link_ij_iglob(iglob,2)
         ispec = link_ij_iglob(iglob,3)
         
-        coord_i_2     = buffer_recv_faces_vector_DG_i(ipoin, iinterface)
-        coord_j_2     = buffer_recv_faces_vector_DG_j(ipoin, iinterface)
-        
+        coord_i_2      = buffer_recv_faces_vector_DG_i(ipoin, iinterface)
+        coord_j_2      = buffer_recv_faces_vector_DG_j(ipoin, iinterface)
         coord_i_21_try = buffer_recv_faces_vector_DG_i1try(ipoin, iinterface)
         coord_j_21_try = buffer_recv_faces_vector_DG_j1try(ipoin, iinterface)
-        
         coord_i_22_try = buffer_recv_faces_vector_DG_i2try(ipoin, iinterface)
         coord_j_22_try = buffer_recv_faces_vector_DG_j2try(ipoin, iinterface)
         
-        iface1 = link_ijispec_iface(i,j,ispec,1,1)
-        iface  = link_ijispec_iface(i,j,ispec,2,1)
-        neighbor = neighbor_DG_iface(iface1,iface,ispec,3)
+        ! Define variables "neighbor" and "neighbor_corner".
+        iface  = link_ijispec_iface(i,j,ispec,2,1) ! Face number on which the point (i,j,ispec) is.
+        iface1 = link_ijispec_iface(i,j,ispec,1,1) ! GLL point on current face (iface), corresponding to the (i,j,ispec) point is.
+        neighbor = neighbor_DG_iface(iface1,iface,ispec,3) ! To check whether or not the considered point has a neighbour in current CPU or in another CPU.
         iface1_corner = -1
         iface_corner  = -1
         neighbor_corner = -1
-        if(is_corner(i,j)) then
+        if(is_corner(i, j)) then
           iface1_corner   = link_ijispec_iface(i,j,ispec,1,2)
           iface_corner    = link_ijispec_iface(i,j,ispec,2,2)
           neighbor_corner = neighbor_DG_iface(iface1_corner,iface_corner,ispec,3)
         endif
-        
+                
         ! QUENTIN: Here we try to check to which face (on the neighbor's parition) the current point (i,j,ispec) belongs to
         ! QUENTIN: If one of the point on the current face matches the coordinates of the coordinates received in buffer_recv_faces_vector_DG_i1try, buffer_recv_faces_vector_DG_j1try, we found it => one_other_node_is_found = .true.
         ! QUENTIN: If it's a corner we need to check an extra face which coordinates are given by coord_i_22_try, coord_j_22_try. If there is a match => one_other_node_is_found_corner = .true.
@@ -733,34 +734,31 @@ subroutine prepare_MPI_DG()
           coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
           coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
           
-          if(     (coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) &
-             .OR. (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)) then
+          if(     (abs(coord_i_1-coord_i_21_try)<TINYVAL .AND. abs(coord_j_1-coord_j_21_try)<TINYVAL) &
+             .OR. (abs(coord_i_1-coord_i_22_try)<TINYVAL .AND. abs(coord_j_1-coord_j_22_try)<TINYVAL)) then
             one_other_node_is_found = .true.
           endif
                   
-          if(is_corner(i,j)) then
+          if(is_corner(i, j)) then
             i_try = link_iface_ijispec(iface1, iface_corner, ispec, 1)
             j_try = link_iface_ijispec(iface1, iface_corner, ispec, 2)
-            
             coord_i_1 = coord(1,ibool(i_try,j_try,ispec))
             coord_j_1 = coord(2,ibool(i_try,j_try,ispec))
-            
-            if(     (coord_i_1 == coord_i_21_try .AND. coord_j_1 == coord_j_21_try) &
-               .OR. (coord_i_1 == coord_i_22_try .AND. coord_j_1 == coord_j_22_try)) then
+            if(     (abs(coord_i_1-coord_i_21_try)<TINYVAL .AND. abs(coord_j_1-coord_j_21_try)<TINYVAL) &
+               .OR. (abs(coord_i_1-coord_i_22_try)<TINYVAL .AND. abs(coord_j_1-coord_j_22_try)<TINYVAL)) then
               one_other_node_is_found_corner = .true.
             endif
           endif
         enddo ! Enddo on iface1.
         
         iface1 = link_ijispec_iface(i,j,ispec,1,1)
-        
         coord_i_1 = coord(1,ibool(i,j,ispec))
         coord_j_1 = coord(2,ibool(i,j,ispec))
         
         ! QUENTIN: If the current point has no DG neighbors (i.e. no element neighbor in the same parititon) and we are on the right element face (i.e. one_other_node_is_found .OR. one_other_node_is_found_corner) and the current point's coordinates are the same than the ones received in the I_RECV from the MPI neighbor
         ! QUENTIN: Then, we store this information (link between (iface1, iface, ispec) abd (ipoin, num_interface)) in table MPI_transfer_iface
         if(      (neighbor == -1 .OR. neighbor_corner == -1) &
-           .AND. (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
+           .AND. (abs(coord_i_1-coord_i_2)<TINYVAL .AND. abs(coord_j_1-coord_j_2)<TINYVAL) &
            .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
           if(one_other_node_is_found) then
             MPI_transfer_iface(iface1,iface,ispec,1) = ipoin ! Specifies that point ispec on face (iface1,iface) is point ipoin (on interface num_interface).
