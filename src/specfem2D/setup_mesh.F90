@@ -256,13 +256,14 @@
         gammaz(i,j,ispec) = gammazl
         jacobian(i,j,ispec) = jacobianl
         
-        ! Quick use of the loops
-        if(USE_DISCONTINUOUS_METHOD) then
-          if(      ispec == 1 & ! TODO: Why ??
-             .AND. (     (j == 1     .AND. i == 1) &
-                    .OR. (j == NGLLZ .AND. i == 1) &
-                    .OR. (j == 1     .AND. i == NGLLX) &
-                    .OR. (j == NGLLZ .AND. i == NGLLX))) then
+        ! Quick use of the loops.
+        ! Instead of doing another double loop on i and j in order to set is_corner, we use the ones we're already in, but only once (see the 'if(ispec==1)' condition below).
+        ! is_corner only depends on the indexes i and j, and thus ispec has no role to play here.
+        if(ispec == 1 .and. USE_DISCONTINUOUS_METHOD) then
+          if(     (j == 1     .AND. i == 1) &
+             .OR. (j == NGLLZ .AND. i == 1) &
+             .OR. (j == 1     .AND. i == NGLLX) &
+             .OR. (j == NGLLZ .AND. i == NGLLX)) then
             is_corner(i,j) = .true.
           endif
         endif
