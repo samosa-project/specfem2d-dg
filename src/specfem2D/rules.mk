@@ -49,10 +49,8 @@ specfem2D_TARGETS = \
 	$E/xspecfem2D \
 	$(EMPTY_MACRO)
 
-
 specfem2D_OBJECTS = \
 	$O/specfem2D_par.spec_module.o \
-	$O/specfem2D_par_LNS.spec_module.o \
 	$O/acoustic_forcing_boundary.spec.o \
 	$O/assemble_MPI.spec.o \
 	$O/attenuation_model.spec.o \
@@ -82,7 +80,6 @@ specfem2D_OBJECTS = \
 	$O/slope_limiter_DG.spec.o \
 	$O/compute_forces_acoustic_DG.spec.o \
 	$O/compute_forces_acoustic_DG_calling_routine.spec.o \
-	$O/compute_forces_acoustic_LNS_calling_routine.spec.o \
 	$O/compute_forces_gravitoacoustic.spec.o \
 	$O/compute_forces_gravitoacoustic_calling_routine.spec.o \
 	$O/compute_forces_poroelastic_calling_routine.spec.o \
@@ -241,6 +238,21 @@ JPEGLIB_OBJECTS = \
 
 specfem2D_OBJECTS += $(JPEGLIB_OBJECTS)
 
+###
+### Linear Navier-Stokes modification
+###
+
+specfem2DLNS_OBJECTS= \
+	$O/specfem2D_par_LNS.spec_module.o \
+	$O/compute_forces_acoustic_LNS.spec.o \
+	$O/compute_forces_acoustic_LNS_calling_routine.spec.o \
+	$(EMPTY_MACRO)
+specfem2D_OBJECTS += $(specfem2DLNS_OBJECTS)
+
+specfem2DLNS_MODULES= \
+	$(FC_MODDIR)/specfem_par_LNS.$(FC_MODEXT) \
+	$(EMPTY_MACRO)
+specfem2D_MODULES += $(specfem2DLNS_MODULES)
 
 ###
 ### CUDA
@@ -337,7 +349,9 @@ endif
 
 # mostly as example how to specify special dependencies
 # the general dependency on the specfem module is handled by the rules below
-$O/specfem2D.spec.o: $O/specfem2D_par.spec_module.o
+#$O/specfem2D.spec.o: $O/specfem2D_par.spec_module.o
+# Brutal modification for LNS, there must be a more classy way to do it.
+$O/specfem2D.spec.o: $O/specfem2D_par.spec_module.o $O/specfem2D_par_LNS.spec_module.o
 
 
 ##
@@ -351,10 +365,14 @@ $O/specfem2D.spec.o: $O/specfem2D_par.spec_module.o
 $O/%.spec_module.o: $S/%.f90 ${SETUP}/constants.h
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
-$O/%.spec.o: $S/%.f90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o
+#$O/%.spec.o: $S/%.f90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o
+# Brutal modification for LNS, there must be a more classy way to do it.
+$O/%.spec.o: $S/%.f90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o $O/specfem2D_par_LNS.spec_module.o
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
-$O/%.spec.o: $S/%.F90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o
+#$O/%.spec.o: $S/%.F90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o
+# Brutal modification for LNS, there must be a more classy way to do it.
+$O/%.spec.o: $S/%.F90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o $O/specfem2D_par_LNS.spec_module.o
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
 $O/%.cc.o: $S/%.c ${SETUP}/config.h

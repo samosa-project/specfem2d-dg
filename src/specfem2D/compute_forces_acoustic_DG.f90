@@ -41,7 +41,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                                         T_DG_main, V_DG_main, e1_DG, &
                                         dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, timelocal)
 
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ!,gamma_euler
 
   use specfem_par, only: nglob_DG,nspec, ispec_is_acoustic_DG,&
                          xix,xiz,gammax,gammaz,jacobian, &
@@ -661,7 +661,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
 
 ! ?? compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
   
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ!,gamma_euler
 
   use specfem_par, only: nglob_DG,nspec, ispec_is_acoustic_DG,&
                          xix,xiz,gammax,gammaz,jacobian, &
