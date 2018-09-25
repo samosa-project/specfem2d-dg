@@ -28,8 +28,8 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_g, LNS_mu, LNS_eta, LNS_kappa,&
     LNS_rho0, LNS_v0, LNS_E0,&
     LNS_drho, LNS_rho0dv, LNS_dE,&
-    aux_drho, aux_rho0dvx, aux_rho0dvz, aux_dE,&
-    RHS_drho, RHS_rho0dvx, RHS_rho0dvz, RHS_dE,&
+    aux_drho, aux_rho0dv, aux_dE,&
+    RHS_drho, RHS_rho0dv, RHS_dE,&
     nabla_v0, LNS_p0, LNS_T0, sigma_v_0,&
     LNS_dm, LNS_dp, LNS_dT,&
     buffer_LNS_drho_P, buffer_LNS_rho0dvx_P, buffer_LNS_rho0dvz_P, buffer_LNS_dE_P,&
@@ -99,12 +99,10 @@ subroutine compute_forces_acoustic_LNS_main()
     
     ! Zero registers.
     aux_drho    = ZEROcr
-    aux_rho0dvx = ZEROcr
-    aux_rho0dvz = ZEROcr
+    aux_rho0dv = ZEROcr
     aux_dE      = ZEROcr
     RHS_drho    = ZEROcr
-    RHS_rho0dvx = ZEROcr
-    RHS_rho0dvz = ZEROcr
+    RHS_rho0dv = ZEROcr
     RHS_dE      = ZEROcr
     T_DG        = ZEROcr
     V_DG        = ZEROcr
@@ -121,7 +119,12 @@ subroutine compute_forces_acoustic_LNS_main()
     endif
     
     ! Prepare MPI buffers.
-    call prepare_MPI_DG()
+#ifdef USE_MPI
+    if(NPROC>1) then
+      call prepare_MPI_DG()
+      ! TODO: buffers will need to be different than DG-FNS's ones, thus one would have to call a dedicated function.
+    endif
+#endif
     
     ! Allocate acoustic coupling array.
     allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
@@ -144,9 +147,13 @@ subroutine compute_forces_acoustic_LNS_main()
     ! Send the (:,:,:) classic registers depending on (i,j,ispec) into one (:) register depending on (iglob), in order to be able to use vector calculus.
     ! This is only done here because we use the subroutine "boundary_condition_DG" in "initial_state_LNS", which needs the classic registers.
     allocate(LNS_g(nglob_DG), &
-             LNS_eta(nglob_DG), &
              LNS_mu(nglob_DG), &
+             LNS_eta(nglob_DG), &
              LNS_kappa(nglob_DG))
+    LNS_g=9.81
+    LNS_mu=0.
+    LNS_eta=0.!(4./3.)*LNS_mu
+    LNS_kappa=0.
     ! TODO: Somehow send the (:,:,:) classic registers depending on (i,j,ispec) into one (:) register depending on (iglob), in order to be able to use vector calculus.
     ! Not really optimal, but less invasive.
     deallocate(gravityext, muext, etaext, kappa_DG)
@@ -155,7 +162,7 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_p0 = (gammaext_DG - ONE) &
               * (LNS_E0 - HALF*LNS_rho0*(LNS_v0(1,:)**2+LNS_v0(2,:)**2))
     LNS_T0 = (LNS_E0/LNS_rho0 - HALF*(LNS_v0(1,:)**2+LNS_v0(2,:)**2))/c_V
-    where(LNS_p0 <= 0._CUSTOM_REAL) LNS_p0 = 1._CUSTOM_REAL ! When elastic-DG simulations, p_DG = 0 in elastic elements and 1/p_DG will not be properly defined. Use a hack.
+    where(LNS_p0 <= 0._CUSTOM_REAL) LNS_p0 = 1._CUSTOM_REAL ! When doing elastic-DG simulations, LNS_p0 = 0 in elastic elements and 1/LNS_p0 will not be properly defined. Use a hack.
     
     ! Compute \nabla v_0.
     !write(*,*) "DEBUG LNS: compute_gradient_TFSF started."
@@ -170,6 +177,7 @@ subroutine compute_forces_acoustic_LNS_main()
 #ifdef USE_MPI
     if (NPROC > 1 .and. ninterface_acoustic > 0) then
       !call assemble_MPI_vector_DG(gammaext_DG, buffer_LNS_gamma_P)
+      ! TODO: call a dedicated routine.
     endif
 #endif
     
@@ -207,11 +215,11 @@ subroutine compute_forces_acoustic_LNS_main()
     ! TODO: If CONSTRAIN_HYDROSTATIC=.true. and muext=etaext=kappa_DG=0, only T_DG is needed. Consider computing only T_DG in that case.
   endif
   
-  ! Compute momentum perturbation.
+  ! Precompute momentum perturbation.
   LNS_dm(1,:)=LNS_rho0dv(1,:)+LNS_drho*LNS_v0(1,:)
   LNS_dm(2,:)=LNS_rho0dv(2,:)+LNS_drho*LNS_v0(2,:)
   
-  ! Compute temperature and pressure perturbation.
+  ! Precompute temperature and pressure perturbation.
   LNS_dp = (gammaext_DG - ONE) &
             * (LNS_E0+LNS_dE - HALF*(LNS_rho0+LNS_drho) &
                                    *(  (LNS_v0(1,:)+LNS_rho0dv(1,:)/LNS_rho0)**2 &
@@ -222,36 +230,36 @@ subroutine compute_forces_acoustic_LNS_main()
                     + (LNS_v0(2,:)+LNS_rho0dv(2,:)/LNS_rho0)**2)  )/c_V &
            - LNS_T0
   
-  ! Compute gradients.
+  ! Precompute gradients.
   LNS_dv=ZEROcr
   where(LNS_rho0/=ZEROcr) LNS_dv(1,:)=LNS_rho0dv(1,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   where(LNS_rho0/=ZEROcr) LNS_dv(2,:)=LNS_rho0dv(1,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT) ! Dummy variables are not optimal, but prevent from duplicating
-  ! Compute \Sigma_v'.
+  ! Precompute \Sigma_v'.
   call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
   
   ! Compute RHS.
-  !call compute_forces_acoustic_DG(LNS_drho, LNS_rho0dv(1,:), LNS_rho0dv(2,:), LNS_dE, &
-  !                                T_DG, V_DG, e1_DG, &
-  !                                RHS_drho, RHS_rho0dvx, RHS_rho0dvz, RHS_dE, dot_e1, &
-  !                                timelocal)
+  call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
+                                   LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities.
+                                   RHS_drho, RHS_rho0dv, RHS_dE, & ! Output.
+                                   timelocal) ! Time.
   
   if (time_stepping_scheme == 3 .or. time_stepping_scheme == 4) then
     ! Inverse mass matrix multiplication, in order to obtain actual RHS.
-    RHS_drho(:)    = RHS_drho(:)    * rmass_inverse_acoustic_DG(:)
-    RHS_rho0dvx(:) = RHS_rho0dvx(:) * rmass_inverse_acoustic_DG(:)
-    RHS_rho0dvz(:) = RHS_rho0dvz(:) * rmass_inverse_acoustic_DG(:)
+    RHS_drho(:)    = RHS_drho(:)    * rmass_inverse_acoustic_DG(:) ! RHS = A^{-1}*b
+    RHS_rho0dv(1,:) = RHS_rho0dv(1,:) * rmass_inverse_acoustic_DG(:)
+    RHS_rho0dv(2,:) = RHS_rho0dv(2,:) * rmass_inverse_acoustic_DG(:)
     RHS_dE(:)      = RHS_dE(:)      * rmass_inverse_acoustic_DG(:)
     ! Update the auxiliary register.
     ! Note: no need to zero it beforehand if scheme_A(1) is 0.
-    aux_drho    = scheme_A(i_stage)*aux_drho    + deltat*RHS_drho
-    aux_rho0dvx = scheme_A(i_stage)*aux_rho0dvx + deltat*RHS_rho0dvx
-    aux_rho0dvz = scheme_A(i_stage)*aux_rho0dvz + deltat*RHS_rho0dvz
+    aux_drho    = scheme_A(i_stage)*aux_drho    + deltat*RHS_drho ! U_{i} = a_{i}*U_{i-1} + dt*RHS
+    aux_rho0dv(1,:) = scheme_A(i_stage)*aux_rho0dv(1,:) + deltat*RHS_rho0dv(1,:)
+    aux_rho0dv(2,:) = scheme_A(i_stage)*aux_rho0dv(2,:) + deltat*RHS_rho0dv(2,:)
     aux_dE      = scheme_A(i_stage)*aux_dE      + deltat*RHS_dE
     ! Update the state register.
-    LNS_drho        = LNS_drho        + scheme_B(i_stage)*aux_drho
-    LNS_rho0dv(1,:) = LNS_rho0dv(1,:) + scheme_B(i_stage)*aux_rho0dvx
-    LNS_rho0dv(2,:) = LNS_rho0dv(2,:) + scheme_B(i_stage)*aux_rho0dvz
+    LNS_drho        = LNS_drho        + scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
+    LNS_rho0dv(1,:) = LNS_rho0dv(1,:) + scheme_B(i_stage)*aux_rho0dv(1,:)
+    LNS_rho0dv(2,:) = LNS_rho0dv(2,:) + scheme_B(i_stage)*aux_rho0dv(2,:)
     LNS_dE          = LNS_dE          + scheme_B(i_stage)*aux_dE
     
     ! Eventually check non-positivity.
@@ -329,6 +337,26 @@ subroutine compute_forces_acoustic_LNS_main()
   !endif
 end subroutine compute_forces_acoustic_LNS_main
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ! ------------------------------------------------------------ !
 ! initial_state_LNS                                            !
 ! ------------------------------------------------------------ !
@@ -347,10 +375,6 @@ subroutine initial_state_LNS(rho0, v0, E0)
   
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   integer :: ispec, iglob, i, j
   real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
   
@@ -370,6 +394,26 @@ subroutine initial_state_LNS(rho0, v0, E0)
     enddo
   enddo
 end subroutine initial_state_LNS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ! ------------------------------------------------------------ !
 ! LNS_compute_viscous_stress_tensor                            !
@@ -410,8 +454,28 @@ subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
   
 end subroutine LNS_compute_viscous_stress_tensor
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ! ------------------------------------------------------------ !
-! compute_viscous_tensors                                      !
+! compute_gradient_TFSF                                        !
 ! ------------------------------------------------------------ !
 ! Computes the gradient of a tensor field and/or of a scalar field SF.
 ! IN:
@@ -452,7 +516,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
-  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl ! Jacobian matrix and determinant
+  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacLoc ! Jacobian matrix and determinant
   !real(kind=CUSTOM_REAL) :: temp_SFx, temp_SFz, temp_TFxx, temp_TFzx, temp_TFxz, temp_TFzz
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
   !       rho_DG, rhovx_DG, rhovz_DG, E_DG, veloc_x_DG, veloc_z_DG, T, &
@@ -466,7 +530,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !real(kind=CUSTOM_REAL) :: vx_init, vz_init
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
   
-  !veloc_x_DG = rhovx_DG/rho_DG
+  veloc_x_DG = rhovx_DG/rho_DG
   !veloc_z_DG = rhovz_DG/rho_DG
   !T = (E_DG/rho_DG - HALFcr*(veloc_x_DG**2 + veloc_z_DG**2))/c_V
   
@@ -492,7 +556,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i,j,ispec)
-          jacobianl = jacobian(i,j,ispec)
+          jacLoc = jacobian(i,j,ispec)
           xixl = xix(i,j,ispec)
           xizl = xiz(i,j,ispec)
           gammaxl = gammax(i,j,ispec)
@@ -508,7 +572,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
           !  gammaxl = ya_x_l * gammaxl
           !  gammazl = ya_z_l * gammazl
           !  ! TODO: Do that more clearly.
-          !  jacobianl = ya_x_l*ya_z_l*jacobianl
+          !  jacLoc = ya_x_l*ya_z_l*jacLoc
           !endif
           
           wzl = wzgll(j)
@@ -534,38 +598,38 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! Compute inner contributions.
             !if(.not. CONSTRAIN_HYDROSTATIC) then
             if(swSF) then
-              temp_SFx_1(i,j)  = wzl * jacobianl * (xixl * SF(iglob))
-              temp_SFz_1(i,j)  = wzl * jacobianl * (xizl * SF(iglob))
-              temp_SFx_2(i,j)  = wxl * jacobianl * (gammaxl * SF(iglob))
-              temp_SFz_2(i,j)  = wxl * jacobianl * (gammazl * SF(iglob))
+              temp_SFx_1(i,j)  = wzl * jacLoc * (xixl * SF(iglob))
+              temp_SFz_1(i,j)  = wzl * jacLoc * (xizl * SF(iglob))
+              temp_SFx_2(i,j)  = wxl * jacLoc * (gammaxl * SF(iglob))
+              temp_SFz_2(i,j)  = wxl * jacLoc * (gammazl * SF(iglob))
             endif
             if(swTF) then
-              temp_TFxx_1(i,j) = wzl * jacobianl * (xixl * TF(1,iglob))
-              temp_TFxz_1(i,j) = wzl * jacobianl * (xizl * TF(1,iglob))
-              temp_TFzx_1(i,j) = wzl * jacobianl * (xixl * TF(2,iglob))
-              temp_TFzz_1(i,j) = wzl * jacobianl * (xizl * TF(2,iglob))
-              temp_TFxx_2(i,j) = wxl * jacobianl * (gammaxl * TF(1,iglob))
-              temp_TFxz_2(i,j) = wxl * jacobianl * (gammazl * TF(1,iglob))
-              temp_TFzx_2(i,j) = wxl * jacobianl * (gammaxl * TF(2,iglob))
-              temp_TFzz_2(i,j) = wxl * jacobianl * (gammazl * TF(2,iglob))
+              temp_TFxx_1(i,j) = wzl * jacLoc * (xixl * TF(1,iglob))
+              temp_TFxz_1(i,j) = wzl * jacLoc * (xizl * TF(1,iglob))
+              temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * TF(2,iglob))
+              temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * TF(2,iglob))
+              temp_TFxx_2(i,j) = wxl * jacLoc * (gammaxl * TF(1,iglob))
+              temp_TFxz_2(i,j) = wxl * jacLoc * (gammazl * TF(1,iglob))
+              temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * TF(2,iglob))
+              temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * TF(2,iglob))
             endif
             !else
             !  vx_init = rhovx_init(iglob)/rho_init(iglob)
             !  vz_init = rhovz_init(iglob)/rho_init(iglob)
             !  
-            !  temp_SFx_1(i,j)  = wzl * jacobianl * (xixl * (SF(iglob) - T_init(iglob)))
-            !  temp_SFz_1(i,j)  = wzl * jacobianl * (xizl * (SF(iglob) - T_init(iglob)))
-            !  temp_TFxx_1(i,j) = wzl * jacobianl * (xixl * (TF(1,iglob) - vx_init))
-            !  temp_TFxz_1(i,j) = wzl * jacobianl * (xizl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  temp_TFzx_1(i,j) = wzl * jacobianl * (xixl * (TF(2,iglob) - vz_init))
-            !  temp_TFzz_1(i,j) = wzl * jacobianl * (xizl * (TF(2,iglob) - vz_init))
+            !  temp_SFx_1(i,j)  = wzl * jacLoc * (xixl * (SF(iglob) - T_init(iglob)))
+            !  temp_SFz_1(i,j)  = wzl * jacLoc * (xizl * (SF(iglob) - T_init(iglob)))
+            !  temp_TFxx_1(i,j) = wzl * jacLoc * (xixl * (TF(1,iglob) - vx_init))
+            !  temp_TFxz_1(i,j) = wzl * jacLoc * (xizl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
+            !  temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * (TF(2,iglob) - vz_init))
+            !  temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * (TF(2,iglob) - vz_init))
             !  
-            !  temp_SFx_2(i,j)  = wxl * jacobianl * (gammaxl * (SF(iglob) - T_init(iglob)))
-            !  temp_SFz_2(i,j)  = wxl * jacobianl * (gammazl * (SF(iglob) - T_init(iglob)))
-            !  temp_TFxx_2(i,j) = wxl * jacobianl * (gammaxl * (TF(1,iglob) - vx_init))
-            !  temp_TFxz_2(i,j) = wxl * jacobianl * (gammazl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  temp_TFzx_2(i,j) = wxl * jacobianl * (gammaxl * (TF(2,iglob) - vz_init))
-            !  temp_TFzz_2(i,j) = wxl * jacobianl * (gammazl * (TF(2,iglob) - vz_init))
+            !  temp_SFx_2(i,j)  = wxl * jacLoc * (gammaxl * (SF(iglob) - T_init(iglob)))
+            !  temp_SFz_2(i,j)  = wxl * jacLoc * (gammazl * (SF(iglob) - T_init(iglob)))
+            !  temp_TFxx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(1,iglob) - vx_init))
+            !  temp_TFxz_2(i,j) = wxl * jacLoc * (gammazl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
+            !  temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(2,iglob) - vz_init))
+            !  temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * (TF(2,iglob) - vz_init))
             !endif
           else
             ! In that case, we want to compute \int_{\Omega} (\nabla f)\Phi directly as it.
@@ -632,8 +696,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             if(swSF) then
               !dSF_dx   = dSF_dxi * xixl + dSF_dgamma * gammaxl
               !dSF_dz   = dSF_dxi * xizl + dSF_dgamma * gammazl
-              !temp_SFx = dSF_dx * jacobianl
-              !temp_SFz = dSF_dz * jacobianl
+              !temp_SFx = dSF_dx * jacLoc
+              !temp_SFz = dSF_dz * jacLoc
               !grad_SF_x(iglob) = dSF_dx
               !grad_SF_z(iglob) = dSF_dz
               grad_SF_x(iglob) = dSF_dxi * xixl + dSF_dgamma * gammaxl
@@ -644,10 +708,10 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
               !dTFx_dz   = dTFx_dxi * xizl + dTFx_dgamma * gammazl
               !dTFz_dx   = dTFz_dxi * xixl + dTFz_dgamma * gammaxl
               !dTFz_dz   = dTFz_dxi * xizl + dTFz_dgamma * gammazl
-              !temp_TFxx = dTFx_dx * jacobianl
-              !temp_TFxz = dTFx_dz * jacobianl
-              !temp_TFzx = dTFz_dx * jacobianl
-              !temp_TFzz = dTFz_dz * jacobianl
+              !temp_TFxx = dTFx_dx * jacLoc
+              !temp_TFxz = dTFx_dz * jacLoc
+              !temp_TFzx = dTFz_dx * jacLoc
+              !temp_TFzz = dTFz_dz * jacLoc
               !grad_TFx_x(iglob) = dTFx_dx
               !grad_TFx_z(iglob) = dTFx_dz
               !grad_TFz_x(iglob) = dTFz_dx

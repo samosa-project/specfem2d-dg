@@ -343,14 +343,15 @@
     allocate(LNS_rho0dv(2,nglob_DG)) ! State.
     allocate(LNS_dp(nglob_DG), LNS_dT(nglob_DG)) ! Pressure and temperature perturbation.
     allocate(LNS_dm(2,nglob_DG)) ! Momentum (1st order) perturbation.
-    allocate(RHS_drho(nglob_DG), RHS_rho0dvx(nglob_DG), RHS_rho0dvz(nglob_DG), RHS_dE(nglob_DG)) ! RHS.
-    allocate(aux_drho(nglob_DG), aux_rho0dvx(nglob_DG), aux_rho0dvz(nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
+    allocate(RHS_drho(nglob_DG), RHS_rho0dv(2,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
+    allocate(aux_drho(nglob_DG), aux_rho0dv(2,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
     allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.
     allocate(LNS_v0(2,nglob_DG)) ! Initial state.
     allocate(nabla_v0(2,2,nglob_DG)) ! Gradient of initial velocity.
     allocate(sigma_v_0(3,nglob_DG)) ! Initial viscous stress tensor.
     allocate(LNS_dummy_1d(nglob_DG), LNS_dummy_2d(2,nglob_DG), LNS_dummy_3d(2,2,nglob_DG)) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   endif
+  ! If USE_LNS==.false., the wavefields are simply not allocated. It should not cause any problem, since they should not be used elsewhere.
   
   !allocate(this_iglob_is_acous(nglob))
   
