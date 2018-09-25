@@ -10,8 +10,8 @@ quota
 echo "################################"
 echo ""
 
-echo "Saving."
-for file in "Par_file" "SOURCE" "atmospheric_model.dat" "parfile_input" "interfaces_input" "source_input" "slurm"
+echo "Saving (to $TARGET)."
+for file in "Par_file" "SOURCE" "atmospheric_model.dat" "parfile_input" "interfaces_input" "source_input" "slurm" "input_atmospheric_model.dat" "input_EBF.tar" "input_interfaces" "input_parfile" "input_source"
 do
   find $SOURCE -name $file -exec cp -bru --parents \{\} $TARGET \;
 done

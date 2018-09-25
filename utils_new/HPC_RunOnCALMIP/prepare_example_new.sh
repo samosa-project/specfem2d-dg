@@ -25,36 +25,46 @@ echo
 cd ./$simulationDir/
 currentdir=`pwd`
 
-# Sets up directory structure in current example directory.
+# Sets up directory structure in current example directoy.
 echo
-echo "> Setting up example's directory structure."
-echo
-
+echo ">> Make 'DATA' and 'OUTPUT_FILES' folder."
 mkdir -p OUTPUT_FILES
 mkdir -p DATA
 
 # Cleans current output and data files.
+echo
+echo ">> Clean the 'OUTPUT_FILES' folder."
 rm -rf DATA/*
 rm -rf OUTPUT_FILES/*
 
 # Sets up local DATA/ directory.
+echo
+echo ">> Make symbolic links to parfile and sourcefile in the 'DATA' folder."
 cd DATA/
 ln -s ../$parfileName Par_file
 ln -s ../$sourcefileName SOURCE
 cd $currentdir
 
 # Links executables.
+echo
+echo ">> Make symbolic links to executables."
 rm -f xmeshfem2D xspecfem2D
 ln -s ../../bin/xmeshfem2D
 ln -s ../../bin/xspecfem2D
 
 # Stores input files.
-cp ./DATA/Par_file OUTPUT_FILES/input_parfile
-cp ./DATA/SOURCE OUTPUT_FILES/input_source
-cp ./$interfacefileName OUTPUT_FILES/input_interfaces
+echo
+echo ">> Store setup to the 'OUTPUT_FILES' folder."
+cp ./DATA/Par_file ./OUTPUT_FILES/input_parfile
+cp ./DATA/SOURCE ./OUTPUT_FILES/input_source
+cp ./$interfacefileName ./OUTPUT_FILES/input_interfaces
 cp ./atmospheric_model.dat ./OUTPUT_FILES/input_atmospheric_model.dat
-cp ./external_bottom_forcing.dat ./OUTPUT_FILES/input_EBF.dat
-
+if [ -e "external_bottom_forcing.dat" ]; then
+  tar -czf ./OUTPUT_FILES/input_EBF.tar ./external_bottom_forcing.dat
+fi
+if [ -d "EXTMSH" ]; then
+  tar -czf ./OUTPUT_FILES/input_EXTMSH.tar ./EXTMSH/*
+fi
 # Save model configuration.
 cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
 cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
