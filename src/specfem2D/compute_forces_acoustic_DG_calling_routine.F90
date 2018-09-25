@@ -531,6 +531,10 @@ subroutine prepare_MPI_DG()
         ! CORRIGER ICI EN RECUPERANT CORRECTEMENT LE NUMERO DE IFACE ET IFACE1 POUR LES POINTS TRY
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! RECOVER CURRENT ELEMENT PROPERTIES (IFACE1, IFACE)
+        !
+        ! QUENTIN: Here, we store one by one the coordinates of the interface nodes in the current MPI partition in table: buffer_send_faces_vector_DG_i, buffer_send_faces_vector_DG_j and to be sent to the neighbors
+        ! QUENTIN: In addition, we store the coordinates another point (iface1,iface) belonging to the same element face than the current node (i,j,ispec) to be able to discriminate later on and after the I_SEND on the neighbor's parition to which face the current point belongs to.
+        ! QUENTIN: Note that if it's a corner, there are two element faces that come into play. We thus store an additional point (iface1_corner,iface_corner) corresponding to the other face
         iface1 = link_ijispec_iface(i,j,ispec,1,1)
         iface1 = iface1 + 1
         if(iface1 > 5) then
@@ -717,6 +721,9 @@ subroutine prepare_MPI_DG()
           neighbor_corner = neighbor_DG_iface(iface1_corner,iface_corner,ispec,3)
         endif
         
+        ! QUENTIN: Here we try to check to which face (on the neighbor's parition) the current point (i,j,ispec) belongs to
+        ! QUENTIN: If one of the point on the current face matches the coordinates of the coordinates received in buffer_recv_faces_vector_DG_i1try, buffer_recv_faces_vector_DG_j1try, we found it => one_other_node_is_found = .true.
+        ! QUENTIN: If it's a corner we need to check an extra face which coordinates are given by coord_i_22_try, coord_j_22_try. If there is a match => one_other_node_is_found_corner = .true.
         one_other_node_is_found = .false.
         one_other_node_is_found_corner = .false.
         do iface1 = 1,NGLLX
@@ -750,6 +757,8 @@ subroutine prepare_MPI_DG()
         coord_i_1 = coord(1,ibool(i,j,ispec))
         coord_j_1 = coord(2,ibool(i,j,ispec))
         
+        ! QUENTIN: If the current point has no DG neighbors (i.e. no element neighbor in the same parititon) and we are on the right element face (i.e. one_other_node_is_found .OR. one_other_node_is_found_corner) and the current point's coordinates are the same than the ones received in the I_RECV from the MPI neighbor
+        ! QUENTIN: Then, we store this information (link between (iface1, iface, ispec) abd (ipoin, num_interface)) in table MPI_transfer_iface
         if(      (neighbor == -1 .OR. neighbor_corner == -1) &
            .AND. (coord_i_1 == coord_i_2 .AND. coord_j_1 == coord_j_2) &
            .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
