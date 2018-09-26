@@ -811,8 +811,10 @@ end subroutine prepare_external_forcing
         
   logical, intent(out) :: exact_interface_flux
   
+  real(kind=CUSTOM_REAL), intent(in) :: nx, nz
+  
   real(kind=CUSTOM_REAL) :: tx, tz, normal_v, tangential_v, &
-                            nx, nz, veloc_x, veloc_z, weight, &
+                            veloc_x, veloc_z, weight, &
                             veloc_x_DG_iM, veloc_z_DG_iM, p_DG_iM, gamma_P, e1_DG_P
         
   real(kind=CUSTOM_REAL), intent(in) :: rho_DG_iM, E_DG_iM, rhovx_DG_iM, rhovz_DG_iM, &
