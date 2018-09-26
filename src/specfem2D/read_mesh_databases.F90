@@ -795,6 +795,7 @@
 ! reads in interface dimensions
 
   use specfem_par
+  use specfem_par_LNS
 
   implicit none
 
@@ -819,6 +820,7 @@
     allocate(ibool_interfaces_ext_mesh_init(NGLLX*max_interface_size,ninterface))
     
     ! MODIF DG
+    ! TODO: shouldn't be a 'if(USE_DISCONTINUOUS_METHOD)' around this block? Maybe even a 'if(USE_DISCONTINUOUS_METHOD .and. (.not USE_LNS))' now that LNS is implemented?
     allocate(buffer_DG_rho_P(NGLLX*max_interface_size,ninterface), &
              buffer_DG_rhovx_P(NGLLX*max_interface_size,ninterface), &
              buffer_DG_rhovz_P(NGLLX*max_interface_size,ninterface), &
@@ -828,6 +830,17 @@
     if (ier /= 0) then
       ! Safeguard.
       stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
+    endif
+    ! MODIF LNS
+    if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+      allocate(buffer_LNS_drho_P(NGLLX*max_interface_size,ninterface), &
+               buffer_LNS_dE_P(NGLLX*max_interface_size,ninterface),stat=ier)
+      allocate(buffer_LNS_rho0dv_P(SPACEDIM,NGLLX*max_interface_size,ninterface), &
+               stat=ier)
+      if (ier /= 0) then
+        ! Safeguard.
+        stop "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90')."
+      endif
     endif
         
     allocate(buffer_DG_Tx_P(NGLLX*max_interface_size,ninterface), &
@@ -858,11 +871,25 @@
     allocate(my_nelmnts_neighbours(1))
     allocate(my_interfaces(1,1,1))
 
+    ! MODIF DG
+    ! TODO: shouldn't be a 'if(USE_DISCONTINUOUS_METHOD)' around this block? Maybe even a 'if(USE_DISCONTINUOUS_METHOD .and. (.not USE_LNS))' now that LNS is implemented?
     allocate(buffer_DG_rho_P(1,1), &
              buffer_DG_rhovx_P(1,1), &
              buffer_DG_rhovz_P(1,1), &
              buffer_DG_E_P(1,1))
     allocate(is_MPI_interface_DG(1))
+    ! MODIF LNS
+    ! Should not be needed if ninterface==0, but if there happen to be a crash at runtime, uncomment these lines.
+    !if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    !  allocate(buffer_LNS_drho_P(1,1), &
+    !           buffer_LNS_dE_P(1,1),stat=ier)
+    !  allocate(buffer_LNS_rho0dv_P(1,1,1), &
+    !           stat=ier)
+    !  if (ier /= 0) then
+    !    ! Safeguard.
+    !    stop "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90')."
+    !  endif
+    !endif
 
     allocate(ibool_interfaces_acoustic(1,1))
     allocate(ibool_interfaces_elastic(1,1))
