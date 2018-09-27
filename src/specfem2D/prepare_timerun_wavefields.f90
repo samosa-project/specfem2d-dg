@@ -323,7 +323,7 @@
     ! Dummy allocation.
     nglob_DG_loc = 1
   endif
-  ! TODO: why allocate when not using DG?
+  ! TODO: why allocate when not even using DG?
   ! RHS.
   allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc))
   ! Auxiliary registers.
@@ -339,15 +339,20 @@
   E_DG     = 0.
   
   if (USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    deallocate(dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
+               resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1, &
+               rho_DG, p_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
+               veloc_x_DG, veloc_z_DG, p_DG_init, T_init, V_DG, T_DG) ! Not really optimal, but less invasive.
+    
     allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG)) ! State.
-    allocate(LNS_rho0dv(2,nglob_DG)) ! State.
+    allocate(LNS_rho0dv(SPACEDIM,nglob_DG)) ! State.
     allocate(LNS_dp(nglob_DG), LNS_dT(nglob_DG)) ! Pressure and temperature perturbation.
-    allocate(LNS_dm(2,nglob_DG)) ! Momentum (1st order) perturbation.
-    allocate(RHS_drho(nglob_DG), RHS_rho0dv(2,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
-    allocate(aux_drho(nglob_DG), aux_rho0dv(2,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
+    allocate(LNS_dm(SPACEDIM,nglob_DG)) ! Momentum (1st order) perturbation.
+    allocate(RHS_drho(nglob_DG), RHS_rho0dv(SPACEDIM,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
+    allocate(aux_drho(nglob_DG), aux_rho0dv(SPACEDIM,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
     allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.
-    allocate(LNS_v0(2,nglob_DG)) ! Initial state.
-    allocate(nabla_v0(2,2,nglob_DG)) ! Gradient of initial velocity.
+    allocate(LNS_v0(SPACEDIM,nglob_DG)) ! Initial state.
+    allocate(nabla_v0(SPACEDIM,SPACEDIM,nglob_DG)) ! Gradient of initial velocity.
     allocate(sigma_v_0(3,nglob_DG)) ! Initial viscous stress tensor.
     allocate(LNS_dummy_1d(nglob_DG), LNS_dummy_2d(2,nglob_DG), LNS_dummy_3d(2,2,nglob_DG)) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   endif
