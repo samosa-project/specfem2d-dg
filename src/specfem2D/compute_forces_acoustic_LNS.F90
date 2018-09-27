@@ -131,12 +131,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   
   if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, 100) == 0) then
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
-    write(*,"(a)")                   " quantity: [max                     , min                     ]"
-    WRITE(*,"(a,e24.16,a,e24.16,a)") " drho:     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
+    write(*,"(a)")                   " quantity [                 max    ,                  min    ]"
+    WRITE(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
     do i=1,SPACEDIM
-      WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i:  [", maxval(cv_rho0dv(i,:)), ", ", minval(cv_rho0dv(i,:)), "], i=",i
+      WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(i,:)), ", ", minval(cv_rho0dv(i,:)), "], i=",i
     enddo
-    WRITE(*,"(a,e24.16,a,e24.16,a)") " dE        [", maxval(cv_dE), ", ", minval(cv_dE), "]"
+    WRITE(*,"(a,e24.16,a,e24.16,a)") " dE       [", maxval(cv_dE), ", ", minval(cv_dE), "]"
     !WRITE(*,"(a,e23.16,a)")        "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
   endif
   

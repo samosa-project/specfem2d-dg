@@ -49,7 +49,8 @@
                         displs_poroelastic,velocs_poroelastic,accels_poroelastic,&! density_p, &
                         E_DG,rhovz_DG,rhovx_DG,rho_DG, nglob_DG, gamma_euler, &
                         rho_DG, rhovz_DG, E_DG, rhovx_DG, c_V, T_init,p_DG_init,gammaext_DG, T_init, E_init, &
-                        ispec_is_acoustic_DG, nglob, any_acoustic_DG!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
+                        ispec_is_acoustic_DG, nglob, any_acoustic_DG, USE_DISCONTINUOUS_METHOD!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
+  use specfem_par_lns ! TODO: select variables to use.
 
   ! PML arrays
   use specfem_par,only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,CONSTRAIN_HYDROSTATIC
@@ -115,9 +116,13 @@
                             
         ! If v_z is plotted in elastic elements, plot pressure / density in DG elements (only where rho!=0).
         vector_DG_temp = 0.
-        where(rho_DG>0.) vector_DG_temp = ( ( (gammaext_DG - 1.) &
-                                              * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
-                                           - coef*p_DG_init ) / rho_DG
+        if(USE_DISCONTINUOUS_METHOD .and. (.not. USE_LNS)) then
+          where(rho_DG>0.) vector_DG_temp = ( ( (gammaext_DG - 1.) &
+                                                * (E_DG-(0.5)*rho_DG*((rhovz_DG/rho_DG)**2+(rhovx_DG/rho_DG)**2)) )&
+                                             - coef*p_DG_init ) / rho_DG
+        else
+          where(LNS_rho0>0.) vector_DG_temp = LNS_dp / LNS_rho0
+        endif
       endif
       if(imagetype_JPEG == 6) then
         ! If ||v|| is plotted in elastic elements, plot temperature in DG elements.
