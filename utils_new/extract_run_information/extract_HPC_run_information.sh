@@ -15,6 +15,12 @@ folder=$1
 echo "  Analysing folder '$folder'."
 
 slurm=$(ls $folder/slurm*)
+if [ $? -ne 0 ]; then
+  slurm=$(ls $folder/*.output)
+  if [  $? -ne 0 ]; then
+    exit
+  fi
+fi
 
 parfile=$(ls $folder/* | grep -P --regexp=".*[Pp]ar[_]?file")
 
@@ -75,7 +81,7 @@ then
   STAMPCANCEL=$(date --utc --date "$DATECANCELLED" +%s)
   #echo "    End date:    $DATECANCELLED (timestamp $STAMPCANCEL, job cancelled)."
   elapsed=$(($STAMPCANCEL-$STAMPSTART))
-  echo "  Elapsed:         $elapsed seconds."
+  echo "  Elapsed:           $elapsed seconds."
 else
   DATEEND=$(echo $DATELINE2 | grep -oe "$dateregexep")
   #echo $DATEEND
@@ -91,7 +97,7 @@ else
   STAMPEND=$(date --utc --date "$DATEEND" +%s)
   elapsed=$(($STAMPEND-$STAMPSTART))
   #echo "    End date:    $DATEEND (timestamp $STAMPEND)."
-  echo "  Run duration:    $elapsed seconds."
+  echo "  Run duration:      $elapsed seconds."
 fi
 
 cflrounded=$(printf %.3f $cfl)
