@@ -45,7 +45,7 @@ echo
 echo "> Sending solver to queue (`date`)."
 #echo "> [DEBUG] Command line: ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q standard -A gen$4 -x ../batch_example_job.sh"
 echo
-ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q $5 -A gen$4 -x ../batch_example_job.sh
+ccc_msub -r $2 -n $1 -c 1 -T $3 -o %I.output -e %I.error -q $5 -A gen$4 -m work ../batch_example_job.sh
 
 # Check exit status.
 exit_status=$?

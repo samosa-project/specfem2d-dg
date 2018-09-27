@@ -279,19 +279,54 @@ if(interpolate~=0)
   disp(['[',mfilename,', WARNING] Interpolation occured, the regularised model might not have the same resolution as the original model. Be careful, or re-run script with interpolate=0.']);
 end
 decision=-1;
-while(decision~=0 && decision~=1)
+while(not(ismember(decision,[0,1])))
   decision=input(['[',mfilename,'] > Output regularised model to another file? (0 for no, 1 for yes) > ']);
 end
 if(decision==0)
   disp(['[',mfilename,'] > Outputting cancelled, stopping script.']); return;
 end
 
-% prefix="reg_";
-% nVISCMU=0*nVISCMU;prefix='reg+mu0_'; disp(['[',mfilename,']   [WARNING] MU WAS SET TO ZERO.']);
-nKAPPA=0*nKAPPA;prefix='reg+kappa0_'; disp(['[',mfilename,']   [WARNING] KAPPA WAS SET TO ZERO.']);
-% nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix='reg+mukappa0_'; disp(['[',mfilename,']   [WARNING] MU AND KAPPA WERE SET TO ZERO.']);
+decision_w0atz0=-1;
+while(not(ismember(decision_w0atz0,[0,1])))
+  decision_w0atz0=input(['[',mfilename,'] > Force w(z=0)=0? (0 for no, 1 for yes) > ']);
+end
+if(decision_w0atz0)
+%   width=20*max(diff(Z)); % Spread over 20 steps.
+  width=input(['[',mfilename,'] > Height of apodisation (in meters)? > ']);
+%   b=-1.82138636771844967304021031862099524348122888360095; % 1e-2 level.
+  b=-2.75106390571206079614551316854267817109677902559646; % 1e-3 level.
+%   b=-3.45891073727950002215092763595756951991566980804288674707621013; % 1e-6 level.
+  a=-2*b/width;
+  apoWind=erf(a*Z+b)/2+0.5;
+  apoWind(Z==0)=0;
+  nW=apoWind.*nW;
+end
+
+decision_mu=-1;
+while(not(ismember(decision_mu,[0,1])))
+  decision_mu=input(['[',mfilename,'] > Force mu=0? (0 for no, 1 for yes) > ']);
+end
+decision_kap=-1;
+while(not(ismember(decision_kap,[0,1])))
+  decision_kap=input(['[',mfilename,'] > Force kappa=0? (0 for no, 1 for yes) > ']);
+end
+
+if(decision_mu && not(decision_kap))
+  nVISCMU=0*nVISCMU;prefix='reg+mu0_'; disp(['[',mfilename,']   [WARNING] MU WAS SET TO ZERO.']);
+elseif(decision_kap && not(decision_mu))
+  nKAPPA=0*nKAPPA;prefix='reg+kappa0_'; disp(['[',mfilename,']   [WARNING] KAPPA WAS SET TO ZERO.']);
+elseif(decision_mu && decision_kap)
+  nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix='reg+mukappa0_'; disp(['[',mfilename,']   [WARNING] MU AND KAPPA WERE SET TO ZERO.']);
+else
+  prefix='reg_';
+end
 SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL, '/');nDATAFILE=nDATAFILE{1};
 rewrite_atmos_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, nN.^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
+plot_model(nDATAFILE, '-', 'k', []);
+if(decision_w0atz0)
+  nnRichard=Richardson_number(nW, D, nN);
+  disp(['[',mfilename,'] > New minimum Richardson number after setting w(z=0)=0: ',num2str(min(nnRichard)), ' (@z=', num2str(Z(nnRichard==min(nnRichard))), ' m). ', richardson_advice]);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
