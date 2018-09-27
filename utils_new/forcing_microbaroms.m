@@ -43,7 +43,7 @@ nT0 = 10; % Number of temporal periods (must be integer to prevent FFT misbehavi
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 L0 = 200; % Spatial period.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
-nL0 = 80; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
+nL0 = 120; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 MINX = - 0.5 * nL0 * L0; % Set forcing maximum x here.
 MAXX = 0.5 * nL0 * L0; % Set forcing maximum x here.
@@ -53,8 +53,8 @@ MAXTIME = nT0 * T0; % Set forcing maximum time here.
 % invspread = 1.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 3; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
-% invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
-invspread = 6; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 6; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 1e2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 
 % Amplitude related.
@@ -78,18 +78,19 @@ dt = 1.5d-2; % Set DT as in parfile.
 % nx = 1060; % Set nx as in parfile.
 % xmin = -45e3; xmax = 45e3; % Set as in parfile.
 % nx = 377; % Set nx as in parfile.
-nx = 1350; % Set nx as in parfile.
+nx = 5200; % Set nx as in parfile.
 % xmin = MINX; xmax = MAXX; % Set as in parfile.
-xmin = -48e3; xmax = 48e3; % Set as in parfile.
+xmin = -52e3; xmax = 312e3; % Set as in parfile.
 periodise = 0; % Set this if microbaroms do not touch lateral edges of mesh.
 % periodise = 1; % Set this if microbaroms do touch lateral edges of mesh.
 
-% Path to file for export.
+% Path to file for export (do not forget the "/" at the end).
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_periodic/';
-EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_patch/';
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_patch/';
+EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_huge/';
 
-disp(['Preparing meshgrids.']);
+disp(['[',mfilename,'] Preparing meshgrids.']);
 %%%%%%%%%%%%%%%%%%%%%%%
 % Time, SPECFEM and   %
 % forcing.            %
@@ -127,20 +128,20 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 meshok=-1;
 while(not(ismember(meshok,[0,1])))
-  meshok=input(['  SPECFEM grid is xmin=',num2str(xmin),', xmax=',num2str(xmax),', nx=',num2str(nx),'. This has to match parfile. Is that so (0 for no, 1 for yes)? > ']);
+  meshok=input(['[',mfilename,'] > SPECFEM grid is xmin=',num2str(xmin),', xmax=',num2str(xmax),', nx=',num2str(nx),'. This has to match parfile. Is that so (0 for no, 1 for yes)? > ']);
 end
 if(meshok==0)
-  error('  Mesh was not ok, re-chose parametrisation in script.');
+  error(['[',mfilename,', ERROR] > Mesh was not ok, re-chose parametrisation in script.']);
 end
 clear('meshok');
-disp(['  dt=',num2str(dt),', that is ',num2str(floor(T0/dt)),' iterations per main time period.']);
-disp(['  dx=',num2str(dx),', that is ',num2str(floor(L0/dx)),' elements per main spatial period.']);
-disp(['  dx=',num2str(dx),', max(dxSPCFM)=',num2str(max_dx_specfem),'. One should have dx>=dxSPCFM to prevent aliasing.']);
+disp(['[',mfilename,'] > dt=',num2str(dt),', that is ',num2str(floor(T0/dt)),' iterations per main time period.']);
+disp(['[',mfilename,'] > dx=',num2str(dx),', that is ',num2str(floor(L0/dx)),' elements per main spatial period.']);
+disp(['[',mfilename,'] > dx=',num2str(dx),', max(dxSPCFM)=',num2str(max_dx_specfem),'. One should have dx>=dxSPCFM to prevent aliasing.']);
 % Ask user to verify mesh is ok.
 meshok=-1;
-% disp(['  Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
+% disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
 while(not(ismember(meshok,[0,1])))
-  meshok=input('  Is that ok (0 for no, 1 for yes)? > ');
+  meshok=input(['[',mfilename,'] > Is that ok (0 for no, 1 for yes)? > ']);
 end
 if(meshok==0)
   error('  Mesh was not ok, re-chose parametrisation in script.');
@@ -149,7 +150,7 @@ clear('meshok');
 
 % % Ask user to verify forcing is ok.
 % forcok=-1;
-% disp(['  Forcing spans [',num2str(MINX), ', ', num2str(MAXX), '] m and [0, ',num2str(MAXTIME),'] s.']);
+% disp(['[',mfilename,'] > Forcing spans [',num2str(MINX), ', ', num2str(MAXX), '] m and [0, ',num2str(MAXTIME),'] s.']);
 % while(not(ismember(forcok,[0,1])))
 %   forcok=input('  Is that ok (0 for no, 1 for yes)? > ');
 % end
@@ -163,8 +164,8 @@ clear('meshok');
 % Ask user to verify if creation steps are ok.
 % dtxok=-1;
 % dxSPCFM=min(diff(xSPCFM));
-% disp(['  dt=',num2str(dt),', dtSPCFM=',num2str(dtSPCFM),'. One should have dt>=dtSPCFM to prevent aliasing.']);
-% disp(['  dx=',num2str(dx),', dxSPCFM=',num2str(dxSPCFM),'. One should have dx>=dxSPCFM to prevent aliasing.']);
+% disp(['[',mfilename,'] > dt=',num2str(dt),', dtSPCFM=',num2str(dtSPCFM),'. One should have dt>=dtSPCFM to prevent aliasing.']);
+% disp(['[',mfilename,'] > dx=',num2str(dx),', dxSPCFM=',num2str(dxSPCFM),'. One should have dx>=dxSPCFM to prevent aliasing.']);
 % while(not(ismember(dtxok,[0,1])))
 %   dtxok=input('  Continue (0 for no, 1 for yes)? > ');
 % end
@@ -187,12 +188,12 @@ k = - k_max:dk:k_max;
 % 2D ranges.
 [T, X] = meshgrid(t, x);
 [F, K] = meshgrid(f, k);
-disp(['  Meshgrid is (', num2str(size(F)), '). Large meshes can be long to proceed with.']);
+disp(['[',mfilename,'] > Meshgrid is (', num2str(size(F)), '). Large meshes can be long to proceed with.']);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Frequency range.    %
 %%%%%%%%%%%%%%%%%%%%%%%
-% disp(['Creating draft of signal in spacetime range and sending it to frequency range.']);
+% disp(['[',mfilename,'] Creating draft of signal in spacetime range and sending it to frequency range.']);
 % k_0 = 2 * pi / L0;
 % w_0 = 2 * pi / T0;
 % % s_displ = A*cos(k_0 * X + w_0 * T + pi/2) + A*cos(k_0 * X - w_0 * T - pi/2); % Interfering monofrequency waves, displacement (pi/2 phase shifts in order not to generate discontinuities).
@@ -200,7 +201,7 @@ disp(['  Meshgrid is (', num2str(size(F)), '). Large meshes can be long to proce
 % % s = A1*sin(k_0 * X - w_0 * T) + A2*sin(-k_0 * X - w_0 * T); % Interfering monofrequency waves, velocity.
 % spectrum_displ = fftshift(fft2(draft_displ));
 
-disp(['Creating spectrum in frequency range.']);
+disp(['[',mfilename,'] Creating spectrum in frequency range.']);
 spectrum_displ=0*F;
 spectrum_displ(abs(abs(F)-1/T0)==min(min(abs(abs(F)-1/T0))) & abs(abs(K)-1/L0)==min(min(abs(abs(K)-1/L0))))=1; % Diracs at pertinent places.
 
@@ -217,7 +218,7 @@ spectrum_displ_R = real(spectrum_displ);
 % GMask=fspecial('gaussian', [floor((k_0/(2*pi))/dk),floor((w_0/(2*pi))/df)]-1,0.5*sig); % Create Gaussian mask which covers f=]0,2/T0[ x k=]0,2/L0[.
 sig_T = ((1 / T0) / 3) / invspread; % Width of the Gaussian mask in time.
 sig_X = ((1 / L0) / 3) / invspread; % Width of the Gaussian mask in space.
-disp(['Convolving spectrum in frequency range and adding random phase. sigma_T=',num2str(sig_T),', sigma_X=',num2str(sig_X),'.']);
+disp(['[',mfilename,'] Convolving spectrum in frequency range and adding random phase. sigma_T=',num2str(sig_T),', sigma_X=',num2str(sig_X),'.']);
 [Fgm, Kgm] = meshgrid(0:df:2 / T0, 0:dk:2 / L0);
 GMask = exp(- ((Fgm - 1 / T0) .^ 2 / (2 * sig_T ^ 2) + (Kgm - 1 / L0) .^ 2 / (2 * sig_X ^ 2)));
 GMask = GMask / max(max(GMask)); % Normalise, not to mess with maximum amplitude.
@@ -255,11 +256,11 @@ spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
 % Send back to        %
 % spacetime range.    %
 %%%%%%%%%%%%%%%%%%%%%%%
-disp('Sending back to spacetime range.');
+disp(['[',mfilename,'] Sending back to spacetime range.']);
 displ = ifft2(ifftshift(spectrum_displ_new), 'symmetric');
 displ = displ - mean(mean(displ)); % Ensure underlying displacement is zero-mean.
 % if(0)
-%   disp(['Filtering noise.']);
+%   disp(['[',mfilename,'] Filtering noise.']);
 %   % Low-pass in time.
 %   fcut = min(20 / T0,0.99*f_max); % Must be < f_max=0.5/dt;
 %   for ix = 1:length(x)
@@ -297,21 +298,21 @@ end
 % and adjust          %
 % amplitude.          %
 %%%%%%%%%%%%%%%%%%%%%%%
-disp('Converting to velocity and adjusting amplitude.');
-% disp(['Displacement amplitude is [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
+disp(['[',mfilename,'] Converting to velocity and adjusting amplitude.']);
+% disp(['[',mfilename,'] Displacement amplitude is [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
 % ampli=max(abs(min(min(s_displ_new))),abs(max(max(s_displ_new)))); % Maximum amplitude of forcing.
 % s_displ_new=s_displ_new*A_aimed/ampli; % Rescale.
-% disp(['Displacement amplitude is now [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
+% disp(['[',mfilename,'] Displacement amplitude is now [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
 % [s_vel_new,~]=gradient(s_displ_new,t,x);
-% disp(['Forcing amplitude in velocity is [',num2str(min(min(s_vel_new))),', ',num2str(max(max(s_vel_new))),']']);
-disp(['  Displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
+% disp(['[',mfilename,'] Forcing amplitude in velocity is [',num2str(min(min(s_vel_new))),', ',num2str(max(max(s_vel_new))),']']);
+disp(['[',mfilename,'] > Displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
 ampli_displ=max(abs(min(min(displ))),abs(max(max(displ))));
 displ=displ*A_aimed/ampli_displ; % Scale displacement to aimed wave height.
-disp(['  Rescaled displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
+disp(['[',mfilename,'] > Rescaled displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
 [veloc,~]=gradient(displ,t,x);
-disp(['  Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),'].']);
+disp(['[',mfilename,'] > Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),'].']);
 % if(periodise)
-% %   disp(['  Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
+% %   disp(['[',mfilename,'] > Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
 %   % Make sure one side is equal to the other.
 %   veloc(1,:)=mean(veloc([1,end],:),1);
 %   veloc(end,:)=veloc(1,:);
@@ -321,7 +322,7 @@ disp(['  Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))
 % Apodisation.        %
 %%%%%%%%%%%%%%%%%%%%%%%
 if(activate_apo)
-  disp(['Applying apodisation.']);
+  disp(['[',mfilename,'] Applying apodisation.']);
   n=napoxlr; apox = 0.25 .* (1. - erf((x - MAXX + 0.5 * n * L0) / (0.18 * n * L0))) .* (1 + erf((x - MINX - 0.5 * n * L0) / (0.25 * n * L0))); % Apodisation over n spatial period on each side.
   n=napot0; apot0 = 0.5 .* (1 + erf((t - 0.5 * n * T0) / (0.18 * n * T0))); % Apodisation over n temporal periods at beginning.
   % n = 1.5; apot = 0.5 .* (1. - erf((t - MAXTIME + 0.5 * n * T0) / (0.25 * n * T0))); % Apodisation over n temporal periods at end.
@@ -339,27 +340,27 @@ if(activate_apo)
   veloc = veloc .* apox'.*apot; % Apply apodisation to make sure forcing is zero at beginning and end, and eventually on sides.
 end
 
-disp(['Verifying zero-mean, zero-start, and zero-end.']);
+disp(['[',mfilename,'] Verifying zero-mean, zero-start, and zero-end.']);
 mmveloc=mean(mean(veloc));
-disp(['  Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
-disp(['                              at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
-disp(['  Mean of velocity: ',num2str(mmveloc),'.']);
+disp(['[',mfilename,'] > Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
+disp(['[',mfilename,']                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+disp(['[',mfilename,'] > Mean of velocity: ',num2str(mmveloc),'.']);
 while(mmveloc>1e-18)
-  disp(['  Tweaking again.']);
+  disp(['[',mfilename,'] > Tweaking again.']);
   veloc=veloc-mean(mean(veloc));
   veloc(:,[1,end])=0;
   veloc([1,end],:)=0;
   mmveloc=mean(mean(veloc));
-  disp(['  Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
-  disp(['                              at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
-  disp(['  Mean of velocity: ',num2str(mmveloc),'.']);
+  disp(['[',mfilename,'] > Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
+  disp(['[',mfilename,']                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+  disp(['[',mfilename,'] > Mean of velocity: ',num2str(mmveloc),'.']);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2) Interpolate on the       %
 % SPECFEM mesh.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(['Interpolating on SPECFEM meshgrid.']);
+disp(['[',mfilename,'] Interpolating on SPECFEM meshgrid.']);
 % Here, it is sufficient to configure the next 2 sections (SPECFEM time 
 % and SPECFEM mesh).
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -390,12 +391,12 @@ end
 if(0)
   pcolor(T_specfem, X_specfem, veloc_specfem); shading interp; axis([min(t), max(t), min(x), max(x)]);
 end
-disp(['Velocity forcing on SPECFEM meshgrid is ready.']);
+disp(['[',mfilename,'] Velocity forcing on SPECFEM meshgrid is ready.']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3) Export to file.          %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(['Exporting to file.']);
+disp(['[',mfilename,'] Exporting to file.']);
 % Here, format shoud be compatible with the reading which is done in
 % the subroutine 'prepare_external_forcing' in 'boundary_terms_DG.f90'.
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -430,32 +431,32 @@ disp(['Exporting to file.']);
 %%%%%%%%%%%%%%%%%%%%%%%
 % Ask user.
 exportok=-1;
-% disp(['  Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
+% disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
 while(not(ismember(exportok,[0,1])))
   bytespervalue=39.985880510267151;
   expectedsize=prod(size(veloc_specfem))*bytespervalue;
-  disp(['  File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
-  exportok=input('  Export to file (0 for no, 1 for yes)? > ');
+  disp(['[',mfilename,'] > File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
+  exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? > ']);
 end
 if(exportok==0)
-  error('  Exporting disabled.');
+  error(['[',mfilename,', ERROR] > Exporting disabled.']);
 else
-  disp(['Exporting is ready.']);
+  disp(['[',mfilename,'] Exporting is ready.']);
   datestr_of_now=datestr(now,'_yymmdd_hhMMss');
   EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing',datestr_of_now,'.dat'];
   % Ask user to verify export path is ok.
   pathok=-1;
-  disp(['  Export path is ''',EXPORTFILENAME,'''.']);
+  disp(['[',mfilename,'] > Export path is ''',EXPORTFILENAME,'''.']);
   while(not(ismember(pathok,[0,1])))
-    pathok=input('  Is that ok (0 for no, 1 for yes)? > ');
+    pathok=input(['[',mfilename,'] > Is that ok (0 for no, 1 for yes)? > ']);
   end
   if(pathok==0)
-    error('  Export path was not ok, re-chose in script.');
+    error(['[',mfilename,'] > Export path was not ok, re-chose in script.']);
   end
   clear('pathok');
   % Export.
   system(['cp ',mfilename('fullpath'),'.m ',EXPORTFILEDIR,mfilename,datestr_of_now,'.m']);
-  disp('Copied current script to export folder for parameter saving.');
+  disp(['[',mfilename,'] Copied current script to export folder for parameter saving.']);
 %   itstop = find(abs(TSPCFM(1, :) - MAXTIME) == min(abs(TSPCFM(1, :) - MAXTIME))) + 1;
 %   ixmin = max(find(abs(XSPCFM(:, 1) - MINX) == min(abs(XSPCFM(:, 1) - MINX))) - 1, 1);
 %   ixmax = min(find(abs(XSPCFM(:, 1) - MAXX) == min(abs(XSPCFM(:, 1) - MAXX))) + 1, length(XSPCFM(:, 1)));
@@ -468,7 +469,7 @@ else
       fprintf(f_new, "\n");
     end
     if (ismember(it, floor((1:10) * 0.1 * size(T_specfem,2))))
-       disp(['  Writing to file (', num2str(ceil(it / size(T_specfem,2) * 100)), ' % complete).']);
+       disp(['[',mfilename,'] > Writing to file (', num2str(ceil(it / size(T_specfem,2) * 100)), ' % complete).']);
     end
   end
   fclose('all');

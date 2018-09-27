@@ -6,7 +6,7 @@ source_input_name="source_input"
 interfacefileName="interfaces_input"
 
 # Read the number of processes to use from the value of the "NPROC" line in the parfile.
-NPROC=$(grep -e "NPROC *= *[0-9]*" $parfile_input_name | grep -oe "[0-9]*")
+NPROC=$(grep -oe "NPROC *= *[0-9]*" $parfile_input_name | grep -oe "[0-9]*")
 
 echo
 echo ">> Running example (`date`)."

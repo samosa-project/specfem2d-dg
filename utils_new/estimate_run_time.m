@@ -21,16 +21,16 @@ format longG;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 82;
-nstepseismo = 50;
+nstations   = 4*90;
+nstepseismo = 25;
 
-neltot      = 224000;
-neldg       = 150000;
+neltot      = 1794000;
+neldg       = 1794000;
 
 nstepsnap   = 500;
-nsteptot    = 20000;
+nsteptot    = 120000;
 
-nproc       = 32;
+nproc       = 224;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,13 +41,14 @@ meandata=mean(data,1);
 
 point=[nstations,neldg/neltot,nstepsnap/nsteptot,nstepseismo/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
 
-disp([num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
+disp(['[',mfilename,'] ',num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
 disp(" ");
-disp('[n_stations, percent_DG, percent_snap, percent_synth, n_elems_per_proc]');
-disp(strcat("Current point:            [ ", sprintf("%.3e ", point), "]."));
+disp(['[',mfilename,']                     [        n_stations       percent_DG     percent_snap    percent_synth n_elems_per_proc]']);
+disp(strcat("[",mfilename,"] Current point:      [ ", sprintf("%17.3e", point), "]."));
 % idp=dsearchn(data,point);
 idp=dsearchn((data-meandata)./weigth,(point-meandata)./weigth); % Optimised search.
-disp(strcat("Closest data point found: [ ", sprintf("%.3e ", data(idp,:)), "] (",inf{idp}{2},")."));
+disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.3e", data(idp,:)), "] (",inf{idp}{2},")."));
+disp(strcat("[",mfilename,"] Weights:            [ ", sprintf("%17.f", weigth), "]."));
 time=t(idp);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -56,16 +57,16 @@ time=t(idp);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(" ");
 
-hms=fix(mod(time*neltot*nsteptot,[0,3600,60])./[3600,60,1]); cputimestr=string([num2str(hms(1)),'h ',num2str(hms(2)),'m ',num2str(hms(3)),'s']);
-hms=fix(mod(time*neltot*nsteptot/nproc,[0,3600,60])./[3600,60,1]); realtimestr=string([num2str(hms(1)),'h ',num2str(hms(2)),'m ',num2str(hms(3)),'s']);
+hms=fix(mod(time*neltot*nsteptot,[0,3600,60])./[3600,60,1]); cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+hms=fix(mod(time*neltot*nsteptot/nproc,[0,3600,60])./[3600,60,1]); realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
 
-disp(strcat("Expected time per element, per iteration: ",sprintf("%.3e", time), " s."));
-disp(strcat("Expected run time:                        ",cputimestr, " (CPU)."));
-disp(strcat("                                          ",realtimestr, " (real)."));
+disp(strcat("[",mfilename,"] Expected time per element, per iteration:    ",sprintf("%.3e", time), " s."));
+disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU)."));
+disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real)."));
 
 disp(" ");
 
-disp("[WARNING] Recall the method used for estimation is very rough and approximate. Do not take the estimation for granted.");
+disp(['[',mfilename,', WARNING] Recall the method used for estimation is very rough and approximate. Do not take the estimation for granted.']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
