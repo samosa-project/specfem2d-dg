@@ -218,13 +218,21 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           cntrb_dE(i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
           
           ! Zero-th degree contributions.
+          ! > Mass conservation: none.
           !d0cntrb_drho(i,j)     = ZERO
+          ! > Momenta.
+          !   Version 1: most general.
+          !d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
+          !                         + in_dm(1,iglob)*nabla_v0(1,1,iglob) & ! {\delta_m}_x\partial_xv_{0,x}
+          !                         + in_dm(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,x}
+          !d0cntrb_rho0dv(SPACEDIM,i,j) = (  cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) & ! \rho'g_z
+          !                                + in_dm(1,iglob)*nabla_v0(SPACEDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
+          !                                + in_dm(SPACEDIM,iglob)*nabla_v0(SPACEDIM,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
+          !   Version 2: under HV0 and SM, dm part of the zero-th degree RHS is simplified.
           d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
-                                   + in_dm(1,iglob)*nabla_v0(1,1,iglob) & ! {\delta_m}_x\partial_xv_{0,x}
-                                   + in_dm(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,x}
-          d0cntrb_rho0dv(SPACEDIM,i,j) = (  cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) & ! \rho'g_z
-                                   + in_dm(1,iglob)*nabla_v0(SPACEDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
-                                   + in_dm(SPACEDIM,iglob)*nabla_v0(SPACEDIM,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
+                                   + cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
+          d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
+          ! > Energy.
           d0cntrb_dE(i,j)       = (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
                                    + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(SPACEDIM,iglob)) * jacLoc
         enddo
