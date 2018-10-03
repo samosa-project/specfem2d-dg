@@ -353,6 +353,7 @@
     allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.
     allocate(LNS_v0(SPACEDIM,nglob_DG)) ! Initial state.
     allocate(nabla_v0(SPACEDIM,SPACEDIM,nglob_DG)) ! Gradient of initial velocity.
+    allocate(LNS_p0(nglob_DG), LNS_T0(nglob_DG)) ! Initial pressure and temperature.
     allocate(sigma_v_0(3,nglob_DG)) ! Initial viscous stress tensor.
     allocate(LNS_dummy_1d(nglob_DG), LNS_dummy_2d(2,nglob_DG), LNS_dummy_3d(2,2,nglob_DG)) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   endif

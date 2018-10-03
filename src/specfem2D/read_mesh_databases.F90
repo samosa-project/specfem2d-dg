@@ -831,6 +831,17 @@
       ! Safeguard.
       stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
     endif
+    allocate(buffer_DG_Tx_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Tz_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vxx_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vzz_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vzx_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_Vxz_P(NGLLX*max_interface_size,ninterface),stat=ier)
+    if (ier /= 0) then
+      ! Safeguard.
+      stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
+    endif
+    
     ! MODIF LNS
     if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
       allocate(buffer_LNS_drho_P(NGLLX*max_interface_size,ninterface), &
@@ -841,17 +852,11 @@
         ! Safeguard.
         stop "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90')."
       endif
-    endif
-        
-    allocate(buffer_DG_Tx_P(NGLLX*max_interface_size,ninterface), &
-             buffer_DG_Tz_P(NGLLX*max_interface_size,ninterface), &
-             buffer_DG_Vxx_P(NGLLX*max_interface_size,ninterface), &
-             buffer_DG_Vzz_P(NGLLX*max_interface_size,ninterface), &
-             buffer_DG_Vzx_P(NGLLX*max_interface_size,ninterface), &
-             buffer_DG_Vxz_P(NGLLX*max_interface_size,ninterface),stat=ier)
-    if (ier /= 0) then
-      ! Safeguard.
-      stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
+      ! Deallocate DG variables. Not really optimal, but less invasive.
+      deallocate(buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, &
+                 buffer_DG_E_P, buffer_DG_e1_P, buffer_DG_gamma_P)
+      deallocate(buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, &
+                 buffer_DG_Vzz_P, buffer_DG_Vzx_P, buffer_DG_Vxz_P)
     endif
         
     allocate(ibool_interfaces_acoustic_DG(NGLLX*max_interface_size,ninterface))

@@ -380,8 +380,8 @@ cutsnaps                        = 1.
 # JPEG Snapshots              #
 #-----------------------------#
 output_color_image              = .true.         # Draw JPEG color snapshot?
-imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure
-                                                 # DG display: 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz 10=none
+imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure 11=? 12=? 13=? 14=? 15=? 16=?
+                                                 # DG display: 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz
 factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
 CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5d0          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..

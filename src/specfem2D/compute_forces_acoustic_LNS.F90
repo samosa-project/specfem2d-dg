@@ -88,19 +88,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
-  ! TESTS
-  !real(kind=CUSTOM_REAL) :: x,z ! Artifical advection and a priori damping.
-  !real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E ! ABSORB
-  !logical :: ABSORB_BC ! ABSORB
-  
-  ! For more convinient CONSTRAIN_HYDROSTATIC switches.
-  ! TODO: Replace the CONSTRAIN_HYDROSTATIC switches using this variable.
-  !if(CONSTRAIN_HYDROSTATIC) then
-  !  cnst_hdrsttc=ONE
-  !else
-  !  cnst_hdrsttc=ZERO
-  !endif
-  
   !T_DG = T_DG_main
   !V_DG = V_DG_main
   
@@ -129,7 +116,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     call compute_add_sources_acoustic_DG_spread(outrhs_dE, it, i_stage)
   endif
   
-  if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, 100) == 0) then
+  if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, LNS_MODPRINT) == 0) then
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
     write(*,"(a)")                   " quantity [                 max    ,                  min    ]"
     WRITE(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
@@ -229,12 +216,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !                                + in_dm(1,iglob)*nabla_v0(SPACEDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
           !                                + in_dm(SPACEDIM,iglob)*nabla_v0(SPACEDIM,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
           !   Version 2: under HV0 and SM, dm part of the zero-th degree RHS is simplified.
-          d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
-                                   + cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
-          d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
+          !d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
+          !                         + cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
+          !d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
+          !   Version 3: further, potential_dphi_dx_DG=0 and potential_dphi_dz_DG=LNS_g
+          d0cntrb_rho0dv(1,i,j) = cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
+          d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
           ! > Energy.
-          d0cntrb_dE(i,j)       = (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
-                                   + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(SPACEDIM,iglob)) * jacLoc
+          !d0cntrb_dE(i,j)       = (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
+          !                         + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(SPACEDIM,iglob)) * jacLoc
+          ! Recall potential_dphi_dx_DG=0 and potential_dphi_dz_DG=LNS_g
+          d0cntrb_dE(i,j)       = LNS_g(iglob)*in_dm(SPACEDIM,iglob) * jacLoc
         enddo
       enddo
       
@@ -313,7 +305,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif
           
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
-          ! TODO: dedicated routine.
           !call compute_interface_unknowns(i,j,ispec, drho_P, rho0dv_P(1), &
           !        rho0dv_P(2), dE_P, veloc_x_DG_P, veloc_z_DG_P, in_dp_P, T_P, &
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
@@ -337,7 +328,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                   exact_interface_flux, & ! Switch to disable jump in some cases (output).
                   drho_P, rho0dv_P, dE_P, & ! Output constitutive variables.
                   !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-                  dm_P, dp_P, dv_P, nabla_dT_P, sigma_dv_P) ! Output other variables.
+                  dm_P, dp_P, dv_P, nabla_dT_P, sigma_dv_P, & ! Output other variables.
+                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), .false.) ! Use dummies and set the switch to false not to compute unecessary quantities.
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
@@ -549,7 +541,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
              exact_interface_flux, & ! Switch to disable jump in some cases (output).
              out_drho_P, out_rho0dv_P, out_dE_P, & ! Output constitutive variables.
              !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-             out_dm_P, out_dp_P, out_dv_P, out_nabla_dT_P, out_sigma_dv_P) ! Output other variables. ! TODO: Warning, expression of out_dp_P might not be exact.
+             out_dm_P, out_dp_P, out_dv_P, out_nabla_dT_P, out_sigma_dv_P, & ! Output other variables. ! TODO: correctly set out_nabla_dT_P and out_sigma_dv_P.
+             out_T_P, out_v_P, called_from_compute_gradient_TFSF)
   
   use constants ! TODO: select variables to use.,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
   use specfem_par ! TODO: select variables to use.,only:  ibool_DG, &
@@ -585,9 +578,12 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL), intent(out) :: out_drho_P, out_dE_P ! Output constitutive variables.
   !real(kind=CUSTOM_REAL), intent(out) :: Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P ! Output derivatives. MIGHT NEED.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_rho0dv_P ! Output constitutive variable.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: out_dv_P, out_dm_P, out_nabla_dT_P ! Output other variables.
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_dv_P, out_dm_P, out_nabla_dT_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dp_P ! Output other variables.
-  real(kind=CUSTOM_REAL), dimension(3) :: out_sigma_dv_P ! Output other variables.
+  real(kind=CUSTOM_REAL), dimension(3), intent(out) :: out_sigma_dv_P ! Output other variables.
+  real(kind=CUSTOM_REAL), intent(out) :: out_T_P ! In compute_gradient_TFSF, we need temperature on the other side of the boundary in order to compute the flux.
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_v_P ! In compute_gradient_TFSF, we need velocity on the other side of the boundary in order to compute the flux.
+  logical, intent(in) :: called_from_compute_gradient_TFSF ! Do not unnecessarily compute temparature and velocity.
   
   ! Local.
   !integer :: k
@@ -600,7 +596,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
   real(kind=CUSTOM_REAL), dimension(2, 2) :: trans_boundary
-  real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
+  real(kind=CUSTOM_REAL) :: x, veloc_x_dg_p, veloc_z_dg_p ! For coupling deactivation in buffers.
   ! Characteristic based BC
   !real(kind=CUSTOM_REAL) :: s_b, rho_inf, v_b_x, v_b_z, un_b, &!, rho_b, p_b, c_b, &
   !                          rlambda_max, rlambda_min, un_in, un_inf!, &!c_in, c_inf, &
@@ -714,8 +710,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         trans_boundary = trans_boundary/(n_out(1) * tz - tx * n_out(SPACEDIM))
 
         ! From free slip and normal velocity continuity
-        out_dv_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-        out_dv_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+        out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
 
         ! From traction continuity
         out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! TODO: Warning, expression of out_dp_P might not be exact.
@@ -724,8 +721,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
 
         out_rho0dv_P(1)   = out_drho_P*out_dv_P(1)
         out_rho0dv_P(SPACEDIM)   = out_drho_P*out_dv_P(SPACEDIM)
-
-        !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
+        
+        if(called_from_compute_gradient_TFSF) then
+          call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
+        endif
+        !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
         
       else ! Happens everytime (since 'if' above is an 'if(.false.)').
         ! --------------------------- !
@@ -754,9 +754,15 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Deduce velocities, pressure, and temperature.
         out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
         out_dv_P(SPACEDIM) = out_rho0dv_P(SPACEDIM)/out_drho_P
-        out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! TODO: Warning, expression of out_dp_P might not be exact.
-                 - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
-        !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
+        
+        call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+        !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
+        !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
+        
+        if(called_from_compute_gradient_TFSF) then
+          call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
+        endif
+        !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
 
       endif
                     
@@ -802,7 +808,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       tz =  n_out(1) ! Recall: n_out(1)=n_x.
       ! Get the normal velocity of the solid perturbation (normal continuity) and the tangential velocity of the fluid flow (free slip).
       normal_v     = (veloc_x*n_out(1) + veloc_z*n_out(SPACEDIM))
-      tangential_v = out_dv_P(1)*tx + out_dv_P(SPACEDIM)*tz
+      tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz ! TODO: correctly get tangential velocity from background field (use background_physical_parameters)
       !normal_v     = -(dv_M(1)*n_out(1) + dv_M(SPACEDIM)*n_out(SPACEDIM)) + 2*(veloc_x*n_out(1) + veloc_z*n_out(SPACEDIM)) ! DEBUG
       !tangential_v = dv_M(1)*tx + dv_M(SPACEDIM)*tz ! DEBUG
       !tangential_v    = (veloc_x*tx + veloc_z*tz) ! DEBUG
@@ -841,22 +847,26 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
       else
         ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-        out_dv_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
-        out_dv_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
+        out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
       endif
       
       ! No stress continuity.
-      out_dp_P = inp_dp_M ! TODO: Warning, expression of out_dp_P might not be exact.
+      out_dp_P = inp_dp_M
 
       ! Deduce energy.
-      out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! TODO: Warning, expression of out_dp_P might not be exact.
+      out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! TODO: Warning, expression of out_dE_P might not be exact.
 
       ! Recompute momenta in order not to keep those coming from the call to boundary_condition_DG above.
       out_rho0dv_P(1) = out_drho_P*out_dv_P(1)
       out_rho0dv_P(SPACEDIM) = out_drho_P*out_dv_P(SPACEDIM)
       
       ! Deduce temperature.
-      !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
+      if(called_from_compute_gradient_TFSF) then
+        call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
+      endif
+      !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
 
     else
       ! --------------------------- !
@@ -877,8 +887,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! The setting of the boundary conditions is thus made here.
       tx = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
       tz =  n_out(1) ! Recall: n_out(1)=n_x.
-      normal_v = (out_dv_P(1)*n_out(1) + out_dv_P(SPACEDIM)*n_out(SPACEDIM))
-      tangential_v = (out_dv_P(1)*tx + out_dv_P(SPACEDIM)*tz)
+      normal_v = (veloc_x_DG_P*n_out(1) + veloc_z_DG_P*n_out(SPACEDIM)) ! TODO: correctly get tangential velocity from background field (use background_physical_parameters)
+      tangential_v = (veloc_x_DG_P*tx + veloc_z_DG_P*tz) ! TODO: correctly get tangential velocity from background field (use background_physical_parameters)
       
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
@@ -892,20 +902,24 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       trans_boundary = trans_boundary/(n_out(1) * tz - tx * n_out(SPACEDIM))
      
       ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-      out_dv_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
-      out_dv_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
+      out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
       
       ! Deduce energy.
       out_dE_P = out_dp_P/(gammaext_DG(iglobM) - ONEcr) & ! TODO: Warning, expression of out_dp_P might not be exact.
                + out_drho_P*HALFcr*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 )
       
       ! Deduce momenta.
-      out_rho0dv_P(1)   = out_drho_P*out_dv_P(1)
-      out_rho0dv_P(SPACEDIM)   = out_drho_P*out_dv_P(SPACEDIM)
+      out_rho0dv_P(1)        = out_drho_P*out_dv_P(1)
+      out_rho0dv_P(SPACEDIM) = out_drho_P*out_dv_P(SPACEDIM)
       
       ! Deduce temperature.
-      !out_dT_P = (out_dE_P/out_drho_P - 0.5*(out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
-      !!out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V ! DEBUG ! TODO: Warning, expression of out_dT_P might not be exact.
+      if(called_from_compute_gradient_TFSF) then
+        call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
+      endif
+      !out_dT_P = (out_dE_P/out_drho_P - 0.5*(out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2))/c_V
+      !!out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V ! DEBUG
       !Tx_DG_P = -T_DG_iM(1) ! DEBUG
       !Tz_DG_P = -T_DG_iM(2) ! DEBUG
     endif
@@ -962,14 +976,19 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
     trans_boundary = trans_boundary/(n_out(1) * tz - tx * n_out(SPACEDIM))
     ! From free slip and normal velocity continuity
-    out_dv_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-    out_dv_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+    out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+    out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+    out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
     ! From traction continuity
     out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! TODO: Warning, expression of out_dp_P might not be exact.
     out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! TODO: Warning, expression of out_dp_P might not be exact.
-    out_rho0dv_P(1)   = out_drho_P*out_dv_P(1)
-    out_rho0dv_P(SPACEDIM)   = out_drho_P*out_dv_P(SPACEDIM)
-    !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
+    out_rho0dv_P(1)        = out_drho_P*out_dv_P(1)
+    out_rho0dv_P(SPACEDIM) = out_drho_P*out_dv_P(SPACEDIM)
+    
+    if(called_from_compute_gradient_TFSF) then
+      call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
+    endif
+    !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
   else ! Happens everytime (since 'else if' above is an 'if(.false.)').
     ! --------------------------- !
     ! neighbor(3) /= -1           !
@@ -984,8 +1003,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     out_dE_P = inp_dE_P
     out_rho0dv_P = inp_rho0dv_P
     out_dv_P(:) = out_rho0dv_P(:)/LNS_rho0(iglobP)
-    out_dp_P       = (gamma_P - ONEcr)*( out_dE_P & ! TODO: Warning, expression of out_dp_P might not be exact.
-                   - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
+    call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+    !out_dp_P       = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
+    !               - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
     if(viscousComputation) then
       ! Viscosity.
       !Vxx_DG_P = V_DG_iP(1, 1)
@@ -995,14 +1015,22 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       !Tx_DG_P = T_DG_iP(1)
       !Tz_DG_P = T_DG_iP(2)
     endif
-    !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
+    
+    if(called_from_compute_gradient_TFSF) then
+      call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
+    endif
+    !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
   endif
   
   !close(10)
   
-  ! Temperature computation
-  !!out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V ! TODO: Warning, expression of out_dT_P might not be exact.
+  ! Temperature computation (is it really needed?)
+  !!out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
   ! (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
+  
+  if(.not. called_from_compute_gradient_TFSF) then
+    out_dm_P=out_rho0dv_P+out_drho_P*LNS_rho0(iglobM)
+  endif
   
 end subroutine LNS_get_interfaces_unknowns
 

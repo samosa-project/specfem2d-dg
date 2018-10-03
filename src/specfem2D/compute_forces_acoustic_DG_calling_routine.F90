@@ -132,6 +132,10 @@ subroutine compute_forces_acoustic_DG_main()
                  - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     T_init = (E_DG/rho_DG - HALF*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V
     
+    !write(*,*) it, i_stage, "rho0",rho_init(1), "E0", E_init(1), "T0", T_init(1), "p0", p_DG_init(1), &
+    !           "gamma", gammaext_DG(1), "c_V", c_V ! DEBUG
+    !stop
+    
     ! When elastic-DG simulations, p_DG = 0 in elastic elements and 1/p_DG will not be properly defined. Use a hack.
     where(p_DG_init <= 0._CUSTOM_REAL) p_DG_init = 1._CUSTOM_REAL
     

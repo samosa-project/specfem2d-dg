@@ -195,10 +195,10 @@
     ! compute gradient of potential to calculate vector if acoustic element
     ! we then need to divide by density because the potential is a potential of (density * displacement)
     rhol = density(1,kmato(ispec))
-
+    
     DG_vector_field = .false.
     if(any_acoustic_DG) then
-        if(ispec_is_acoustic_DG(ispec)) DG_vector_field = .true.
+      if(ispec_is_acoustic_DG(ispec)) DG_vector_field = .true.
     endif
 
     ! double loop over GLL points to compute and store gradients
@@ -251,10 +251,10 @@
           vector_field_element(1,i,j) = (tempx1l*xixl + tempx2l*gammaxl) / rhol        !u_x
           vector_field_element(2,i,j) = (tempx1l*xizl + tempx2l*gammazl) / rhol        !u_z
           
-       else
-         vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
-         vector_field_element(2,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
-       endif ! if(ispec_is_acoustic_DG(ispec))
+        else
+          vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
+          vector_field_element(2,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
+        endif ! if(ispec_is_acoustic_DG(ispec))
         
       enddo
     enddo
