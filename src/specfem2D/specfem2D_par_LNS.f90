@@ -32,7 +32,10 @@ module specfem_par_LNS
   
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99 ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
   ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every 100 iterations
-  ! LNS_VERBOSE>=51: printing min/max values for each constitutive variable on CPU 0 every 100 iterations
+  ! LNS_VERBOSE>=51: printing min/max values for each constitutive variable on CPU 0 every LNS_MODPRINT iterations
+  
+  ! Integer used in modulo for condition on printing min/max values for each constitutive variable on CPU 0 every 100 iterations. To be added in parfile later.
+  integer, parameter :: LNS_MODPRINT = 500
   
   ! MPI: Transfers' buffers.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_LNS_drho_P, buffer_LNS_dE_P

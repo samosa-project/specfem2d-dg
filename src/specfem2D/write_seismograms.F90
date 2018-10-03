@@ -136,13 +136,7 @@
             if (USE_DISCONTINUOUS_METHOD) then
               ! Send DG sqrt(rho)*v_z in the DG parameter slot.
               if (USE_LNS) then
-                write(*,*) "********************************"
-                write(*,*) "*            ERROR             *"
-                write(*,*) "********************************"
-                write(*,*) "* seismotype 3 not implemented *"
-                write(*,*) "* for LNS.                     *"
-                write(*,*) "********************************"
-                stop
+                stop "seismotype not implemented yet for LNS."
               else
                 call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                                 potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
@@ -264,6 +258,7 @@
                           P_SV,SU_FORMAT,save_ASCII_seismograms, &
                           save_binary_seismograms_single,save_binary_seismograms_double, &
                           x_source,z_source
+  use specfem_par_lns, only: USE_LNS
 
 ! uncomment this to save the ASCII *.sem* seismograms in binary instead, to save disk space and/or writing time
 ! we could/should move this flag to DATA/Par_file one day.
@@ -318,6 +313,12 @@
   else
     number_of_components = NDIM
   endif
+  
+  ! TODO: some conditions not to save a useless bunch of seismograms...
+  ! The condition below is a preliminary idea, but seems to make the rest of the code crash.
+  !if(USE_LNS .and. seismotype==2) then
+  !  number_of_components = 1
+  !endif
 
   allocate(buffer_binary(NSTEP_BETWEEN_OUTPUT_SEISMOS/subsamp_seismos,nrec,number_of_components),stat=ier)
   if (ier /= 0) stop 'Error allocating array buffer_binary'
@@ -453,6 +454,7 @@
 
           ! write trace
           do iorientation = 1,number_of_components
+            !write(*,*) "irec", irec, "iorientation", iorientation ! DEBUG
 
             if (iorientation == 1) then
               channel = 'BXX'
@@ -491,7 +493,7 @@
               open(unit=11,file=sisname(1:len_trim(sisname)),status='unknown')
               close(11,status='delete')
             endif
-
+            
             ! save seismograms in text format with no subsampling.
             ! Because we do not subsample the output, this can result in large files
             ! if the simulation uses many time steps. However, subsampling the output

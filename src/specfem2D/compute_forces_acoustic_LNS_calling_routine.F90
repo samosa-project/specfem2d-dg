@@ -4,39 +4,42 @@
 ! TODO: Description.
 
 subroutine compute_forces_acoustic_LNS_main()
-
-  use constants, only: &
-    CUSTOM_REAL, &
-    rk4a_d, rk4b_d, rk4c_d, &
-    ls33rk_a, ls33rk_b, ls33rk_c, &
-    HALF, ONE, NGLLX, NGLLZ
-  use specfem_par, only: &
-    deltat, nglob_DG,stage_time_scheme,&
-    gravityext, muext, etaext, kappa_DG,&
-    tau_epsilon, tau_sigma, & ! Temporary hack until boundary_condition_DG is modified.
-    ispec_is_acoustic_coupling_ac,&
-    rmass_inverse_acoustic_DG,&
-    assign_external_model, any_acoustic_DG, only_DG_acoustic, &
-    c_V,gammaext_DG,&
-    it, i_stage,&
-    myrank, nspec, nproc, ibool_DG, ibool_before_perio, &
-    ninterface_acoustic, &
-    time_stepping_scheme, &
-    !CONSTRAIN_HYDROSTATIC, &
-    coord!, &
-    !T_DG, V_DG ! Use those to store respectively \nabla T' and \nabla v'.
-  use specfem_par_LNS, only: &
-    LNS_g, LNS_mu, LNS_eta, LNS_kappa,&
-    LNS_rho0, LNS_v0, LNS_E0,&
-    LNS_drho, LNS_rho0dv, LNS_dE,&
-    aux_drho, aux_rho0dv, aux_dE,&
-    RHS_drho, RHS_rho0dv, RHS_dE,&
-    nabla_v0, LNS_p0, LNS_T0, sigma_v_0,&
-    LNS_dm, LNS_dp, LNS_dT,&
-    buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P,&
-    LNS_VERBOSE,&
-    SPACEDIM,&
-    LNS_dummy_1d, LNS_dummy_2d!, LNS_dummy_3d
+  
+  use constants ! TODO: select variables to use.
+  use specfem_par ! TODO: select variables to use.
+  use specfem_par_LNS ! TODO: select variables to use.
+  !use constants, only: &
+  !  CUSTOM_REAL, &
+  !  rk4a_d, rk4b_d, rk4c_d, &
+  !  ls33rk_a, ls33rk_b, ls33rk_c, &
+  !  HALF, ONE, NGLLX, NGLLZ
+  !use specfem_par, only:&! kmato,&
+  !  deltat, nglob_DG,stage_time_scheme,&
+  !  !gravityext, muext, etaext, kappa_DG,& ! TODO: make sure those aren't allocated
+  !  !tau_epsilon, tau_sigma, & ! TODO: make sure those aren't allocated
+  !  ispec_is_acoustic_coupling_ac,&
+  !  rmass_inverse_acoustic_DG,&
+  !  assign_external_model, any_acoustic_DG, only_DG_acoustic, &
+  !  !c_V,&!,gammaext_DG,&
+  !  it, i_stage,&
+  !  myrank, nspec, nproc, ibool_DG, ibool_before_perio, &
+  !  ninterface_acoustic, &
+  !  time_stepping_scheme, &
+  !  !CONSTRAIN_HYDROSTATIC, &
+  !  coord!, &
+  !  !T_DG, V_DG ! Use those to store respectively \nabla T' and \nabla v'.
+  !use specfem_par_LNS, only: &
+  !  LNS_g, LNS_mu, LNS_eta, LNS_kappa,&
+  !  LNS_rho0, LNS_v0, LNS_E0,&
+  !  LNS_drho, LNS_rho0dv, LNS_dE,&
+  !  aux_drho, aux_rho0dv, aux_dE,&
+  !  RHS_drho, RHS_rho0dv, RHS_dE,&
+  !  nabla_v0, LNS_T0, sigma_v_0, LNS_p0,&
+  !  LNS_dm, LNS_dp, LNS_dT,&
+  !  buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P,&
+  !  LNS_VERBOSE,&
+  !  SPACEDIM,&
+  !  LNS_dummy_1d, LNS_dummy_2d!, LNS_dummy_3d
 
   implicit none
 
@@ -48,7 +51,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), dimension(SPACEDIM,SPACEDIM,nglob_DG) :: nabla_dv
   real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
   real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: nabla_dT
-  integer :: i,j,ispec
+  integer :: i,j,ispec,ier
   logical CHECK_NONPOSITIVITY, CHECK_NONPOSITIVITY_ON_ALL_PROCS, CHECK_NONPOSITIVITY_FIND_POINT
   logical switch_gradient
   
@@ -117,22 +120,31 @@ subroutine compute_forces_acoustic_LNS_main()
       ! TODO: buffers will need to be different than DG-FNS's ones, thus one would have to call a dedicated function.
     endif
 #endif
+    
+    !write(*,*) kmato ! DEBUG
+    
     ! Allocate acoustic coupling array.
-    allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
+    allocate(ispec_is_acoustic_coupling_ac(nglob_DG), stat=ier)
+    if (ier /= 0) then
+      stop "Error allocating 'ispec_is_acoustic_coupling_ac' arrays (see 'compute_forces_acoustic_LNS_calling_routine.F90')."
+    endif
     ispec_is_acoustic_coupling_ac = -1
+    
     if(.not. only_DG_acoustic) then
       call find_DG_acoustic_coupling()
     endif
     
+    !write(*,*) kmato ! DEBUG
+    
     ! Physical parameters.
     if(.not. assign_external_model) then
-      deallocate(gravityext, muext, etaext, kappa_DG)
-      allocate(gravityext(NGLLX, NGLLZ, nspec), &
-               etaext(NGLLX, NGLLZ, nspec), &
-               muext(NGLLX, NGLLZ, nspec), &
-               kappa_DG(NGLLX, NGLLZ, nspec))
-      deallocate(tau_epsilon, tau_sigma) ! Temporary hack until boundary_condition_DG is modified.
-      allocate(tau_epsilon(NGLLX, NGLLZ, nspec), tau_sigma(NGLLX, NGLLZ, nspec)) ! Temporary hack until boundary_condition_DG is modified.
+      !deallocate(gravityext, muext, etaext, kappa_DG)
+      !allocate(gravityext(NGLLX, NGLLZ, nspec), &
+      !         etaext(NGLLX, NGLLZ, nspec), &
+      !         muext(NGLLX, NGLLZ, nspec), &
+      !         kappa_DG(NGLLX, NGLLZ, nspec))
+      !deallocate(tau_epsilon, tau_sigma) ! Temporary hack until boundary_condition_DG is modified.
+      !allocate(tau_epsilon(NGLLX, NGLLZ, nspec), tau_sigma(NGLLX, NGLLZ, nspec)) ! Temporary hack until boundary_condition_DG is modified.
     endif
     ! Send the (:,:,:) classic registers depending on (i,j,ispec) into one (:) register depending on (iglob), in order to be able to use vector calculus.
     ! This is only done here because we use the subroutine "boundary_condition_DG" in "initial_state_LNS", which needs the classic registers.
@@ -144,16 +156,17 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_mu=0.
     LNS_eta=0.!(4./3.)*LNS_mu
     LNS_kappa=0.
-    ! TODO: Somehow send the (:,:,:) classic registers depending on (i,j,ispec) into one (:) register depending on (iglob), in order to be able to use vector calculus.
-    deallocate(gravityext, muext, etaext, kappa_DG) ! Not really optimal, but less invasive.
+    !deallocate(gravityext, muext, etaext, kappa_DG) ! Not really optimal, but less invasive.
     
     ! Initialise initial state.
+    !write(*,*) "call initial_state_LNS" ! DEBUG
     call initial_state_LNS()
-    ! Initialise p_0 and T_0.
-    LNS_p0 = (gammaext_DG - ONE) &
-              * (LNS_E0 - HALF*LNS_rho0*(LNS_v0(1,:)**2+LNS_v0(SPACEDIM,:)**2))
-    LNS_T0 = (LNS_E0/LNS_rho0 - HALF*(LNS_v0(1,:)**2+LNS_v0(SPACEDIM,:)**2))/c_V
-    where(LNS_p0 <= 0._CUSTOM_REAL) LNS_p0 = 1._CUSTOM_REAL ! When doing elastic-DG simulations, LNS_p0 = 0 in elastic elements and 1/LNS_p0 will not be properly defined. Use a hack.
+    ! Initialise T_0 and p_0.
+    !call compute_p(LNS_rho0, LNS_v0, LNS_E0, LNS_p0) ! In fact, LNS_p0 was computed in initial_state_LNS, but we recompute p_0 based on energy to be coherent with rest of program.
+    call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+    !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
+    
+    where(LNS_p0 <= 0._CUSTOM_REAL) LNS_p0 = 1._CUSTOM_REAL ! When doing elastic-DG simulations, LNS_p0 = 0 in elastic elements and 1/LNS_p0 will not be properly defined (but should not happen). Use a hack if problems occur.
     ! Initialise \nabla v_0.
     call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, .true., .false., switch_gradient, nabla_v0, LNS_dummy_2d) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
     ! Initialise \Sigma_v_0.
@@ -167,7 +180,7 @@ subroutine compute_forces_acoustic_LNS_main()
 #endif
   endif ! Endif on (it == 1) and (i_stage == 1).
   
-  if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, 100)==0) then
+  if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
     WRITE(*,*) "****************************************************************"
     WRITE(*,"(a,i9,a,i1,a,e23.16,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, "."
   endif
@@ -208,16 +221,13 @@ subroutine compute_forces_acoustic_LNS_main()
   enddo
   
   ! Recompute temperature and pressure perturbation.
-  call compute_dp(LNS_drho, LNS_rho0dv, LNS_dE, LNS_dp)
-  !LNS_dp = (gammaext_DG - ONE) &
-  !          * (LNS_E0+LNS_dE - HALF*(LNS_rho0+LNS_drho) &
-  !                                 *(  (LNS_v0(1,:)+LNS_rho0dv(1,:)/LNS_rho0)**2 &
-  !                                   + (LNS_v0(SPACEDIM,:)+LNS_rho0dv(SPACEDIM,:)/LNS_rho0)**2)) &
-  !         - LNS_p0
-  LNS_dT = (  (LNS_E0+LNS_dE)/(LNS_rho0+LNS_drho) &
-            - HALF*(  (LNS_v0(1,:)+LNS_rho0dv(1,:)/LNS_rho0)**2 &
-                    + (LNS_v0(SPACEDIM,:)+LNS_rho0dv(SPACEDIM,:)/LNS_rho0)**2)  )/c_V &
-           - LNS_T0
+  call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
+  call compute_dp(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dp)
+  
+  !write(*,*)it, i_stage, "rho0", LNS_rho0(1), "E0", LNS_E0(1), "T0", LNS_T0(1), "p0", LNS_p0(1), &
+  !             "gamma", gammaext_DG(1), "c_V", c_V, &
+  !             "dp", LNS_dp(1)! DEBUG
+  !stop
   
   ! Precompute gradients.
   call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT) ! Dummy variables are not optimal, but prevent from duplicating
@@ -344,54 +354,6 @@ end subroutine compute_forces_acoustic_LNS_main
 
 
 ! ------------------------------------------------------------ !
-! compute_dp                                                   !
-! ------------------------------------------------------------ !
-! Computes pressure perturbation from constitutive variables.
-
-subroutine compute_dp(in_drho, in_rho0dv, in_dE, out_dp)
-  use constants ! TODO: select variables to use.
-  use specfem_par ! TODO: select variables to use.
-  use specfem_par_LNS ! TODO: select variables to use.
-  
-  implicit none
-  
-  ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_drho, in_dE
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_rho0dv
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dp
-  
-  ! Local.
-  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-
-  out_dp = (gammaext_DG - ONEcr) &
-           * (LNS_E0+in_dE - HALFcr*(LNS_rho0+in_drho) &
-                                   *(  (LNS_v0(1,:)+in_rho0dv(1,:)/LNS_rho0)**2 &
-                                     + (LNS_v0(SPACEDIM,:)+in_rho0dv(SPACEDIM,:)/LNS_rho0)**2)) &
-           - LNS_p0
-end subroutine compute_dp
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-! ------------------------------------------------------------ !
 ! initial_state_LNS                                            !
 ! ------------------------------------------------------------ !
 ! Computes initial state.
@@ -409,25 +371,26 @@ subroutine initial_state_LNS()
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer :: ispec, iglob, i, j
-  real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
+  !real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
   
   do ispec = 1, nspec
     do j = 1, NGLLZ
       do i = 1, NGLLX
         iglob = ibool_DG(i, j, ispec)
-        call initialise_physical_parameters(i, j, ispec, ZEROcr)
-        call boundary_condition_DG(i, j, ispec, ZEROcr, rho_P, LNS_dummy_1d(1), LNS_dummy_1d(1), E_P, &
-                                  veloc_x_P, veloc_z_P, LNS_dummy_1d(1), LNS_dummy_1d(1))
-        ! TODO: Ultimately, implement a dedicated subroutine instead of using a call to a DG routine with dummy variables.
-        ! Note: the '(1)' after dummy variables is somewhat a hack for Intel compilers, and might not be the brightest idea. Since a dedicated subroutine is to be implemented at some point, I leave that as is. I'm sorry.
-        LNS_E0(iglob) = ZEROcr ! TODO: something
+        !write(*,*) "call background_physical_parameters" ! DEBUG
+        call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), LNS_v0(:,iglob), LNS_E0(iglob), LNS_p0(iglob))
       enddo
     enddo
   enddo
 end subroutine initial_state_LNS
 
-subroutine initialise_physical_parameters(i, j, ispec, timelocal)
-  use constants ! TODO: select variables to use. ,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL
+! ------------------------------------------------------------ !
+! initial_state_LNS                                            !
+! ------------------------------------------------------------ !
+! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
+
+subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, out_v, out_E, out_p)
+  use constants, only: CUSTOM_REAL
   use specfem_par ! TODO: select variables to use. , only: ibool_before_perio, ibool_DG, coord, &
         !rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
         !etaext, muext, coord_interface, kappa_DG, cp, c_V, &
@@ -446,65 +409,77 @@ subroutine initialise_physical_parameters(i, j, ispec, timelocal)
   
   ! Input/Output.
   integer, intent(in) :: i, j, ispec
+  real(kind=CUSTOM_REAL), intent(out) :: out_rho, out_E, out_p
+  real(kind=CUSTOM_REAL), dimension(2), intent(out) :: out_v
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
   
   ! Local.
   integer :: iglob
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: z, H, G!, A
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: z, H!, G!, A
   
   iglob = ibool_DG(i, j, ispec)
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
-    LNS_rho0(iglob) = rhoext(i, j, ispec)
-    LNS_p0(iglob) = pext_DG(i, j, ispec)
-    LNS_v0(1,iglob) = windxext(i, j, ispec)
+    out_rho = rhoext(i, j, ispec)
+    out_p = pext_DG(i, j, ispec)
+    out_v(1) = windxext(i, j, ispec)
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
-    ! > Set gravity, viscosity coefficients, and gamma.
-    if(timelocal == ZEROcr) then
+    
+    ! > If initialisation (condition on timelocal), set gravity, viscosity coefficients (mu and eta), and gamma.
+    !write(*,*) "kek" ! DEBUG
+    if(abs(timelocal)<TINYVAL) then
+      ! We are at t=0.
       if(USE_ISOTHERMAL_MODEL) then
         ! > Isothermal case.
-        gravityext(i, j, ispec) = real(gravity_cte_DG, kind=CUSTOM_REAL)
+        LNS_g(iglob) = real(gravity_cte_DG, kind=CUSTOM_REAL)
       else
         ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
-        gravityext(i, j, ispec) = ZEROcr
+        LNS_g(iglob) = ZEROcr
       endif
-      gammaext_DG(ibool_DG(i, j, ispec)) = cp/c_V
+      gammaext_DG(iglob) = cp/c_V
       LNS_mu(iglob) = dynamic_viscosity_cte_DG
       LNS_eta(iglob) = (4./3.)*dynamic_viscosity_cte_DG
       LNS_kappa(iglob) = thermal_conductivity_cte_DG
     endif
     
-    
     if(USE_ISOTHERMAL_MODEL) then
       ! > Set density.
       H = SCALE_HEIGHT ! Also for pressure, below.
-      G = gravityext(i, j, ispec) ! Also for pressure, below.
-      LNS_rho0(iglob) = surface_density*exp(-z/H)
+      out_rho = surface_density*exp(-z/H)
       ! > Set pressure.
-      LNS_p0(iglob) = LNS_rho0(iglob)*G*H
+      out_p = out_rho*LNS_g(iglob)*H
     else
       ! > Set density.
-      LNS_rho0(iglob) = surface_density
+      out_rho = surface_density
       ! > Set pressure.
-      LNS_p0(iglob) = (sound_velocity**2)*LNS_p0(iglob)/gammaext_DG(ibool_DG(i, j, ispec)) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
+      !write(*,*) sound_velocity ! DEBUG
+      !write(*,*) out_rho ! DEBUG
+      !write(*,*) gammaext_DG(ibool_DG(i, j, ispec)) ! DEBUG
+      out_p = (sound_velocity**2)*out_rho/gammaext_DG(iglob) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
     endif
     
     ! > Set wind.
-    LNS_v0(1,iglob) = wind ! Read horizontal wind from the scalar value read from parfile.
+    out_v(1) = wind ! Read horizontal wind from the scalar value read from parfile.
   endif ! Endif on assign_external_model.
   
   ! Impose vertical wind to zero.
-  LNS_v0(SPACEDIM,iglob) = ZEROcr 
+  out_v(SPACEDIM) = ZEROcr 
   
-  ! > Set gravity potentials.
-  if(timelocal == ZEROcr) then
-    potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROcr
-    potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
-  endif
+  !! > Set gravity potentials.
+  !if(timelocal == ZEROcr) then
+  !  potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROcr
+  !  potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
+  !endif
   
-end subroutine initialise_physical_parameters
+  ! Set energy based on pressure.
+  out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
+                  + out_rho*HALFcr*( out_v(1)**2 + out_v(SPACEDIM)**2 )
+  
+end subroutine background_physical_parameters
 
 
 
@@ -618,11 +593,13 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: SF_P ! When swMETHOD==.true., this variable is used to store the value of the scalar field SF across the element's boundary, in order to compute the flux.
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
   integer :: ispec,i,j,k,iglob, iglobM, iglobP!, iglob_unique
-  real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
-        E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
+  real(kind=CUSTOM_REAL) :: flux_n, flux_x, flux_z, nx, nz, weight!rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
+        !E_DG_P&!, p_DG_P, &
         !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
-        flux_n, flux_x, flux_z, nx, nz, weight!, timelocal,gamma_P
+        !timelocal,gamma_P
   logical :: exact_interface_flux
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
@@ -878,19 +855,18 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
         
         ! Interface terms.
         do  iface = 1, 4 
-         do  iface1 = 1, NGLLX
+          do  iface1 = 1, NGLLX
             i = link_iface_ijispec(iface1,iface,ispec,1)
             j = link_iface_ijispec(iface1,iface,ispec,2)
             ! Interior point
             iglobM = ibool_DG(i,j,ispec)
-            rho_DG_P     = ZEROcr
-            rhovx_DG_P   = ZEROcr
-            rhovz_DG_P   = ZEROcr
-            E_DG_P       = ZEROcr
-            veloc_x_DG_P = ZEROcr
-            veloc_z_DG_P = ZEROcr
-            p_DG_P       = ZEROcr
-            T_P          = ZEROcr
+            !rho_DG_P     = ZEROcr
+            !rhovx_DG_P   = ZEROcr
+            !rhovz_DG_P   = ZEROcr
+            !E_DG_P       = ZEROcr
+            SF_P         = ZEROcr
+            TF_P         = ZEROcr
+            !p_DG_P       = ZEROcr
             !Vxx_DG_P     = ZEROcr
             !Vzz_DG_P     = ZEROcr
             !Vzx_DG_P     = ZEROcr
@@ -924,7 +900,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
           ! TODO: dedicated routine.
           !call compute_interface_unknowns(i,j,ispec, drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, veloc_x_DG_P, veloc_z_DG_P, in_dp_P, T_P, &
+          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(SPACEDIM), in_dp_P, T_P, &
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
           !        neighbor, &
           !        exact_interface_flux, &
@@ -937,7 +913,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
           !        !nx_unit, nz_unit, weight, currentTime, iface1, iface)
           !call LNS_get_interfaces_unknowns(i, j, ispec, &
           !        drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, veloc_x_DG_P, veloc_z_DG_P, in_dp_P, T_P, &
+          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(SPACEDIM), in_dp_P, T_P, &
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
           !        neighbor, &
           !        exact_interface_flux, &
@@ -946,37 +922,50 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
           !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(SPACEDIM,iglobP), &
           !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
           !        nx, nz, weight, currentTime, iface1, iface)
+            
+            call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, LNS_dummy_1d(1), & ! Point identifier (input).
+                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Input constitutive variables, "M" side.
+                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Input constitutive variables, "P" side.
+                  LNS_dummy_1d(1), & ! Input other variable, "M" side.
+                  !V_DG(:,:,iglobM), T_DG(:,iglobM), & ! Input derivatives, "M" side. MIGHT NEED.
+                  !V_DG(:,:,iglobP), T_DG(:,iglobP), & ! Input derivatives, "M" side. MIGHT NEED.
+                  n_out, & ! Normal vector (input).
+                  exact_interface_flux, & ! Switch to disable jump in some cases (output).
+                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Output constitutive variables.
+                  !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
+                  LNS_dummy_2d(:,1), LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_2d(:,1), LNS_dummy_1d(1:3), & ! Output other variables.
+                  SF_P, TF_P, .true.) ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. TODO: if other fields need to be computed, one will have to use a dedicated routine.
 
             !vx_init = rhovx_init(iglobM)/rho_init(iglobM)
             !vz_init = rhovz_init(iglobM)/rho_init(iglobM)
 
             ! Dot products.
             if(swSF) then
-              flux_x = SF(iglobM) + T_P
+              flux_x = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along x of the scalar field SF.
               !if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*T_init(iglobM)
-              flux_n = flux_x*nx
+              flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
               nabla_SF(1,iglobM) = nabla_SF(1,iglobM) + weight*flux_n*HALFcr
-              flux_z = SF(iglobM) + T_P
+              flux_z = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along z of the scalar field SF.
               !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
-              flux_n = flux_z*nz
+              flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
               nabla_SF(SPACEDIM,iglobM) = nabla_SF(SPACEDIM,iglobM) + weight*flux_n*HALFcr
             endif
             if(swTF) then
-              flux_x = TF(1,iglobM) + veloc_x_DG_P
+              flux_x = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along x of the x-component of the tensor field TF.
               !if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vx_init
-              flux_n = flux_x*nx
+              flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
               nabla_TF(1,1,iglobM) = nabla_TF(1,1,iglobM) + weight*flux_n*HALFcr
-              flux_z = TF(1,iglobM) + veloc_x_DG_P
+              flux_z = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along z of the x-component of the tensor field TF.
               !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
-              flux_n = flux_z*nz
+              flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
               nabla_TF(1,SPACEDIM,iglobM) = nabla_TF(1,SPACEDIM,iglobM) + weight*flux_n*HALFcr
-              flux_x = TF(SPACEDIM,iglobM) + veloc_z_DG_P
+              flux_x = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along x of the z-component of the tensor field TF.
               !if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
-              flux_n = flux_x*nx
+              flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
               nabla_TF(SPACEDIM,1,iglobM) = nabla_TF(SPACEDIM,1,iglobM) + weight*flux_n*HALFcr
-              flux_z = TF(SPACEDIM,iglobM) + veloc_z_DG_P
+              flux_z = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along z of the z-component of the tensor field TF.
               !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
-              flux_n = flux_z*nz
+              flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
               nabla_TF(SPACEDIM,SPACEDIM,iglobM) = nabla_TF(SPACEDIM,SPACEDIM,iglobM) + weight*flux_n*HALFcr
             endif
           enddo ! Enddo on iface1.
@@ -1015,3 +1004,140 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !  nabla_TF(SPACEDIM, SPACEDIM, :) = nabla_TF(SPACEDIM,SPACEDIM,:) ! dzTFz
   !endif
 end subroutine compute_gradient_TFSF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! ------------------------------------------------------------ !
+! compute_p                                                    !
+! ------------------------------------------------------------ !
+! Computes pressure from constitutive variables.
+subroutine compute_p(in_rho, in_v, in_E, out_p)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: gammaext_DG, nglob_DG
+  use specfem_par_LNS, only: SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_p
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_p =   (gammaext_DG - ONEcr) &
+          * (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
+                                       + in_v(SPACEDIM,:)**2))
+end subroutine compute_p
+! ------------------------------------------------------------ !
+! compute_dp                                                   !
+! ------------------------------------------------------------ !
+! Computes pressure perturbation from constitutive variables.
+! Note: this could have been done nearly inline by using the subroutine compute_p, but defining this function enables one to use less RAM.
+subroutine compute_dp(in_rho, in_v, in_E, out_dp)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: gammaext_DG, nglob_DG
+  use specfem_par_LNS, only: LNS_p0, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dp
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_dp =   (gammaext_DG - ONEcr) &
+           * (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
+                                        + in_v(SPACEDIM,:)**2)) &
+           - LNS_p0
+end subroutine compute_dp
+! ------------------------------------------------------------ !
+! compute_dp_i                                                 !
+! ------------------------------------------------------------ !
+! Same as compute_dp, but point by point (unvectorised).
+subroutine compute_dp_i(in_rho, in_v, in_E, out_p, iglob)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: gammaext_DG
+  use specfem_par_LNS, only: LNS_p0, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  integer, intent(in) :: iglob
+  real(kind=CUSTOM_REAL), intent(out) :: out_p
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_p =   (gammaext_DG(iglob) - ONEcr) &
+          * (in_E - HALFcr * in_rho * (  in_v(1)**2 &
+                                       + in_v(SPACEDIM)**2)) &
+          - LNS_p0(iglob)
+end subroutine compute_dp_i
+! ------------------------------------------------------------ !
+! compute_T                                                    !
+! ------------------------------------------------------------ !
+! Computes temperature from constitutive variables.
+subroutine compute_T(in_rho, in_v, in_E, out_T)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: c_V, nglob_DG
+  use specfem_par_LNS, only: SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_T=(in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V
+end subroutine compute_T
+! ------------------------------------------------------------ !
+! compute_T_i                                                  !
+! ------------------------------------------------------------ !
+! Same as compute_T, but point by point (unvectorised).
+subroutine compute_T_i(in_rho, in_v, in_E, out_T)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: c_V
+  use specfem_par_LNS, only: SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), intent(out) :: out_T
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(SPACEDIM)**2))/c_V
+end subroutine compute_T_i
+! ------------------------------------------------------------ !
+! compute_dT                                                   !
+! ------------------------------------------------------------ !
+! Computes temperature perturbation from constitutive variables.
+! Note: this could have been done nearly inline by using the subroutine compute_T, but defining this function enables one to use less RAM.
+subroutine compute_dT(in_rho, in_v, in_E, out_dT)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: c_V, nglob_DG
+  use specfem_par_LNS, only: LNS_T0, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_dT=  (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V &
+         - LNS_T0
+end subroutine compute_dT

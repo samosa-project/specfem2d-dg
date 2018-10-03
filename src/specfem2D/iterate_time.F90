@@ -135,6 +135,7 @@ subroutine iterate_time()
         if(.not. GPU_MODE) then
           if(any_acoustic_DG) then
             if(USE_LNS) then
+              !write(*,*) "call compute_forces_acoustic_LNS_main" ! DEBUG
               call compute_forces_acoustic_LNS_main()
             else
               call compute_forces_acoustic_DG_main()
@@ -223,6 +224,7 @@ subroutine iterate_time()
   
     ! loop on all the receivers to compute and store the seismograms
     if (.not. SIMULATION_TYPE == 3) then
+      !write(*,*) "call write_seismograms" ! DEBUG
       call write_seismograms()
     endif
 
