@@ -436,7 +436,7 @@ while(not(ismember(exportok,[0,1])))
   bytespervalue=39.985880510267151;
   expectedsize=prod(size(veloc_specfem))*bytespervalue;
   disp(['[',mfilename,'] > File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
-  exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? > ']);
+  exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? Path will be confirmed later. > ']);
 end
 if(exportok==0)
   error(['[',mfilename,', ERROR] > Exporting disabled.']);
