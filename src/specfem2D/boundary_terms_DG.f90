@@ -164,7 +164,7 @@
 subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
-  use constants,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL
+  use constants,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL, TINYVAL
 
   use specfem_par, only: ibool_before_perio, ibool_DG, coord, &
         rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
@@ -306,6 +306,11 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
                       real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
   endif
   
+  
+  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
+  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
+  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
+  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
   ! --------------------------- !
   ! Rayleigh-Taylor instability !
   ! (case 5.3 paper).           !
@@ -334,7 +339,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   !call boundary_forcing_DG(timelocal, rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, E_DG_P)
 
   ! If bottom forcing is activated, set (overwrite) velocities.
-  if(TYPE_FORCING>0 .and. z == ZEROl) then
+  if(TYPE_FORCING>0 .and. abs(z)<TINYVAL) then
     ! Read forcing parameters from parameter file.
     lambdo = main_spatial_period
     xo     = forcing_initial_loc
@@ -522,20 +527,130 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
 end subroutine boundary_condition_DG
 
 ! ------------------------------------------------------------ !
+! forcing_DG                                                   !
+! ------------------------------------------------------------ !
+! Computes a forcing.
+! IN:
+!   i, j, ispec, indices of the considered point
+!   current_time, current time
+! OUT:
+!   forced_SF, forced scalar field
+   
+subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
+  use constants ! TODO: select variables to use.
+  use specfem_par ! TODO: select variables to use.
+  use specfem_par_LNS ! TODO: select variables to use.
+  
+  implicit none
+  
+  ! Input/Output.
+  integer, intent(in) :: i, j, ispec
+  real(kind=CUSTOM_REAL), intent(in) :: current_time
+  real(kind=CUSTOM_REAL), intent(out) :: forced_SF
+  
+  ! Local.
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: x
+  integer externalforcingid ! TYPE_FORCING==10.
+  
+  if(TYPE_FORCING==0) return ! Safeguard in case routine is accidentally called, to prevent useless computations.
+  
+  ! Get point position.
+  x = real(coord(:, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
+  x(SPACEDIM) = x(SPACEDIM) - coord_interface ! Remove eventual non-zero altitude of interface.
+  
+  if(abs(x(SPACEDIM))<TINYVAL) then
+    ! For now, forcings only occur on bottom boundary. This test thus enables faster treatment.
+    select case (TYPE_FORCING)
+      case (99)
+        ! --------------------------- !
+        ! Testing purposes.           !
+        ! --------------------------- !
+        if(abs(x(SPACEDIM))<TINYVAL) then
+          ! If z==0.
+          !forced_SF = sin(2.*PI*x(1)/10.)
+          forced_SF = cos(2.*PI*current_time/0.08)-1.
+        else
+          ! Leave everything unchanged and leave early.
+          return
+        endif
+      
+      case (10)
+        ! --------------------------- !
+        ! Forcing read from file.     !
+        ! --------------------------- !
+        ! The Matlab script 'utils_new/forcings.m' can be used to generate the external bottom forcing file.
+        !write(*,*) "KEK", floor(timelocal/DT+1)
+        !write(*,*) ibool_before_perio(i,j,ispec)
+        !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec)), i, j, ispec ! DEBUG
+        if(current_time<EXTERNAL_FORCING_MAXTIME) then
+          externalforcingid=EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec))
+          if(externalforcingid/=HUGE(0)) then
+            ! If there exists an id, retrieve forcing:
+            forced_SF=EXTERNAL_FORCING(floor(current_time/EXTFORC_FILEDT+1),externalforcingid)
+          else ! Else on externalforcingid.
+            if(x(1)>=EXTFORC_MINX .and. x(1)<=EXTFORC_MAXX) then
+              ! This block is entered if forcing should happen (t < max_t and min_x < x < max_x), but can't be read (externalforcingid==HUGE(0)).
+              ! Prompt an error.
+              write(*,*) "********************************"
+              write(*,*) "*            ERROR             *"
+              write(*,*) "********************************"
+              write(*,*) "* External bottom forcing      *"
+              write(*,*) "* should happen, but does not  *"
+              write(*,*) "* happen. Maybe some points    *"
+              write(*,*) "* were not paired well, or     *"
+              write(*,*) "* time to index conversion     *"
+              write(*,*) "* fails.                       *"
+              write(*,*) "* x_min = ", EXTFORC_MINX, "(included)"
+              write(*,*) "* x     = ", x
+              write(*,*) "* x_max = ", EXTFORC_MAXX, "(included)"
+              write(*,*) "* t     = ", current_time, "(excluded)"
+              write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME
+              write(*,*) "********************************"
+              stop
+            endif
+          endif ! Endif on externalforcingid.
+        else ! Else on current_time.
+          ! Leave everything unchanged and leave early.
+          return
+        endif ! Endif on current_time.
+      
+      case (0)
+        ! Safeguard in case routine is accidentally called, to prevent useless computations.
+        return
+      
+      case default
+        ! TYPE_FORCING not implemented.
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* Forcing unknown or not yet   *"
+        write(*,*) "* implemented:                 *"
+        write(*,*) "* TYPE_FORCING = ", TYPE_FORCING
+        write(*,*) "********************************"
+        stop
+    end select ! Endselect on TYPEFORCING.
+  else ! Else on abs(z).
+    ! Leave everything unchanged and leave early.
+    return
+  endif ! Endif on abs(z).
+end subroutine forcing_DG
+
+! ------------------------------------------------------------ !
 ! prepare_external_forcing                                     !
 ! ------------------------------------------------------------ !
 ! Reads EXTERNAL_FORCING_FILENAME, save values of bottom forcing in an array, and map mesh coordinates to that array.
 
 subroutine prepare_external_forcing()
 
-  use constants,only: CUSTOM_REAL, HUGEVAL
+  use constants,only: CUSTOM_REAL, HUGEVAL, TINYVAL
 
   use specfem_par, only: EXTERNAL_FORCING_FILENAME, EXTERNAL_FORCING_MAXTIME,&
                          EXTFORC_MINX, EXTFORC_MAXX, &
                          EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL, DT,&
                          EXTFORC_FILEDT,&
                          nglob_DG,coord,nspec,NGLLX,NGLLZ,myrank,&!NPROC,&
-                         only_DG_acoustic,ibool_before_perio,stage_time_scheme
+                         only_DG_acoustic,ibool_before_perio,stage_time_scheme,&
+                         ADD_PERIODIC_CONDITIONS
 
   implicit none
 
@@ -581,6 +696,17 @@ subroutine prepare_external_forcing()
     write(*,*) "********************************"
     stop
   endif
+  if(ADD_PERIODIC_CONDITIONS) then
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* Periodic boundary conditions *"
+    write(*,*) "* are activated. External      *"
+    write(*,*) "* bottom forcing can be used   *"
+    write(*,*) "* with those, but it must be   *"
+    write(*,*) "* prepared beforehand.         *"
+    write(*,*) "********************************"
+  endif
   EXTFORC_MAP_ibbp_TO_LOCAL=HUGE(0) ! Safeguard.
   
   if(myrank==0) then
@@ -610,14 +736,16 @@ subroutine prepare_external_forcing()
           do i = 1, NGLLX
             ibbp=ibool_before_perio(i, j, ispec)
             z = coord(2, ibbp) ! Get z-coordinate of GLL point.
-            if(z/=0.) then
+            if(abs(z)>TINYVAL) then
+              ! If too far away from 0, cycle point.
               cycle
             else
-              if(.false. .and. abs(x-coord(1, ibbp))<10.) then ! DEBUG
+              if(.false. .and. abs(x-coord(1, ibbp))<1.) then ! DEBUG
                 write(*,*) t, x, coord(1, ibbp), abs(x-coord(1, ibbp)), nx
               endif
-              if(abs(x-coord(1, ibbp))<1e-4) then
+              if(abs(x-coord(1, ibbp))<1e-4) then ! Empiric threshold based on precision we can obtain by generating forcings with our Matlab script.
                 EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)=nx
+                !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(ibbp) ! DEBUG
                 nx_paired=nx_paired+1
               endif
             endif
@@ -646,7 +774,7 @@ subroutine prepare_external_forcing()
   
   call sum_all_all_i(nx_paired, nx_paired_tot)
   if(myrank==0) then
-    write(*,*) "  Across CPUs: ", nx_paired_tot, "SPECFEM mesh points were paired."
+    write(*,*) "  Across CPUs:       ", nx_paired_tot, " SPECFEM mesh points were paired."
     write(*,*) "  Because of the DG implementation, duplicates can occur without problem."
   endif
 

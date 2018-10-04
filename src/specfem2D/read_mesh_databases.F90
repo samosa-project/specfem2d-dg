@@ -842,7 +842,7 @@
       stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
     endif
     
-    ! MODIF LNS
+    ! MODIFICATION FOR LNS.
     if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
       allocate(buffer_LNS_drho_P(NGLLX*max_interface_size,ninterface), &
                buffer_LNS_dE_P(NGLLX*max_interface_size,ninterface),stat=ier)
@@ -852,11 +852,11 @@
         ! Safeguard.
         stop "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90')."
       endif
-      ! Deallocate DG variables. Not really optimal, but less invasive.
+      ! Deallocate DG variables.
       deallocate(buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, &
-                 buffer_DG_E_P, buffer_DG_e1_P, buffer_DG_gamma_P)
-      deallocate(buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, &
-                 buffer_DG_Vzz_P, buffer_DG_Vzx_P, buffer_DG_Vxz_P)
+                 buffer_DG_E_P, buffer_DG_e1_P, & !buffer_DG_gamma_P, &
+                 buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, &
+                 buffer_DG_Vzz_P, buffer_DG_Vzx_P, buffer_DG_Vxz_P) ! Not really optimal, but less invasive.
     endif
         
     allocate(ibool_interfaces_acoustic_DG(NGLLX*max_interface_size,ninterface))

@@ -4,10 +4,10 @@
 ! TODO: Description.
 
 subroutine compute_forces_acoustic_LNS_main()
-  
-  use constants ! TODO: select variables to use.
-  use specfem_par ! TODO: select variables to use.
-  use specfem_par_LNS ! TODO: select variables to use.
+  ! TODO: select variables to use.
+  use constants
+  use specfem_par
+  use specfem_par_LNS
   !use constants, only: &
   !  CUSTOM_REAL, &
   !  rk4a_d, rk4b_d, rk4c_d, &
@@ -15,8 +15,8 @@ subroutine compute_forces_acoustic_LNS_main()
   !  HALF, ONE, NGLLX, NGLLZ
   !use specfem_par, only:&! kmato,&
   !  deltat, nglob_DG,stage_time_scheme,&
-  !  !gravityext, muext, etaext, kappa_DG,& ! TODO: make sure those aren't allocated
-  !  !tau_epsilon, tau_sigma, & ! TODO: make sure those aren't allocated
+  !  !gravityext, muext, etaext, kappa_DG,&
+  !  !tau_epsilon, tau_sigma, &
   !  ispec_is_acoustic_coupling_ac,&
   !  rmass_inverse_acoustic_DG,&
   !  assign_external_model, any_acoustic_DG, only_DG_acoustic, &
@@ -54,6 +54,7 @@ subroutine compute_forces_acoustic_LNS_main()
   integer :: i,j,ispec,ier
   logical CHECK_NONPOSITIVITY, CHECK_NONPOSITIVITY_ON_ALL_PROCS, CHECK_NONPOSITIVITY_FIND_POINT
   logical switch_gradient
+  !real(kind=CUSTOM_REAL), dimension(2,1) :: kek
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -152,11 +153,11 @@ subroutine compute_forces_acoustic_LNS_main()
              LNS_mu(nglob_DG), &
              LNS_eta(nglob_DG), &
              LNS_kappa(nglob_DG))
+    deallocate(gravityext, muext, etaext, kappa_DG, tau_epsilon, tau_sigma) ! Not really optimal, but less invasive.
     LNS_g=9.81
     LNS_mu=0.
     LNS_eta=0.!(4./3.)*LNS_mu
     LNS_kappa=0.
-    !deallocate(gravityext, muext, etaext, kappa_DG) ! Not really optimal, but less invasive.
     
     ! Initialise initial state.
     !write(*,*) "call initial_state_LNS" ! DEBUG
@@ -174,8 +175,7 @@ subroutine compute_forces_acoustic_LNS_main()
     
 #ifdef USE_MPI
     if (NPROC > 1 .and. ninterface_acoustic > 0) then
-      !call assemble_MPI_vector_DG(gammaext_DG, buffer_LNS_gamma_P)
-      ! TODO: call a dedicated routine.
+      call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
     endif
 #endif
   endif ! Endif on (it == 1) and (i_stage == 1).
@@ -257,6 +257,25 @@ subroutine compute_forces_acoustic_LNS_main()
       aux_rho0dv(i,:) = scheme_A(i_stage)*aux_rho0dv(i,:) + deltat*RHS_rho0dv(i,:)
       LNS_rho0dv(i,:) = LNS_rho0dv(i,:) + scheme_B(i_stage)*aux_rho0dv(i,:)
     enddo
+    
+    ! test
+    !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
+    !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
+    !kek = reshape(LNS_rho0dv(:,5),(/2,1/))
+    !write(*,*) 'kek', kek
+    !write(*,*) 'v1', norm2(LNS_rho0dv(:,5:6))
+    !write(*,*) 'v2', norm2(reshape(LNS_rho0dv(:,5),(/2,1/)))
+    !write(*,*) '|v1-v2|', abs(norm2(LNS_rho0dv(:,5:8))-(LNS_rho0dv(1,5:8)**2 + LNS_rho0dv(SPACEDIM,5:8)**2))
+    !write(*,*) "kek"
+    !write(*,*) size(ibool_before_perio) ! 0 to nspec
+    !write(*,*) size(ibool) ! 0 to nspec
+    !write(*,*) size(ibool_DG) ! 0 to nglob_dg
+    !write(*,*) size(coord(2,:))
+    !write(*,*) ibool
+    !write(*,*) size(pack(ibool(:,:,:), ibool(:,:,:)<4))
+    !write(*,*) size(LNS_rho0dv(2,:))
+    !write(*,*) pack(LNS_rho0dv(2,:),abs(coord(2,:))<1.)
+    !stop
     
     ! Eventually check non-positivity.
     if(CHECK_NONPOSITIVITY) then
@@ -359,9 +378,9 @@ end subroutine compute_forces_acoustic_LNS_main
 ! Computes initial state.
 
 subroutine initial_state_LNS()
-  use constants ! TODO: select variables to use.
-  use specfem_par ! TODO: select variables to use.
-  use specfem_par_LNS ! TODO: select variables to use.
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
+  use specfem_par, only: ibool_DG, nspec
+  use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0
 
   implicit none
   
@@ -390,20 +409,11 @@ end subroutine initial_state_LNS
 ! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, out_v, out_E, out_p)
-  use constants, only: CUSTOM_REAL
-  use specfem_par ! TODO: select variables to use. , only: ibool_before_perio, ibool_DG, coord, &
-        !rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
-        !etaext, muext, coord_interface, kappa_DG, cp, c_V, &
-        !tau_epsilon, tau_sigma, &
-        !gravity_cte_DG, dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_eps_cte_DG, tau_sig_cte_DG, SCALE_HEIGHT, &
-        !USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
-        !surface_density, sound_velocity, wind, TYPE_FORCING, &
-        !forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
-        !assign_external_model,myrank, &
-        !DT, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
-        !EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL,& ! External forcing.
-        !EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT! External forcing.
-  use specfem_par_LNS ! TODO: select variables to use.
+  use constants, only: CUSTOM_REAL, TINYVAL
+  use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, gammaext_DG,&
+gravity_cte_DG, ibool_DG, pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density,&
+thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
+  use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu, SPACEDIM
 
   implicit none
   
@@ -467,7 +477,12 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, out_v
   endif ! Endif on assign_external_model.
   
   ! Impose vertical wind to zero.
-  out_v(SPACEDIM) = ZEROcr 
+  out_v(SPACEDIM) = ZEROcr
+  
+  if(TYPE_FORCING/=0) then
+    ! If forcing exists, apply it.
+    call forcing_DG(i, j, ispec, timelocal, out_v(SPACEDIM))
+  endif
   
   !! > Set gravity potentials.
   !if(timelocal == ZEROcr) then
@@ -476,12 +491,10 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, out_v
   !endif
   
   ! Set energy based on pressure.
-  out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
-                  + out_rho*HALFcr*( out_v(1)**2 + out_v(SPACEDIM)**2 )
-  
+  call compute_E_i(out_rho, out_v, out_p, out_E, iglob)
+  !out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
+  !        + out_rho*HALFcr*( out_v(1)**2 + out_v(SPACEDIM)**2 )
 end subroutine background_physical_parameters
-
-
 
 
 
@@ -512,9 +525,9 @@ end subroutine background_physical_parameters
 
 subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
                                              sigma_v)
-  use constants ! TODO: select variables to use.
-  use specfem_par ! TODO: select variables to use.
-  use specfem_par_LNS ! TODO: select variables to use.
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: nglob_DG
+  use specfem_par_LNS, only: SPACEDIM, LNS_eta, LNS_mu
   
   implicit none
   
@@ -559,7 +572,6 @@ end subroutine LNS_compute_viscous_stress_tensor
 
 
 
-
 ! ------------------------------------------------------------ !
 ! compute_gradient_TFSF                                        !
 ! ------------------------------------------------------------ !
@@ -577,9 +589,11 @@ end subroutine LNS_compute_viscous_stress_tensor
 !   See doi:10.1016/j.jcp.2007.12.009, section 4.3.2 for the "desintegration method".
    
 subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_SF)
-  use constants ! TODO: select variables to use.
-  use specfem_par ! TODO: select variables to use.
-  use specfem_par_LNS ! TODO: select variables to use. SPACEDIM
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
+  use specfem_par, only: gammax, gammaz, hprime_xx, hprime_zz, hprimewgll_xx, hprimewgll_zz,&
+ibool_DG, ispec_is_acoustic_DG, jacobian, link_iface_ijispec, neighbor_dg_iface, nglob_DG, nspec, nx_iface,&
+nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
+  use specfem_par_LNS, only: LNS_dummy_1d, LNS_dummy_2d, SPACEDIM
   
   implicit none
   
@@ -626,7 +640,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   
   if(swMETHOD) then
     ! "Desintegrate."
-    veloc_x_DG = rhovx_DG/rho_DG
+    !veloc_x_DG = rhovx_DG/rho_DG
     !veloc_z_DG = rhovz_DG/rho_DG
     !T = (E_DG/rho_DG - HALFcr*(veloc_x_DG**2 + veloc_z_DG**2))/c_V
   endif
@@ -654,19 +668,6 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
           xizl = xiz(i,j,ispec)
           gammaxl = gammax(i,j,ispec)
           gammazl = gammaz(i,j,ispec)
-          
-          !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-          !  ! See beginning of subroutine compute_forces_acoustic_DG for detailed explanations.
-          !  iglob_unique=ibool_before_perio(i,j,ispec)
-          !  ya_x_l=stretching_ya(1, iglob_unique)
-          !  ya_z_l=stretching_ya(2, iglob_unique)
-          !  xixl = ya_x_l * xixl
-          !  xizl = ya_z_l * xizl
-          !  gammaxl = ya_x_l * gammaxl
-          !  gammazl = ya_z_l * gammazl
-          !  ! TODO: Do that more clearly.
-          !  jacLoc = ya_x_l*ya_z_l*jacLoc
-          !endif
           
           wzl = wzgll(j)
           wxl = wxgll(i)
@@ -898,7 +899,6 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             endif
             
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
-          ! TODO: dedicated routine.
           !call compute_interface_unknowns(i,j,ispec, drho_P, rho0dv_P(1), &
           !        rho0dv_P(2), dE_P, TF_P(1), TF_P(SPACEDIM), in_dp_P, T_P, &
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
@@ -1031,7 +1031,7 @@ end subroutine compute_gradient_TFSF
 subroutine compute_p(in_rho, in_v, in_E, out_p)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: gammaext_DG, nglob_DG
-  use specfem_par_LNS, only: SPACEDIM
+  use specfem_par_LNS, only: norm2, SPACEDIM
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
@@ -1041,8 +1041,9 @@ subroutine compute_p(in_rho, in_v, in_E, out_p)
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_p =   (gammaext_DG - ONEcr) &
-          * (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
-                                       + in_v(SPACEDIM,:)**2))
+          !* (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
+          !                             + in_v(SPACEDIM,:)**2))
+          * (in_E - HALFcr*in_rho*norm2(in_v))
 end subroutine compute_p
 ! ------------------------------------------------------------ !
 ! compute_dp                                                   !
@@ -1052,7 +1053,7 @@ end subroutine compute_p
 subroutine compute_dp(in_rho, in_v, in_E, out_dp)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: gammaext_DG, nglob_DG
-  use specfem_par_LNS, only: LNS_p0, SPACEDIM
+  use specfem_par_LNS, only: LNS_p0, norm2, SPACEDIM
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
@@ -1062,8 +1063,9 @@ subroutine compute_dp(in_rho, in_v, in_E, out_dp)
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_dp =   (gammaext_DG - ONEcr) &
-           * (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
-                                        + in_v(SPACEDIM,:)**2)) &
+           !* (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
+           !                             + in_v(SPACEDIM,:)**2)) &
+           * (in_E - HALFcr*in_rho*norm2(in_v)) &
            - LNS_p0
 end subroutine compute_dp
 ! ------------------------------------------------------------ !
@@ -1073,7 +1075,7 @@ end subroutine compute_dp
 subroutine compute_dp_i(in_rho, in_v, in_E, out_p, iglob)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: gammaext_DG
-  use specfem_par_LNS, only: LNS_p0, SPACEDIM
+  use specfem_par_LNS, only: LNS_p0, norm2r1, SPACEDIM
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
@@ -1084,8 +1086,9 @@ subroutine compute_dp_i(in_rho, in_v, in_E, out_p, iglob)
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_p =   (gammaext_DG(iglob) - ONEcr) &
-          * (in_E - HALFcr * in_rho * (  in_v(1)**2 &
-                                       + in_v(SPACEDIM)**2)) &
+          !* (in_E - HALFcr*in_rho*(in_v(1)**2 + in_v(SPACEDIM)**2)) &
+          !* (in_E - HALFcr*in_rho*minval(norm2(reshape(in_v,(/2,1/))))) & ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
+          * (in_E - HALFcr*in_rho*norm2r1(in_v)) & ! Performance seems comparable to explicit formulation above.
           - LNS_p0(iglob)
 end subroutine compute_dp_i
 ! ------------------------------------------------------------ !
@@ -1095,7 +1098,7 @@ end subroutine compute_dp_i
 subroutine compute_T(in_rho, in_v, in_E, out_T)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: c_V, nglob_DG
-  use specfem_par_LNS, only: SPACEDIM
+  use specfem_par_LNS, only: norm2, SPACEDIM
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
@@ -1103,7 +1106,8 @@ subroutine compute_T(in_rho, in_v, in_E, out_T)
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  out_T=(in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V
+  out_T=(in_E/in_rho - HALFcr*norm2(in_v))/c_V
 end subroutine compute_T
 ! ------------------------------------------------------------ !
 ! compute_T_i                                                  !
@@ -1112,7 +1116,7 @@ end subroutine compute_T
 subroutine compute_T_i(in_rho, in_v, in_E, out_T)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: c_V
-  use specfem_par_LNS, only: SPACEDIM
+  use specfem_par_LNS, only: norm2r1, SPACEDIM
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
@@ -1120,7 +1124,9 @@ subroutine compute_T_i(in_rho, in_v, in_E, out_T)
   real(kind=CUSTOM_REAL), intent(out) :: out_T
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(SPACEDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(SPACEDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
+  out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V ! Performance seems comparable to explicit formulation above.
 end subroutine compute_T_i
 ! ------------------------------------------------------------ !
 ! compute_dT                                                   !
@@ -1130,7 +1136,7 @@ end subroutine compute_T_i
 subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: c_V, nglob_DG
-  use specfem_par_LNS, only: LNS_T0, SPACEDIM
+  use specfem_par_LNS, only: LNS_T0, norm2, SPACEDIM
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
@@ -1138,6 +1144,70 @@ subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  out_dT=  (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V &
+  !out_dT=  (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V &
+  out_dT=  (in_E/in_rho - HALFcr*norm2(in_v))/c_V &
          - LNS_T0
 end subroutine compute_dT
+! ------------------------------------------------------------ !
+! compute_E                                                    !
+! ------------------------------------------------------------ !
+! Computes energy from constitutive variables.
+subroutine compute_E(in_rho, in_v, in_p, out_E)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: gammaext_DG, nglob_DG
+  use specfem_par_LNS, only: norm2, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_E
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_E =   in_p/(gammaext_DG - ONEcr) &
+          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(SPACEDIM,:)**2 )
+          + in_rho*HALFcr*norm2(in_v)
+end subroutine compute_E
+! ------------------------------------------------------------ !
+! compute_E_i                                                  !
+! ------------------------------------------------------------ !
+! Same as compute_E, but point by point (unvectorised).
+subroutine compute_E_i(in_rho, in_v, in_p, out_E, iglob)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: gammaext_DG
+  use specfem_par_LNS, only: norm2r1, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  integer, intent(in) :: iglob
+  real(kind=CUSTOM_REAL), intent(out) :: out_E
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_E =   in_p/(gammaext_DG(iglob) - ONEcr) &
+          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(SPACEDIM,:)**2 )
+          + in_rho*HALFcr*norm2r1(in_v)
+end subroutine compute_E_i
+! ------------------------------------------------------------ !
+! compute_dE_i                                                 !
+! ------------------------------------------------------------ !
+! Same as compute_dE, but point by point (unvectorised).
+subroutine compute_dE_i(in_rho, in_v, in_p, out_E, iglob)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: gammaext_DG
+  use specfem_par_LNS, only: LNS_E0, norm2r1, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  integer, intent(in) :: iglob
+  real(kind=CUSTOM_REAL), intent(out) :: out_E
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  out_E =   in_p/(gammaext_DG(iglob) - ONEcr) &
+          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(SPACEDIM,:)**2 )
+          + in_rho*HALFcr*norm2r1(in_v) &
+          - LNS_E0(iglob)
+end subroutine compute_dE_i
