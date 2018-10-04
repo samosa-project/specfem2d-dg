@@ -31,7 +31,7 @@ module specfem_par_LNS
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: sigma_v_0 ! Initial viscous stress tensor. Symmetric, thus only need to save 3 entries: (1,:) index should correspond to the index (1,1) of the actual tensor, (2,:) <-> (1,2) and (2,1) of the actual tensor, and (3,:) <-> (2,2) of the actual tensor.
   
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99 ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
-  ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every 100 iterations
+  ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every LNS_MODPRINT iterations
   ! LNS_VERBOSE>=51: printing min/max values for each constitutive variable on CPU 0 every LNS_MODPRINT iterations
   
   ! Integer used in modulo for condition on printing min/max values for each constitutive variable on CPU 0 every 100 iterations. To be added in parfile later.
@@ -45,4 +45,28 @@ module specfem_par_LNS
   real(kind=CUSTOM_REAL), dimension(:),     allocatable :: LNS_dummy_1d ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   real(kind=CUSTOM_REAL), dimension(:,:),   allocatable :: LNS_dummy_2d ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_dummy_3d ! Dummy variables are not optimal, but prevent from duplicating subroutines.
+  
+  contains
+  
+  ! Redefine the Fortran 2008 routine norm2, alongside one dedicated to rank 1 vectors.
+  function norm2(r2arr)
+    use constants, only: CUSTOM_REAL
+    implicit none
+    ! Input/Output.
+    real(kind=CUSTOM_REAL), dimension(:,:), intent(in) :: r2arr ! Input: rank 2 array (tensor field).
+    real(kind=CUSTOM_REAL), dimension(size(r2arr,2)) :: norm2
+    ! Local.
+    !N./A.
+    norm2 = sum(r2arr**2,1)
+  end function norm2
+  function norm2r1(r1arr)
+    use constants, only: CUSTOM_REAL
+    implicit none
+    ! Input/Output.
+    real(kind=CUSTOM_REAL), dimension(:), intent(in) :: r1arr ! Input: rank 1 array (vector).
+    real(kind=CUSTOM_REAL) :: norm2r1
+    ! Local.
+    !N./A.
+    norm2r1 = sum(r1arr**2)
+  end function norm2r1
 end module specfem_par_LNS

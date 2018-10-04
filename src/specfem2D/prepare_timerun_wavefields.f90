@@ -338,11 +338,13 @@
   rhovz_DG = 0.
   E_DG     = 0.
   
+  ! MODIFICATION FOR LNS.
   if (USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
     deallocate(dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
                resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1, &
                rho_DG, p_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
-               veloc_x_DG, veloc_z_DG, p_DG_init, T_init, V_DG, T_DG) ! Not really optimal, but less invasive.
+               veloc_x_DG, veloc_z_DG, p_DG_init, T_init, V_DG, T_DG, &
+               potential_dphi_dx_DG, potential_dphi_dz_DG) ! Not really optimal, but less invasive.
     
     allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG)) ! State.
     allocate(LNS_rho0dv(SPACEDIM,nglob_DG)) ! State.
@@ -394,6 +396,14 @@
   allocate(v0_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
   allocate(c_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
   allocate(gamma_ac_DG_kl(NGLLX,NGLLZ,nspec_acoustic_b))
+  
+  ! MODIFICATION FOR LNS.
+  if (USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    deallocate(b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E, &
+               b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
+               resu_b_rho, resu_b_rhovx, resu_b_rhovz, resu_b_E, &
+               v0_ac_DG_kl, c_ac_DG_kl, gamma_ac_DG_kl) ! Not really optimal, but less invasive.
+  endif
   
   allocate(potential_acoustic(nglob_acoustic))
   allocate(potential_acoustic_old(nglob_acoustic))
