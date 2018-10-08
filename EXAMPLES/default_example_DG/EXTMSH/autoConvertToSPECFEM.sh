@@ -7,12 +7,14 @@
 #                2) If called with another or no argument, will open GMSH GUI enabling the user to mesh as they want, then convert to SPECFEM standards on closing of the GUI.
 # Notes:         N/A.
 
-# Save the current directory.
+# Save the current directory and script directory.
+callingDir=$(pwd)
 thisScriptDir=$(dirname $(realpath $0))
 
 ###############################################
 # Converting .geo to .msh                     #
 ###############################################
+cd $thisScriptDir
 if [[ "$1" == auto ]]; then
   echo "[$0] Automatic meshing."
   gmsh $thisScriptDir/*.geo -2
@@ -67,3 +69,6 @@ br=$(echo $br | tr a-z A-Z)
 cd $thisScriptDir
 # Run the conversion script.
 python $absolutePathToScript *.msh -t $bt -l $bl -b $bb -r $br
+
+# Eventually go back to calling directory for other instructions.
+cd $callingDir
