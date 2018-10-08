@@ -740,13 +740,14 @@ subroutine prepare_external_forcing()
               ! If too far away from 0, cycle point.
               cycle
             else
-              if(.false. .and. abs(x-coord(1, ibbp))<1.) then ! DEBUG
-                write(*,*) t, x, coord(1, ibbp), abs(x-coord(1, ibbp)), nx
-              endif
-              if(abs(x-coord(1, ibbp))<1e-4) then ! Empiric threshold based on precision we can obtain by generating forcings with our Matlab script.
+              if(abs(x-coord(1, ibbp))/(abs(x)+abs(coord(1, ibbp)))<1e-6) then ! 1e-6 is a relative empiric threshold based on precision we can obtain by generating forcings with our Matlab script. Basically, we chose '%.8e' as printing format for x (in the script), which means we have 8 significant digits, thus theoretically we have a relative precision of 1e-8. We chose the threshold to be 1e-6 in order to a have a safety margin. It is acceptable because we expect the GLL points never to be (relatively) 1e-7 apart.
                 EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)=nx
                 !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(ibbp) ! DEBUG
                 nx_paired=nx_paired+1
+              endif
+              if(.false. .and. abs(x-12000.)<200. .and. abs(coord(1, ibbp)-12000.)<200.) then ! DEBUG
+                write(*,*) t, x, coord(1, ibbp), abs(x-coord(1, ibbp))/(abs(x)+abs(coord(1, ibbp))),&
+                           nx, nx_paired
               endif
             endif
           enddo ! Enddo on i.
@@ -778,7 +779,7 @@ subroutine prepare_external_forcing()
     write(*,*) "  Because of the DG implementation, duplicates can occur without problem."
   endif
 
-  if(nx_paired_tot<nx) then
+  if(myrank==0 .and. nx_paired_tot<nx) then
     ! TODO: work on that condition. For instance, find exactly the number of expected duplicates.
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
