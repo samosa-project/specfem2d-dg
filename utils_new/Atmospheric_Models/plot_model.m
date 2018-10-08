@@ -6,6 +6,11 @@
 % Notes:         N/A.
 
 function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
+  
+  if(nargin~=4)
+    error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
+  end
+  
   format compact;
   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
   set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);

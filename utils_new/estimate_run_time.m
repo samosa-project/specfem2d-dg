@@ -21,16 +21,16 @@ format longG;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 4*90;
+nstations   = 4*113;
 nstepseismo = 25;
 
-neltot      = 1794000;
-neldg       = 1794000;
+neltot      = 3546400;
+neldg       = 3546400;
 
 nstepsnap   = 500;
-nsteptot    = 120000;
+nsteptot    = 200000;
 
-nproc       = 224;
+nproc       = 10*48;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,12 +57,17 @@ time=t(idp);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(" ");
 
-hms=fix(mod(time*neltot*nsteptot,[0,3600,60])./[3600,60,1]); cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
-hms=fix(mod(time*neltot*nsteptot/nproc,[0,3600,60])./[3600,60,1]); realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+cputime=time*neltot*nsteptot;
+hms=fix(mod(cputime,[0,3600,60])./[3600,60,1]);
+cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+
+realtime=time*neltot*nsteptot/nproc;
+hms=fix(mod(realtime,[0,3600,60])./[3600,60,1]);
+realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
 
 disp(strcat("[",mfilename,"] Expected time per element, per iteration:    ",sprintf("%.3e", time), " s."));
-disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU)."));
-disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real)."));
+disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU), i.e.  ",sprintf('%9.0f',cputime)," s."));
+disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real), i.e. ",sprintf('%9.0f',realtime)," s."));
 
 disp(" ");
 

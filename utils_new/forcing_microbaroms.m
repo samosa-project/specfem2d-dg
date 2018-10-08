@@ -6,7 +6,7 @@
 % Notes:         Hardcoded bottom forcings (DG extension) tests were moved to 'forcings_tests.m'.
 
 clear all;
-% close all;
+close all;
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 3); % Default at 0.5.
@@ -17,6 +17,9 @@ set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
 set(groot, 'defaultSurfaceEdgeColor', 'none');
+
+plot_process=0;
+plot_forcing=0;
 
 % 3 steps:
 % 1) Prepare forcing in spacetime.
@@ -38,10 +41,12 @@ set(groot, 'defaultSurfaceEdgeColor', 'none');
 %%%%%%%%%%%%%%%%%%%%%%%
 % Forcing related.
 % T0 = 14; % Temporal period.
-T0 = 12.5; % Temporal period.
-nT0 = 10; % Number of temporal periods (must be integer to prevent FFT misbehaving).
+% T0 = 12.5; % Temporal period.
+T0 = 13.54; % Temporal period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
+nT0 = 100; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
-L0 = 200; % Spatial period.
+% L0 = 200; % Spatial period.
+L0 = 286.2; % Spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 nL0 = 120; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
@@ -53,7 +58,8 @@ MAXTIME = nT0 * T0; % Set forcing maximum time here.
 % invspread = 1.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 3; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
-invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+invspread = 5.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 6; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 1e2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 
@@ -62,7 +68,8 @@ invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency r
 % A_aimed=A/2; % Aimed amplitude for displacement (peak-to-peak is 2 times that).
 % A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 % A_aimed=1; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
-A_aimed=7; % Aimed amplitude for displacement (peak-to-peak is 2 times that). [m].
+% A_aimed=7; % Aimed amplitude for displacement (peak-to-peak is 2 times that). [m].
+A_aimed=7.08; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
 
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
@@ -78,9 +85,9 @@ dt = 1.5d-2; % Set DT as in parfile.
 % nx = 1060; % Set nx as in parfile.
 % xmin = -45e3; xmax = 45e3; % Set as in parfile.
 % nx = 377; % Set nx as in parfile.
-nx = 5200; % Set nx as in parfile.
+nx = 8060; % Set nx as in parfile.
 % xmin = MINX; xmax = MAXX; % Set as in parfile.
-xmin = -52e3; xmax = 312e3; % Set as in parfile.
+xmin = -52e3; xmax = 512e3; % Set as in parfile.
 periodise = 0; % Set this if microbaroms do not touch lateral edges of mesh.
 % periodise = 1; % Set this if microbaroms do touch lateral edges of mesh.
 
@@ -105,7 +112,8 @@ t = 0:dt:MAXTIME+5*dt; % Span a bit more than what is needed.
 x_specfem = linspace(xmin, xmax, nx + 1); % Set x span. This array must reproduce exactly mesh at z=0 (with GLL points).
 max_dx_specfem=max(diff(x_specfem)); % Find back dx.
 n=2; x_specfem=x_specfem(x_specfem>=MINX-n*max_dx_specfem & x_specfem<=MAXX+n*max_dx_specfem); % Remove useless points on the side, but span n elements more on each side.
-GLL = [0, 0.345346329292028 / 2, 0.5, 1.654653670707980 / 2]; % UGLY METHOD, I'M SORRY.
+NGLL = 5; GLL = fliplr([lglnodes(NGLL-1)/2+0.5]'); GLL = GLL(1:end-1); % Better method, and flexible w.r.t NGLL, but needs function lglnodes from https://fr.mathworks.com/matlabcentral/fileexchange/4775-legende-gauss-lobatto-nodes-and-weights.
+% GLL = [0., 0.172673164646011457, 0.5, 0.827326835353988543]; % Ugly method, but exact down to eps since values were extracted from function lglnodes.
 x_specfem_with_GLL = [];
 for i = 1:length(x_specfem) - 1
   x_specfem_with_GLL = [x_specfem_with_GLL, x_specfem(i) + (x_specfem(i + 1) - x_specfem(i)) * GLL];
@@ -144,7 +152,7 @@ while(not(ismember(meshok,[0,1])))
   meshok=input(['[',mfilename,'] > Is that ok (0 for no, 1 for yes)? > ']);
 end
 if(meshok==0)
-  error('  Mesh was not ok, re-chose parametrisation in script.');
+  error(['[',mfilename,', ERROR] Mesh was not ok, re-chose parametrisation in script.']);
 end
 clear('meshok');
 
@@ -186,9 +194,27 @@ k = - k_max:dk:k_max;
 % t = 0:dt:nT0 * T0;
 % x = - 0.5 * nL0 * L0:dx:0.5 * nL0 * L0;
 % 2D ranges.
+disp(['[',mfilename,'] > Meshgrid would be (', num2str(numel(x)), ', ', num2str(numel(t)),'), that is ',sprintf('%.0e',numel(x)*numel(t)),' reals. Too heavy computations might crash your computer. 9e7 was ok, 1e8 chugged a bit, 2e8 chugged hard.']);
+proceed=-1;
+% disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
+while(not(ismember(proceed,[0,1,2])))
+  proceed=input(['[',mfilename,'] > Stop (0), or proceed as is (1, at your own risk)? > ']);
+end
+switch(proceed)
+  case 0
+    error(['[',mfilename,', ERROR] User chose to stop script.']);
+  case 2
+    command=['sudo renice -100 -p ', num2str(feature('getpid'))];
+    disp(['[',mfilename,'] Executing system command ''',command,''' in order to reduce priority.']);
+    system(command);
+  otherwise
+    disp(['[',mfilename,'] Continuing...']);
+end
+clear('proceed');
+
 [T, X] = meshgrid(t, x);
 [F, K] = meshgrid(f, k);
-disp(['[',mfilename,'] > Meshgrid is (', num2str(size(F)), '). Large meshes can be long to proceed with.']);
+clear('f', 'k'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Frequency range.    %
@@ -204,8 +230,10 @@ disp(['[',mfilename,'] > Meshgrid is (', num2str(size(F)), '). Large meshes can 
 disp(['[',mfilename,'] Creating spectrum in frequency range.']);
 spectrum_displ=0*F;
 spectrum_displ(abs(abs(F)-1/T0)==min(min(abs(abs(F)-1/T0))) & abs(abs(K)-1/L0)==min(min(abs(abs(K)-1/L0))))=1; % Diracs at pertinent places.
+clear('F', 'K'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 
 spectrum_displ_R = real(spectrum_displ);
+clear('spectrum_displ'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 % spectrum_displ_I = imag(spectrum_displ);
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -222,12 +250,18 @@ disp(['[',mfilename,'] Convolving spectrum in frequency range and adding random 
 [Fgm, Kgm] = meshgrid(0:df:2 / T0, 0:dk:2 / L0);
 GMask = exp(- ((Fgm - 1 / T0) .^ 2 / (2 * sig_T ^ 2) + (Kgm - 1 / L0) .^ 2 / (2 * sig_X ^ 2)));
 GMask = GMask / max(max(GMask)); % Normalise, not to mess with maximum amplitude.
+clear('Fgm', 'Kgm'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 % disp(0.5./(size(GMask).*[dk,df])) % Display span of mask in physical quantities (how much around base periods is now considered).
 % Option 1: full random phase, relying on real part of spectrum.
-RPhase = exp(1j * 2 * pi * rand(size(spectrum_displ)));
+RPhase = exp(1j * 2 * pi * rand(size(spectrum_displ_R)));
 % RPhase = 1; % No phase.
-spectrum_displ_R_convolved = conv2(spectrum_displ_R, GMask, 'same'); % For plotting purposes only.
+spectrum_displ_R_convolved = conv2(spectrum_displ_R, GMask, 'same');
+clear('GMask', 'spectrum_displ_R'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 spectrum_displ_new = spectrum_displ_R_convolved .* RPhase;
+if(not(plot_process))
+  clear('spectrum_displ_R_convolved'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
+end
+clear('RPhase'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 % % Option 2: separate real (convolve) and imaginary (add noise) parts.
 % SnR=conv2(SR,GMask,'same');
 % SnI=SI+(2*rand(size(S))-1)*0.01*(max(max(SI))-min(min(SI)))*0.1;
@@ -249,8 +283,10 @@ spectrum_displ_new = spectrum_displ_R_convolved .* RPhase;
 % spectrum_displ_new_R = real(spectrum_displ_new); % Save real part.
 % spectrum_displ_new_I = imag(spectrum_displ_new); % Extract imaginary part.
 
-spectrum_displ_new_R = real(spectrum_displ_new); % For plotting purposes only.
-spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
+if(plot_process)
+  spectrum_displ_new_R = real(spectrum_displ_new); % For plotting purposes only.
+  spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Send back to        %
@@ -258,6 +294,7 @@ spectrum_displ_new_I = imag(spectrum_displ_new); % For plotting purposes only.
 %%%%%%%%%%%%%%%%%%%%%%%
 disp(['[',mfilename,'] Sending back to spacetime range.']);
 displ = ifft2(ifftshift(spectrum_displ_new), 'symmetric');
+clear('spectrum_displ_new'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 displ = displ - mean(mean(displ)); % Ensure underlying displacement is zero-mean.
 % if(0)
 %   disp(['[',mfilename,'] Filtering noise.']);
@@ -280,7 +317,7 @@ displ = displ - mean(mean(displ)); % Ensure underlying displacement is zero-mean
 %%%%%%%%%%%%%%%%%%%%%%%
 % Plot process.       %
 %%%%%%%%%%%%%%%%%%%%%%%
-if(0)
+if(plot_process)
   figure();
 %   subplot(331); surf(T,X,s_displ,'edgecolor','interp','facecolor','interp'); view([0,0,1]); axis([min(t), max(t), min(x), max(x)]);
   subplot(332); surf(F,K,spectrum_displ_R,'edgecolor','interp','facecolor','interp'); view([0,0,1]); axis([min(f), max(f), min(k), max(k)]);
@@ -290,6 +327,7 @@ if(0)
   subplot(338); surf(F,K,spectrum_displ_new_R,'edgecolor','interp','facecolor','interp'); view([0,0,1]); axis([min(f), max(f), min(k), max(k)]);
   subplot(339); surf(F,K,spectrum_displ_new_I,'edgecolor','interp','facecolor','interp'); view([0,0,1]); axis([min(f), max(f), min(k), max(k)]);
   pause;
+  clear('spectrum_displ_R', 'spectrum_displ_R_convolved', 'spectrum_displ_new_R', 'spectrum_displ_new_I'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 end
 %%%%%%%%%%%%%%%%%%%%%%%
 % Convert signal in   %
@@ -310,6 +348,7 @@ ampli_displ=max(abs(min(min(displ))),abs(max(max(displ))));
 displ=displ*A_aimed/ampli_displ; % Scale displacement to aimed wave height.
 disp(['[',mfilename,'] > Rescaled displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
 [veloc,~]=gradient(displ,t,x);
+clear('displ'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 disp(['[',mfilename,'] > Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),'].']);
 % if(periodise)
 % %   disp(['[',mfilename,'] > Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
@@ -338,6 +377,7 @@ if(activate_apo)
   
   veloc = veloc - mean(mean(veloc)); % Make sure velocity is zero-mean in order to ensure underlying displacement is zero-mean.
   veloc = veloc .* apox'.*apot; % Apply apodisation to make sure forcing is zero at beginning and end, and eventually on sides.
+  clear('apox', 'apot', 'apot0'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 end
 
 disp(['[',mfilename,'] Verifying zero-mean, zero-start, and zero-end.']);
@@ -373,9 +413,12 @@ if(periodise)
   x = [x, x_specfem(end)];
   veloc=[veloc;veloc(1,:)];
   [T,X]=meshgrid(t,x); % Update meshgrid.
+  clear('x'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 end
 [T_specfem, X_specfem] = meshgrid(t, x_specfem_with_GLL); % Meshgrid SPECFEM.
+clear('x_specfem_with_GLL', 't'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 veloc_specfem = interp2(T, X, veloc, T_specfem, X_specfem); % Linear interpolation.
+clear('T', 'X', 'veloc'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 veloc_specfem(isnan(veloc_specfem)) = 0; % Set zeros instead of NaNs outside of microbarom zone.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Plot result (for    %
@@ -383,13 +426,13 @@ veloc_specfem(isnan(veloc_specfem)) = 0; % Set zeros instead of NaNs outside of 
 % of the quality of   %
 % interpolation).     %
 %%%%%%%%%%%%%%%%%%%%%%%
-if(0)
+if(plot_process && plot_forcing)
   figure();
   subplot(121); surf(T, X, veloc, 'edgecolor', 'flat', 'facecolor', 'flat'); view([0, 0, 1]); axis([min(t), max(t), min(x), max(x)]); title("Uniform grid");
-  subplot(122); surf(T_specfem, X_specfem, veloc_specfem, 'edgecolor', 'flat', 'facecolor', 'flat'); view([0, 0, 1]); axis([min(t), max(t), min(x), max(x)]); title("SPECFEM grid");
+  subplot(122); surf(T_specfem, X_specfem, veloc_specfem, 'edgecolor', 'flat', 'facecolor', 'flat'); view([0, 0, 1]); axis([min(min(T_specfem)), max(max(T_specfem)), min(min(X_specfem)), max(max(X_specfem))]); title("SPECFEM grid");
 end
-if(0)
-  pcolor(T_specfem, X_specfem, veloc_specfem); shading interp; axis([min(t), max(t), min(x), max(x)]);
+if(plot_forcing)
+  pcolor(T_specfem, X_specfem, veloc_specfem); shading interp; axis([min(min(T_specfem)), max(max(T_specfem)), min(min(X_specfem)), max(max(X_specfem))]);
 end
 disp(['[',mfilename,'] Velocity forcing on SPECFEM meshgrid is ready.']);
 
@@ -433,7 +476,7 @@ disp(['[',mfilename,'] Exporting to file.']);
 exportok=-1;
 % disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
 while(not(ismember(exportok,[0,1])))
-  bytespervalue=39.985880510267151;
+  bytespervalue=39.985880510267151; % [4418901533/178467744] / 1.
   expectedsize=prod(size(veloc_specfem))*bytespervalue;
   disp(['[',mfilename,'] > File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
   exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? Path will be confirmed later. > ']);
@@ -465,7 +508,7 @@ else
 %     for ix = ixmin:ixmax
   for it = 1:size(T_specfem,2)
     for ix = 1:size(X_specfem,1)
-      fprintf(f_new, '%.5e %.8e %.5e', T_specfem(1, it), X_specfem(ix, 1), veloc_specfem(ix, it));
+      fprintf(f_new, '%.5g %.8g %.4g', T_specfem(1, it), X_specfem(ix, 1), veloc_specfem(ix, it));
       fprintf(f_new, "\n");
     end
     if (ismember(it, floor((1:10) * 0.1 * size(T_specfem,2))))
