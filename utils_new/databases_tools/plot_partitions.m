@@ -42,7 +42,7 @@ arrcpus=1:numdatabases;
 f=figure();
 f.set('pos',[10 10 figsize, figsize]);
 % colorvect=jet(numdatabases);
-linescm=lines; colorvect=linescm([1,2,3,4],:); clear('linescm');
+linescm=lines; colorvect=linescm(1:numdatabases,:); clear('linescm');
 for i=arrcpus
   cpuname=['P',num2str(i-1)];
   if(bound)
@@ -70,7 +70,8 @@ set(gca, 'tickdir','both');
 set(gca, 'TickLabelInterpreter','latex');
 xlabel('$x$ (m)'); ylabel('$z$ (m)');
 %title({['Partitions'],FOLDER});
-axis square
+%axis square
+set(gca,'DataAspectRatio',[1,1,1]);
 exts=["eps","png"];
 formats=["epsc","png"];
 for i=1:numel(exts)
