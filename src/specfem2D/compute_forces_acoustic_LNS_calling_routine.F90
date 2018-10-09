@@ -118,7 +118,6 @@ subroutine compute_forces_acoustic_LNS_main()
 #ifdef USE_MPI
     if(NPROC>1) then
       call prepare_MPI_DG()
-      ! TODO: buffers will need to be different than DG-FNS's ones, thus one would have to call a dedicated function.
     endif
 #endif
     
@@ -259,6 +258,9 @@ subroutine compute_forces_acoustic_LNS_main()
     enddo
     
     ! test
+    write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
+    stop
+    !write(*,*) LNS_kappa
     !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
     !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
     !kek = reshape(LNS_rho0dv(:,5),(/2,1/))
@@ -610,7 +612,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   real(kind=CUSTOM_REAL) :: SF_P ! When swMETHOD==.true., this variable is used to store the value of the scalar field SF across the element's boundary, in order to compute the flux.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
   integer :: ispec,i,j,k,iglob, iglobM, iglobP!, iglob_unique
-  real(kind=CUSTOM_REAL) :: flux_n, flux_x, flux_z, nx, nz, weight!rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
+  real(kind=CUSTOM_REAL) :: flux_n, flux_x, flux_z, weight !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         !E_DG_P&!, p_DG_P, &
         !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
         !timelocal,gamma_P
@@ -872,8 +874,8 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             !Vzz_DG_P     = ZEROcr
             !Vzx_DG_P     = ZEROcr
             !Vxz_DG_P     = ZEROcr
-            nx = nx_iface(iface, ispec)
-            nz = nz_iface(iface, ispec)
+            n_out(1) = nx_iface(iface, ispec)
+            n_out(2) = nz_iface(iface, ispec)
             
             weight = weight_iface(iface1,iface,ispec)
             neighbor = -1
