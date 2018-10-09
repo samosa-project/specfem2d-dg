@@ -47,7 +47,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
   !real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
   !real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
-  integer :: ispec, i,j, k,iglob!, iglob_unique
+  integer :: ispec, i,j, k,iglob,SPCDM!, iglob_unique
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, 2) :: cntrb_drho, cntrb_dE
   real(kind=CUSTOM_REAL), dimension(SPACEDIM, NGLLX, NGLLZ, 2) :: cntrb_rho0dv
   ! Variables "cntrb_*" are aimed at assembling the different contributions to constitutive variables.
@@ -82,7 +82,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: dv_P, dm_P, nabla_dT_P
   real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
   real(kind=CUSTOM_REAL), dimension(3) :: sigma_dv_P
-  
+  logical :: viscousComputation
   !real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz ! Viscosity
   real(kind=CUSTOM_REAL) :: wxl, wzl ! Integration weigths.
   logical :: exact_interface_flux
@@ -93,10 +93,19 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   !T_DG = T_DG_main
   !V_DG = V_DG_main
   
+  ! Activate/deactivate computation of quantities only needed when viscosity is present.
+  if(     LNS_mu(iglob) > 0. &
+     .OR. LNS_eta(iglob) > 0. &
+     .OR. LNS_kappa(iglob) > 0.) then
+    viscousComputation=.true.
+  else
+    viscousComputation=.false.
+  endif
+  
   ! Initialise auxiliary unknowns from constitutive variables.
   LNS_dv = 0.
-  do i=1,SPACEDIM
-    LNS_dv(i,:) = cv_rho0dv(i,:)/LNS_rho0(:) ! Element-wise division should occur naturally.
+  do SPCDM=1,SPACEDIM
+    LNS_dv(SPCDM,:) = cv_rho0dv(SPCDM,:)/LNS_rho0(:) ! Element-wise division should occur naturally.
   enddo
   !p_DG       = (gammaext_DG - ONE)*( cv_dE &
   !             - (HALFcr)*cv_drho*( veloc_x_DG**2 + veloc_z_DG**2 ) )
@@ -110,8 +119,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   if(TYPE_SOURCE_DG == 1) then
     call compute_add_sources_acoustic_DG_spread(outrhs_drho, it, i_stage)   
   elseif(TYPE_SOURCE_DG == 2) then
-    do i=1,SPACEDIM
-      call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(i,:), it, i_stage)
+    do SPCDM=1,SPACEDIM
+      call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
     enddo
   elseif(TYPE_SOURCE_DG == 3) then
     call compute_add_sources_acoustic_DG_spread(outrhs_dE, it, i_stage)
@@ -121,8 +130,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
     write(*,"(a)")                   " quantity [                 max    ,                  min    ]"
     WRITE(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
-    do i=1,SPACEDIM
-      WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(i,:)), ", ", minval(cv_rho0dv(i,:)), "], i=",i
+    do SPCDM=1,SPACEDIM
+      WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(SPCDM,:)), ", ", minval(cv_rho0dv(SPCDM,:)), "], i=",SPCDM
     enddo
     WRITE(*,"(a,e24.16,a,e24.16,a)") " dE       [", maxval(cv_dE), ", ", minval(cv_dE), "]"
     !WRITE(*,"(a,e23.16,a)")        "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
@@ -164,9 +173,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           cntrb_rho0dv(SPACEDIM,i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
           
           ! Add viscous stress tensor's contributions.
-          if(LNS_mu(iglob) > 0 .OR. &
-             LNS_eta(iglob) > 0 .OR. &
-             LNS_kappa(iglob) > 0) then
+          if(viscousComputation) then
             !   Mass conservation: no viscous contribution.
             !   x-Momentum.
             tmp_unknown_x = -in_sigma_dv(1,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
@@ -180,12 +187,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                            + wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
             cntrb_rho0dv(SPACEDIM,i,j,2) =   cntrb_rho0dv(SPACEDIM,i,j,2) &
                                            + wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-          endif
+          endif ! Endif on viscousComputation.
           
           ! Special case: energy. Indeed, if they exist, viscous contributions can be grouped to inviscid ones.
-          if(     LNS_mu(iglob) > 0. &
-             .OR. LNS_eta(iglob) > 0. &
-             .OR. LNS_kappa(iglob) > 0.) then
+          if(viscousComputation) then
             tmp_unknown_x =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(1,iglob)) &
                             + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
                             - LNS_dv(SPACEDIM,iglob)*sigma_v_0(2,iglob) &
@@ -195,13 +200,13 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                             + LNS_v0(SPACEDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
                             - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
                             - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
-                            + LNS_kappa(iglob)*in_nabla_dT(2,iglob)
-          else
+                            + LNS_kappa(iglob)*in_nabla_dT(SPACEDIM,iglob)
+          else ! Else on viscousComputation.
             tmp_unknown_x =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
                             + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob))
             tmp_unknown_z =   LNS_dv(SPACEDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
                             + LNS_v0(SPACEDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
-          endif
+          endif ! Endif on viscousComputation.
           cntrb_dE(i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
           cntrb_dE(i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
           
@@ -240,12 +245,14 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             outrhs_drho(iglob)     =   outrhs_drho(iglob) &
                                   + (  cntrb_drho(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                      + cntrb_drho(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            outrhs_rho0dv(1,iglob) =   outrhs_rho0dv(1,iglob) &
-                                  + (  cntrb_rho0dv(1,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-                                     + cntrb_rho0dv(1,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            outrhs_rho0dv(SPACEDIM,iglob) =   outrhs_rho0dv(SPACEDIM,iglob) &
-                                  + (  cntrb_rho0dv(SPACEDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-                                     + cntrb_rho0dv(SPACEDIM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+            do SPCDM=1,SPACEDIM
+              outrhs_rho0dv(SPCDM,iglob) =   outrhs_rho0dv(SPCDM,iglob) &
+                                    + (  cntrb_rho0dv(SPCDM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+                                       + cntrb_rho0dv(SPCDM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+            enddo
+            !outrhs_rho0dv(SPACEDIM,iglob) =   outrhs_rho0dv(SPACEDIM,iglob) &
+            !                      + (  cntrb_rho0dv(SPACEDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+            !                         + cntrb_rho0dv(SPACEDIM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             outrhs_dE(iglob)       =   outrhs_dE(iglob) &
                                   + (  cntrb_dE(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                      + cntrb_dE(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
@@ -256,8 +263,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           ! Add zero-th order terms.
           !outrhs_drho(iglob)     = outrhs_drho(iglob)     + d0cntrb_drho(i,j) * wxl * wzl
-          do k=1,SPACEDIM ! Re-using index k for spatial dimension.
-            outrhs_rho0dv(k,iglob) = outrhs_rho0dv(k,iglob) + d0cntrb_rho0dv(k,i,j) * wxl * wzl
+          do SPCDM=1,SPACEDIM
+            outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxl * wzl
           enddo
           outrhs_dE(iglob) = outrhs_dE(iglob) + d0cntrb_dE(i,j) * wxl * wzl
         enddo
@@ -438,9 +445,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           outrhs_dE(iglobM) = outrhs_dE(iglobM) - weight*(flux_n + lambda*jump)*HALFcr ! Add flux' contribution.
           
           ! Viscous stress tensor's contributions.
-          if(     LNS_mu(iglobM) > 0. &
-             .OR. LNS_eta(iglobM) > 0. &
-             .OR. LNS_kappa(iglobM) > 0.) then
+          if(viscousComputation) then
             ! Note: since we consider here viscous terms, that is purely diffusive phenomena, the acoustic wave speed makes no sense, and thus the jump in the Lax-Friedrich approximation does not appear in the formulations.
             ! x-Momentum viscous contributions. The vector [tmp_unknown_x, tmp_unknown_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
             tmp_unknown_x = -in_sigma_dv(1,iglob) -sigma_dv_P(1) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
@@ -477,9 +482,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                + LNS_v0(1,iglobP)*sigma_dv_P(2)) & ! "P" side, part.
                             + LNS_kappa(iglobP)*nabla_dT_P(SPACEDIM) ! "P" side, part.
             outrhs_dE(iglobM) = outrhs_dE(iglobM) + weight*(tmp_unknown_x*n_out(1) + tmp_unknown_z*n_out(SPACEDIM))*HALFcr
-          endif
-        enddo
-      enddo
+          endif ! Endif on viscousComputation.
+        enddo ! Enddo on iface.
+      enddo ! Enddo on iface1.
     endif ! End of test if acoustic element
   enddo ! End of loop on elements.
   
@@ -739,11 +744,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! --------------------------- !
         
         ! Get all values from the MPI buffers.
-        out_drho_P     = buffer_DG_rho_P(ipoin, num_interface)
-        out_dE_P       = buffer_DG_E_P(ipoin, num_interface)
-        out_rho0dv_P(1)   = buffer_DG_rhovx_P(ipoin, num_interface)
-        out_rho0dv_P(SPACEDIM)   = buffer_DG_rhovz_P(ipoin, num_interface)
-        gamma_P      = buffer_DG_gamma_P(ipoin,num_interface)
+        out_drho_P     = buffer_LNS_drho_P(ipoin, num_interface)
+        out_dE_P       = buffer_LNS_dE_P(ipoin, num_interface)
+        out_rho0dv_P   = buffer_LNS_rho0dv_P(:, ipoin, num_interface)
+        gamma_P        = buffer_DG_gamma_P(ipoin,num_interface)
         if(viscousComputation) then
           ! If there is viscosity, get the values from the MPI buffers.
           ! If not, values as initialised above are kept.
@@ -756,8 +760,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
         
         ! Deduce velocities, pressure, and temperature.
-        out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
-        out_dv_P(SPACEDIM) = out_rho0dv_P(SPACEDIM)/out_drho_P
+        out_dv_P=out_rho0dv_P/LNS_rho0(iglobM)
+        !out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
+        !out_dv_P(SPACEDIM) = out_rho0dv_P(SPACEDIM)/out_drho_P
         
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
         !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
@@ -1054,7 +1059,6 @@ end subroutine LNS_get_interfaces_unknowns
 ! ------------------------------------------------------------ !
 subroutine build_trans_boundary(normal, tangential, transf_matrix)
   use constants, only: CUSTOM_REAL
-  !use specfem_par, only: nglob_DG
   use specfem_par_LNS, only: SPACEDIM
   
   implicit none
@@ -1067,6 +1071,7 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
   ! Local.
   ! N./A.
   
+  !write(*,*) normal ! DEBUG
   tangential(1)                     = -normal(SPACEDIM) ! Recall: normal(SPACEDIM)=n_z.
   tangential(SPACEDIM)              =  normal(1) ! Recall: normal(1)=n_x.
   transf_matrix(1,        1)        =   tangential(SPACEDIM)
