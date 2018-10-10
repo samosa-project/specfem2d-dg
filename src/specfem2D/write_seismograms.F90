@@ -258,7 +258,7 @@
                           P_SV,SU_FORMAT,save_ASCII_seismograms, &
                           save_binary_seismograms_single,save_binary_seismograms_double, &
                           x_source,z_source
-  use specfem_par_lns, only: USE_LNS
+  !use specfem_par_lns, only: USE_LNS
 
 ! uncomment this to save the ASCII *.sem* seismograms in binary instead, to save disk space and/or writing time
 ! we could/should move this flag to DATA/Par_file one day.

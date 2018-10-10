@@ -49,9 +49,9 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
   real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: LNS_dv
   real(kind=CUSTOM_REAL), dimension(SPACEDIM,SPACEDIM,nglob_DG) :: nabla_dv
-  real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: nabla_dT
-  integer :: i,j,ispec,ier
+  !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
+  !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: nabla_dT
+  integer :: i,j,ispec,ier,SPCDM
   logical CHECK_NONPOSITIVITY, CHECK_NONPOSITIVITY_ON_ALL_PROCS, CHECK_NONPOSITIVITY_FIND_POINT
   logical switch_gradient
   !real(kind=CUSTOM_REAL), dimension(2,1) :: kek
@@ -62,6 +62,7 @@ subroutine compute_forces_acoustic_LNS_main()
   endif
   
   switch_gradient = .false. ! Switch to activate the use of the "desintegration method" for gradient computation methods, and to desactivate to use the SEM definition of the gradient.
+  ! Warning: switch_gradient = .true. is not yet implemented.
   
   ! Those are debug switches. They are computationaly very heavy and should not be used on every simulation.
   ! CHECK_NONPOSITIVITY_ON_ALL_PROCS=.true. and CHECK_NONPOSITIVITY_FIND_POINT=.true. are particularly heavy.
@@ -103,12 +104,12 @@ subroutine compute_forces_acoustic_LNS_main()
     !endif
     
     ! Initialise auxiliary registers.
-    aux_drho    = ZEROcr
+    aux_drho   = ZEROcr
     aux_rho0dv = ZEROcr
-    aux_dE      = ZEROcr
-    RHS_drho    = ZEROcr
+    aux_dE     = ZEROcr
+    RHS_drho   = ZEROcr
     RHS_rho0dv = ZEROcr
-    RHS_dE      = ZEROcr
+    RHS_dE     = ZEROcr
     ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
     LNS_drho   = ZEROcr
     LNS_rho0dv = ZEROcr
@@ -184,39 +185,11 @@ subroutine compute_forces_acoustic_LNS_main()
     WRITE(*,"(a,i9,a,i1,a,e23.16,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, "."
   endif
   
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-    do i=1,SPACEDIM
-      call assemble_MPI_vector_DG(LNS_rho0dv(i,:), buffer_LNS_rho0dv_P(i,:,:))
-    enddo
-    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
-  endif
-#endif
-
-  ! Local Discontinuous Galerkin for viscous fluxes.
-  !if((maxval(LNS_mu) > 0 .OR. maxval(LNS_eta) > 0 .OR. maxval(LNS_kappa) > 0) .OR. CONSTRAIN_HYDROSTATIC) then
-  if(     maxval(LNS_mu) > 0. &
-     .OR. maxval(LNS_eta) > 0. &
-     .OR. maxval(LNS_kappa) > 0.) then
-#ifdef USE_MPI
-    if (NPROC > 1 .and. ninterface_acoustic > 0) then
-      !call assemble_MPI_vector_DG(T_DG(1, :), buffer_LNS_Tx_P)
-      !call assemble_MPI_vector_DG(T_DG(2, :), buffer_LNS_Tz_P)
-      !call assemble_MPI_vector_DG(V_DG(1, 1, :), buffer_LNS_Vxx_P)
-      !call assemble_MPI_vector_DG(V_DG(2, 2, :), buffer_LNS_Vzz_P)
-      !call assemble_MPI_vector_DG(V_DG(1, 2, :), buffer_LNS_Vxz_P)
-      !call assemble_MPI_vector_DG(V_DG(2, 1, :), buffer_LNS_Vzx_P)
-    endif
-#endif
-    !call compute_viscous_tensors(T_DG, V_DG, LNS_drho, LNS_rho0dv(1,:), LNS_rho0dv(SPACEDIM,:), LNS_dE, timelocal)
-  endif
-  
   ! Precompute momentum perturbation and velocity perturbation.
   LNS_dv=ZEROcr
-  do i=1,SPACEDIM
-    LNS_dm(i,:) = LNS_rho0dv(i,:)+LNS_drho*LNS_v0(i,:)
-    where(LNS_rho0/=ZEROcr) LNS_dv(i,:)=LNS_rho0dv(i,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
+  do SPCDM=1,SPACEDIM
+    LNS_dm(SPCDM,:) = LNS_rho0dv(SPCDM,:)+LNS_drho*LNS_v0(SPCDM,:)
+    where(LNS_rho0/=ZEROcr) LNS_dv(SPCDM,:)=LNS_rho0dv(SPCDM,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
   
   ! Recompute temperature and pressure perturbation.
@@ -229,10 +202,36 @@ subroutine compute_forces_acoustic_LNS_main()
   !stop
   
   ! Precompute gradients.
-  call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT) ! Dummy variables are not optimal, but prevent from duplicating
+  call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT)
   ! Precompute \Sigma_v'.
   call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
   
+  ! Assemble buffers.
+#ifdef USE_MPI
+  if (NPROC > 1 .and. ninterface_acoustic > 0) then
+    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
+    do SPCDM=1,SPACEDIM
+      call assemble_MPI_vector_DG(LNS_rho0dv(SPCDM,:), buffer_LNS_rho0dv_P(SPCDM,:,:))
+    enddo
+    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
+  endif
+#endif
+  if(     maxval(LNS_mu) > 0. &
+     .OR. maxval(LNS_eta) > 0. &
+     .OR. maxval(LNS_kappa) > 0.) then
+#ifdef USE_MPI
+    if (NPROC > 1 .and. ninterface_acoustic > 0) then
+      do SPCDM=1,SPACEDIM
+        call assemble_MPI_vector_DG(nabla_dT(SPCDM, :), buffer_LNS_nabla_dT(SPCDM,:,:))
+      enddo
+      do i=1,NVALSIGMA
+        call assemble_MPI_vector_DG(sigma_dv(i, :), buffer_LNS_sigma_dv(i,:,:))
+      enddo
+    endif
+#endif
+    !call compute_viscous_tensors(T_DG, V_DG, LNS_drho, LNS_rho0dv(1,:), LNS_rho0dv(SPACEDIM,:), LNS_dE, timelocal)
+  endif
+
   ! Compute RHS.
   call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
                                    LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities.
@@ -251,15 +250,15 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_drho               = LNS_drho + scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
     LNS_dE                 = LNS_dE   + scheme_B(i_stage)*aux_dE
     ! Group momentum treatment in loop.
-    do i=1,SPACEDIM
-      RHS_rho0dv(i,:) = RHS_rho0dv(i,:)*rmass_inverse_acoustic_DG(:)
-      aux_rho0dv(i,:) = scheme_A(i_stage)*aux_rho0dv(i,:) + deltat*RHS_rho0dv(i,:)
-      LNS_rho0dv(i,:) = LNS_rho0dv(i,:) + scheme_B(i_stage)*aux_rho0dv(i,:)
+    do SPCDM=1,SPACEDIM
+      RHS_rho0dv(SPCDM,:) = RHS_rho0dv(SPCDM,:)*rmass_inverse_acoustic_DG(:)
+      aux_rho0dv(SPCDM,:) = scheme_A(i_stage)*aux_rho0dv(SPCDM,:) + deltat*RHS_rho0dv(SPCDM,:)
+      LNS_rho0dv(SPCDM,:) = LNS_rho0dv(SPCDM,:) + scheme_B(i_stage)*aux_rho0dv(SPCDM,:)
     enddo
     
     ! test
-    write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
-    stop
+    !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
+    !stop
     !write(*,*) LNS_kappa
     !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
     !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
@@ -399,18 +398,21 @@ subroutine initial_state_LNS()
       do i = 1, NGLLX
         iglob = ibool_DG(i, j, ispec)
         !write(*,*) "call background_physical_parameters" ! DEBUG
-        call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), LNS_v0(:,iglob), LNS_E0(iglob), LNS_p0(iglob))
+        call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), &
+                                            .true., LNS_v0(:,iglob), &
+                                            .true., LNS_E0(iglob), &
+                                            .true., LNS_p0(iglob))
       enddo
     enddo
   enddo
 end subroutine initial_state_LNS
 
 ! ------------------------------------------------------------ !
-! initial_state_LNS                                            !
+! background_physical_parameters                               !
 ! ------------------------------------------------------------ !
 ! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
 
-subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, out_v, out_E, out_p)
+subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL
   use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, gammaext_DG,&
 gravity_cte_DG, ibool_DG, pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density,&
@@ -424,6 +426,7 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
   real(kind=CUSTOM_REAL), intent(out) :: out_rho, out_E, out_p
   real(kind=CUSTOM_REAL), dimension(2), intent(out) :: out_v
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
+  logical, intent(in) :: swComputeV, swComputeE, swComputeP
   
   ! Local.
   integer :: iglob
@@ -432,12 +435,41 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: z, H!, G!, A
   
+  if(swComputeE .and. (.not. swComputeV)) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot ask to compute energy *"
+    write(*,*) "* without computing velocity.  *"
+    write(*,*) "* See the                      *"
+    write(*,*) "* background_physical_parameters"
+    write(*,*) "* routine.                     *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(swComputeE .and. (.not. swComputeP)) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot ask to compute energy *"
+    write(*,*) "* without computing pressure.  *"
+    write(*,*) "* See the                      *"
+    write(*,*) "* background_physical_parameters"
+    write(*,*) "* routine.                     *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
   iglob = ibool_DG(i, j, ispec)
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
     out_rho = rhoext(i, j, ispec)
-    out_p = pext_DG(i, j, ispec)
-    out_v(1) = windxext(i, j, ispec)
+    if(swComputeP) then
+      out_p = pext_DG(i, j, ispec)
+    endif
+    if(swComputeV) then
+      out_v(1) = windxext(i, j, ispec)
+    endif
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
     
@@ -463,7 +495,9 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
       H = SCALE_HEIGHT ! Also for pressure, below.
       out_rho = surface_density*exp(-z/H)
       ! > Set pressure.
-      out_p = out_rho*LNS_g(iglob)*H
+      if(swComputeP) then
+        out_p = out_rho*LNS_g(iglob)*H
+      endif
     else
       ! > Set density.
       out_rho = surface_density
@@ -471,17 +505,23 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
       !write(*,*) sound_velocity ! DEBUG
       !write(*,*) out_rho ! DEBUG
       !write(*,*) gammaext_DG(ibool_DG(i, j, ispec)) ! DEBUG
-      out_p = (sound_velocity**2)*out_rho/gammaext_DG(iglob) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
+      if(swComputeP) then
+        out_p = (sound_velocity**2)*out_rho/gammaext_DG(iglob) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
+      endif
     endif
     
     ! > Set wind.
-    out_v(1) = wind ! Read horizontal wind from the scalar value read from parfile.
+    if(swComputeV) then
+      out_v(1) = wind ! Read horizontal wind from the scalar value read from parfile.
+    endif
   endif ! Endif on assign_external_model.
   
   ! Impose vertical wind to zero.
-  out_v(SPACEDIM) = ZEROcr
+  if(swComputeV) then
+    out_v(SPACEDIM) = ZEROcr
+  endif
   
-  if(TYPE_FORCING/=0) then
+  if(TYPE_FORCING/=0 .and. swComputeV) then
     ! If forcing exists, apply it.
     call forcing_DG(i, j, ispec, timelocal, out_v(SPACEDIM))
   endif
@@ -493,9 +533,11 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
   !endif
   
   ! Set energy based on pressure.
-  call compute_E_i(out_rho, out_v, out_p, out_E, iglob)
-  !out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
-  !        + out_rho*HALFcr*( out_v(1)**2 + out_v(SPACEDIM)**2 )
+  if(swComputeE) then
+    call compute_E_i(out_rho, out_v, out_p, out_E, iglob)
+    !out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
+    !        + out_rho*HALFcr*( out_v(1)**2 + out_v(SPACEDIM)**2 )
+  endif
 end subroutine background_physical_parameters
 
 
@@ -935,8 +977,9 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
                   exact_interface_flux, & ! Switch to disable jump in some cases (output).
                   LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Output constitutive variables.
                   !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-                  LNS_dummy_2d(:,1), LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_2d(:,1), LNS_dummy_1d(1:3), & ! Output other variables.
-                  SF_P, TF_P, .true.) ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. TODO: if other fields need to be computed, one will have to use a dedicated routine.
+                  LNS_dummy_2d(:,1), LNS_dummy_1d(1), LNS_dummy_2d(:,1), & ! Output other variables.
+                  .false., LNS_dummy_2d(:,1), LNS_dummy_1d(1:3), & ! Output other variables: viscous.
+                  .true., SF_P, TF_P) ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. If other fields need to be computed, one will have to use a dedicated routine.
 
             !vx_init = rhovx_init(iglobM)/rho_init(iglobM)
             !vz_init = rhovz_init(iglobM)/rho_init(iglobM)

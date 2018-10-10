@@ -81,7 +81,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   ! Variables specifically for LNS_get_interfaces_unknowns.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: dv_P, dm_P, nabla_dT_P
   real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
-  real(kind=CUSTOM_REAL), dimension(3) :: sigma_dv_P
+  real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P
   logical :: viscousComputation
   !real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz ! Viscosity
   real(kind=CUSTOM_REAL) :: wxl, wzl ! Integration weigths.
@@ -92,15 +92,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   
   !T_DG = T_DG_main
   !V_DG = V_DG_main
-  
-  ! Activate/deactivate computation of quantities only needed when viscosity is present.
-  if(     LNS_mu(iglob) > 0. &
-     .OR. LNS_eta(iglob) > 0. &
-     .OR. LNS_kappa(iglob) > 0.) then
-    viscousComputation=.true.
-  else
-    viscousComputation=.false.
-  endif
   
   ! Initialise auxiliary unknowns from constitutive variables.
   LNS_dv = 0.
@@ -154,6 +145,15 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           wzl = wzgll(j)
           wxl = wxgll(i)
+          
+          ! Activate/deactivate computation of quantities only needed when viscosity is present.
+          if(     LNS_mu(iglob) > 0. &
+             .OR. LNS_eta(iglob) > 0. &
+             .OR. LNS_kappa(iglob) > 0.) then
+            viscousComputation=.true.
+          else
+            viscousComputation=.false.
+          endif
           
           ! Inviscid stress tensor's contributions.
           !   Mass conservation.
@@ -285,6 +285,15 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! Interior point
           iglobM = ibool_DG(i,j,ispec)
           
+          ! Activate/deactivate computation of quantities only needed when viscosity is present.
+          if(     LNS_mu(iglobM) > 0. &
+             .OR. LNS_eta(iglobM) > 0. &
+             .OR. LNS_kappa(iglobM) > 0.) then
+            viscousComputation=.true.
+          else
+            viscousComputation=.false.
+          endif
+          
           ! TEST WITH IFACE FORMULATION
           n_out(1)     = nx_iface(iface, ispec)
           n_out(SPACEDIM)     = nz_iface(iface, ispec)
@@ -336,8 +345,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                   exact_interface_flux, & ! Switch to disable jump in some cases (output).
                   drho_P, rho0dv_P, dE_P, & ! Output constitutive variables.
                   !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-                  dm_P, dp_P, dv_P, nabla_dT_P, sigma_dv_P, & ! Output other variables.
-                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), .false.) ! Use dummies and set the switch to false not to compute unecessary quantities.
+                  dm_P, dp_P, dv_P,& ! Output other variables.
+                  viscousComputation, nabla_dT_P, sigma_dv_P, & ! Output other variables: viscous.
+                  .false., LNS_dummy_1d(1), LNS_dummy_2d(:,1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
@@ -523,8 +533,8 @@ end subroutine compute_forces_acoustic_LNS
 ! dE_P: E', for "P" side.
 ! dm_P: \rho_0v'+\rho'v_0, for "P" side. It is needed only for the mass conservation equation.
 ! dv_P: v', for "P" side. It is needed only for the energy equation, both for inviscid and viscous contributions.
-! nabla_dT_P: \nabla T', for "P" side. It is needed only for the energy equation viscous contribution. TODO: restrain computation of it only when needed.
-! sigma_dv_P: \Sigma_v(v'), for "P" side. It is (obviously) needed only for viscous contributions, both for momenta and energy equations. TODO: restrain computation of it only when needed.
+! nabla_dT_P: \nabla T', for "P" side. It is needed only for the energy equation viscous contribution.
+! sigma_dv_P: \Sigma_v(v'), for "P" side. It is (obviously) needed only for viscous contributions, both for momenta and energy equations.
 
 !subroutine LNS_get_interfaces_unknowns(i, j, ispec, neighbor, & ! Point identifier.
 !                  veloc_x_DG_P, veloc_z_DG_P, in_dp_P, T_P, & ! Precomputed quantities.
@@ -547,8 +557,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
              exact_interface_flux, & ! Switch to disable jump in some cases (output).
              out_drho_P, out_rho0dv_P, out_dE_P, & ! Output constitutive variables.
              !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-             out_dm_P, out_dp_P, out_dv_P, out_nabla_dT_P, out_sigma_dv_P, & ! Output other variables. ! TODO: correctly set out_nabla_dT_P and out_sigma_dv_P.
-             out_T_P, out_v_P, called_from_compute_gradient_TFSF)
+             out_dm_P, out_dp_P, out_dv_P, & ! Output other variables.
+             swCompVisc, out_nabla_dT_P, out_sigma_dv_P, & ! Output other variables: viscous.
+             swCompT, out_T_P, out_v_P) ! Output other variables.
   
   use constants ! TODO: select variables to use.,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
   use specfem_par ! TODO: select variables to use.,only:  ibool_DG, &
@@ -586,30 +597,30 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_rho0dv_P ! Output constitutive variable.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_dv_P, out_dm_P, out_nabla_dT_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dp_P ! Output other variables.
-  real(kind=CUSTOM_REAL), dimension(3), intent(out) :: out_sigma_dv_P ! Output other variables.
-  real(kind=CUSTOM_REAL), intent(out) :: out_T_P ! In compute_gradient_TFSF, we need temperature on the other side of the boundary in order to compute the flux.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_v_P ! In compute_gradient_TFSF, we need velocity on the other side of the boundary in order to compute the flux.
-  logical, intent(in) :: called_from_compute_gradient_TFSF ! Do not unnecessarily compute temparature and velocity.
+  real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(out) :: out_sigma_dv_P ! Output other variables.
+  real(kind=CUSTOM_REAL), intent(out) :: out_T_P ! In compute_gradient_TFSF (desintegration method), we need temperature on the other side of the boundary in order to compute the flux.
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_v_P ! In compute_gradient_TFSF (desintegration method), we need velocity on the other side of the boundary in order to compute the flux.
+  logical, intent(in) :: swCompVisc, swCompT ! Do not unnecessarily compute some quantities.
   
   ! Local.
-  !integer :: k
+  integer :: SPCDM
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: tang ! Tangential vector.
-  real(kind=CUSTOM_REAL) :: normal_v, tangential_v, &
-                            veloc_x, veloc_z, gamma_P!, &
+  real(kind=CUSTOM_REAL) :: normal_v, tangential_v!, &
+                            !veloc_x, veloc_z!, gamma_P!, &
                             !dv_M(1), dv_M(SPACEDIM), inp_dp_M, gamma_P, e1_DG_P
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: veloc_P
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
   !real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
-  real(kind=CUSTOM_REAL), dimension(2, 2) :: trans_boundary
-  real(kind=CUSTOM_REAL) :: x, veloc_x_dg_p, veloc_z_dg_p ! For coupling deactivation in buffers.
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM) :: trans_boundary
+  real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
   ! Characteristic based BC
   !real(kind=CUSTOM_REAL) :: s_b, rho_inf, v_b_x, v_b_z, un_b, &!, rho_b, p_b, c_b, &
   !                          rlambda_max, rlambda_min, un_in, un_inf!, &!c_in, c_inf, &
                             !deltaZ1, deltaZ2star, p_n!, a_n, alpha0
   
-  logical :: viscousComputation
   
   ! Initialise output variables to default values.
   exact_interface_flux=.false.
@@ -621,40 +632,26 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   out_dp_P=ZEROcr
   out_nabla_dT_P=ZEROcr
   out_sigma_dv_P=ZEROcr
+  out_T_P=ZEROcr
+  out_v_P=ZEROcr
+  
+  ! Check each and every output variable is correctly set, and this whatever the case below.
+  ! Set exact_interface_flux.
+  ! Set out_drho_P.
+  ! Set out_rho0dv_P.
+  ! Set out_dE_P.
+  ! Set out_dv_P.
+  ! Set out_dm_P: see bottom of routine.
+  ! Set out_dp_P.
+  ! Set out_nabla_dT_P.
+  ! Set out_sigma_dv_P.
+  ! Set out_T_P.
+  ! Set out_v_P.
   
   ! Extract calling point iglob.
   iglobM = ibool_DG(i, j, ispec)
   
-  ! Activate/deactivate computation of quantities only needed when viscosity is present.
-  if(     LNS_mu(iglobM) > 0. &
-     .OR. LNS_eta(iglobM) > 0. &
-     .OR. LNS_kappa(iglobM) > 0.) then
-    viscousComputation=.true.
-  else
-    viscousComputation=.false.
-  endif
-  
-  
-  !! Deduce velocities from momenta and density (the two latter being constitutive variables, and thus passed to the routine as input parameters).
-  !dv_M(1) = inp_rho0dv_M(1)/inp_drho_M
-  !!dv_M(SPACEDIM) = inp_rho0dv_M(SPACEDIM)/inp_drho_M
-  !! Deduce pressure from energy (consitutive), density (consitutive), and velocities (deduced above).
-  !inp_dp_M       = (gammaext_DG(iglobM) - ONEcr)*( inp_dE_M &
-  !      - (HALFcr)*inp_drho_M*( dv_M(1)**2 + dv_M(SPACEDIM)**2 ) )
-  
-  ! Extract derivatives.
-  !Tx_DG_P  = -T_DG_iM(1)
-  !Tz_DG_P  = -T_DG_iM(2)
-  !Vxx_DG_P = -V_DG_iM(1, 1)
-  !Vzz_DG_P = -V_DG_iM(2, 2)
-  !Vxz_DG_P = -V_DG_iM(1, 2)
-  !Vzx_DG_P = -V_DG_iM(2, 1)
-  
-  !gamma_P = gammaext_DG(iglobM)
-  
-  !e1_DG_P = ZEROcr
-  
-  exact_interface_flux = .false. ! Unless otherwise specified, use the Lax-Friedrich approximation.
+  !exact_interface_flux = .false. ! Unless otherwise specified, use the Lax-Friedrich approximation.
   
   if(neighbor(3) == -1 ) then
     ! --------------------------- !
@@ -679,111 +676,133 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! should be used.             !
       ! --------------------------- !
       
-      if(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0 .AND. .false.) then
+      if(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0) then
         ! --------------------------- !
         ! MPI acoustic potential      !
         ! neighbour.                  !
         ! --------------------------- !
-        ! TODO: Decide what to do with this case (we are in an 'if(.false.)').
-        
-        ! We already know the "real" flux at boundary.
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* Interfaces between LNS and   *"
+        write(*,*) "* acoustic potential elements  *"
+        write(*,*) "* are not implemented yet.     *"
+        write(*,*) "********************************"
+        stop
+        ! Set exact_interface_flux.
         exact_interface_flux = .true.
-
         ! Coordinates of elastic element
         iglob = ibool(i, j, ispec)
-
-        ! Only for density
+        ! Set out_drho_P.
+        call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
+                                            .false., out_v_P, &
+                                            .false., LNS_dummy_1d(1), &
+                                            .false., LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in.
+        ! Set out_v_P: free slip and normal velocity continuity.
         !call boundary_condition_DG(i, j, ispec, timelocal, out_drho_P, out_rho0dv_P(1), out_rho0dv_P(SPACEDIM), out_dE_P, &
-        !                           out_dv_P(1), out_dv_P(SPACEDIM), out_dp_P, e1_DG_P) ! TODO: Warning, expression of out_dp_P might not be exact.
-
-        ! derivatives of potential
-        veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
-        veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
-        
+        !                           out_dv_P(1), out_dv_P(SPACEDIM), out_dp_P, e1_DG_P) ! Warning, expression of out_dp_P might not be exact.
+        veloc_P = veloc_vector_acoustic_DG_coupling(iglob, :)
+        !veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
+        !veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
         call build_trans_boundary(n_out, tang, trans_boundary)
         ! Tangential vector
         ! Since only bottom topography n_out(SPACEDIM) > 0
         !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
         !tang(SPACEDIM) = n_out(1) ! Recall: n_out(1)=n_x.
-
         ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-        normal_v     = veloc_x*n_out(1) + veloc_x*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-        tangential_v = veloc_x*tang(1) + veloc_x*tang(SPACEDIM)
-
-        ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
-        !trans_boundary(1, 1) =  tang(SPACEDIM)
-        !trans_boundary(1, 2) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-        !trans_boundary(2, 1) = -tang(1)
-        !trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
-        !trans_boundary = trans_boundary/(n_out(1) * tang(SPACEDIM) - tang(1) * n_out(SPACEDIM))
-
-        ! From free slip and normal velocity continuity
-        out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-        out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+        tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+        do SPCDM=1,SPACEDIM
+          out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
+          !out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+          !out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        enddo
+        ! Set out_dv_P.
         out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
-
-        ! From traction continuity
-        out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! TODO: Warning, expression of out_dp_P might not be exact.
-        
-        call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
-        out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 )
-
-        out_rho0dv_P(1)   = out_drho_P*out_dv_P(1)
-        out_rho0dv_P(SPACEDIM)   = out_drho_P*out_dv_P(SPACEDIM)
-        
-        if(called_from_compute_gradient_TFSF) then
+        ! Set out_dp_P: traction continuity.
+        out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
+        ! Set out_dE_P.
+        call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
+        !out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 )
+        ! Set out_rho0dv_P.
+        do SPCDM=1,SPACEDIM
+          out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+        enddo
+        !out_rho0dv_P=out_drho_P*out_dv_P
+        ! Set out_dm_P: see bottom of routine.
+        if(swCompVisc) then
+          ! Set out_nabla_dT_P: same as other side.
+          out_nabla_dT_P = nabla_dT(:,iglobM)
+          ! Set out_sigma_dv_P: same as other side.
+          out_sigma_dv_P = sigma_dv(:,iglobM)
+        endif
+        ! Set out_T_P.
+        if(swCompT) then
+          !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
           call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
         endif
-        !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
         
-      else ! Happens everytime (since 'if' above is an 'if(.false.)').
+      else
         ! --------------------------- !
         ! MPI acoustic DG neighbour   !
         ! (not acoustic potential     !
         ! neighbour).                 !
         ! --------------------------- !
         
-        ! Get all values from the MPI buffers.
-        out_drho_P     = buffer_LNS_drho_P(ipoin, num_interface)
-        out_dE_P       = buffer_LNS_dE_P(ipoin, num_interface)
-        out_rho0dv_P   = buffer_LNS_rho0dv_P(:, ipoin, num_interface)
-        gamma_P        = buffer_DG_gamma_P(ipoin,num_interface)
-        if(viscousComputation) then
-          ! If there is viscosity, get the values from the MPI buffers.
-          ! If not, values as initialised above are kept.
-          !Vxx_DG_P = buffer_DG_Vxx_P(ipoin, num_interface)
-          !Vzz_DG_P = buffer_DG_Vzz_P(ipoin, num_interface)
-          !Vxz_DG_P = buffer_DG_Vxz_P(ipoin, num_interface)
-          !Vzx_DG_P = buffer_DG_Vzx_P(ipoin, num_interface)
-          !Tx_DG_P  = buffer_DG_Tx_P(ipoin, num_interface)
-          !Tz_DG_P  = buffer_DG_Tz_P(ipoin, num_interface)
-        endif
+        ! Set exact_interface_flux.
+        exact_interface_flux = .false.
         
-        ! Deduce velocities, pressure, and temperature.
+        ! Set out_drho_P.
+        out_drho_P     = buffer_LNS_drho_P(ipoin, num_interface)
+        
+        ! Set out_rho0dv_P.
+        out_rho0dv_P   = buffer_LNS_rho0dv_P(:, ipoin, num_interface)
+        
+        ! Set out_dE_P.
+        out_dE_P       = buffer_LNS_dE_P(ipoin, num_interface)
+        
+        !gamma_P        = buffer_DG_gamma_P(ipoin,num_interface)
+        
+        ! Set out_dv_P.
         out_dv_P=out_rho0dv_P/LNS_rho0(iglobM)
         !out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
         !out_dv_P(SPACEDIM) = out_rho0dv_P(SPACEDIM)/out_drho_P
         
+        ! Set out_dp_P.
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
         !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
         !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
         
-        if(called_from_compute_gradient_TFSF) then
+        ! Set out_dm_P: see bottom of routine.
+        
+        if(swCompVisc) then
+          ! Set out_nabla_dT_P: get the values from the MPI buffers.
+          out_nabla_dT_P = buffer_LNS_nabla_dT(:, ipoin, num_interface)
+          
+          ! Set out_sigma_dv_P: get the values from the MPI buffers.
+          out_sigma_dv_P = buffer_LNS_sigma_dv(:, ipoin, num_interface)
+        endif
+        
+        ! Set out_v_P.
+        out_v_P = out_dv_P + LNS_v0(:,iglobM)
+        
+        ! Set out_T_P.
+        if(swCompT) then
           call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
         endif
         !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
-
+        
       endif
-                    
+      
     elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
       ! --------------------------- !
       ! ipoin == -1                 !
-      !   (+) acoustic forcing      !
+      !   and acoustic forcing      !
       ! --------------------------- !
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"
-      write(*,*) "* ACOUSTIC_FORCING obsolete    *"
+      write(*,*) "* ACOUSTIC_FORCING is obsolete *"
       write(*,*) "* for DG simulations.          *"
       write(*,*) "********************************"
       stop
@@ -791,93 +810,59 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
       ! --------------------------- !
       ! ipoin == -1                 !
-      !   (+) elastic coupling      !
+      !   and elastic coupling      !
       ! --------------------------- !
-      ! TODO: Clean up all this part.
       
+      ! Set exact_interface_flux.
       exact_interface_flux = .false.
-
+      
       ! Coordinates of elastic element
       i_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 1)
       j_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 2)
       ispec_el = ispec_is_acoustic_coupling_el(i, j, ispec, 3)
-
       iglob = ibool(i_el, j_el, ispec_el)
       
-      !call boundary_condition_DG(i, j, ispec, timelocal, out_drho_P, out_rho0dv_P(1), out_rho0dv_P(SPACEDIM), out_dE_P, &
-      !                           out_dv_P(1), out_dv_P(SPACEDIM), out_dp_P, e1_DG_P) ! TODO: Warning, expression of out_dp_P might not be exact.
-
+      ! Set out_drho_P: same as other side.
       out_drho_P = inp_drho_M
       
-      ! Get elastic medium velocities.
-      veloc_x = veloc_elastic(1, iglob)
-      veloc_z = veloc_elastic(2, iglob)
+      ! Set out_v_P: get elastic medium velocities.
+      veloc_P = veloc_elastic(:, iglob)
       call build_trans_boundary(n_out, tang, trans_boundary)
-      ! Tangential vector. It is assumed that we only have the elastic media under the DG medium, hence we always have n_out(SPACEDIM)>=0.
-      !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-      !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
-      ! Get the normal velocity of the solid perturbation (normal continuity) and the tangential velocity of the fluid flow (free slip).
-      normal_v     = (veloc_x*n_out(1) + veloc_z*n_out(SPACEDIM))
-      tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(SPACEDIM) ! TODO: correctly get tangential velocity from background field (use background_physical_parameters)
-      !normal_v     = -(dv_M(1)*n_out(1) + dv_M(SPACEDIM)*n_out(SPACEDIM)) + 2*(veloc_x*n_out(1) + veloc_z*n_out(SPACEDIM)) ! DEBUG
-      !tangential_v = dv_M(1)*tang(1) + dv_M(SPACEDIM)*tang(SPACEDIM) ! DEBUG
-      !tangential_v    = (veloc_x*tang(1) + veloc_z*tang(SPACEDIM)) ! DEBUG
-      ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
-      !trans_boundary(1, 1) =  tang(SPACEDIM)
-      !trans_boundary(1, 2) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-      !trans_boundary(2, 1) = -tang(1)
-      !trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
-      !trans_boundary = trans_boundary/(n_out(1) * tang(SPACEDIM) - tang(1) * n_out(SPACEDIM))
+      normal_v     = (veloc_P(1)*n_out(1) + veloc_P(SPACEDIM)*n_out(SPACEDIM))
+      tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(SPACEDIM)
+      do SPCDM=1,SPACEDIM
+        out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
+      enddo
       
-      ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONEcrS.
-      x = coord(1, ibool_before_perio(i, j, ispec))
-      if(ABC_STRETCH .and. &
-         (     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone ! TODO: use stretching_buffer variable
-          .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone ! TODO: use stretching_buffer variable
-         ) &
-        ) then
-        
-        if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
-        if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
-        
-        if(x<0.1 .and. .false.) then !DEBUG
-          write(*,*) x, 'b4:', out_dv_P(1)
-        endif
-        
-        ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-        out_dv_P(1) = x*(trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v)&
-                       +(1.-x)*out_dv_P(1)
-        out_dv_P(SPACEDIM) = x*(trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v)&
-                       +(1.-x)*out_dv_P(SPACEDIM)
-        ! This gradually deactivates coupling in the horizontal buffers.
-        ! TODO: This is a hack. A better method is to be preferred.
-        
-        if(x<0.1 .and. .false.) then !DEBUG
-          write(*,*) x, 'aftR:', out_dv_P(1), x, (1.-x)
-        endif
-      else
-        ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-        out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
-        out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
-        out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
-      endif
+      ! Set out_dv_P.
+      out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
       
-      ! No stress continuity.
+      ! Set out_dp_P: no stress continuity.
       out_dp_P = inp_dp_M
 
-      ! Deduce energy.
-      call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
-      !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! TODO: Warning, expression of out_dE_P might not be exact.
+      ! Set out_dE_P.
+      call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
 
-      ! Recompute momenta in order not to keep those coming from the call to boundary_condition_DG above.
-      out_rho0dv_P(1) = out_drho_P*out_dv_P(1)
-      out_rho0dv_P(SPACEDIM) = out_drho_P*out_dv_P(SPACEDIM)
+      ! Set out_rho0dv_P.
+      do SPCDM=1,SPACEDIM
+        out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+      enddo
+      !out_rho0dv_P=out_drho_P*out_dv_P
       
-      ! Deduce temperature.
-      if(called_from_compute_gradient_TFSF) then
+      ! Set out_dm_P: see bottom of routine.
+        
+      if(swCompVisc) then
+        ! Set out_nabla_dT_P: same as other side.
+        out_nabla_dT_P = nabla_dT(:,iglobM)
+        
+        ! Set out_sigma_dv_P: same as other side.
+        out_sigma_dv_P = sigma_dv(:,iglobM)
+      endif
+      
+      ! Set out_T_P.
+      if(swCompT) then
         call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
       endif
-      !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
 
     else
       ! --------------------------- !
@@ -885,66 +870,84 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       !   classical outer boundary  !
       !   conditions                !
       ! --------------------------- !
-    
+      
+      ! Set exact_interface_flux.
       exact_interface_flux = .false.
-
-      ! Get "background" (or "far-field", or "unperturbed") values.
-      !call boundary_condition_DG(i, j, ispec, timelocal, out_drho_P, out_rho0dv_P(1), out_rho0dv_P(SPACEDIM), out_dE_P, &
-      !                           out_dv_P(1), out_dv_P(SPACEDIM), out_dp_P, e1_DG_P) ! TODO: Warning, expression of out_dp_P might not be exact.
       
-      call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, out_v_P, LNS_dummy_1d(1), LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in. TODO: include a switch not to compute the values we're not interested in.
+      ! Set out_drho_P and out_dp_P.
+      call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
+                                          .true., out_v_P, &
+                                          .false., LNS_dummy_1d(1), &
+                                          .true., out_dp_P) ! Get needed background parameters. Use dummies for values we're not interested in.
+      ! Warning: out_drho_P contains rho=(rho0 + drho) here. Correct this.
+      out_drho_P = out_drho_P - LNS_rho0(iglobM)
+      ! Warning: out_dp_P contains p=(p0 + dp) here. Correct this.
+      out_dp_P = out_dp_P - LNS_p0(iglobM)
       
-      ! Set the velocity.
+      ! Set out_v_P.
       ! Convert the velocity components from mesh coordinates to normal/tangential coordinates.
       ! This is more practical to set the boundary conditions.
       ! The setting of the boundary conditions is thus made here.
       call build_trans_boundary(n_out, tang, trans_boundary)
       !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
       !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
-      normal_v = (out_v_P(1)*n_out(1) + out_v_P(SPACEDIM)*n_out(SPACEDIM)) ! TODO: correctly get tangential velocity from background field (use background_physical_parameters)
-      tangential_v = (out_v_P(1)*tang(1) + out_v_P(SPACEDIM)*tang(SPACEDIM)) ! TODO: correctly get tangential velocity from background field (use background_physical_parameters)
-      
+      normal_v = (out_v_P(1)*n_out(1) + out_v_P(SPACEDIM)*n_out(SPACEDIM))
+      tangential_v = (out_v_P(1)*tang(1) + out_v_P(SPACEDIM)*tang(SPACEDIM))
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
       !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
-      
-      ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
-      !trans_boundary(1, 1) =  tang(SPACEDIM)
-      !trans_boundary(1, 2) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-      !trans_boundary(2, 1) = -tang(1)
-      !trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
-      !trans_boundary = trans_boundary/(n_out(1) * tang(SPACEDIM) - tang(1) * n_out(SPACEDIM))
-     
       ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-      out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
-      out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      do SPCDM=1,SPACEDIM
+        out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
+        !out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
+        !out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      enddo
+      
+      ! Set out_dv_P.
       out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
       
-      ! Deduce energy.
-      call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
+      ! Set out_dE_P.
+      call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
       !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - ONEcr) &
       !         + out_drho_P*HALFcr*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 )
       
-      ! Deduce momenta.
-      out_rho0dv_P(1)        = out_drho_P*out_dv_P(1)
-      out_rho0dv_P(SPACEDIM) = out_drho_P*out_dv_P(SPACEDIM)
+      ! Set out_rho0dv_P.
+      do SPCDM=1,SPACEDIM
+        out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+      enddo
+      !out_rho0dv_P=out_drho_P*out_dv_P
       
-      ! Deduce temperature.
-      if(called_from_compute_gradient_TFSF) then
+      ! Set out_dm_P: see bottom of routine.
+        
+      if(swCompVisc) then
+        ! Set out_nabla_dT_P: same as other side.
+        out_nabla_dT_P = nabla_dT(:,iglobM)
+        
+        ! Set out_sigma_dv_P: same as other side.
+        out_sigma_dv_P = sigma_dv(:,iglobM)
+      endif
+      
+      ! Set out_T_P.
+      if(swCompT) then
         call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
       endif
-      !out_dT_P = (out_dE_P/out_drho_P - 0.5*(out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2))/c_V
-      !!out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V ! DEBUG
-      !Tx_DG_P = -T_DG_iM(1) ! DEBUG
-      !Tz_DG_P = -T_DG_iM(2) ! DEBUG
-    endif
-  elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0 .AND. .false.) then
+      
+    endif ! Endif on ipoin.
+    
+  elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0) then
     ! --------------------------- !
     ! neighbor(3) /= -1           !
-    !   (+) acoustic coupling.    !
+    !   and acoustic coupling.    !
     ! --------------------------- !
-    ! TODO: Decide what to do with this case.
-    !!elseif(.false.) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Interfaces between LNS and   *"
+    write(*,*) "* acoustic potential elements  *"
+    write(*,*) "* are not implemented yet.     *"
+    write(*,*) "********************************"
+    stop
+    ! Set exact_interface_flux.
     exact_interface_flux = .true.
     ! Coordinates of elastic element
     i_ac     = neighbor(1)
@@ -954,11 +957,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     !if(.false.) then ! DEBUG
     !  WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
     !endif
-    ! Only for density
-    !call boundary_condition_DG(i_ac, j_ac, ispec_ac, timelocal, out_drho_P, &
-    !                           out_rho0dv_P(1), out_rho0dv_P(SPACEDIM), out_dE_P, &
-    !                           out_dv_P(1), out_dv_P(SPACEDIM), out_dp_P, e1_DG_P) ! TODO: Warning, expression of out_dp_P might not be exact.
-    call background_physical_parameters(i_ac, j_ac, ispec_ac, timelocal, out_drho_P, out_v_P, LNS_dummy_1d(1), LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in. TODO: include a switch not to compute the values we're not interested in.
+    ! Set out_drho_P.
+    call background_physical_parameters(i_ac, j_ac, ispec_ac, timelocal, out_drho_P, &
+                                        .false., LNS_dummy_1d(1), &
+                                        .false., LNS_dummy_1d(1), &
+                                        .false., LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in.
     !!out_drho_P = inp_drho_M
     !!duz_dxi    = ZEROcr
     !!duz_dgamma = ZEROcr
@@ -977,78 +980,108 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     !!! Derivatives of potential.
     !!veloc_x = ( duz_dxi * xixl + duz_dgamma * gammaxl )
     !!veloc_z = ( duz_dxi * xizl + duz_dgamma * gammazl )
-    veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
-    veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
+    veloc_P = veloc_vector_acoustic_DG_coupling(iglob, :)
+    !veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
+    !veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
     call build_trans_boundary(n_out, tang, trans_boundary)
     ! Tangential vector, since only bottom topography n_out(SPACEDIM) > 0.
     !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
     !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
     ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-    normal_v     = veloc_x*n_out(1) + veloc_x*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-    tangential_v = veloc_x*tang(1) + veloc_x*tang(SPACEDIM)
+    normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+    tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
     ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
     !trans_boundary(1, 1) =  tang(SPACEDIM)
     !trans_boundary(1, 2) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
     !trans_boundary(2, 1) = -tang(1)
     !trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
     !trans_boundary = trans_boundary/(n_out(1) * tang(SPACEDIM) - tang(1) * n_out(SPACEDIM))
-    ! From free slip and normal velocity continuity
-    out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-    out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+    ! Set out_v_P: free slip and normal velocity continuity.
+    do SPCDM=1,SPACEDIM
+      out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
+      !out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
+      !out_v_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+    enddo
+    ! Set out_dv_P.
     out_dv_P=out_v_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
-    ! From traction continuity
+    ! Set out_dp_P: traction continuity.
     out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
-    call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
-    !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! TODO: Warning, expression of out_dp_P might not be exact.
-    out_rho0dv_P(1)        = out_drho_P*out_dv_P(1)
-    out_rho0dv_P(SPACEDIM) = out_drho_P*out_dv_P(SPACEDIM)
-    
-    if(called_from_compute_gradient_TFSF) then
+    ! Set out_dE_P.
+    call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
+    !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! Warning, expression of out_dp_P might not be exact.
+    ! Set out_rho0dv_P.
+    do SPCDM=1,SPACEDIM
+      out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+    enddo
+    !out_rho0dv_P=out_drho_P*out_dv_P
+    ! Set gradients, and sigma
+    !out_nabla_dT_P
+    !call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT)
+    !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
+    ! Set out_dm_P: see bottom of routine.
+    if(swCompVisc) then
+      ! Set out_nabla_dT_P: same as other side.
+      out_nabla_dT_P = nabla_dT(:,iglobM)
+      ! Set out_sigma_dv_P: same as other side.
+      out_sigma_dv_P = sigma_dv(:,iglobM)
+    endif
+    ! Set out_T_P.
+    if(swCompT) then
       call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
     endif
-    !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
-  else ! Happens everytime (since 'else if' above is an 'if(.false.)').
+    
+  else
     ! --------------------------- !
     ! neighbor(3) /= -1           !
-    !   (+) not an 'outside' edge !
-    !       (thus values are      !
-    !       already known)        !
+    !   and not an 'outside' edge !
+    !   and not acoustic          !
+    !           potential         !
     ! --------------------------- !
-    exact_interface_flux = .false.
+    ! Here, values are known.
+    
     iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
-    gamma_P = gammaext_DG(iglobP)
+    
+    ! Set exact_interface_flux.
+    exact_interface_flux = .false.
+    
+    ! Set out_drho_P.
     out_drho_P = inp_drho_P
+    
+    ! Set out_dE_P.
     out_dE_P = inp_dE_P
+    
+    ! Set out_rho0dv_P.
     out_rho0dv_P = inp_rho0dv_P
+    
+    ! Set out_dv_P.
     out_dv_P(:) = out_rho0dv_P(:)/LNS_rho0(iglobP)
+    
+    ! Set out_dp_P.
     call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
     !out_dp_P       = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
     !               - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
-    if(viscousComputation) then
-      ! Viscosity.
-      !Vxx_DG_P = V_DG_iP(1, 1)
-      !Vzz_DG_P = V_DG_iP(2, 2)
-      !Vxz_DG_P = V_DG_iP(1, 2)
-      !Vzx_DG_P = V_DG_iP(2, 1)
-      !Tx_DG_P = T_DG_iP(1)
-      !Tz_DG_P = T_DG_iP(2)
+    
+    ! Set out_dm_P: see bottom of routine.
+    if(swCompVisc) then
+      ! Set out_nabla_dT_P: same as other side.
+      out_nabla_dT_P = nabla_dT(:,iglobM)
+      ! Set out_sigma_dv_P: same as other side.
+      out_sigma_dv_P = sigma_dv(:,iglobM)
     endif
     
-    if(called_from_compute_gradient_TFSF) then
+    ! Set out_v_P.
+    out_v_P = out_dv_P + LNS_v0(:,iglobM)
+    
+    ! Set out_T_P.
+    if(swCompT) then
       call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
     endif
     !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
+    
   endif
   
-  !close(10)
-  
-  ! Temperature computation (is it really needed?)
-  !!out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
-  ! (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
-  
-  if(.not. called_from_compute_gradient_TFSF) then
-    out_dm_P=out_rho0dv_P+out_drho_P*LNS_rho0(iglobM)
-  endif
+  ! Set out_dm_P.
+  out_dm_P=out_rho0dv_P+out_drho_P*LNS_rho0(iglobM)
   
 end subroutine LNS_get_interfaces_unknowns
 
@@ -1071,7 +1104,7 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
   ! Local.
   ! N./A.
   
-  !write(*,*) normal ! DEBUG
+  ! For the tangential vector, it is assumed that we will only have the elastic media under the DG medium, hence we always have n_out(SPACEDIM)>=0.
   tangential(1)                     = -normal(SPACEDIM) ! Recall: normal(SPACEDIM)=n_z.
   tangential(SPACEDIM)              =  normal(1) ! Recall: normal(1)=n_x.
   transf_matrix(1,        1)        =   tangential(SPACEDIM)

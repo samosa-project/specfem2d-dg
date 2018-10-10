@@ -128,7 +128,8 @@
   double precision :: SCALE_HEIGHT, gravity, dynamic_viscosity, thermal_conductivity, &
         tau_epsilon, tau_sigma, MINMOD_FACTOR, coord_interface, constant_p, constant_v, &
         surface_density, sound_velocity, wind
-        
+  ! Modification for LNS.
+  logical USE_LNS
   
   double precision :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time      
   integer :: id_region_DG, TYPE_SOURCE_DG, TYPE_FORCING
