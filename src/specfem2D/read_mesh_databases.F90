@@ -39,6 +39,7 @@
   use specfem_par
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
   use specfem_par_movie
+  use specfem_par_lns, only: USE_LNS
 
   implicit none
 
@@ -234,6 +235,9 @@
   
   read(IIN,"(a80)") datlin
   read(IIN,*) USE_DISCONTINUOUS_METHOD
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) USE_LNS
   
   read(IIN,"(a80)") datlin
   read(IIN,*) REMOVE_DG_FLUID_TO_SOLID
@@ -845,8 +849,10 @@
     ! MODIFICATION FOR LNS.
     if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
       allocate(buffer_LNS_drho_P(NGLLX*max_interface_size,ninterface), &
-               buffer_LNS_dE_P(NGLLX*max_interface_size,ninterface),stat=ier)
-      allocate(buffer_LNS_rho0dv_P(SPACEDIM,NGLLX*max_interface_size,ninterface), &
+               buffer_LNS_dE_P(NGLLX*max_interface_size,ninterface), &
+               buffer_LNS_rho0dv_P(SPACEDIM,NGLLX*max_interface_size,ninterface), &
+               buffer_LNS_nabla_dT(SPACEDIM,NGLLX*max_interface_size,ninterface), &
+               buffer_LNS_sigma_dv(3,NGLLX*max_interface_size,ninterface), &
                stat=ier)
       if (ier /= 0) then
         ! Safeguard.

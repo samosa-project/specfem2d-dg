@@ -80,17 +80,32 @@
     if (myrank == 0) write(IMAIN,*) 'drawing scalar image of part of the displacement vector...'!, maxval(rhoveloc_acoustic(2,:))
     
     if(any_acoustic_DG) then
-      if(imagetype_JPEG == 1) then
-        vector_DG_temp = rhovx_DG/rho_DG
+      if(.not. USE_LNS) then
+        ! FNS.
+        if(imagetype_JPEG == 1) then
+          vector_DG_temp = rhovx_DG/rho_DG
+        endif
+        if(imagetype_JPEG == 2) then
+          vector_DG_temp = rhovz_DG/rho_DG
+        endif
+        if(imagetype_JPEG == 3) then
+          vector_DG_temp = sqrt((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)
+        endif
+        !vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
+        !                                 - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init)
+      else
+        ! LNS.
+        select case (imagetype_JPEG)
+          case(1)
+            where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(1,:) / LNS_rho0
+          case(2)
+            where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(SPACEDIM,:) / LNS_rho0
+          case(3)
+            where(LNS_rho0>0.) vector_DG_temp = sqrt((LNS_rho0dv(1,:) / LNS_rho0)**2 + (LNS_rho0dv(SPACEDIM,:) / LNS_rho0)**2)
+          case default
+            stop "This statement should not have been reached."
+        end select
       endif
-      if(imagetype_JPEG == 2) then
-        vector_DG_temp = rhovz_DG/rho_DG
-      endif
-      if(imagetype_JPEG == 3) then
-        vector_DG_temp = sqrt((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)
-      endif
-      !vector_DG_temp = (((gammaext_DG - 1.)*( E_DG &
-      !                                 - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) - p_DG_init)
     endif
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,displ_elastic,displs_poroelastic, &
@@ -122,15 +137,16 @@
         endif
       else
         ! LNS.
-        if(imagetype_JPEG == 4) then
-          stop "imagetype_JPEG not implemented yet for LNS."
-        endif
-        if(imagetype_JPEG == 5) then
-          where(LNS_rho0>0.) vector_DG_temp = LNS_dp / LNS_rho0
-        endif
-        if(imagetype_JPEG == 6) then
-          stop "imagetype_JPEG not implemented yet for LNS."
-        endif
+        select case (imagetype_JPEG)
+          case(4)
+            stop "imagetype_JPEG 4 not implemented yet for LNS."
+          case(5)
+            where(LNS_rho0>0.) vector_DG_temp = LNS_dp / LNS_rho0
+          case(6)
+            stop "imagetype_JPEG 5 not implemented yet for LNS."
+          case default
+            stop "This statement should not have been reached."
+        end select
       endif
     endif
     if (myrank == 0) then
