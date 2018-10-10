@@ -15,9 +15,10 @@ set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
 % FILE='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200/OUTPUT_FILES_597316/Database00201';
-disp(['1) Find the ID of CPU which crashed. Typically, look up the error message, and remember the number of the task which is mentionned. 2) Get the database file corresponding to that CPU.']);
-disp(['For instance, if the error message is ''srun: error: eoscomp0: task 12: Floating point exception'', the CPU ID is 12, and you should get the Database file number 12.']);
-FILE=input('Database file to scan? > ','s');
+disp(['[',mfilename,'] 1) Find the ID of CPU which crashed. Typically, look up the error message, and remember the number of the task which is mentionned.']);
+disp(['[',mfilename,'] 2) Get the database file corresponding to that CPU.']);
+disp(['[',mfilename,'] For instance, if the error message is ''srun: error: eoscomp0: task 12: Floating point exception'', the CPU ID is 12, and you should get the Database file number 12.']);
+FILE=input(['[',mfilename,'] Database file to scan? > '],'s');
 
 X=scan_database_file(FILE);
 
