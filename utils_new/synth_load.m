@@ -33,7 +33,7 @@ convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordin
 %   1 for yes, sorted by x.
 %   2 for yes, sorted by z.
 %   3 for yes, sorted by d.
-plot_amplitude=1;
+plot_amplitude=0;
 
 subsample = 0; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that synthetics are nsublength (below) long.
 nsublength = 1000; % Length of sub-sampled synthetics.
@@ -52,9 +52,13 @@ unknown = 'BXZ'; % _z.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Microbaroms ULDB.
+fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
+
 % StratoBaro, 66, June, 12:00
-fig_title = strcat('Microbaroms, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+% fig_title = strcat('Microbaroms, lat66, June, 12:00');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
@@ -130,6 +134,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = st
 
 % Tests.
 % fig_title = 'test';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/axisym_test'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_external_forcing'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
