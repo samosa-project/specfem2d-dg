@@ -18,6 +18,7 @@ Mesh.RecombineAll = 1; // Recombine all triangular elements.
 // Meshing algorithm. //-----//
 Mesh.Algorithm = 9; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).
 Mesh.ElementOrder = 2; // Element order.
+Mesh.RandomFactor=1e-3; // Perturbate every points' positions in order to avoid 3 aligned points. Default is at 1e-9, maximum is 1e-3.
 
 // Geometry. //--------------//
 xmin=-50;
@@ -40,15 +41,15 @@ Line(1) = {1,2};
 Line(2) = {2,3};
 Line(3) = {3,4};
 Line(4) = {4,1};
-// Define a line loop with the previously defined lines. Warning: prefer counter-clockwise direction to prevent inverted elements. Note: use "-" before line number to reverse its direction.
+// Define a line loop with the previously defined lines. Warning: always user counter-clockwise direction to prevent inverted elements. Note: use "-" before line number to reverse its direction.
 Line Loop(1) = {1,2,3,4};
 // Define a surface with the previously defined line loop.
 Plane Surface(1) = {1};
 
-Physical Line("Top") = {4}; // Associate line 4 (RHS) to "Top" (LHS) SPECFEM boundary.
-Physical Line("Left") = {3}; // Associate line 4 (RHS) to "Left" (LHS) SPECFEM boundary.
-Physical Line("Bottom") = {1}; // Associate line 4 (RHS) to "Bottom" (LHS) SPECFEM boundary.
-Physical Line("Right") = {2}; // Associate line 4 (RHS) to "Right" (LHS) SPECFEM boundary.
+Physical Line("Top") = {4}; // Associate line 4 (RHS) to "Top" (LHS) SPECFEM boundary. Warning: if many lines, list them in counter-clockwise order.
+Physical Line("Left") = {3}; // Associate line 4 (RHS) to "Left" (LHS) SPECFEM boundary. Warning: if many lines, list them in counter-clockwise order.
+Physical Line("Bottom") = {1}; // Associate line 4 (RHS) to "Bottom" (LHS) SPECFEM boundary. Warning: if many lines, list them in counter-clockwise order.
+Physical Line("Right") = {2}; // Associate line 4 (RHS) to "Right" (LHS) SPECFEM boundary. Warning: if many lines, list them in counter-clockwise order.
 Physical Surface("M1") = {1}; // Associate surface 1 (RHS) to SPECFEM material 1 (LHS).
 Recombine Surface {1};
 
