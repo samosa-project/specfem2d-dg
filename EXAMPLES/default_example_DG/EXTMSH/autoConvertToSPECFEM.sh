@@ -36,7 +36,7 @@ fi
 ###############################################
 # Converting mesh to SPECFEM standards.       #
 ###############################################
-echo "[$0] Converting to SPECFEM standards."
+echo "[$0] Locating GMSH->SPECFEM script."
 # Convert script.
 scriptName="LibGmsh2Specfem_convert_Gmsh_to_Specfem2D_official.py"
 # Go through the folders containing this folder to find the conversion script.
@@ -50,6 +50,7 @@ do
 done
 # Save the path to the conversion script.
 absolutePathToScript="$(pwd)/$fullPathToScript"
+echo "[$0] Converting to SPECFEM standards."
 # Ask user for boundaries' types input.
 echo "> Boundaries?"
 echo "  > Top?"
