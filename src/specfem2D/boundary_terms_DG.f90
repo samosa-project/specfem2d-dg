@@ -173,11 +173,11 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
         gravity_cte_DG, dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_eps_cte_DG, tau_sig_cte_DG, SCALE_HEIGHT, &
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
         surface_density, sound_velocity, wind, TYPE_FORCING, &
-        forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
-        assign_external_model,myrank, &
-        DT, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
-        EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL,& ! External forcing.
-        EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT! External forcing.
+        !forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
+        assign_external_model!,myrank!, &
+        !DT,&!, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
+        !EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL,& ! External forcing.
+        !EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT! External forcing.
 
   implicit none
   
@@ -197,7 +197,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   real(kind=CUSTOM_REAL) :: x, z, H, G!, A
   !real(kind=CUSTOM_REAL) :: x0, z0, r, beta
   ! Forcing
-  real(kind=CUSTOM_REAL) :: to, perio, lambdo, xo
+  !real(kind=CUSTOM_REAL) :: to, perio, lambdo, xo
   !real(kind=CUSTOM_REAL) :: mu_visco, eta_visco
   ! Hydrostatic solution
   !real(kind=CUSTOM_REAL) :: RR, p0, rho0
@@ -206,12 +206,12 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   ! Linear mountains
   !real(kind=CUSTOM_REAL) :: cp, c_V, exner, RR, p0, rho0, rs, theta, theta0, Nsq
   ! Tsunami
-  real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
+  !real(kind=CUSTOM_REAL) :: VELOC_TSUNAMI
   ! Microbaroms.
-  real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE
-  real(kind=CUSTOM_REAL) :: UNIFORM1, UNIFORM2, NORMAL1, NORMAL2
+  !real(kind=CUSTOM_REAL) :: MICROBAROM_AMPLITUDE, MICROBAROM_MAXTIME, MICROBAROM_RANGE
+  !real(kind=CUSTOM_REAL) :: UNIFORM1, UNIFORM2, NORMAL1, NORMAL2
   ! External focing.
-  integer :: externalforcingid
+  !integer :: externalforcingid
   
   ! Thermal bubble
   real(kind=CUSTOM_REAL) :: Tl, Tu, rho0, p0, RR
@@ -306,11 +306,6 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
                       real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
   endif
   
-  
-  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
-  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
-  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
-  ! TODO: USE THE ROUTINE forcing_DG DEFINED BELOW INSTEAD
   ! --------------------------- !
   ! Rayleigh-Taylor instability !
   ! (case 5.3 paper).           !
@@ -337,183 +332,180 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   endif
        
   !call boundary_forcing_DG(timelocal, rho_DG_P, veloc_x_DG_P, veloc_z_DG_P, E_DG_P)
-
+  
   ! If bottom forcing is activated, set (overwrite) velocities.
   if(TYPE_FORCING>0 .and. abs(z)<TINYVAL) then
+    call forcing_DG(i, j, ispec, timelocal, veloc_z_DG_P) ! Used the subroutine 'forcing_DG' defined below, instead of crowding this one.
     ! Read forcing parameters from parameter file.
-    lambdo = main_spatial_period
-    xo     = forcing_initial_loc
-    perio  = main_time_period
-    to     = forcing_initial_time
-
-    ! --------------------------- !
-    ! Time Gaussian derivative    !
-    ! (acoustic plane wave        !
-    ! forcing).                   !
-    ! --------------------------- !
-    if(TYPE_FORCING == 1) then
-      veloc_z_DG_P = 0.01*(&
-                     - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
-                           (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
-                     + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
-                           (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) )
-    endif
-
-    ! --------------------------- !
-    ! Time and space Gaussian     !
-    ! derivative (gravity wave    !
-    ! forcing.                    !
-    ! --------------------------- !
-    if(TYPE_FORCING == 2) then
-      veloc_z_DG_P = 0.001*(&
-                    - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
-                             (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
-                    + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
-                             (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) &
-                     * ( exp(-((x-(xo-lambdo/4))/(lambdo/4))**2) - &
-                            exp(-((x-(xo+lambdo/4))/(lambdo/4))**2) )
-    endif
-    
-    ! --------------------------- !
-    ! Hardcoded custom forcing    !
-    ! (custom forcing case for    !
-    ! user).                      !
-    ! --------------------------- !
-    ! The Matlab script 'utils_new/forcings_test.m' contains some tests for some of those forcings, in order to make hardcoding a little easier.
-    if(TYPE_FORCING == 9) then
-      ! Tsunami forcing.
-      if(.false.) then        
-        VELOC_TSUNAMI = 200.
-        perio = 1000.
-        lambdo = 50000.
-        if(timelocal < perio) then
-            veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
-        else
-            veloc_z_DG_P = &
-                    2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
-                    *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
-        endif
-      endif
-      
-      ! Analytic microbarom forcing.
-      if(.true.) then
-        perio  = main_time_period
-        lambdo = main_spatial_period
-        MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
-        MICROBAROM_RANGE = 80.*lambdo ! Range around x=0 to which impose microbaroms. Unit: m. Be careful with apodisation below.
-        MICROBAROM_MAXTIME = 10.5 * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s. Be careful with apodisation below.
-        if(timelocal==0) then
-          ! Start random phase walk.
-          XPHASE_RANDOMWALK = 0.
-          TPHASE_RANDOMWALK = 0.
-          PHASE_RANDOMWALK_LASTTIME=0.
-        endif
-        if(timelocal<MICROBAROM_MAXTIME) then
-          if(timelocal>=PHASE_RANDOMWALK_LASTTIME+DT) then
-            ! Update the random walk only once par time step.
-            call random_number(UNIFORM1)
-            call random_number(UNIFORM2)
-            NORMAL1 = (PI*DT/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*cos(2.*PI*UNIFORM2) ! Box-Muller method to generate a 1nd N(0, \sigma^2) random variable.
-            NORMAL2 = (PI*DT/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*sin(2.*PI*UNIFORM2) ! Box-Muller method to generate a 2nd N(0, \sigma^2) random variable.
-            XPHASE_RANDOMWALK = XPHASE_RANDOMWALK + NORMAL1
-            TPHASE_RANDOMWALK = TPHASE_RANDOMWALK + NORMAL2
-            PHASE_RANDOMWALK_LASTTIME = timelocal
-          endif
-          if(abs(x)<MICROBAROM_RANGE) then
-            veloc_z_DG_P = MICROBAROM_AMPLITUDE & ! Amplitude.
-            * sin(2.*PI*x/lambdo+XPHASE_RANDOMWALK) &
-            !* 0.25*(1.-erf((x-MICROBAROM_RANGE+10.*lambdo)/(5.*lambdo)))*& ! Spatial apodisation. TODO: find why intrinsic functions won't compile.
-            !       (1.+erf((x+MICROBAROM_RANGE-10.*lambdo)/(5.*lambdo)))& ! Spatial apodisation, continued.
-            * sin(2.*PI*timelocal/perio+TPHASE_RANDOMWALK) ! &
-            !* 0.5*(1.-erf((timelocal-MICROBAROM_MAXTIME+perio)/(0.5*perio))) ! Temporal apodisation. TODO: find why intrinsic functions won't compile.
-            ! Spatial apodisation over 10 periods.
-            if(abs(x)>MICROBAROM_RANGE-10.*lambdo) then
-              veloc_z_DG_P = veloc_z_DG_P * (1.-((-abs(x)+MICROBAROM_RANGE)/(10.*lambdo)-1.)**2.)
-            endif
-            ! Temporal beginning apodisation over 1 period (split into 0.5 and 0.5 for smoothness).
-            if(timelocal<0.5*perio) then
-              veloc_z_DG_P = veloc_z_DG_P * (2.*(timelocal/perio)**2.)
-            endif
-            if(timelocal>=0.5*perio .and. timelocal<=perio) then
-              veloc_z_DG_P = veloc_z_DG_P * ((4.*timelocal)/perio-2.*(timelocal/perio)**2.-1.)
-            endif
-            ! Temporal end apodisation over 1.5 periods.
-            if(timelocal>MICROBAROM_MAXTIME-1.5*perio) then
-              veloc_z_DG_P = veloc_z_DG_P * (1.-((timelocal-MICROBAROM_MAXTIME)/(1.5*perio)+1.)**2.)
-            endif
-          endif
-        endif
-      endif
-      
-      ! Plane wave forcing.
-      if(.false.) then
-        lambdo = main_spatial_period
-        perio  = main_time_period
-        if(timelocal<2. .and. abs(x)<20.d3) then
-          veloc_z_DG_P = sin(2.*PI*timelocal/perio)
-        endif
-      endif
-      
-      ! Output a warning.
-      if(timelocal == 0 .and. myrank==0) then
-        write(*,*) "********************************"
-        write(*,*) "*           WARNING            *"
-        write(*,*) "********************************"
-        write(*,*) "* A hardcoded bottom forcing   *"
-        write(*,*) "* is being used. Use at your   *"
-        write(*,*) "* own risk. See                *"
-        write(*,*) "* 'boundary_terms_DG.f90'.     *"
-        write(*,*) "********************************"
-        call flush_IMAIN()
-      endif
-    endif ! Endif on TYPEFORCING==9
-    
-    
-    ! --------------------------- !
-    ! Forcing read from file.     !
-    ! --------------------------- !
-    ! The Matlab script 'utils_new/forcings.m' can be used to generate the external bottom forcing file.
-    if(TYPE_FORCING == 10) then
-      !write(*,*) "KEK", floor(timelocal/DT+1)
-      !write(*,*) ibool_before_perio(i,j,ispec)
-      !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(1)
-      if(timelocal<EXTERNAL_FORCING_MAXTIME) then
-        externalforcingid=EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec))
-        if(externalforcingid/=HUGE(0)) then
-          ! Getting time step ID:
-          veloc_z_DG_P=EXTERNAL_FORCING(floor(timelocal/EXTFORC_FILEDT+1),externalforcingid)
-          ! Note: with tests done during loading, EXTFORC_FILEDT is either DT or DT/stage_time_scheme, which is consistent with the line above.
-          
-          !if(abs(timelocal-3.5)<0.1) then
-          !  write(*,*) veloc_z_DG_P, rho_DG_P
-          !endif
-          !if(abs(timelocal-0.16)<0.2 .and. abs(abs(x)-50.)<0.4) then
-          !  write(*,*) timelocal, x, veloc_z_DG_P
-          !endif
-        else
-          if(x>=EXTFORC_MINX .and. x<=EXTFORC_MAXX) then
-            ! This block is entered if forcing should happen (t < max_t and min_x < x < max_x), but can't be read (externalforcingid==HUGE(0)).
-            ! Prompt an error.
-            write(*,*) "********************************"
-            write(*,*) "*            ERROR             *"
-            write(*,*) "********************************"
-            write(*,*) "* External bottom forcing      *"
-            write(*,*) "* should happen, but does not  *"
-            write(*,*) "* happen. Maybe some points    *"
-            write(*,*) "* were not paired well, or     *"
-            write(*,*) "* time to index conversion     *"
-            write(*,*) "* fails.                       *"
-            write(*,*) "* x_min = ", EXTFORC_MINX
-            write(*,*) "* x     = ", x
-            write(*,*) "* x_max = ", EXTFORC_MAXX
-            write(*,*) "* t     = ", timelocal
-            write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME
-            write(*,*) "********************************"
-            stop
-          endif
-        endif
-      endif
-    endif ! Endif on TYPEFORCING==10
+    !lambdo = main_spatial_period
+    !xo     = forcing_initial_loc
+    !perio  = main_time_period
+    !to     = forcing_initial_time
+    !! --------------------------- !
+    !! Time Gaussian derivative    !
+    !! (acoustic plane wave        !
+    !! forcing).                   !
+    !! --------------------------- !
+    !!if(TYPE_FORCING == 1) then
+    !!  call forcing_DG(i, j, ispec, timelocal, veloc_z_DG_P)
+    !!endif
+    !if(TYPE_FORCING == 1) then
+    !  veloc_z_DG_P = 0.01*(&
+    !                 - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
+    !                       (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
+    !                 + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
+    !                       (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) )
+    !endif
+    !! --------------------------- !
+    !! Time and space Gaussian     !
+    !! derivative (gravity wave    !
+    !! forcing.                    !
+    !! --------------------------- !
+    !if(TYPE_FORCING == 2) then
+    !  veloc_z_DG_P = 0.001*(&
+    !                - (2d0/(perio/4d0))*((timelocal-(to-perio/4d0))/(perio/4d0))* &
+    !                         (exp(-((timelocal-(to-perio/4d0))/(perio/4d0))**2)) &
+    !                + (2d0/(perio/4d0))*((timelocal-(to+perio/4d0))/(perio/4d0))* &
+    !                         (exp(-((timelocal-(to+perio/4d0))/(perio/4d0))**2)) ) &
+    !                 * ( exp(-((x-(xo-lambdo/4))/(lambdo/4))**2) - &
+    !                        exp(-((x-(xo+lambdo/4))/(lambdo/4))**2) )
+    !endif
+    !! --------------------------- !
+    !! Hardcoded custom forcing    !
+    !! (custom forcing case for    !
+    !! user).                      !
+    !! --------------------------- !
+    !! The Matlab script 'utils_new/forcings_test.m' contains some tests for some of those forcings, in order to make hardcoding a little easier.
+    !if(TYPE_FORCING == 9) then
+    !  ! Tsunami forcing.
+    !  if(.false.) then        
+    !    VELOC_TSUNAMI = 200.
+    !    perio = 1000.
+    !    lambdo = 50000.
+    !    if(timelocal < perio) then
+    !        veloc_z_DG_P = (1d0/perio)*exp( -((x-lambdo)/(sqrt(2d0)*perio))**2 )
+    !    else
+    !        veloc_z_DG_P = &
+    !                2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*perio))*(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))&
+    !                *exp( -(((x-lambdo)-VELOC_TSUNAMI*(timelocal - perio))/(sqrt(2d0)*perio))**2 )
+    !    endif
+    !  endif
+    !  ! Analytic microbarom forcing.
+    !  if(.true.) then
+    !    perio  = main_time_period
+    !    lambdo = main_spatial_period
+    !    MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
+    !    MICROBAROM_RANGE = 80.*lambdo ! Range around x=0 to which impose microbaroms. Unit: m. Be careful with apodisation below.
+    !    MICROBAROM_MAXTIME = 10.5 * perio ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s. Be careful with apodisation below.
+    !    if(timelocal==0) then
+    !      ! Start random phase walk.
+    !      XPHASE_RANDOMWALK = 0.
+    !      TPHASE_RANDOMWALK = 0.
+    !      PHASE_RANDOMWALK_LASTTIME=0.
+    !    endif
+    !    if(timelocal<MICROBAROM_MAXTIME) then
+    !      if(timelocal>=PHASE_RANDOMWALK_LASTTIME+DT) then
+    !        ! Update the random walk only once par time step.
+    !        call random_number(UNIFORM1)
+    !        call random_number(UNIFORM2)
+    !        NORMAL1 = (PI*DT/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*cos(2.*PI*UNIFORM2) ! Box-Muller method to generate a 1nd N(0, \sigma^2) random variable.
+    !        NORMAL2 = (PI*DT/(0.2*2.*perio)) * sqrt(-2.*log(UNIFORM1))*sin(2.*PI*UNIFORM2) ! Box-Muller method to generate a 2nd N(0, \sigma^2) random variable.
+    !        XPHASE_RANDOMWALK = XPHASE_RANDOMWALK + NORMAL1
+    !        TPHASE_RANDOMWALK = TPHASE_RANDOMWALK + NORMAL2
+    !        PHASE_RANDOMWALK_LASTTIME = timelocal
+    !      endif
+    !      if(abs(x)<MICROBAROM_RANGE) then
+    !        veloc_z_DG_P = MICROBAROM_AMPLITUDE & ! Amplitude.
+    !        * sin(2.*PI*x/lambdo+XPHASE_RANDOMWALK) &
+    !        !* 0.25*(1.-erf((x-MICROBAROM_RANGE+10.*lambdo)/(5.*lambdo)))*& ! Spatial apodisation. TODO: find why intrinsic functions won't compile.
+    !        !       (1.+erf((x+MICROBAROM_RANGE-10.*lambdo)/(5.*lambdo)))& ! Spatial apodisation, continued.
+    !        * sin(2.*PI*timelocal/perio+TPHASE_RANDOMWALK) ! &
+    !        !* 0.5*(1.-erf((timelocal-MICROBAROM_MAXTIME+perio)/(0.5*perio))) ! Temporal apodisation. TODO: find why intrinsic functions won't compile.
+    !        ! Spatial apodisation over 10 periods.
+    !        if(abs(x)>MICROBAROM_RANGE-10.*lambdo) then
+    !          veloc_z_DG_P = veloc_z_DG_P * (1.-((-abs(x)+MICROBAROM_RANGE)/(10.*lambdo)-1.)**2.)
+    !        endif
+    !        ! Temporal beginning apodisation over 1 period (split into 0.5 and 0.5 for smoothness).
+    !        if(timelocal<0.5*perio) then
+    !          veloc_z_DG_P = veloc_z_DG_P * (2.*(timelocal/perio)**2.)
+    !        endif
+    !        if(timelocal>=0.5*perio .and. timelocal<=perio) then
+    !          veloc_z_DG_P = veloc_z_DG_P * ((4.*timelocal)/perio-2.*(timelocal/perio)**2.-1.)
+    !        endif
+    !        ! Temporal end apodisation over 1.5 periods.
+    !        if(timelocal>MICROBAROM_MAXTIME-1.5*perio) then
+    !          veloc_z_DG_P = veloc_z_DG_P * (1.-((timelocal-MICROBAROM_MAXTIME)/(1.5*perio)+1.)**2.)
+    !        endif
+    !      endif
+    !    endif
+    !  endif
+    !  
+    !  ! Plane wave forcing.
+    !  if(.false.) then
+    !    lambdo = main_spatial_period
+    !    perio  = main_time_period
+    !    if(timelocal<2. .and. abs(x)<20.d3) then
+    !      veloc_z_DG_P = sin(2.*PI*timelocal/perio)
+    !    endif
+    !  endif
+    !  
+    !  ! Output a warning.
+    !  if(timelocal == 0 .and. myrank==0) then
+    !    write(*,*) "********************************"
+    !    write(*,*) "*           WARNING            *"
+    !    write(*,*) "********************************"
+    !    write(*,*) "* A hardcoded bottom forcing   *"
+    !    write(*,*) "* is being used. Use at your   *"
+    !    write(*,*) "* own risk. See                *"
+    !    write(*,*) "* 'boundary_terms_DG.f90'.     *"
+    !    write(*,*) "********************************"
+    !    call flush_IMAIN()
+    !  endif
+    !endif ! Endif on TYPEFORCING==9
+    !! --------------------------- !
+    !! Forcing read from file.     !
+    !! --------------------------- !
+    !! The Matlab script 'utils_new/forcings.m' can be used to generate the external bottom forcing file.
+    !if(TYPE_FORCING == 10) then
+    !  !write(*,*) "KEK", floor(timelocal/DT+1)
+    !  !write(*,*) ibool_before_perio(i,j,ispec)
+    !  !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(1)
+    !  if(timelocal<EXTERNAL_FORCING_MAXTIME) then
+    !    externalforcingid=EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i,j,ispec))
+    !    if(externalforcingid/=HUGE(0)) then
+    !      ! Getting time step ID:
+    !      veloc_z_DG_P=EXTERNAL_FORCING(floor(timelocal/EXTFORC_FILEDT+1),externalforcingid)
+    !      ! Note: with tests done during loading, EXTFORC_FILEDT is either DT or DT/stage_time_scheme, which is consistent with the line above.
+    !      !if(abs(timelocal-3.5)<0.1) then
+    !      !  write(*,*) veloc_z_DG_P, rho_DG_P
+    !      !endif
+    !      !if(abs(timelocal-0.16)<0.2 .and. abs(abs(x)-50.)<0.4) then
+    !      !  write(*,*) timelocal, x, veloc_z_DG_P
+    !      !endif
+    !    else
+    !      if(x>=EXTFORC_MINX .and. x<=EXTFORC_MAXX) then
+    !        ! This block is entered if forcing should happen (t < max_t and min_x < x < max_x), but can't be read (externalforcingid==HUGE(0)).
+    !        ! Prompt an error.
+    !        write(*,*) "********************************"
+    !        write(*,*) "*            ERROR             *"
+    !        write(*,*) "********************************"
+    !        write(*,*) "* External bottom forcing      *"
+    !        write(*,*) "* should happen, but does not  *"
+    !        write(*,*) "* happen. Maybe some points    *"
+    !        write(*,*) "* were not paired well, or     *"
+    !        write(*,*) "* time to index conversion     *"
+    !        write(*,*) "* fails.                       *"
+    !        write(*,*) "* x_min = ", EXTFORC_MINX
+    !        write(*,*) "* x     = ", x
+    !        write(*,*) "* x_max = ", EXTFORC_MAXX
+    !        write(*,*) "* t     = ", timelocal
+    !        write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME
+    !        write(*,*) "********************************"
+    !        stop
+    !      endif
+    !    endif
+    !  endif
+    !endif ! Endif on TYPEFORCING==10
   endif
 
   ! Set energy.
@@ -550,6 +542,7 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
   
   ! Local.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: x
+  real(kind=CUSTOM_REAL) :: L_0,P_0,t_0,x_0
   integer externalforcingid ! TYPE_FORCING==10.
   
   if(TYPE_FORCING==0) return ! Safeguard in case routine is accidentally called, to prevent useless computations.
@@ -560,11 +553,15 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
   
   if(abs(x(SPACEDIM))<TINYVAL) then
     ! For now, forcings only occur on bottom boundary. This test thus enables faster treatment.
+    
+    L_0 = main_spatial_period ! TODO: replace "_0" variable by its longer name. Reduces readability, but will increase computation speed.
+    P_0 = main_time_period ! TODO: replace "_0" variable by its longer name. Reduces readability, but will increase computation speed.
+    t_0 = forcing_initial_time ! TODO: replace "_0" variable by its longer name. Reduces readability, but will increase computation speed.
+    x_0 = forcing_initial_loc ! TODO: replace "_0" variable by its longer name. Reduces readability, but will increase computation speed.
+    
     select case (TYPE_FORCING)
       case (99)
-        ! --------------------------- !
-        ! Testing purposes.           !
-        ! --------------------------- !
+        ! Testing purposes case.
         if(abs(x(SPACEDIM))<TINYVAL) then
           ! If z==0.
           !forced_SF = sin(2.*PI*x(1)/10.)
@@ -572,6 +569,108 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
         else
           ! Leave everything unchanged and leave early.
           return
+        endif
+      
+      case (1)
+        ! Time Gaussian derivative (acoustic plane wave forcing).
+        ! Old code, which is actually a Gaussian second derivative.
+        !forced_SF = 0.01*(&
+        !               - (2d0/(P_0/4d0))*((current_time-(t_0-P_0/4d0))/(P_0/4d0))* &
+        !                     (exp(-((current_time-(t_0-P_0/4d0))/(P_0/4d0))**2)) &
+        !               + (2d0/(P_0/4d0))*((current_time-(t_0+P_0/4d0))/(P_0/4d0))* &
+        !                     (exp(-((current_time-(t_0+P_0/4d0))/(P_0/4d0))**2)) )
+        ! Actual Gaussian derivative.
+        forced_SF = -(2.*(PI/P_0)**2) * (current_time-t0-t_0) * exp(-((current_time-t0-t_0)*PI/P_0)**2)
+      
+      case (2)
+        ! Time and space Gaussian derivative (gravity wave forcing).
+        ! Old code. TODO: recenter peak by taking starting delay ("negative times") into account.
+        forced_SF = 0.001*(&
+                      - (2d0/(P_0/4d0))*((current_time-(t_0-P_0/4d0))/(P_0/4d0))* &
+                               (exp(-((current_time-(t_0-P_0/4d0))/(P_0/4d0))**2)) &
+                      + (2d0/(P_0/4d0))*((current_time-(t_0+P_0/4d0))/(P_0/4d0))* &
+                               (exp(-((current_time-(t_0+P_0/4d0))/(P_0/4d0))**2)) ) &
+                       * ( exp(-((x(1)-(x_0-L_0/4))/(L_0/4))**2) - &
+                              exp(-((x(1)-(x_0+L_0/4))/(L_0/4))**2) )
+      
+      case (3)
+        ! Gaussian second derivative.
+        forced_SF = (1.-2.*(PI*(current_time-t0-t_0)/P_0)**2) * exp(-((current_time-t0-t_0)*PI/P_0)**2)
+      
+      case (9)
+        ! Hardcoded forcing.
+        
+        !if(.false.) then ! Tsunami forcing.
+        !  VELOC_TSUNAMI = 200.
+        !  P_0 = 1000.
+        !  L_0 = 50000.
+        !  if(timelocal < P_0) then
+        !      forced_SF = (1d0/P_0)*exp( -((x-L_0)/(sqrt(2d0)*P_0))**2 )
+        !  else
+        !      forced_SF = &
+        !              2d0*((VELOC_TSUNAMI)/(sqrt(2d0)*P_0))*(((x-L_0)-VELOC_TSUNAMI*(current_time - P_0))/(sqrt(2d0)*P_0))&
+        !              *exp( -(((x-L_0)-VELOC_TSUNAMI*(current_time - P_0))/(sqrt(2d0)*P_0))**2 )
+        !  endif
+        !endif
+        
+        !if(.true.) then ! Analytic microbarom forcing.
+        !  MICROBAROM_AMPLITUDE = 1. ! Microbarom amplitude. Unit: m.
+        !  MICROBAROM_RANGE = 80.*L_0 ! Range around x=0 to which impose microbaroms. Unit: m. Be careful with apodisation below.
+        !  MICROBAROM_MAXTIME = 10.5 * P_0 ! Microbarom active from t=0 to t=MICROBAROM_MAXTIME. Unit: s. Be careful with apodisation below.
+        !  if(timelocal==0) then
+        !    ! Start random phase walk.
+        !    XPHASE_RANDOMWALK = 0.
+        !    TPHASE_RANDOMWALK = 0.
+        !    PHASE_RANDOMWALK_LASTTIME=0.
+        !  endif
+        !  if(timelocal<MICROBAROM_MAXTIME) then
+        !    if(timelocal>=PHASE_RANDOMWALK_LASTTIME+DT) then
+        !      ! Update the random walk only once par time step.
+        !      call random_number(UNIFORM1)
+        !      call random_number(UNIFORM2)
+        !      NORMAL1 = (PI*DT/(0.2*2.*P_0)) * sqrt(-2.*log(UNIFORM1))*cos(2.*PI*UNIFORM2) ! Box-Muller method to generate a 1nd N(0, \sigma^2) random variable.
+        !      NORMAL2 = (PI*DT/(0.2*2.*P_0)) * sqrt(-2.*log(UNIFORM1))*sin(2.*PI*UNIFORM2) ! Box-Muller method to generate a 2nd N(0, \sigma^2) random variable.
+        !      XPHASE_RANDOMWALK = XPHASE_RANDOMWALK + NORMAL1
+        !      TPHASE_RANDOMWALK = TPHASE_RANDOMWALK + NORMAL2
+        !      PHASE_RANDOMWALK_LASTTIME = timelocal
+        !    endif
+        !    if(abs(x)<MICROBAROM_RANGE) then
+        !      forced_SF = MICROBAROM_AMPLITUDE & ! Amplitude.
+        !      * sin(2.*PI*x/L_0+XPHASE_RANDOMWALK) &
+        !      !* 0.25*(1.-erf((x-MICROBAROM_RANGE+10.*L_0)/(5.*L_0)))*& ! Spatial apodisation. TODO: find why intrinsic functions won't compile.
+        !      !       (1.+erf((x+MICROBAROM_RANGE-10.*L_0)/(5.*L_0)))& ! Spatial apodisation, continued.
+        !      * sin(2.*PI*timelocal/P_0+TPHASE_RANDOMWALK) ! &
+        !      !* 0.5*(1.-erf((timelocal-MICROBAROM_MAXTIME+P_0)/(0.5*P_0))) ! Temporal apodisation. TODO: find why intrinsic functions won't compile.
+        !      ! Spatial apodisation over 10 periods.
+        !      if(abs(x)>MICROBAROM_RANGE-10.*L_0) then
+        !        forced_SF = forced_SF * (1.-((-abs(x)+MICROBAROM_RANGE)/(10.*L_0)-1.)**2.)
+        !      endif
+        !      ! Temporal beginning apodisation over 1 period (split into 0.5 and 0.5 for smoothness).
+        !      if(timelocal<0.5*P_0) then
+        !        forced_SF = forced_SF * (2.*(timelocal/P_0)**2.)
+        !      endif
+        !      if(timelocal>=0.5*P_0 .and. timelocal<=P_0) then
+        !        forced_SF = forced_SF * ((4.*timelocal)/P_0-2.*(timelocal/P_0)**2.-1.)
+        !      endif
+        !      ! Temporal end apodisation over 1.5 periods.
+        !      if(timelocal>MICROBAROM_MAXTIME-1.5*P_0) then
+        !        forced_SF = forced_SF * (1.-((timelocal-MICROBAROM_MAXTIME)/(1.5*P_0)+1.)**2.)
+        !      endif
+        !    endif
+        !  endif
+        !endif
+        
+        ! Output a warning.
+        if(current_time == 0 .and. myrank==0) then
+          write(*,*) "********************************"
+          write(*,*) "*           WARNING            *"
+          write(*,*) "********************************"
+          write(*,*) "* A hardcoded bottom forcing   *"
+          write(*,*) "* is being used. Use at your   *"
+          write(*,*) "* own risk. See                *"
+          write(*,*) "* 'boundary_terms_DG.f90'.     *"
+          write(*,*) "********************************"
+          call flush_IMAIN()
         endif
       
       case (10)
