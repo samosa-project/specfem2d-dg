@@ -516,14 +516,15 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
     endif
   endif ! Endif on assign_external_model.
   
-  ! Impose vertical wind to zero.
+  ! Impose vertical wind.
   if(swComputeV) then
-    out_v(SPACEDIM) = ZEROcr
-  endif
-  
-  if(TYPE_FORCING/=0 .and. swComputeV) then
-    ! If forcing exists, apply it.
-    call forcing_DG(i, j, ispec, timelocal, out_v(SPACEDIM))
+    if(TYPE_FORCING/=0) then
+      ! If forcing exists, apply it.
+      call forcing_DG(i, j, ispec, timelocal, out_v(SPACEDIM))
+    else
+      ! Else, force it to be zero.
+      out_v(SPACEDIM) = ZEROcr
+    endif
   endif
   
   !! > Set gravity potentials.

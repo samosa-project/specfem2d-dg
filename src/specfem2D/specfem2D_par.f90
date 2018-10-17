@@ -162,7 +162,7 @@ module specfem_par
     source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
   
   ! Microbarom forcing: memory variables for phase random walk.
-  real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME
+  !real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME
   ! External forcing.
   ! First, one should check if:
   !   EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec))
