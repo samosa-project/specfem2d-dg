@@ -61,8 +61,8 @@ signal_name = "$\delta P$"; signal_unit="Pa";
 
 avgwpsds=-1;
 if(nstat>1)
-  while(not(length(avgwpsds)==1 && ismember(avgwpsds,[0,1,2])))
-    avgwpsds=input('  Multiple data found. Choose first (0), average WPSDs (1), or compute WPSD of average signal (2)? > ');
+  while(not(length(avgwpsds)==1 && ismember(avgwpsds,[0,1,2,3])))
+    avgwpsds=input('  Multiple data found. Choose first (0), average WPSDs (1), compute WPSD of average signal (2), or plot every WPSD (3)? > ');
   end
   switch(avgwpsds)
     case 0
@@ -77,6 +77,10 @@ if(nstat>1)
       disp('  Computing Welch PSD of average signal. Be wary of the stations you use.');
       WPSD_txt=strcat("Welch PSD of averaged " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
       IDs_to_process=1;
+    case 3
+      disp('  Plotting each PSD.');
+      WPSD_txt=strcat("Welch PSDs of " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
+      IDs_to_process=1:nstat;
   end
 else
   WPSD_txt=strcat("Welch PSD of " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
@@ -119,29 +123,53 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % "Stack".                    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-timeseries_to_plot = mean(raw_s(IDs_to_process,:),1); % Will be the first time series loaded if stack was deactivated, or the only time series if only one station was loaded.
-WPSD_to_plot = mean(WPSD_tab(IDs_to_process,:),1); % Will be the PSD of the first time series if stack was deactivated, or the PSD of the only time series if only one station was loaded.
+if(ismember(avgwpsds,[0,1,2]))
+  timeseries_to_plot = mean(raw_s(IDs_to_process,:),1); % Will be the first time series loaded if stack was deactivated, or the only time series if only one station was loaded.
+  WPSD_to_plot = mean(WPSD_tab(IDs_to_process,:),1); % Will be the PSD of the first time series if stack was deactivated, or the PSD of the only time series if only one station was loaded.
 
-if(normalise_wpsd==1)
-  WPSD_to_plot=WPSD_to_plot/max(WPSD_to_plot);
+  if(normalise_wpsd==1)
+    WPSD_to_plot=WPSD_to_plot/max(WPSD_to_plot);
+  end
+
+  figure();
+  plot(time, timeseries_to_plot);
+  xlim([time(1), time(end)]);
+  xlabel("$t$ (s)"); ylabel(timeseries_txt);
+  title(timeseries_txt);
+  set(gca, 'TickLabelInterpreter','latex');
+
+  figure();
+  loglog(WPSD_f, WPSD_to_plot);
+  xlim([WPSD_f(1), WPSD_f(end)]);
+  xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
+  title(WPSD_txt);
+  set(gca, 'TickLabelInterpreter','latex');
+  grid;
+
+  disp(sprintf("Amplitude of signal: %1.6e",max(timeseries_to_plot)-min(timeseries_to_plot)));
+elseif(avgwpsds==3)
+  figure();
+  colours=jet(numel(IDs_to_process));
+  for i=IDs_to_process
+    if (strcmp(coord_units, 'km'))
+      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z)=(', num2str(xstattab(istattab(i)) / 1000), ',', num2str(ystattab(istattab(i)) / 1000), "$) ",coord_units);
+    elseif (strcmp(coord_units, 'm'))
+      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z)=(', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ")$ ",coord_units);
+    else
+      error(['coord_units = ', coord_units, 'not implemented.']);
+    end
+    loglog(WPSD_f, WPSD_tab(i,:), 'displayname',PSDName,'color',colours(i,:));
+    hold on;
+  end
+  legend('location', 'best');
+  xlim([WPSD_f(1), WPSD_f(end)]);
+  xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
+  title(WPSD_txt);
+  set(gca, 'TickLabelInterpreter','latex');
+  grid;
+else
+  error(['[',mfilename,', ERROR] bad value for avgwpsds.']);
 end
-
-figure();
-plot(time, timeseries_to_plot);
-xlim([time(1), time(end)]);
-xlabel("$t$ (s)"); ylabel(timeseries_txt);
-title(timeseries_txt);
-set(gca, 'TickLabelInterpreter','latex');
-
-figure();
-loglog(WPSD_f, WPSD_to_plot);
-xlim([WPSD_f(1), WPSD_f(end)]);
-xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
-title(WPSD_txt);
-set(gca, 'TickLabelInterpreter','latex');
-grid;
-
-disp(sprintf("Amplitude of signal: %1.6e",max(timeseries_to_plot)-min(timeseries_to_plot)));
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clear variables.             %

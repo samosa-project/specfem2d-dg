@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-clear all;
+% clear all;
 % close all;
 clc;
 format compact;
@@ -52,6 +52,13 @@ unknown = 'BXZ'; % _z.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TNTGlanes
+% fig_title = strcat('Tirs de Mine Glanes');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
+
 % Microbaroms ULDB.
 fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
 rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
@@ -134,6 +141,7 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(root
 
 % Tests.
 % fig_title = 'test';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/axisym_test'); OFd = strcat(rootd, '/OUTPUT_FILES/');
@@ -361,9 +369,9 @@ for istat = 1:nstat
   if (display_or_load == 0)
     ax(istat) = subplot(nstat, 1, istat);
     if (strcmp(coord_units, 'km'))
-      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) km');
+      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) ',coord_units);
     elseif (strcmp(coord_units, 'm'))
-      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ m');
+      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ ',coord_units);
     else
       error(['coord_units = ', coord_units, 'not implemented.']);
     end

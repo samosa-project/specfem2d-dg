@@ -4,7 +4,7 @@
 if [[ $# -ne 1 ]]; then
   echo
   echo "> 1 argument needed:"
-  echo "  - path to an OUTPUT_FILES folder."
+  echo "  - path to an OUTPUT_FILES folder containing a 'slurm' (CALMIP) or '.output' (CEA) file."
   echo "> Script will now exit."
   echo
   exit -1
@@ -33,7 +33,7 @@ nelemacous=$(grep "Total number of acoustic elements:" $slurm | grep -o "[0-9]*"
 echo "  Total elements:    $nelemtot."
 echo "  Acoustic elements: $nelemacous (included above)."
 
-cfl=$(grep "Max CFL stability condition" $slurm | grep -o "[0-9]\.[0-9]*" | tail -1)
+cfl=$(grep "Max CFL stability condition" $slurm -A2 | grep -o "[0-9]\.[0-9]*" | tail -1)
 
 echo "  CFL:               $cfl."
 
@@ -75,14 +75,25 @@ DATESTART="$YEARSTART-$MONTHSTART-$DAYSTART $TIMESTART"
 STAMPSTART=$(date --utc --date "$DATESTART" +%s)
 #echo "  Start date:  $DATESTART (timestamp $STAMPSTART)."
 
-if grep -q "CANCELLED AT" $slurm;
+if grep -q "CANCELLED AT" $slurm; # This tries to find the cancelling message in a CALMIP slurm file.
 then
-  DATECANCELLED=$(grep "CANCELLED AT" $slurm | grep -oe "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" | head -1)
-  STAMPCANCEL=$(date --utc --date "$DATECANCELLED" +%s)
+  DATEEND=$(grep "CANCELLED AT" $slurm | grep -oe "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" | head -1)
+  #STAMPEND=$(date --utc --date "$DATEEND" +%s)
   #echo "    End date:    $DATECANCELLED (timestamp $STAMPCANCEL, job cancelled)."
-  elapsed=$(($STAMPCANCEL-$STAMPSTART))
-  echo "  Elapsed:           $elapsed seconds."
-else
+  #elapsed=$(($STAMPCANCEL-$STAMPSTART))
+  #echo "  Elapsed:           $elapsed seconds."
+elif grep -q "CANCELLED" $slurm; # This tries to find the cancelling message in a CEA .output file.
+then
+  LINEWITHDATES=$(grep -e "end =" $slurm)
+  TIMEEND=$(echo $LINEWITHDATES | grep -o "[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" | tail -1)
+  DATEEND=$(echo $LINEWITHDATES | grep -o "[0-9][0-9]/[0-9][0-9]/[0-9][0-9][0-9][0-9]" | tail -1)
+  YEAREND=$(echo $DATEEND | grep -oe "[0-9][0-9][0-9][0-9]")
+  MONTHEND=$(echo $DATEEND | grep -o "[0-9][0-9]/" | tail -1 | grep -o "[0-9][0-9]")
+  DAYEND=$(echo $DATEEND | grep -o "[0-9][0-9]" | head -1)
+  DATEEND="$YEAREND-$MONTHEND-$DAYEND $TIMEEND"
+  #STAMPEND=$(date --utc --date "$DATEEND" +%s)
+  #echo "    End date:    $DATEEND."
+else # No cancel message found proceed to seek SPECFEM final message.
   DATEEND=$(echo $DATELINE2 | grep -oe "$dateregexep")
   #echo $DATEEND
   YEAREND=$(echo $DATEEND | grep -oe "[0-9][0-9][0-9][0-9]")
@@ -94,11 +105,14 @@ else
   TIMEEND=$(echo $DATELINE2 | grep -oe "$timeregexp" | grep -o "[0-9][0-9]:[0-9][0-9]:[0-9][0-9]")
   #echo $TIMEEND
   DATEEND="$YEAREND-$MONTHEND-$DAYEND $TIMEEND"
-  STAMPEND=$(date --utc --date "$DATEEND" +%s)
-  elapsed=$(($STAMPEND-$STAMPSTART))
+  #STAMPEND=$(date --utc --date "$DATEEND" +%s)
+  #elapsed=$(($STAMPEND-$STAMPSTART))
   #echo "    End date:    $DATEEND (timestamp $STAMPEND)."
-  echo "  Run duration:      $elapsed seconds."
+  #echo "  Run duration:      $elapsed seconds."
 fi
+STAMPEND=$(date --utc --date "$DATEEND" +%s)
+elapsed=$(($STAMPEND-$STAMPSTART))
+echo "  Run duration:      $elapsed seconds."
 
 cflrounded=$(printf %.3f $cfl)
 slurmid=$(echo $slurm | grep -o $slurmregexp | tail -1)
