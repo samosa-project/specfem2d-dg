@@ -166,8 +166,10 @@ subroutine iterate_time()
       ! Viscoelastic domains.
       !if (.false. .AND. ELASTIC_SIMULATION) then
       if (ELASTIC_SIMULATION) then
-        if(it == 1 .AND. i_stage == 1) then
-          where(rho_DG <= 0._CUSTOM_REAL) rho_DG = 1.
+        if(USE_DISCONTINUOUS_METHOD .and. it == 1 .AND. i_stage == 1) then
+          if(.not. USE_LNS) then ! If using FNS, one must make sure rho is correctly defined.
+            where(rho_DG <= 0._CUSTOM_REAL) rho_DG = 1.
+          endif
         endif
         if (.not. GPU_MODE) then
           call compute_forces_viscoelastic_main()

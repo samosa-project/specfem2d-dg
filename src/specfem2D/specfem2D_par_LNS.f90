@@ -20,7 +20,7 @@ module specfem_par_LNS
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_drho, LNS_dE ! State.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_rho0dv ! State.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_dp,LNS_dT ! Pressure and temperature perturbation.
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_dm ! Momentum (1st order) perturbation.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_dv, LNS_dm ! Velocity perturbation, and momentum (1st order) perturbation.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: RHS_drho, RHS_dE ! RHS.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: RHS_rho0dv ! RHS.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: aux_drho, aux_dE ! Auxiliary registers.

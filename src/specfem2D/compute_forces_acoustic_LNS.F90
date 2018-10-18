@@ -76,7 +76,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   integer :: iglobM, iglobP
   integer, dimension(3) :: neighbor
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, in_dp
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG) :: LNS_dv
+  !real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG) :: LNS_dv
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: dv_P, dm_P, nabla_dT_P
@@ -94,10 +94,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   !V_DG = V_DG_main
   
   ! Initialise auxiliary unknowns from constitutive variables.
-  LNS_dv = 0.
-  do SPCDM=1,SPACEDIM
-    LNS_dv(SPCDM,:) = cv_rho0dv(SPCDM,:)/LNS_rho0(:) ! Element-wise division should occur naturally.
-  enddo
+  ! WAS ALREADY PRECOMPUTED IN CALLING ROUTINE
+  !LNS_dv = 0.
+  !do SPCDM=1,SPACEDIM
+  !  LNS_dv(SPCDM,:) = cv_rho0dv(SPCDM,:)/LNS_rho0(:) ! Element-wise division should occur naturally.
+  !enddo
   !p_DG       = (gammaext_DG - ONE)*( cv_dE &
   !             - (HALFcr)*cv_drho*( veloc_x_DG**2 + veloc_z_DG**2 ) )
   
@@ -826,9 +827,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       out_drho_P = inp_drho_M
       
       ! Set out_v_P: get elastic medium velocities.
-      veloc_P = veloc_elastic(:, iglob)
+      !veloc_P = veloc_elastic(:, iglob)
       call build_trans_boundary(n_out, tang, trans_boundary)
-      normal_v     = (veloc_P(1)*n_out(1) + veloc_P(SPACEDIM)*n_out(SPACEDIM))
+      normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(SPACEDIM, iglob)*n_out(SPACEDIM)
       tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(SPACEDIM)
       do SPCDM=1,SPACEDIM
         out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
