@@ -349,7 +349,7 @@
     allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG)) ! State.
     allocate(LNS_rho0dv(SPACEDIM,nglob_DG)) ! State.
     allocate(LNS_dp(nglob_DG), LNS_dT(nglob_DG)) ! Pressure and temperature perturbation.
-    allocate(LNS_dm(SPACEDIM,nglob_DG)) ! Momentum (1st order) perturbation.
+    allocate(LNS_dv(SPACEDIM,nglob_DG), LNS_dm(SPACEDIM,nglob_DG)) ! Velocity perturbation, and momentum (1st order) perturbation.
     allocate(RHS_drho(nglob_DG), RHS_rho0dv(SPACEDIM,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
     allocate(aux_drho(nglob_DG), aux_rho0dv(SPACEDIM,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
     allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.

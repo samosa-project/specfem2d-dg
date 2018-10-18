@@ -59,11 +59,12 @@
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                          K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
+  use specfem_par_lns ! TODO: select variables to use.
 
   implicit none
 
   ! Local variables.
-  real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   integer :: inum,ispec_acoustic,ispec_elastic,iedge_acoustic,iedge_elastic,ipoin1D,i,j,iglob,ii2,jj2,&
              ispec_PML,CPML_region_local,singularity_type, &
              iglob_DG
@@ -234,35 +235,65 @@
       if(USE_DISCONTINUOUS_METHOD .and. .not. REMOVE_DG_FLUID_TO_SOLID) then
         ! If DG is used for the acoustic part, and the influence of the fluid on the solid is not removed.
         ! Get fluid variables (from DG formulation).
-        iglob_DG = ibool_DG(i,j,ispec_acoustic)
-        veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
-        veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
-        pressure = (gammaext_DG(iglob_DG) - ONE)*( E_DG(iglob_DG) &
-          - HALF*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
-        pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
-        ! Set elastic acceleration.
-        
-        ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES.
-        x = coord(1, ibool_before_perio(i, j, ispec_acoustic))
-        if(ABC_STRETCH .and. &
-           (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone ! TODO: use stretching_buffer variable
-             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone ! TODO: use stretching_buffer variable
-           ) &
-          ) then
-          if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
-          if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
-          weight = weight*x
-          ! This gradually deactivates coupling in the horizontal buffers.
-          ! TODO: This is a hack. A better method is to be preferred.
-        endif ! Endif on ABC_STRETCH.
-        
-        accel_elastic(1,iglob) = accel_elastic(1,iglob) &
-          + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
-                    + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
-        accel_elastic(2,iglob) = accel_elastic(2,iglob) &
-          + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
-                    + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )
-        ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
+        iglob_DG = ibool_DG(i, j, ispec_acoustic)
+        if(USE_LNS) then
+          ! LNS coupling.
+          accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
+                                   + weight*(  nx*(  LNS_dp(iglob_DG) &
+                                                   + (LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
+                                                     *(LNS_v0(1,iglob_DG)+LNS_dv(1,iglob_DG))**2) &
+                                             + nz*(LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
+                                                 *(LNS_v0(1,iglob_DG)+LNS_dv(1,iglob_DG)) &
+                                                 *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG)) )
+          accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
+                                   + weight*(  nx*(LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
+                                                 *(LNS_v0(1,iglob_DG)+LNS_dv(1,iglob_DG)) &
+                                                 *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG)) &
+                                             + nz*(  LNS_dp(iglob_DG) &
+                                                   + (LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
+                                                     *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG))**2) )
+          ! Add viscous tensor.
+          if(LNS_mu(iglob) > 0. .OR. LNS_eta(iglob) > 0. .OR. LNS_kappa(iglob) > 0.) then
+            accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
+                                     + nx*sigma_dv(1,iglob_DG) &
+                                     + nz*sigma_dv(2,iglob_DG)
+            accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
+                                     + nx*sigma_dv(2,iglob_DG) &
+                                     + nz*sigma_dv(3,iglob_DG)
+          endif
+          ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
+        else
+          ! FNS coupling.
+          veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
+          veloc_z = (rhovz_DG(iglob_DG)/rho_DG(iglob_DG))
+          pressure =   (gammaext_DG(iglob_DG) - ONE) &
+                     * (  E_DG(iglob_DG) &
+                        - HALFcr*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
+          pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
+          ! Set elastic acceleration.
+          
+          ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES.
+          x = coord(1, ibool_before_perio(i, j, ispec_acoustic))
+          if(ABC_STRETCH .and. &
+             (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone ! TODO: use stretching_buffer variable
+               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone ! TODO: use stretching_buffer variable
+             ) &
+            ) then
+            if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+            if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+            weight = weight*x
+            ! This gradually deactivates coupling in the horizontal buffers.
+            ! TODO: This is a hack. A better method is to be preferred.
+          endif ! Endif on ABC_STRETCH.
+          
+          accel_elastic(1,iglob) = accel_elastic(1,iglob) &
+            + weight*(  nx*(pressure + rho_DG(iglob_DG)*veloc_x**2) &
+                      + nz*(rho_DG(iglob_DG)*veloc_x*veloc_z) )
+          accel_elastic(2,iglob) = accel_elastic(2,iglob) &
+            + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
+                      + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )
+          ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
+        endif
       else
         ! Classic SPECFEM coupling.
         accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*pressure

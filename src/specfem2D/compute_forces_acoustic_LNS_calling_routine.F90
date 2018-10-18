@@ -47,7 +47,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: LNS_dv
+  !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: LNS_dv
   real(kind=CUSTOM_REAL), dimension(SPACEDIM,SPACEDIM,nglob_DG) :: nabla_dv
   !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
   !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: nabla_dT
