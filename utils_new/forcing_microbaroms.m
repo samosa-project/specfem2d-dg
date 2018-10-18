@@ -59,7 +59,8 @@ MAXTIME = nT0 * T0; % Set forcing maximum time here.
 % invspread = 2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 3; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 4.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
-invspread = 5.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+invspread = 5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
+% invspread = 5.5; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 6; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 % invspread = 1e2; % Inverse spread factor for Gaussian convolution in frequency range (the higher the less spread).
 
@@ -69,7 +70,8 @@ invspread = 5.5; % Inverse spread factor for Gaussian convolution in frequency r
 % A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 % A_aimed=1; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 % A_aimed=7; % Aimed amplitude for displacement (peak-to-peak is 2 times that). [m].
-A_aimed=7.08; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
+% A_aimed=7.08; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
+A_aimed=7.08/20; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000, divided by 20.
 
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
