@@ -478,7 +478,7 @@ disp(['[',mfilename,'] Exporting to file.']);
 exportok=-1;
 % disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
 while(not(ismember(exportok,[0,1])))
-  bytespervalue=39.985880510267151; % [4418901533/178467744] / 1.
+  bytespervalue=25.335164059114234; % [4418901533/178467744 + 4624117614/178467744] / 2. Formerly 39.985880510267151.
   expectedsize=prod(size(veloc_specfem))*bytespervalue;
   disp(['[',mfilename,'] > File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
   exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? Path will be confirmed later. > ']);

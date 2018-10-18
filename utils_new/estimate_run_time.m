@@ -24,8 +24,8 @@ format longG;
 nstations   = 4*113;
 nstepseismo = 25;
 
-neltot      = 3546400;
-neldg       = 3546400;
+neltot      = 3627000;
+neldg       = 3627000;
 
 nstepsnap   = 500;
 nsteptot    = 200000;
@@ -58,16 +58,18 @@ time=t(idp);
 disp(" ");
 
 cputime=time*neltot*nsteptot;
-hms=fix(mod(cputime,[0,3600,60])./[3600,60,1]);
-cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+% hms=fix(mod(cputime,[0,3600,60])./[3600,60,1]);
+% cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+cputimestr=formatSecondsToHHMMSS(cputime);
 
 realtime=time*neltot*nsteptot/nproc;
-hms=fix(mod(realtime,[0,3600,60])./[3600,60,1]);
-realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+% hms=fix(mod(realtime,[0,3600,60])./[3600,60,1]);
+% realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+realtimestr=formatSecondsToHHMMSS(realtime);
 
-disp(strcat("[",mfilename,"] Expected time per element, per iteration:    ",sprintf("%.3e", time), " s."));
-disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU), i.e.  ",sprintf('%9.0f',cputime)," s."));
-disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real), i.e. ",sprintf('%9.0f',realtime)," s."));
+disp(strcat("[",mfilename,"] Expected time per element, per iteration:          ",sprintf("%.3e", time), " s."));
+disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU), i.e.  ",sprintf('%15.0f',cputime)," s."));
+disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real), i.e. ",sprintf('%15.0f',realtime)," s."));
 
 disp(" ");
 
@@ -146,4 +148,9 @@ function [x,t,RUNINFO]=load()
 
   x=[RUN_RAWDATA(:,col_nstats),RUN_LV1DATA(:,col_dgpercent),RUN_LV1DATA(:,col_snappercent),RUN_LV1DATA(:,col_synthpercent),RUN_LV1DATA(:,col_nbeltspproc)];
   t=RUN_LV1DATA(:,col_cputimepelpit);
+end
+
+function timestr=formatSecondsToHHMMSS(s)
+  hms=fix(mod(s,[0,3600,60])./[3600,60,1]);
+  timestr=strcat(sprintf('%8.f',hms(1))," h ",sprintf('%2.f',hms(2))," m ",sprintf('%2.f',hms(3)),' s');
 end
