@@ -37,7 +37,7 @@
 
   use specfem_par
   use specfem_par_gpu,only: Mesh_pointer
-  use specfem_par_LNS, only: USE_LNS, LNS_rho0dv, LNS_dp
+  use specfem_par_LNS, only: USE_LNS, LNS_rho0dv, LNS_dp, SPACEDIM
 
   implicit none
 
@@ -90,7 +90,7 @@
               if (USE_LNS) then
                 call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
                                                 potential_gravito,displ_elastic,displs_poroelastic, &
-                                                LNS_rho0dv(1,:),&
+                                                LNS_rho0dv(SPACEDIM,:),&
                                                 ispec,vector_field_element)
               else
                 call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
@@ -257,8 +257,8 @@
                           seismo_offset,seismo_current, &
                           P_SV,SU_FORMAT,save_ASCII_seismograms, &
                           save_binary_seismograms_single,save_binary_seismograms_double, &
-                          x_source,z_source
-  !use specfem_par_lns, only: USE_LNS
+                          x_source,z_source,any_acoustic_DG,ispec_is_acoustic_DG, ispec_selected_rec
+  use specfem_par_lns
 
 ! uncomment this to save the ASCII *.sem* seismograms in binary instead, to save disk space and/or writing time
 ! we could/should move this flag to DATA/Par_file one day.
@@ -313,12 +313,6 @@
   else
     number_of_components = NDIM
   endif
-  
-  ! TODO: some conditions not to save a useless bunch of seismograms...
-  ! The condition below is a preliminary idea, but seems to make the rest of the code crash.
-  !if(USE_LNS .and. seismotype==2) then
-  !  number_of_components = 1
-  !endif
 
   allocate(buffer_binary(NSTEP_BETWEEN_OUTPUT_SEISMOS/subsamp_seismos,nrec,number_of_components),stat=ier)
   if (ier /= 0) stop 'Error allocating array buffer_binary'
@@ -446,6 +440,7 @@
 
   irecloc = 0
   do irec = 1,nrec
+    !write(*,*) 'irec', irec, ispec_is_acoustic_DG(ispec_selected_rec(irec))! DEBUG
     if (myrank == 0) then
 
       if (.not. SU_FORMAT) then
@@ -454,7 +449,14 @@
 
           ! write trace
           do iorientation = 1,number_of_components
-            !write(*,*) "irec", irec, "iorientation", iorientation ! DEBUG
+            !write(*,*) "irec", irec, "iorientation", iorientation, number_of_components ! DEBUG
+            
+            ! If DG parts exist, memory and disk space can be saved. If the station is in a DG element, we can skip all except one components. If not, we need not to do anything and save all components as default.
+            if(      any_acoustic_DG &
+               .and. iorientation/=2 &
+               .and. ispec_is_acoustic_DG(ispec_selected_rec(irec))) then
+              cycle
+            endif
 
             if (iorientation == 1) then
               channel = 'BXX'

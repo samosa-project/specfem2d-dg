@@ -122,7 +122,7 @@ module specfem_par
   ! Switches (variables' names are self-explanatory).
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
              CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
-  ! Characterise the simulation (variables' names are self-explanatory).
+  ! Characterise the simulation. only_DG_acoustic==.true. means all acoustic elements are DG, not that the whole simulation is DG. any_acoustic_DG==.true. means there exists DG elements.
   logical :: only_DG_acoustic, any_acoustic_DG
   
   ! Constitutive variables.
