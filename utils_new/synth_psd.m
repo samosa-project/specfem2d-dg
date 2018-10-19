@@ -61,8 +61,8 @@ signal_name = "$\delta P$"; signal_unit="Pa";
 
 avgwpsds=-1;
 if(nstat>1)
-  while(not(length(avgwpsds)==1 && ismember(avgwpsds,[0,1,2,3])))
-    avgwpsds=input('  Multiple data found. Choose first (0), average WPSDs (1), compute WPSD of average signal (2), or plot every WPSD (3)? > ');
+  while(not(length(avgwpsds)==1 && ismember(avgwpsds,[0,1,2,3,4])))
+    avgwpsds=input('  Multiple data found. Choose first (0), average WPSDs (1), compute WPSD of average signal (2), plot every WPSD on top of each other (3), or plot every PSD as surf (4)? > ');
   end
   switch(avgwpsds)
     case 0
@@ -78,7 +78,11 @@ if(nstat>1)
       WPSD_txt=strcat("Welch PSD of averaged " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
       IDs_to_process=1;
     case 3
-      disp('  Plotting each PSD.');
+      disp('  Plotting every PSD on top of each other.');
+      WPSD_txt=strcat("Welch PSDs of " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
+      IDs_to_process=1:nstat;
+    case 4
+      disp('  Plotting every PSD as surf.');
       WPSD_txt=strcat("Welch PSDs of " ,signal_name, " [",signal_unit,"$^2$/Hz]",normalise_wpsd_txt);
       IDs_to_process=1:nstat;
   end
@@ -167,6 +171,47 @@ elseif(avgwpsds==3)
   title(WPSD_txt);
   set(gca, 'TickLabelInterpreter','latex');
   grid;
+elseif(avgwpsds==4)
+  distancechoice=-1;
+  while(~ismember(distancechoice,[1,2,3,4]))
+    distancechoice=input('  Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ');
+  end
+  figure();
+  renorm_for_unit=-1;
+  if (strcmp(coord_units, 'km'))
+    renorm_for_unit=1000;
+  elseif (strcmp(coord_units, 'm'))
+    renorm_for_unit=1;
+  else
+    error(['coord_units = ', coord_units, 'not implemented.']);
+  end
+  switch distancechoice
+    case 1
+      SURFx=xstattab(istattab(IDs_to_process))/renorm_for_unit; dist_symbol='x';
+    case 2
+      SURFx=abs(xstattab(istattab(IDs_to_process)))/renorm_for_unit; dist_symbol='|x|';
+    case 3
+      SURFx=ystattab(istattab(IDs_to_process))/renorm_for_unit; dist_symbol='z';
+    case 4
+      SURFx=dist_to_sources(istattab(IDs_to_process))/renorm_for_unit; dist_symbol='d';
+  end
+  SURFy=WPSD_f;
+  [SURFX,SURFY]=meshgrid(SURFx,SURFy);
+  surf(SURFX,SURFY,log10(WPSD_tab'));
+  shading interp;
+  xlim([min(SURFx), max(SURFx)]);
+  ylim([min(SURFy), max(SURFy)]);
+  set(gca,'yscale','log');
+  xlabel(['$',dist_symbol,'$ (',coord_units,')']);
+  ylabel(['$f$ (Hz)']);
+%   title(strcat("$\log($",WPSD_txt,"$)$"));
+  title(WPSD_txt);
+  set(gca, 'TickLabelInterpreter','latex');
+  view([0,0,1]);
+  grid;
+  cb=colorbar;
+  set(cb, 'TickLabelInterpreter','latex');
+  set(cb,'ticklabels',split(sprintf('$10^{%g}$ ',get(cb, 'ticks'))));
 else
   error(['[',mfilename,', ERROR] bad value for avgwpsds.']);
 end

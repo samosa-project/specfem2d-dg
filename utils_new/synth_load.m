@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-% clear all;
+clear all;
 % close all;
 clc;
 format compact;
@@ -61,7 +61,8 @@ unknown = 'BXZ'; % _z.
 
 % Microbaroms ULDB.
 fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % StratoBaro, 66, June, 12:00
 % fig_title = strcat('Microbaroms, lat66, June, 12:00');
