@@ -54,9 +54,9 @@ fi
 if [ -d "EXTMSH" ]; then
   tar -czf ./OUTPUT_FILES/input_EXTMSH.tar ./EXTMSH/*
 fi
-# Save model configuration.
-cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
-cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
+# Save modelling implementation.
+#cp ../../src/specfem2D/compute_forces_acoustic_DG.f90 OUTPUT_FILES/compute_forces_acoustic_DG.f90
+#cp ../../src/specfem2D/boundary_terms_DG.f90 OUTPUT_FILES/boundary_terms_DG.f90
 
 # Runs database generation.
 echo

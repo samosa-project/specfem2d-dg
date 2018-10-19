@@ -76,7 +76,7 @@ SAVE_MODEL                      = default
 #---------------------------------------------------------------------#
 
 # attenuation parameters
-ATTENUATION_VISCOELASTIC_SOLID  = .false.        # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
+ATTENUATION_VISCOELASTIC_SOLID  = .true.         # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
 ATTENUATION_PORO_FLUID_PART     = .false.        # Poroelastic materials only. Turn on or off viscous attenuation for the fluid part of poroelastic parts of the model.
 Q0                              = 1              # Poroelastic materials only. Quality factor for the viscous attenuation.
 freq0                           = 0.05           # Poroelastic materials only. Frequency for the viscous attenuation.
@@ -215,9 +215,9 @@ USER_T0                         = 0.0d0
 
 # Seismogram formats.
 save_ASCII_seismograms          = .true.         # ASCII format?
-save_binary_seismograms_single  = .true.         # Single precision binary format? (Can be used jointly with ASCII and double precision.)
+save_binary_seismograms_single  = .false.        # Single precision binary format? (Can be used jointly with ASCII and double precision.)
 save_binary_seismograms_double  = .false.        # Double precision binary format? (Can be used jointly with ASCII and single precision.)
-SU_FORMAT                       = .false.        # Single precision binary in Seismic Unix format? (Adjoint traces will be read in the same format.)
+SU_FORMAT                       = .false.        # Single precision binary in Seismic Unix format? Supersedes ASCII saving. Requires save_binary_seismograms_single=.true.. Adjoint traces will be read in the same format.
 
 # Use an existing STATION file found in "./DATA"? If set to false, a new one from the receiver positions (see below) will be created.
 use_existing_STATIONS           = .false.
