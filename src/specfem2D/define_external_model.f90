@@ -1550,7 +1550,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
                           gravity_model(i),Nsq_model(i),&
                           kappa_model(i),mu_model(i),dummy1,&
                           dummy2,dummy3,wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
-    eta_model(i) = (2./3.) * mu_model(i)
+    eta_model(i) = (4./3.) * mu_model(i)
     IF(io/=0) EXIT
     if(.false.) then ! DEBUG
       write(*,*) 'z_model(i),density_model(i),tmp1',&
