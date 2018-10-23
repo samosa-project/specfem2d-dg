@@ -45,14 +45,15 @@ subroutine compute_forces_acoustic_LNS_main()
 
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
   !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: LNS_dv
   real(kind=CUSTOM_REAL), dimension(SPACEDIM,SPACEDIM,nglob_DG) :: nabla_dv
   !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
   !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: nabla_dT
-  integer :: i,j,ispec,ier,SPCDM
-  logical CHECK_NONPOSITIVITY, CHECK_NONPOSITIVITY_ON_ALL_PROCS, CHECK_NONPOSITIVITY_FIND_POINT
+  integer :: ier, i_aux!,i,j,ispec
+  logical check_linearHypothesis!, check_linearHypothesis_ON_ALL_PROCS, check_linearHypothesis_FIND_POINT
   logical switch_gradient
   !real(kind=CUSTOM_REAL), dimension(2,1) :: kek
   
@@ -65,10 +66,10 @@ subroutine compute_forces_acoustic_LNS_main()
   ! Warning: switch_gradient = .true. is not yet implemented.
   
   ! Those are debug switches. They are computationaly very heavy and should not be used on every simulation.
-  ! CHECK_NONPOSITIVITY_ON_ALL_PROCS=.true. and CHECK_NONPOSITIVITY_FIND_POINT=.true. are particularly heavy.
-  CHECK_NONPOSITIVITY=.false.              ! Set to .true. to enable nonpositivity checking.
-  CHECK_NONPOSITIVITY_ON_ALL_PROCS=.false. ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .false. for checking only on proc 0. Set to .true. for checking on all procs.
-  CHECK_NONPOSITIVITY_FIND_POINT=.false.   ! Only used if CHECK_NONPOSITIVITY==.true.. Set to .true. to find where nonpositivity was encountered.
+  ! check_linearHypothesis_ON_ALL_PROCS=.true. and check_linearHypothesis_FIND_POINT=.true. are particularly heavy.
+  check_linearHypothesis=.false.              ! Set to .true. to enable nonpositivity checking.
+  !check_linearHypothesis_ON_ALL_PROCS=.false. ! Only used if check_linearHypothesis==.true.. Set to .false. for checking only on proc 0. Set to .true. for checking on all procs.
+  !check_linearHypothesis_FIND_POINT=.false.   ! Only used if check_linearHypothesis==.true.. Set to .true. to find where nonpositivity was encountered.
   
   ! Stop if time stepping scheme is not implemented.
   if(time_stepping_scheme/=3 .and. time_stepping_scheme/=4 .and. myrank==0) then
@@ -103,17 +104,37 @@ subroutine compute_forces_acoustic_LNS_main()
     !  call setUpVandermonde()
     !endif
     
-    ! Initialise auxiliary registers.
+    ! Initialise initial state registers.
+    LNS_rho0   = ZEROcr
+    LNS_v0     = ZEROcr
+    LNS_E0     = ZEROcr
+    ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
+    LNS_drho   = ZEROcr
+    LNS_rho0dv = ZEROcr
+    LNS_dE     = ZEROcr
+    ! Initialise auxiliary quantities (both initial state & state).
+    LNS_T0     = ZEROcr
+    LNS_dT     = ZEROcr
+    LNS_p0     = ZEROcr
+    LNS_dp     = ZEROcr
+    LNS_dv     = ZEROcr
+    LNS_dm     = ZEROcr
+    nabla_v0   = ZEROcr
+    sigma_v_0  = ZEROcr
+    sigma_dv   = ZEROcr
+    nabla_dT   = ZEROcr
+    ! Initialise auxiliary registers (for RK).
     aux_drho   = ZEROcr
     aux_rho0dv = ZEROcr
     aux_dE     = ZEROcr
     RHS_drho   = ZEROcr
     RHS_rho0dv = ZEROcr
     RHS_dE     = ZEROcr
-    ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
-    LNS_drho   = ZEROcr
-    LNS_rho0dv = ZEROcr
-    LNS_dE     = ZEROcr
+    ! Physical parameters.
+    LNS_g=ZEROcr
+    LNS_mu=ZEROcr
+    LNS_eta=ZEROcr
+    LNS_kappa=ZEROcr
     
     ! Prepare MPI buffers.
 #ifdef USE_MPI
@@ -134,51 +155,98 @@ subroutine compute_forces_acoustic_LNS_main()
     if(.not. only_DG_acoustic) then
       call find_DG_acoustic_coupling()
     endif
-    
-    !write(*,*) kmato ! DEBUG
-    
-    ! Physical parameters.
-    if(.not. assign_external_model) then
-      !deallocate(gravityext, muext, etaext, kappa_DG)
-      !allocate(gravityext(NGLLX, NGLLZ, nspec), &
-      !         etaext(NGLLX, NGLLZ, nspec), &
-      !         muext(NGLLX, NGLLZ, nspec), &
-      !         kappa_DG(NGLLX, NGLLZ, nspec))
-      !deallocate(tau_epsilon, tau_sigma) ! Temporary hack until boundary_condition_DG is modified.
-      !allocate(tau_epsilon(NGLLX, NGLLZ, nspec), tau_sigma(NGLLX, NGLLZ, nspec)) ! Temporary hack until boundary_condition_DG is modified.
-    endif
-    ! Send the (:,:,:) classic registers depending on (i,j,ispec) into one (:) register depending on (iglob), in order to be able to use vector calculus.
-    ! This is only done here because we use the subroutine "boundary_condition_DG" in "initial_state_LNS", which needs the classic registers.
-    allocate(LNS_g(nglob_DG), &
-             LNS_mu(nglob_DG), &
-             LNS_eta(nglob_DG), &
-             LNS_kappa(nglob_DG))
-    deallocate(gravityext, muext, etaext, kappa_DG, tau_epsilon, tau_sigma) ! Not really optimal, but less invasive.
-    LNS_g=9.81
-    LNS_mu=0.
-    LNS_eta=0.!(4./3.)*LNS_mu
-    LNS_kappa=0.
-    
+
     ! Initialise initial state.
     !write(*,*) "call initial_state_LNS" ! DEBUG
-    call initial_state_LNS()
-    ! Initialise T_0 and p_0.
-    !call compute_p(LNS_rho0, LNS_v0, LNS_E0, LNS_p0) ! In fact, LNS_p0 was computed in initial_state_LNS, but we recompute p_0 based on energy to be coherent with rest of program.
+    call initial_state_LNS() ! Note: uses gravityext, muext, etaext, and kappa_DG.
+    deallocate(gravityext, muext, etaext, kappa_DG, tau_epsilon, tau_sigma) ! Not really optimal, but less invasive.
+    ! Ugly patch to make it work.
+    ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.
+    ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
+    ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
+    ! TODO: something else, maybe involving correcting the FNS implementation.
+    where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
+    where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
+    where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
+    
+    !write(*,*) "PARAMETERS ", maxval(LNS_g), maxval(LNS_mu), maxval(LNS_eta), maxval(LNS_kappa), &
+    !           maxval(gammaext_DG) ! DEBUG
+    !write(*,*) "RHO0 ", minval(LNS_rho0),maxval(LNS_rho0) ! DEBUG
+    !write(*,*) "P0 ", minval(LNS_p0),maxval(LNS_p0) ! DEBUG
+    !write(*,*) "E0 ", minval(LNS_E0),maxval(LNS_E0) ! DEBUG
+    !do ispec=1,nspec
+    !do i=1,NGLLX
+    !do j=1,NGLLZ
+    !if(LNS_rho0(ibool_DG(i,j,ispec))==minval(LNS_rho0)) then
+    !  write(*,*) "rho=min(rho) at ", coord(:, ibool_before_perio(i, j, ispec))
+    !endif
+    !enddo
+    !enddo
+    !enddo
+    !write(*,*) nglob, nglob_DG
+    !stop 'kek'
+    
+    ! Initialise T_0.
     call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
     !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
     
-    where(LNS_p0 <= 0._CUSTOM_REAL) LNS_p0 = 1._CUSTOM_REAL ! When doing elastic-DG simulations, LNS_p0 = 0 in elastic elements and 1/LNS_p0 will not be properly defined (but should not happen). Use a hack if problems occur.
+    ! Detect if viscosity exists somewhere.
+    if(     maxval(LNS_mu) > TINYVAL &
+       .OR. maxval(LNS_eta) > TINYVAL &
+       .OR. maxval(LNS_kappa) > TINYVAL) then
+      LNS_viscous=.true.
+      write(*,*) "LNS: min(mu,eta,kappa)>0, computation will be viscous."
+    else
+      LNS_viscous=.false.
+      write(*,*) "LNS: min(mu,eta,kappa)=0, computation will be inviscid."
+      deallocate(LNS_mu, LNS_eta, LNS_kappa) ! Ambitious deallocate to free memory in the inviscid case.
+#ifdef USE_MPI
+      if(NPROC > 1) then
+        deallocate(buffer_LNS_nabla_dT, buffer_LNS_sigma_dv) ! Even more ambitious deallocate.
+      endif
+#endif
+      deallocate(sigma_dv) ! Even more ambitious deallocate. nabla_dv may be added here if it was declared in specfem_par_lns.
+    endif
+    
     ! Initialise \nabla v_0.
-    call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, .true., .false., switch_gradient, nabla_v0, LNS_dummy_2d) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
-    ! Initialise \Sigma_v_0.
-    call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
+    call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, LNS_viscous, .false., switch_gradient, nabla_v0, LNS_dummy_2d) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
+    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+      ! Initialise \Sigma_v_0.
+      call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
+    endif
     
 #ifdef USE_MPI
     if (NPROC > 1 .and. ninterface_acoustic > 0) then
       call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
     endif
 #endif
+  
+  call LNS_prevent_nonsense()
   endif ! Endif on (it == 1) and (i_stage == 1).
+  
+  !stop 'kek'
+  
+#ifdef USE_MPI
+  ! If MPI, assemble at each iteration.
+  if (NPROC > 1 .and. ninterface_acoustic > 0) then
+    ! Assemble state buffers.
+    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
+    do i_aux=1,SPACEDIM
+      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
+    enddo
+    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
+    
+    ! Assemble viscous buffers.
+    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+      do i_aux=1,SPACEDIM
+        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
+      enddo
+      do i_aux=1,NVALSIGMA
+        call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
+      enddo
+    endif
+  endif
+#endif
   
   if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
     WRITE(*,*) "****************************************************************"
@@ -187,9 +255,9 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! Precompute momentum perturbation and velocity perturbation.
   LNS_dv=ZEROcr
-  do SPCDM=1,SPACEDIM
-    LNS_dm(SPCDM,:) = LNS_rho0dv(SPCDM,:)+LNS_drho*LNS_v0(SPCDM,:)
-    where(LNS_rho0/=ZEROcr) LNS_dv(SPCDM,:)=LNS_rho0dv(SPCDM,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
+  do i_aux=1,SPACEDIM
+    LNS_dm(i_aux,:) = LNS_rho0dv(i_aux,:)+LNS_drho*LNS_v0(i_aux,:)
+    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux,:)=LNS_rho0dv(i_aux,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
   
   ! Recompute temperature and pressure perturbation.
@@ -202,39 +270,17 @@ subroutine compute_forces_acoustic_LNS_main()
   !stop
   
   ! Precompute gradients.
-  call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT)
-  ! Precompute \Sigma_v'.
-  call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
-  
-  ! Assemble buffers.
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-    do SPCDM=1,SPACEDIM
-      call assemble_MPI_vector_DG(LNS_rho0dv(SPCDM,:), buffer_LNS_rho0dv_P(SPCDM,:,:))
-    enddo
-    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
-  endif
-#endif
-  if(     maxval(LNS_mu) > 0. &
-     .OR. maxval(LNS_eta) > 0. &
-     .OR. maxval(LNS_kappa) > 0.) then
-#ifdef USE_MPI
-    if (NPROC > 1 .and. ninterface_acoustic > 0) then
-      do SPCDM=1,SPACEDIM
-        call assemble_MPI_vector_DG(nabla_dT(SPCDM, :), buffer_LNS_nabla_dT(SPCDM,:,:))
-      enddo
-      do i=1,NVALSIGMA
-        call assemble_MPI_vector_DG(sigma_dv(i, :), buffer_LNS_sigma_dv(i,:,:))
-      enddo
-    endif
-#endif
-    !call compute_viscous_tensors(T_DG, V_DG, LNS_drho, LNS_rho0dv(1,:), LNS_rho0dv(SPACEDIM,:), LNS_dE, timelocal)
+  call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, .true., switch_gradient, nabla_dv, nabla_dT) ! Note: we compute nabla_dv only if viscosity is activated.
+  if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+    ! Precompute \Sigma_v'.
+    !write(*,*) "computing sigma_dv"
+    call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
+    !write(*,*) "computing sigma_dv", maxval(sigma_dv), maxval(nabla_dv)
   endif
 
   ! Compute RHS.
   call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
-                                   LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities.
+                                   LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
                                    RHS_drho, RHS_rho0dv, RHS_dE, & ! Output.
                                    timelocal) ! Time.
   
@@ -250,10 +296,10 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_drho               = LNS_drho + scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
     LNS_dE                 = LNS_dE   + scheme_B(i_stage)*aux_dE
     ! Group momentum treatment in loop.
-    do SPCDM=1,SPACEDIM
-      RHS_rho0dv(SPCDM,:) = RHS_rho0dv(SPCDM,:)*rmass_inverse_acoustic_DG(:)
-      aux_rho0dv(SPCDM,:) = scheme_A(i_stage)*aux_rho0dv(SPCDM,:) + deltat*RHS_rho0dv(SPCDM,:)
-      LNS_rho0dv(SPCDM,:) = LNS_rho0dv(SPCDM,:) + scheme_B(i_stage)*aux_rho0dv(SPCDM,:)
+    do i_aux=1,SPACEDIM
+      RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)
+      aux_rho0dv(i_aux,:) = scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
+      LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + scheme_B(i_stage)*aux_rho0dv(i_aux,:)
     enddo
     
     ! test
@@ -279,37 +325,41 @@ subroutine compute_forces_acoustic_LNS_main()
     !stop
     
     ! Eventually check non-positivity.
-    if(CHECK_NONPOSITIVITY) then
-      if(     CHECK_NONPOSITIVITY_ON_ALL_PROCS &
-         .or. ((.not. CHECK_NONPOSITIVITY_ON_ALL_PROCS) .and. myrank==0) &
-        ) then
-        ! If:    we check on all procs,
-        !     or we check only on proc 0 and we are on proc 0.
-        if(minval(LNS_drho) < 10d-14) then
-          WRITE(*,*) "***************************************************************"
-          WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(LNS_drho), "    *"
-          if(CHECK_NONPOSITIVITY_FIND_POINT) then
-            ! Find where density is low.
-            do ispec = 1,nspec
-              do j = 1,NGLLZ
-                do i = 1,NGLLX
-                  !write(*,*) LNS_drho(ibool_DG(ispec, i, j))
-                  !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
-                  if(LNS_drho(ibool_DG(i, j, ispec))==minval(LNS_drho)) then
-                    WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
-                    write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), &
-                                coord(SPACEDIM, ibool_before_perio(i, j, ispec)), ".*"
-                    !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
-                    !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
-                  endif
-                enddo
-              enddo
-            enddo
-          endif ! Endif on CHECK_NONPOSITIVITY_FIND_POINT.
-          WRITE(*,*) "***************************************************************"
-        endif ! Endif on minval(LNS_drho).
-      endif ! Endif on CHECK_NONPOSITIVITY_ON_ALL_PROCS.
-    endif ! Endif on CHECK_NONPOSITIVITY.
+    !LNS_dv(1,:)=1e4*LNS_dv(1,:)
+    !LNS_v0=0.*LNS_v0+1d-5
+    
+    if(check_linearHypothesis) then
+      call LNS_warn_nonsense()
+      !if(     check_linearHypothesis_ON_ALL_PROCS &
+      !   .or. ((.not. check_linearHypothesis_ON_ALL_PROCS) .and. myrank==0) &
+      !  ) then
+      !  ! If:    we check on all procs,
+      !  !     or we check only on proc 0 and we are on proc 0.
+      !  if(minval(LNS_drho) < 10d-14) then
+      !    WRITE(*,*) "***************************************************************"
+      !    WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(LNS_drho), "    *"
+      !    if(check_linearHypothesis_FIND_POINT) then
+      !      ! Find where density is low.
+      !      do ispec = 1,nspec
+      !        do j = 1,NGLLZ
+      !          do i = 1,NGLLX
+      !            !write(*,*) LNS_drho(ibool_DG(ispec, i, j))
+      !            !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
+      !            if(LNS_drho(ibool_DG(i, j, ispec))==minval(LNS_drho)) then
+      !              WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
+      !              write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), &
+      !                          coord(SPACEDIM, ibool_before_perio(i, j, ispec)), ".*"
+      !              !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
+      !              !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
+      !            endif
+      !          enddo
+      !        enddo
+      !      enddo
+      !    endif ! Endif on check_linearHypothesis_FIND_POINT.
+      !    WRITE(*,*) "***************************************************************"
+      !  endif ! Endif on minval(LNS_drho).
+      !endif ! Endif on check_linearHypothesis_ON_ALL_PROCS.
+    endif ! Endif on check_linearHypothesis.
   endif
   
   ! --------------------------- !
@@ -380,7 +430,7 @@ end subroutine compute_forces_acoustic_LNS_main
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
-  use specfem_par, only: ibool_DG, nspec
+  use specfem_par, only: ibool_DG, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0
 
   implicit none
@@ -394,16 +444,18 @@ subroutine initial_state_LNS()
   !real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
   
   do ispec = 1, nspec
-    do j = 1, NGLLZ
-      do i = 1, NGLLX
-        iglob = ibool_DG(i, j, ispec)
-        !write(*,*) "call background_physical_parameters" ! DEBUG
-        call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), &
-                                            .true., LNS_v0(:,iglob), &
-                                            .true., LNS_E0(iglob), &
-                                            .true., LNS_p0(iglob))
+    if(ispec_is_acoustic_DG(ispec)) then
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          iglob = ibool_DG(i, j, ispec)
+          call set_fluid_properties(i, j, ispec)
+          call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), &
+                                              .true., LNS_v0(:,iglob), &
+                                              .true., LNS_E0(iglob), &
+                                              .true., LNS_p0(iglob))
+        enddo
       enddo
-    enddo
+    endif
   enddo
 end subroutine initial_state_LNS
 
@@ -414,10 +466,9 @@ end subroutine initial_state_LNS
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL
-  use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, gammaext_DG,&
-gravity_cte_DG, ibool_DG, pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density,&
-thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
-  use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu, SPACEDIM
+  use specfem_par, only: assign_external_model, gammaext_DG, ibool_DG, pext_dg, rhoext, &
+SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
+  use specfem_par_LNS, only: LNS_g, SPACEDIM
 
   implicit none
   
@@ -461,34 +512,52 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
   endif
   
   iglob = ibool_DG(i, j, ispec)
+  
+  !write(*,*) "assign_external_model", assign_external_model
+  
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
+    ! > If initialisation (condition on timelocal), set gravity, viscosity coefficients (mu, eta, and kappa).
+    !write(*,*) "abs(timelocal)", abs(timelocal)
+    !if(abs(timelocal)<TINYVAL) then
+    !  LNS_g(iglob) = gravityext(i, j, ispec)
+    !  LNS_mu(iglob) = muext(i, j, ispec)
+    !  LNS_eta(iglob) = etaext(i, j, ispec)
+    !  LNS_kappa(iglob) = kappa_DG(i, j, ispec)
+    !endif
+    
+    ! > Set density.
     out_rho = rhoext(i, j, ispec)
+    
+    ! > Set pressure.
     if(swComputeP) then
       out_p = pext_DG(i, j, ispec)
     endif
+    
+    ! > Set wind.
     if(swComputeV) then
       out_v(1) = windxext(i, j, ispec)
+      ! One might want to set vertical wind here, too.
     endif
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
     
-    ! > If initialisation (condition on timelocal), set gravity, viscosity coefficients (mu and eta), and gamma.
+    ! > If initialisation (condition on timelocal), set gravity, viscosity coefficients (mu, eta, and kappa), and gamma.
     !write(*,*) "kek" ! DEBUG
-    if(abs(timelocal)<TINYVAL) then
-      ! We are at t=0.
-      if(USE_ISOTHERMAL_MODEL) then
-        ! > Isothermal case.
-        LNS_g(iglob) = real(gravity_cte_DG, kind=CUSTOM_REAL)
-      else
-        ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
-        LNS_g(iglob) = ZEROcr
-      endif
-      gammaext_DG(iglob) = cp/c_V
-      LNS_mu(iglob) = dynamic_viscosity_cte_DG
-      LNS_eta(iglob) = (4./3.)*dynamic_viscosity_cte_DG
-      LNS_kappa(iglob) = thermal_conductivity_cte_DG
-    endif
+    !if(abs(timelocal)<TINYVAL) then
+    !  ! We are at t=0.
+    !  if(USE_ISOTHERMAL_MODEL) then
+    !    ! > Isothermal case.
+    !    LNS_g(iglob) = real(gravity_cte_DG, kind=CUSTOM_REAL)
+    !  else
+    !    ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
+    !    LNS_g(iglob) = ZEROcr
+    !  endif
+    !  gammaext_DG(iglob) = cp/c_V
+    !  LNS_mu(iglob) = dynamic_viscosity_cte_DG
+    !  LNS_eta(iglob) = (4./3.)*dynamic_viscosity_cte_DG
+    !  LNS_kappa(iglob) = thermal_conductivity_cte_DG
+    !endif
     
     if(USE_ISOTHERMAL_MODEL) then
       ! > Set density.
@@ -512,11 +581,12 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
     
     ! > Set wind.
     if(swComputeV) then
-      out_v(1) = wind ! Read horizontal wind from the scalar value read from parfile.
+      out_v(1) = wind ! Re-read horizontal wind from the scalar value read from parfile.
+      ! One might want to set vertical wind here, too.
     endif
   endif ! Endif on assign_external_model.
   
-  ! Impose vertical wind.
+  ! Eventually set vertical wind.
   if(swComputeV) then
     if(TYPE_FORCING/=0) then
       ! If forcing exists, apply it.
@@ -524,6 +594,7 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
     else
       ! Else, force it to be zero.
       out_v(SPACEDIM) = ZEROcr
+      ! One might want to set vertical wind here, too.
     endif
   endif
   
@@ -541,7 +612,54 @@ thermal_conductivity_cte_DG, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
   endif
 end subroutine background_physical_parameters
 
+! ------------------------------------------------------------ !
+! set_fluid_properties                                         !
+! ------------------------------------------------------------ !
+! Set fluid properties.
 
+subroutine set_fluid_properties(i, j, ispec)
+  use constants, only: CUSTOM_REAL, TINYVAL
+  use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, etaext, &
+gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_conductivity_cte_DG, USE_ISOTHERMAL_MODEL
+  use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu, SPACEDIM
+
+  implicit none
+  
+  ! Input/Output.
+  integer, intent(in) :: i, j, ispec
+  
+  ! Local.
+  integer :: iglob
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  
+  iglob = ibool_DG(i, j, ispec)
+  
+  if(assign_external_model) then
+    ! If an external model data file is given for initial conditions, read from it.
+    LNS_g(iglob) = gravityext(i, j, ispec)
+    ! gammaext_DG unchanged, since already defined.
+    LNS_mu(iglob) = muext(i, j, ispec)
+    LNS_eta(iglob) = etaext(i, j, ispec)
+    LNS_kappa(iglob) = kappa_DG(i, j, ispec)
+    !LNS_v0(1, iglob) = windxext(i, j, ispec)
+    ! One might want to initialise vertical wind here, too.
+  else ! Else on assign_external_model.
+    ! If no external model data file is given (no initial conditions were specified), build model.
+    if(USE_ISOTHERMAL_MODEL) then
+      ! > Isothermal case.
+      LNS_g(iglob) = real(gravity_cte_DG, kind=CUSTOM_REAL)
+    else
+      ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
+      LNS_g(iglob) = ZEROcr
+    endif
+    gammaext_DG(iglob) = cp/c_V
+    LNS_mu(iglob) = dynamic_viscosity_cte_DG
+    LNS_eta(iglob) = (4./3.)*dynamic_viscosity_cte_DG
+    LNS_kappa(iglob) = thermal_conductivity_cte_DG
+    !LNS_v0(1, iglob) = wind ! Read horizontal wind from the scalar value read from parfile.
+    ! One might want to initialise vertical wind here, too.
+  endif ! Endif on assign_external_model.
+end subroutine set_fluid_properties
 
 
 
@@ -1257,3 +1375,158 @@ subroutine compute_dE_i(in_rho, in_v, in_p, out_E, iglob)
           + in_rho*HALFcr*norm2r1(in_v) &
           - LNS_E0(iglob)
 end subroutine compute_dE_i
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! ------------------------------------------------------------ !
+! LNS_prevent_nonsense                                         !
+! ------------------------------------------------------------ !
+! Attempts to detect nonsense in LNS variables, and stop program if they are found.
+subroutine LNS_prevent_nonsense()
+  ! TODO: select variables to use.
+  use constants
+  use specfem_par
+  use specfem_par_LNS
+  implicit none
+  ! Input/Output.
+  ! N./A.
+  ! Local.
+  ! N./A.
+  
+  ! Initial state.
+  if(minval(LNS_rho0)<TINYVAL) then
+    stop "LNS_rho0 is non-positive (<= 0) somewhere."
+  endif
+  if(minval(LNS_E0)<TINYVAL) then
+    stop "LNS_E0 is non-positive (<= 0) somewhere."
+  endif
+  
+  ! Auxiliary initial variables.
+  if(minval(LNS_p0)<TINYVAL) then
+    stop "LNS_p0 is non-positive (<= 0) somewhere."
+  endif
+  
+  ! Physical parameters.
+  if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+    if(minval(LNS_mu)<-TINYVAL) then
+      stop "LNS_mu is negative (< 0) somewhere."
+    endif
+    if(minval(LNS_eta)<-TINYVAL) then
+      stop "LNS_eta is negative (< 0) somewhere."
+    endif
+    if(minval(LNS_kappa)<-TINYVAL) then
+      stop "LNS_kappa is negative (< 0) somewhere."
+    endif
+  endif
+end subroutine LNS_prevent_nonsense
+! ------------------------------------------------------------ !
+! LNS_warn_nonsense                                            !
+! ------------------------------------------------------------ !
+! Attempts to detect nonsense in LNS variables, and warn user if they are found.
+subroutine LNS_warn_nonsense()
+  ! TODO: select variables to use.
+  use constants
+  use specfem_par
+  use specfem_par_LNS
+  implicit none
+  ! Input/Output.
+  ! N./A.
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: thresholdRatioUp = real(1.0d4, kind=CUSTOM_REAL)
+  integer :: i,j,ispec,iglob,d,broken
+  
+  broken = 0
+  
+  outer:do ispec=1,nspec
+    if(ispec_is_acoustic_DG(ispec)) then
+      do j=1,NGLLZ
+        do i=1,NGLLX
+          iglob=ibool_DG(i,j,ispec)
+          if((LNS_drho(iglob)/LNS_rho0(iglob))>thresholdRatioUp) then
+            broken = 1
+            !write(*,*) i,j,ispec,ispec_is_acoustic_DG(ispec) ! DEBUG
+            exit outer
+          endif
+          do d=1,SPACEDIM
+            if((LNS_v0(d,iglob))>TINYVAL) then
+              if((LNS_dv(d,iglob)/LNS_v0(d,iglob))>thresholdRatioUp) then
+                broken = 2
+                exit outer
+              endif
+            endif
+          enddo
+          if((LNS_dE(iglob)/LNS_E0(iglob))>thresholdRatioUp) then
+            broken = 3
+            exit outer
+          endif
+        enddo
+      enddo
+    endif
+  enddo outer
+  
+  !write(*,*) i,j,ispec,ispec_is_acoustic_DG(ispec) ! DEBUG
+  
+  if(broken/=0) then
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* A ratio is high somewhere.   *"
+    write(*,*) "* Linear hypothesis might      *"
+    write(*,*) "* break.                       *"
+    write(*,*) "********************************"
+    write(*,*) "* X         | ", coord(:, ibool_before_perio(i, j, ispec))
+    select case (broken)
+      case (1)
+        write(*,*) "* ratio     | LNS_drho/LNS_rho0     *"
+        write(*,*) "* max(drho) | ", maxval(LNS_drho)
+        write(*,*) "* min(rho0) | ", minval(LNS_rho0)
+      case (2)
+        write(*,*) "* ratio     | LNS_dv/LNS_v0         *"
+        write(*,*) "* d         | ", d
+        write(*,*) "* max(dv)   | ", maxval(LNS_dv)
+        write(*,*) "* min(v0)   | ", minval(LNS_v0)
+      case (3)
+        write(*,*) "* ratio     | LNS_dE/LNS_E0         *"
+        write(*,*) "* max(dE)   | ", maxval(LNS_dE)
+        write(*,*) "* min(E0)   | ", minval(LNS_E0)
+    end select
+    write(*,*) "* CPU       | ", myrank
+    write(*,*) "* threshold | ", thresholdRatioUp
+    write(*,*) "********************************"
+    write(*,*) "* If run crashes, we advise    *"
+    write(*,*) "* the user to try using FNS.   *"
+    write(*,*) "********************************"
+  endif
+end subroutine LNS_warn_nonsense
+
+
+
+
+
+
+
+
+

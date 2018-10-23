@@ -252,16 +252,16 @@
                                              + nz*(  LNS_dp(iglob_DG) &
                                                    + (LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
                                                      *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG))**2) )
-          ! Add viscous tensor.
-          if(LNS_mu(iglob) > 0. .OR. LNS_eta(iglob) > 0. .OR. LNS_kappa(iglob) > 0.) then
-            accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
-                                     + nx*sigma_dv(1,iglob_DG) &
-                                     + nz*sigma_dv(2,iglob_DG)
-            accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
-                                     + nx*sigma_dv(2,iglob_DG) &
-                                     + nz*sigma_dv(3,iglob_DG)
+          if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+            if(LNS_mu(iglob) > 0. .OR. LNS_eta(iglob) > 0. .OR. LNS_kappa(iglob) > 0.) then
+              accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
+                                       + nx*sigma_dv(1,iglob_DG) &
+                                       + nz*sigma_dv(2,iglob_DG)
+              accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
+                                       + nx*sigma_dv(2,iglob_DG) &
+                                       + nz*sigma_dv(3,iglob_DG)
+            endif
           endif
-          ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
         else
           ! FNS coupling.
           veloc_x = (rhovx_DG(iglob_DG)/rho_DG(iglob_DG))
