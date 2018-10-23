@@ -13,6 +13,7 @@ module specfem_par_LNS
   
   ! Physical parameters.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa
+  logical :: LNS_viscous ! General switch being true if (maxval(LNS_mu) > 0. .OR. maxval(LNS_eta) > 0. .OR. maxval(LNS_kappa) > 0.) and false if not. See compute_forces_acoustic_LNS_calling_routine. In the latter case, enables faster verification and thus faster skipping of some parts of the code.
   
   ! State registers.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_rho0, LNS_E0 ! Initial state.
@@ -43,9 +44,9 @@ module specfem_par_LNS
   integer, parameter :: LNS_MODPRINT = 500
   
   ! MPI: Transfers' buffers.
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_LNS_drho_P, buffer_LNS_dE_P
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable  :: buffer_LNS_rho0dv_P
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable  :: buffer_LNS_nabla_dT, buffer_LNS_sigma_dv
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_drho_P, buffer_LNS_dE_P
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_rho0dv_P
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_nabla_dT, buffer_LNS_sigma_dv
 
   ! Dummy variables.
   real(kind=CUSTOM_REAL), dimension(:),     allocatable :: LNS_dummy_1d ! Dummy variables are not optimal, but prevent from duplicating subroutines.

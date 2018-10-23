@@ -362,6 +362,12 @@
     allocate(nabla_dT(SPACEDIM, nglob_DG)) ! Gradient of temperature perturbation.
     allocate(sigma_dv(NVALSIGMA, nglob_DG)) ! Viscous stress tensor perturbation.
     
+    ! Physical parameters.
+    allocate(LNS_g(nglob_DG), &
+             LNS_mu(nglob_DG), &
+             LNS_eta(nglob_DG), &
+             LNS_kappa(nglob_DG))
+    
     allocate(LNS_dummy_1d(nglob_DG), LNS_dummy_2d(2,nglob_DG), LNS_dummy_3d(2,2,nglob_DG)) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   endif
   ! If USE_LNS==.false., the wavefields are simply not allocated. It should not cause any problem, since they should not be used elsewhere.

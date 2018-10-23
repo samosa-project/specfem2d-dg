@@ -147,13 +147,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           wzl = wzgll(j)
           wxl = wxgll(i)
           
-          ! Activate/deactivate computation of quantities only needed when viscosity is present.
-          if(     LNS_mu(iglob) > 0. &
-             .OR. LNS_eta(iglob) > 0. &
-             .OR. LNS_kappa(iglob) > 0.) then
-            viscousComputation=.true.
+          if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+            ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
+            if(     LNS_mu(iglob) > 0. &
+               .OR. LNS_eta(iglob) > 0. &
+               .OR. LNS_kappa(iglob) > 0.) then
+              viscousComputation=.true.
+            else
+              viscousComputation=.false.
+            endif
           else
-            viscousComputation=.false.
+            viscousComputation=.false. ! If viscosity is globally disabled, deactivate it for this element.
           endif
           
           ! Inviscid stress tensor's contributions.
@@ -286,13 +290,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! Interior point
           iglobM = ibool_DG(i,j,ispec)
           
-          ! Activate/deactivate computation of quantities only needed when viscosity is present.
-          if(     LNS_mu(iglobM) > 0. &
-             .OR. LNS_eta(iglobM) > 0. &
-             .OR. LNS_kappa(iglobM) > 0.) then
-            viscousComputation=.true.
+          if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+            ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
+            if(     LNS_mu(iglob) > 0. &
+               .OR. LNS_eta(iglob) > 0. &
+               .OR. LNS_kappa(iglob) > 0.) then
+              viscousComputation=.true.
+            else
+              viscousComputation=.false.
+            endif
           else
-            viscousComputation=.false.
+            viscousComputation=.false. ! If viscosity is globally disabled, deactivate it for this element.
           endif
           
           ! TEST WITH IFACE FORMULATION
