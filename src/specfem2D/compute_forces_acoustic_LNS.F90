@@ -244,7 +244,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! > Energy.
           !d0cntrb_dE(i,j)       = (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
           !                         + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(SPACEDIM,iglob)) * jacLoc
-          ! Recall potential_dphi_dx_DG=0 and potential_dphi_dz_DG=LNS_g
+          !   Under potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
           d0cntrb_dE(i,j)       = LNS_g(iglob)*in_dm(SPACEDIM,iglob) * jacLoc
         enddo
       enddo
