@@ -46,6 +46,8 @@ subroutine compute_energy()
     ispec_is_poroelastic,ispec_is_elastic, &
     P_SV &
     , rhovx_DG, rhovz_DG, rho_DG,ibool_before_perio,ABC_STRETCH,stretching_buffer ! Modification for DG.
+  
+  use specfem_par_LNS, only: USE_LNS, LNS_dv, LNS_v0, norm2
 
   implicit none
 
@@ -279,9 +281,15 @@ subroutine compute_energy()
       !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
       !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
       ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
-      call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                      (rhovx_DG**2+rhovz_DG**2)**0.5/rho_DG, ispec,vector_field_element)
+      if(USE_LNS) then
+        call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+                                        potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                        norm2(LNS_v0+LNS_dv), ispec,vector_field_element)
+      else
+        call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
+                                        potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                        (rhovx_DG**2+rhovz_DG**2)**0.5/rho_DG, ispec,vector_field_element)
+      endif
       ! IMPORTANT NOTICE -----------!
       ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that, 'vector_field_element' is 2-dimensionnal, but contains ||v||_2 in both components.
       ! In the computation of kinetic energy below, this does not change the fact that:
