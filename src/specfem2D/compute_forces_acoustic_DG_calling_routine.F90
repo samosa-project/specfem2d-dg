@@ -144,7 +144,11 @@ subroutine compute_forces_acoustic_DG_main()
       call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
     endif
 #endif
-
+    
+    write(*,*) "RHO0 ", minval(rho_init), maxval(rho_init) ! DEBUG
+    write(*,*) "P0 ", minval(p_DG_init), maxval(p_DG_init) ! DEBUG
+    write(*,*) "E0 ", minval(E_init), maxval(E_init) ! DEBUG
+    
   endif ! Endif on (it == 1) and (i_stage == 1).
   
   ! Call time scheme coefficients and cast them.

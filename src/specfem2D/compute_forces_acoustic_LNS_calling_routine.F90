@@ -169,11 +169,11 @@ subroutine compute_forces_acoustic_LNS_main()
     where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
     where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
     
-    !write(*,*) "PARAMETERS ", maxval(LNS_g), maxval(LNS_mu), maxval(LNS_eta), maxval(LNS_kappa), &
+    !write(*,*) "PARAMETERS ", maxval(LNS_g), maxval(LNS_mu), maxval(LNS_eta), maxval(LNS_kappa)!, &
     !           maxval(gammaext_DG) ! DEBUG
-    !write(*,*) "RHO0 ", minval(LNS_rho0),maxval(LNS_rho0) ! DEBUG
-    !write(*,*) "P0 ", minval(LNS_p0),maxval(LNS_p0) ! DEBUG
-    !write(*,*) "E0 ", minval(LNS_E0),maxval(LNS_E0) ! DEBUG
+    !write(*,*) "RHO0 ", minval(LNS_rho0), maxval(LNS_rho0) ! DEBUG
+    !write(*,*) "P0 ", minval(LNS_p0), maxval(LNS_p0) ! DEBUG
+    !write(*,*) "E0 ", minval(LNS_E0), maxval(LNS_E0) ! DEBUG
     !do ispec=1,nspec
     !do i=1,NGLLX
     !do j=1,NGLLZ
@@ -430,7 +430,7 @@ end subroutine compute_forces_acoustic_LNS_main
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
-  use specfem_par, only: ibool_DG, ispec_is_acoustic_DG, nspec
+  use specfem_par, only: ibool_DG, nspec!, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0
 
   implicit none
@@ -444,7 +444,7 @@ subroutine initial_state_LNS()
   !real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
   
   do ispec = 1, nspec
-    if(ispec_is_acoustic_DG(ispec)) then
+    !if(ispec_is_acoustic_DG(ispec)) then
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i, j, ispec)
@@ -455,7 +455,7 @@ subroutine initial_state_LNS()
                                               .true., LNS_p0(iglob))
         enddo
       enddo
-    endif
+    !endif
   enddo
 end subroutine initial_state_LNS
 
@@ -654,7 +654,7 @@ gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_cond
     endif
     gammaext_DG(iglob) = cp/c_V
     LNS_mu(iglob) = dynamic_viscosity_cte_DG
-    LNS_eta(iglob) = (4./3.)*dynamic_viscosity_cte_DG
+    LNS_eta(iglob) = (4._CUSTOM_REAL/3._CUSTOM_REAL)*dynamic_viscosity_cte_DG
     LNS_kappa(iglob) = thermal_conductivity_cte_DG
     !LNS_v0(1, iglob) = wind ! Read horizontal wind from the scalar value read from parfile.
     ! One might want to initialise vertical wind here, too.
@@ -1442,6 +1442,7 @@ subroutine LNS_prevent_nonsense()
     endif
   endif
 end subroutine LNS_prevent_nonsense
+
 ! ------------------------------------------------------------ !
 ! LNS_warn_nonsense                                            !
 ! ------------------------------------------------------------ !

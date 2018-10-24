@@ -103,20 +103,25 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   !             - (HALFcr)*cv_drho*( veloc_x_DG**2 + veloc_z_DG**2 ) )
   
   ! Initialisation of the RHS.
-  outrhs_drho   = ZEROcr
-  outrhs_rho0dv = ZEROcr
-  outrhs_dE     = ZEROcr
+  outrhs_drho    = ZEROcr
+  outrhs_rho0dv  = ZEROcr
+  outrhs_dE      = ZEROcr
+  d0cntrb_rho0dv = ZEROcr
+  d0cntrb_dE     = ZEROcr
   
   ! Start by adding source terms.
-  if(TYPE_SOURCE_DG == 1) then
-    call compute_add_sources_acoustic_DG_spread(outrhs_drho, it, i_stage)   
-  elseif(TYPE_SOURCE_DG == 2) then
-    do SPCDM=1,SPACEDIM
-      call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
-    enddo
-  elseif(TYPE_SOURCE_DG == 3) then
-    call compute_add_sources_acoustic_DG_spread(outrhs_dE, it, i_stage)
-  endif
+  select case (TYPE_SOURCE_DG)
+    case (1)
+      call compute_add_sources_acoustic_DG_spread(outrhs_drho, it, i_stage)
+    case (2)
+      do SPCDM=1,SPACEDIM
+        call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
+      enddo
+    case (3)
+      call compute_add_sources_acoustic_DG_spread(outrhs_dE, it, i_stage)
+    case default
+      stop "TYPE_SOURCE_DG not implemented."
+  end select
   
   if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, LNS_MODPRINT) == 0) then
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
@@ -226,12 +231,15 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !d0cntrb_rho0dv(SPACEDIM,i,j) = (  cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) & ! \rho'g_z
           !                                + in_dm(1,iglob)*nabla_v0(SPACEDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
           !                                + in_dm(SPACEDIM,iglob)*nabla_v0(SPACEDIM,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
-          !   Version 2: under HV0 and SM, dm part of the zero-th degree RHS is simplified.
+          !   Version 2: under HV0 (v_{0,z}=0), and SM (d_xv_0=0), dm part of the zero-th degree RHS is simplified.
           !d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
           !                         + cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
           !d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
-          !   Version 3: further, potential_dphi_dx_DG=0 and potential_dphi_dz_DG=LNS_g
+          !   Version 3: under HV0 (v_{0,z}=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
           d0cntrb_rho0dv(1,i,j) = cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
+          d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
+          !   Version 4: under HV0 (v_{0,z}=0), SM (d_xv_0=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
+          !d0cntrb_rho0dv(1,i,j) = ZEROcr
           d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
           ! > Energy.
           !d0cntrb_dE(i,j)       = (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
@@ -247,20 +255,20 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
         do i = 1, NGLLX
           iglob = ibool_DG(i,j,ispec)
           do k = 1, NGLLX
-            outrhs_drho(iglob)     =   outrhs_drho(iglob) &
-                                  + (  cntrb_drho(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-                                     + cntrb_drho(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+            outrhs_drho(iglob) =   outrhs_drho(iglob) &
+                                + (  cntrb_drho(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+                                   + cntrb_drho(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             do SPCDM=1,SPACEDIM
               outrhs_rho0dv(SPCDM,iglob) =   outrhs_rho0dv(SPCDM,iglob) &
-                                    + (  cntrb_rho0dv(SPCDM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-                                       + cntrb_rho0dv(SPCDM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                          + (  cntrb_rho0dv(SPCDM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+                                             + cntrb_rho0dv(SPCDM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             enddo
             !outrhs_rho0dv(SPACEDIM,iglob) =   outrhs_rho0dv(SPACEDIM,iglob) &
             !                      + (  cntrb_rho0dv(SPACEDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
             !                         + cntrb_rho0dv(SPACEDIM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            outrhs_dE(iglob)       =   outrhs_dE(iglob) &
-                                  + (  cntrb_dE(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-                                     + cntrb_dE(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+            outrhs_dE(iglob) =   outrhs_dE(iglob) &
+                              + (  cntrb_dE(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+                                 + cntrb_dE(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
           enddo ! Enddo on k.
           
           wzl = real(wzgll(j), kind=CUSTOM_REAL)
@@ -366,19 +374,40 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! Save some allocations.
           !lambda = max( veloc_n_M + sqrt(abs(gammaext_DG(iglobM)*in_dp(iglobM)/cv_drho(iglobM))), &
           !              veloc_n_P + sqrt(abs(gamma_P*in_dp_P/drho_P)) )
-          lambda = max(  abs(  (LNS_v0(1,iglobM)+LNS_dv(1,iglobM))*n_out(1) & ! [v\cdot n]_1
-                             + (LNS_v0(SPACEDIM,iglobM)+LNS_dv(SPACEDIM,iglobM))*n_out(SPACEDIM) & ! [v\cdot n]_d
+          !lambda = max(  abs(  (LNS_v0(1,iglobM)+LNS_dv(1,iglobM))*n_out(1) & ! [v_-\cdot n]_1
+          !                   + (LNS_v0(SPACEDIM,iglobM)+LNS_dv(SPACEDIM,iglobM))*n_out(SPACEDIM) & ! [v_-\cdot n]_d
+          !                   + sqrt(abs(  gammaext_DG(iglobM) &
+          !                              * (LNS_p0(iglobM)+in_dp(iglobM)) &
+          !                              / (LNS_rho0(iglobM)+cv_drho(iglobM)))) & ! Local sound speed.
+          !                  ) & ! Local sound speed, side "M".
+          !             , abs(  (LNS_v0(1,iglobP)+dv_P(1))*n_out(1) & ! [v_+\cdot n]_1
+          !                   + (LNS_v0(SPACEDIM,iglobP)+dv_P(SPACEDIM))*n_out(SPACEDIM) & ! [v_+\cdot n]_d
+          !                   + sqrt(abs(  gammaext_DG(iglobP) &
+          !                              * (LNS_p0(iglobP)+dp_P) &
+          !                              / (LNS_rho0(iglobP)+drho_P))) & ! Local sound speed.
+          !                  ) & ! Local sound speed, side "P".
+          !             )
+          lambda = max(  abs(  dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM)) & ! v_-\cdot n
                              + sqrt(abs(  gammaext_DG(iglobM) &
                                         * (LNS_p0(iglobM)+in_dp(iglobM)) &
                                         / (LNS_rho0(iglobM)+cv_drho(iglobM)))) & ! Local sound speed.
                             ) & ! Local sound speed, side "M".
-                       , abs(  (LNS_v0(1,iglobP)+dv_P(1))*n_out(1) & ! [v\cdot n]_1
-                             + (LNS_v0(SPACEDIM,iglobP)+dv_P(SPACEDIM))*n_out(SPACEDIM) & ! [v\cdot n]_d
+                       , abs(  dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP)) & ! v_+\cdot n
                              + sqrt(abs(  gammaext_DG(iglobP) &
                                         * (LNS_p0(iglobP)+dp_P) &
                                         / (LNS_rho0(iglobP)+drho_P))) & ! Local sound speed.
                             ) & ! Local sound speed, side "P".
                        )
+          !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
+          !   .and. coord(2,ibool_before_perio(i,j,ispec))>=0. & ! DEBUG
+          !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
+          !  write(*,*) currentTime, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
+          !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
+          !             !out_rho0dv_P ! DEBUG
+          !             !out_dv_P ! DEBUG
+          !             !trans_boundary ! DEBUG
+          !             lambda
+          !endif ! DEBUG
           
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).
           !dux_dx = ZERO
@@ -624,7 +653,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
   real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM) :: trans_boundary
-  real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
+  !real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
   ! Characteristic based BC
   !real(kind=CUSTOM_REAL) :: s_b, rho_inf, v_b_x, v_b_z, un_b, &!, rho_b, p_b, c_b, &
   !                          rlambda_max, rlambda_min, un_in, un_inf!, &!c_in, c_inf, &
@@ -719,8 +748,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
         !tang(SPACEDIM) = n_out(1) ! Recall: n_out(1)=n_x.
         ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-        normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-        tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+        !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+        !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+        normal_v     = DOT_PRODUCT(n_out, veloc_P)
+        tangential_v = DOT_PRODUCT(tang, veloc_P)
+        
         do SPCDM=1,SPACEDIM
           out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
           !out_v_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
@@ -829,7 +861,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       i_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 1)
       j_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 2)
       ispec_el = ispec_is_acoustic_coupling_el(i, j, ispec, 3)
-      iglob = ibool(i_el, j_el, ispec_el)
+      !iglob    = ibool(i_el, j_el, ispec_el)
       
       ! Set out_drho_P: same as other side.
       out_drho_P = inp_drho_M
@@ -837,8 +869,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! Set out_v_P: get elastic medium velocities.
       !veloc_P = veloc_elastic(:, iglob)
       call build_trans_boundary(n_out, tang, trans_boundary)
-      normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(SPACEDIM, iglob)*n_out(SPACEDIM)
-      tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(SPACEDIM)
+      !normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(SPACEDIM, iglob)*n_out(SPACEDIM)
+      normal_v     = DOT_PRODUCT(n_out, veloc_elastic(:,ibool(i_el, j_el, ispec_el)))
+      !tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(SPACEDIM)
+      tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
       do SPCDM=1,SPACEDIM
         out_v_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
       enddo
@@ -853,10 +887,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
 
       ! Set out_rho0dv_P.
-      do SPCDM=1,SPACEDIM
-        out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
-      enddo
-      !out_rho0dv_P=out_drho_P*out_dv_P
+      !do SPCDM=1,SPACEDIM
+      !  out_rho0dv_P(SPCDM) = LNS_rho0(iglobM)*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+      !enddo
+      out_rho0dv_P(:)=LNS_rho0(iglobM)*out_dv_P(:)
       
       ! Set out_dm_P: see bottom of routine.
         
@@ -872,6 +906,16 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       if(swCompT) then
         call compute_T_i(LNS_rho0(iglobM)+out_drho_P, out_v_P, LNS_E0(iglobM)+out_dE_P, out_T_P)
       endif
+      
+      !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
+      !   .and. coord(2,ibool_before_perio(i,j,ispec))>=0. & ! DEBUG
+      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
+      !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
+      !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
+      !             !out_rho0dv_P ! DEBUG
+      !             !out_dv_P ! DEBUG
+      !             !trans_boundary ! DEBUG
+      !endif ! DEBUG
 
     else
       ! --------------------------- !
@@ -885,7 +929,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       
       ! Set out_drho_P and out_dp_P.
       call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
-                                          .true., out_v_P, &
+                                          .true., out_v_P, & ! We get the far-field v field here.
                                           .false., LNS_dummy_1d(1), &
                                           .true., out_dp_P) ! Get needed background parameters. Use dummies for values we're not interested in.
       ! Warning: out_drho_P contains rho=(rho0 + drho) here. Correct this.
@@ -900,8 +944,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       call build_trans_boundary(n_out, tang, trans_boundary)
       !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
       !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
-      normal_v = (out_v_P(1)*n_out(1) + out_v_P(SPACEDIM)*n_out(SPACEDIM))
-      tangential_v = (out_v_P(1)*tang(1) + out_v_P(SPACEDIM)*tang(SPACEDIM))
+      !normal_v = (out_v_P(1)*n_out(1) + out_v_P(SPACEDIM)*n_out(SPACEDIM))
+      !tangential_v = (out_v_P(1)*tang(1) + out_v_P(SPACEDIM)*tang(SPACEDIM))
+      normal_v     = DOT_PRODUCT(n_out, out_v_P)
+      tangential_v = DOT_PRODUCT(tang, out_v_P)
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
       !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
@@ -997,8 +1043,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
     !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
     ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-    normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-    tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+    !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+    !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+    normal_v     = DOT_PRODUCT(n_out, veloc_P)
+    tangential_v = DOT_PRODUCT(tang, veloc_P)
     ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
     !trans_boundary(1, 1) =  tang(SPACEDIM)
     !trans_boundary(1, 2) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.

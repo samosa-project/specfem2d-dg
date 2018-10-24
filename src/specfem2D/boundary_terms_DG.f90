@@ -43,16 +43,16 @@
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
 
   use specfem_par, only: ibool_DG, &
-        rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, nspec
+        rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, nspec!, ibool_before_perio, coord
 
   implicit none
   
   ! Parameters.
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: SIXl  = 6._CUSTOM_REAL
+  !real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
   
   integer :: ispec, iglob, i, j
   
@@ -61,7 +61,6 @@
   
     
   do ispec = 1, nspec ! Loop over elements.
-    ! Double loop over GLL points. ??[to compute and store gradients]
     do j = 1, NGLLZ
       do i = 1, NGLLX
        iglob = ibool_DG(i, j, ispec)
@@ -73,14 +72,18 @@
        rhovz_DG(iglob) = rhovz_DG_P
        E_DG(iglob)     = E_DG_P
        e1_DG(iglob)    = e1_DG_P
+       !if(abs(coord(2,ibool_before_perio(i,j,ispec)))<1.) then ! DEBUG
+       !  write(*,*) coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
+       !             rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P ! DEBUG
+       !endif ! DEBUG
       enddo
     enddo
   enddo  
   
-  if(.false.) then
-    ! TODO: Why 'if(.false.)'?
-    call recompute_density()
-  endif
+  !if(.false.) then
+  !  ! TODO: Why 'if(.false.)'?
+  !  call recompute_density()
+  !endif
   
   end subroutine initial_condition_DG
   
@@ -256,7 +259,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
     ! Set gravity, viscosity coefficients, relaxation times, and gravity potential (Phi) derivatives.
-    if(timelocal == 0) then
+    if(abs(timelocal)<TINYVAL) then
       ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
       gravityext(i, j, ispec) = ZEROl !real(coord(1,ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
       ! > Isothermal case.
@@ -1298,6 +1301,16 @@ end subroutine prepare_external_forcing
       
       ! Deduce temperature.
       T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
+      
+      !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
+      !   .and. coord(2,ibool_before_perio(i,j,ispec))>=0. & ! DEBUG
+      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
+      !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
+      !             !p_DG_iM, p_DG_P ! DEBUG
+      !             !rhovx_DG_P, rhovz_DG_P ! DEBUG
+      !             !veloc_x_DG_P, veloc_z_DG_P ! DEBUG
+      !             !trans_boundary ! DEBUG
+      !endif ! DEBUG
 
     else
       ! --------------------------- !

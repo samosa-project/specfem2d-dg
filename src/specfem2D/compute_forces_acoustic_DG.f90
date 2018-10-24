@@ -60,7 +60,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                          !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
                          !ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF, ABC_STRETCH_TOP_LBUF, ABC_STRETCH_BOTTOM_LBUF,&
                          !mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
-                         !coord, &
+                         coord, &
                          ibool_before_perio,stretching_buffer!,c_V
                          
   implicit none
@@ -491,6 +491,18 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                        + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
                        abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
                        + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))
+          
+          !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
+          !   .and. coord(2,ibool_before_perio(i,j,ispec))>=0. & ! DEBUG
+          !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
+          !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
+          !             !p_DG_iM, p_DG_P ! DEBUG
+          !             !rhovx_DG_P, rhovz_DG_P ! DEBUG
+          !             !veloc_x_DG_P, veloc_z_DG_P ! DEBUG
+          !             !trans_boundary ! DEBUG
+          !             lambda
+          !endif ! DEBUG
+          if(.false.) write(*,*) coord ! UGLY
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
