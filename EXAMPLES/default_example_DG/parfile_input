@@ -105,12 +105,12 @@ MINMOD_FACTOR                   = 0.001d0
 CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydrostatic state. Causes the pressure output to be in perturbation only.
 
 # Fluid model (if MODEL\='external').
-USE_ISOTHERMAL_MODEL            = .false.
+USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobaric (.false.) model for the fluid part.
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
 surface_density                 = 1.4            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
 sound_velocity                  = 340.0          # $c$. Unit: m.s^{-1}.
 wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
-gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true..
+gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
 dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
 thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
 tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.

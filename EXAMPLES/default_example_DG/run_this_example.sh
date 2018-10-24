@@ -32,6 +32,14 @@ echo
 echo ">> Clean the 'OUTPUT_FILES' folder."
 rm -rf OUTPUT_FILES/*
 
+# Add a script to plot synthetics quickly.
+echo
+echo ">> Clean the 'OUTPUT_FILES' folder."
+cd OUTPUT_FILES/
+printf "#!/bin/bash\nthisScriptDir=\$(dirname \$(realpath \$0))\nname=\$(printf \"AA.S%%.4d\" \$1)\nnbFislesFound=\$(ls -1q \"\"\$thisScriptDir/\$name*\"\" 2>/dev/null | wc -l)\nif [ \$nbFislesFound == 0 ]; then\n  echo \"\$name* not found\"; exit\nelif [ \$nbFislesFound == 1 ]; then\n  filetoread=\$(ls \"\"\$thisScriptDir/\$name*\"\")\nelse\n  echo \"Choose from:\"; ls \"\"\$thisScriptDir/\$name*\"\"; printf \"> \"; read filetoread\nfi\ngnuplot -e \"plot \\\\\"\$filetoread\\\\\" using 1:2 with lines title \\\\\"\$filetoread\\\\\";pause -1 \\\\\"Hit any key to close figure\\\\n> \\\\\";exit\"" > showSynthetic.sh
+chmod u+x showSynthetic.sh
+cd ../
+
 cd $currentdir
 
 # Links executables.
