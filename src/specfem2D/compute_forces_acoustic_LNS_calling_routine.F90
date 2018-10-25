@@ -131,10 +131,10 @@ subroutine compute_forces_acoustic_LNS_main()
     RHS_rho0dv = ZEROcr
     RHS_dE     = ZEROcr
     ! Physical parameters.
-    LNS_g=ZEROcr
-    LNS_mu=ZEROcr
-    LNS_eta=ZEROcr
-    LNS_kappa=ZEROcr
+    LNS_g      = ZEROcr
+    LNS_mu     = ZEROcr
+    LNS_eta    = ZEROcr
+    LNS_kappa  = ZEROcr
     
     ! Prepare MPI buffers.
 #ifdef USE_MPI
@@ -209,7 +209,7 @@ subroutine compute_forces_acoustic_LNS_main()
     endif
     
     ! Initialise \nabla v_0.
-    call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, LNS_viscous, .false., switch_gradient, nabla_v0, LNS_dummy_2d) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
+    call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, .true., .false., switch_gradient, nabla_v0, LNS_dummy_2d, ZEROcr) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
     if(LNS_viscous) then ! Check if viscosity exists whatsoever.
       ! Initialise \Sigma_v_0.
       call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
@@ -221,32 +221,33 @@ subroutine compute_forces_acoustic_LNS_main()
     endif
 #endif
   
-  call LNS_prevent_nonsense()
+    call LNS_prevent_nonsense()
+    
   endif ! Endif on (it == 1) and (i_stage == 1).
   
   !stop 'kek'
   
-#ifdef USE_MPI
-  ! If MPI, assemble at each iteration.
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    ! Assemble state buffers.
-    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-    do i_aux=1,SPACEDIM
-      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
-    enddo
-    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
-    
-    ! Assemble viscous buffers.
-    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-      do i_aux=1,SPACEDIM
-        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
-      enddo
-      do i_aux=1,NVALSIGMA
-        call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
-      enddo
-    endif
-  endif
-#endif
+!#ifdef USE_MPI
+!  ! If MPI, assemble at each iteration.
+!  if (NPROC > 1 .and. ninterface_acoustic > 0) then
+!    ! Assemble state buffers.
+!    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
+!    do i_aux=1,SPACEDIM
+!      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
+!    enddo
+!    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
+!    
+!    ! Assemble viscous buffers.
+!    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+!      do i_aux=1,SPACEDIM
+!        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
+!      enddo
+!      do i_aux=1,NVALSIGMA
+!        call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
+!      enddo
+!    endif
+!  endif
+!#endif
   
   if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
     WRITE(*,*) "****************************************************************"
@@ -270,14 +271,48 @@ subroutine compute_forces_acoustic_LNS_main()
   !stop
   
   ! Precompute gradients.
-  call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, .true., switch_gradient, nabla_dv, nabla_dT) ! Note: we compute nabla_dv only if viscosity is activated.
   if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, switch_gradient, nabla_dv, nabla_dT, timelocal) ! Note: we compute nabla_dv only if viscosity is activated.
     ! Precompute \Sigma_v'.
     !write(*,*) "computing sigma_dv"
     call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
     !write(*,*) "computing sigma_dv", maxval(sigma_dv), maxval(nabla_dv)
   endif
 
+#ifdef USE_MPI
+  ! If MPI, assemble at each iteration.
+  if (NPROC > 1 .and. ninterface_acoustic > 0) then
+    ! Assemble state buffers.
+    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
+    do i_aux=1,SPACEDIM
+      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
+    enddo
+    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
+    
+    ! Assemble viscous buffers.
+    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+      do i_aux=1,SPACEDIM
+        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
+      enddo
+      do i_aux=1,NVALSIGMA
+        call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
+      enddo
+    endif
+  endif
+#endif
+  
+  !do ispec=1,nspec
+  !do i=1,NGLLX
+  !do j=1,NGLLZ
+  !if(      abs(coord(1,ibool_before_perio(i,j,ispec))-10.)<2. &
+  !   .and. abs(coord(2,ibool_before_perio(i,j,ispec))-10.)<2.) then
+  !  write(*,*) it, i_stage, coord(:,ibool_before_perio(i,j,ispec)), nabla_dv(:,:,ibool_DG(i,j,ispec))
+  !endif
+  !enddo
+  !enddo
+  !enddo
+  !if(it==6 .and. i_stage==1) stop 'kekest'
+  
   ! Compute RHS.
   call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
                                    LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
@@ -751,12 +786,12 @@ end subroutine LNS_compute_viscous_stress_tensor
 ! NOTES:
 !   See doi:10.1016/j.jcp.2007.12.009, section 4.3.2 for the "desintegration method".
    
-subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_SF)
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
+subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_SF, timelocal)
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: gammax, gammaz, hprime_xx, hprime_zz, hprimewgll_xx, hprimewgll_zz,&
 ibool_DG, ispec_is_acoustic_DG, jacobian, link_iface_ijispec, neighbor_dg_iface, nglob_DG, nspec, nx_iface,&
 nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
-  use specfem_par_LNS, only: LNS_dummy_1d, LNS_dummy_2d, SPACEDIM
+  use specfem_par_LNS, only: LNS_dE, LNS_drho, LNS_dummy_1d, LNS_dummy_2d, LNS_rho0dv, LNS_v0, SPACEDIM
   
   implicit none
   
@@ -766,6 +801,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   logical, intent(in) :: swTF, swSF, swMETHOD
   real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(out) :: nabla_SF
   real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM, nglob_DG), intent(out) :: nabla_TF
+  real(kind=CUSTOM_REAL), intent(in) :: timelocal
   
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
@@ -773,7 +809,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   real(kind=CUSTOM_REAL) :: SF_P ! When swMETHOD==.true., this variable is used to store the value of the scalar field SF across the element's boundary, in order to compute the flux.
   real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
   integer :: ispec,i,j,k,iglob, iglobM, iglobP!, iglob_unique
-  real(kind=CUSTOM_REAL) :: flux_n, flux_x, flux_z, weight !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
+  real(kind=CUSTOM_REAL) :: weight!, flux_n, flux_x, flux_z,  !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         !E_DG_P&!, p_DG_P, &
         !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
         !timelocal,gamma_P
@@ -800,6 +836,19 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
         temp_TFxz_1, temp_TFxz_2, temp_TFzx_1, temp_TFzx_2, temp_TFzz_1, temp_TFzz_2
   !real(kind=CUSTOM_REAL) :: vx_init, vz_init
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
+  
+  if(.not. (swSF .or. swTF)) then
+    write(*,*) "********************************"
+    write(*,*) "*           WARNING            *"
+    write(*,*) "********************************"
+    write(*,*) "* compute_gradient_TFSF is     *"
+    write(*,*) "* being called with both       *"
+    write(*,*) "* switches to .false.. We      *"
+    write(*,*) "* cannot see why such a thing  *"
+    write(*,*) "* would be needed, be careful. *"
+    write(*,*) "********************************"
+    return
+  endif
   
   if(swMETHOD) then
     ! "Desintegrate."
@@ -1028,8 +1077,12 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             !rhovx_DG_P   = ZEROcr
             !rhovz_DG_P   = ZEROcr
             !E_DG_P       = ZEROcr
-            SF_P         = ZEROcr
-            TF_P         = ZEROcr
+            if(swSF) then
+              SF_P         = ZEROcr
+            endif
+            if(swTF) then
+              TF_P         = ZEROcr
+            endif
             !p_DG_P       = ZEROcr
             !Vxx_DG_P     = ZEROcr
             !Vzz_DG_P     = ZEROcr
@@ -1086,9 +1139,9 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
           !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
           !        nx, nz, weight, currentTime, iface1, iface)
             
-            call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, LNS_dummy_1d(1), & ! Point identifier (input).
-                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Input constitutive variables, "M" side.
-                  LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Input constitutive variables, "P" side.
+            call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
+                  LNS_drho(iglobM), LNS_rho0dv(:,iglobM), LNS_dE(iglobM), & ! Input constitutive variables, "M" side.
+                  LNS_drho(iglobP), LNS_rho0dv(:,iglobP), LNS_dE(iglobP), & ! Input constitutive variables, "P" side.
                   LNS_dummy_1d(1), & ! Input other variable, "M" side.
                   !V_DG(:,:,iglobM), T_DG(:,iglobM), & ! Input derivatives, "M" side. MIGHT NEED.
                   !V_DG(:,:,iglobP), T_DG(:,iglobP), & ! Input derivatives, "M" side. MIGHT NEED.
@@ -1096,42 +1149,76 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
                   exact_interface_flux, & ! Switch to disable jump in some cases (output).
                   LNS_dummy_1d(1), LNS_dummy_2d(:,1), LNS_dummy_1d(1), & ! Output constitutive variables.
                   !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-                  LNS_dummy_2d(:,1), LNS_dummy_1d(1), LNS_dummy_2d(:,1), & ! Output other variables.
+                  LNS_dummy_2d(:,1), LNS_dummy_1d(1), TF_P, & ! Output other variables.
                   .false., LNS_dummy_2d(:,1), LNS_dummy_1d(1:3), & ! Output other variables: viscous.
-                  .true., SF_P, TF_P) ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. If other fields need to be computed, one will have to use a dedicated routine.
+                  .true., SF_P) ! Output other variables.
+            ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. If other fields need to be computed, one will have to use a dedicated routine.
 
             !vx_init = rhovx_init(iglobM)/rho_init(iglobM)
             !vz_init = rhovz_init(iglobM)/rho_init(iglobM)
-
-            ! Dot products.
-            if(swSF) then
-              flux_x = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along x of the scalar field SF.
-              !if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*T_init(iglobM)
-              flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
-              nabla_SF(1,iglobM) = nabla_SF(1,iglobM) + weight*flux_n*HALFcr
-              flux_z = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along z of the scalar field SF.
-              !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
-              flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-              nabla_SF(SPACEDIM,iglobM) = nabla_SF(SPACEDIM,iglobM) + weight*flux_n*HALFcr
-            endif
+            
             if(swTF) then
-              flux_x = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along x of the x-component of the tensor field TF.
-              !if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vx_init
-              flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
-              nabla_TF(1,1,iglobM) = nabla_TF(1,1,iglobM) + weight*flux_n*HALFcr
-              flux_z = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along z of the x-component of the tensor field TF.
-              !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
-              flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-              nabla_TF(1,SPACEDIM,iglobM) = nabla_TF(1,SPACEDIM,iglobM) + weight*flux_n*HALFcr
-              flux_x = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along x of the z-component of the tensor field TF.
-              !if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
-              flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
-              nabla_TF(SPACEDIM,1,iglobM) = nabla_TF(SPACEDIM,1,iglobM) + weight*flux_n*HALFcr
-              flux_z = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along z of the z-component of the tensor field TF.
-              !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
-              flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-              nabla_TF(SPACEDIM,SPACEDIM,iglobM) = nabla_TF(SPACEDIM,SPACEDIM,iglobM) + weight*flux_n*HALFcr
+              if(abs(timelocal)<TINYVAL) then
+                ! At timelocal==0, we want to compute \nabla v_0, and thus we need to add v_0 to TF_P. At timelocal==0, we do not care about \nabla T.
+                ! For timelocal>0, we know we are computing \nabla v' or \nabla T', and thus we do not need to add anything.
+                TF_P=TF_P+LNS_v0(:,iglobM)
+              endif
             endif
+            ! Dot products.
+            do i=1,SPACEDIM
+              if(swSF) then
+                nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*(SF(iglobM)+SF_P)*n_out(i)*HALFcr
+              endif
+              if(swTF) then
+                do j=1,SPACEDIM
+                  nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + weight*(TF(i,iglobM)+TF_P(i))*n_out(j)*HALFcr
+                enddo
+              endif
+            enddo
+            !if(swSF) then
+            !  !!flux_x = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along x of the scalar field SF.
+            !  !!!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*T_init(iglobM)
+            !  !!flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
+            !  !flux_n = (SF(iglobM)+SF_P)*n_out(1) ! Recall: n_out(1)=n_x.
+            !  !nabla_SF(1,iglobM) = nabla_SF(1,iglobM) + weight*flux_n*HALFcr
+            !  !!flux_z = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along z of the scalar field SF.
+            !  !!!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
+            !  !!flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+            !  !flux_n = (SF(iglobM)+SF_P)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+            !  !nabla_SF(SPACEDIM,iglobM) = nabla_SF(SPACEDIM,iglobM) + weight*flux_n*HALFcr
+            !  do i=1,SPACEDIM
+            !    !flux_n = (SF(iglobM)+SF_P)*n_out(i) ! Recall: n_out(1)=n_x.
+            !    !nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*flux_n*HALFcr
+            !    nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*(SF(iglobM)+SF_P)*n_out(i)*HALFcr
+            !  enddo
+            !endif
+            !if(swTF) then
+            !  !!flux_x = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along x of the x-component of the tensor field TF.
+            !  !!!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vx_init
+            !  !!flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
+            !  !flux_n = (TF(1,iglobM)+TF_P(1))*n_out(1) ! Recall: n_out(1)=n_x.
+            !  !nabla_TF(1,1,iglobM) = nabla_TF(1,1,iglobM) + weight*flux_n*HALFcr
+            
+            !  !flux_z = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along z of the x-component of the tensor field TF.
+            !  !!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
+            !  !flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+            !  !nabla_TF(1,SPACEDIM,iglobM) = nabla_TF(1,SPACEDIM,iglobM) + weight*flux_n*HALFcr
+            
+            !  !flux_x = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along x of the z-component of the tensor field TF.
+            !  !!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
+            !  !flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
+            !  !nabla_TF(SPACEDIM,1,iglobM) = nabla_TF(SPACEDIM,1,iglobM) + weight*flux_n*HALFcr
+            
+            !  !flux_z = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along z of the z-component of the tensor field TF.
+            !  !!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
+            !  !flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+            !  !nabla_TF(SPACEDIM,SPACEDIM,iglobM) = nabla_TF(SPACEDIM,SPACEDIM,iglobM) + weight*flux_n*HALFcr
+            !  do i=1,SPACEDIM
+            !    do j=1,SPACEDIM
+            !      nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + weight*(TF(i,iglobM)+TF_P(i))*n_out(j)*HALFcr
+            !    enddo
+            !  enddo
+            !endif
           enddo ! Enddo on iface1.
         enddo ! Enddo on iface.
       endif ! Endif on swMETHOD.
@@ -1140,20 +1227,22 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   
   if(swMETHOD) then
     ! "Desintegrate".
-    if(swSF) then
-      nabla_SF(1,:)  = nabla_SF(1,:) * rmass_inverse_acoustic_DG(:)
-      nabla_SF(SPACEDIM,:)  = nabla_SF(SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
-    endif
-    if(swTF) then
-      do i=1,SPACEDIM
-        nabla_TF(i,1,:) = nabla_TF(i,1,:) * rmass_inverse_acoustic_DG(:)
-        nabla_TF(i,SPACEDIM,:) = nabla_TF(i,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
-        !nabla_TF(1,1,:) = nabla_TF(1,1,:) * rmass_inverse_acoustic_DG(:)
-        !nabla_TF(1,SPACEDIM,:) = nabla_TF(1,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
-        !nabla_TF(SPACEDIM,1,:) = nabla_TF(SPACEDIM,1,:) * rmass_inverse_acoustic_DG(:)
-        !nabla_TF(SPACEDIM,SPACEDIM,:) = nabla_TF(SPACEDIM,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
-      enddo
-    endif
+    do i=1,SPACEDIM
+      if(swSF) then
+        nabla_SF(i,:)  = nabla_SF(i,:) * rmass_inverse_acoustic_DG(:)
+      endif
+      !nabla_SF(SPACEDIM,:)  = nabla_SF(SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+      if(swTF) then
+        do j=1,SPACEDIM
+          nabla_TF(i,j,:) = nabla_TF(i,j,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(i,SPACEDIM,:) = nabla_TF(i,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(1,1,:) = nabla_TF(1,1,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(1,SPACEDIM,:) = nabla_TF(1,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(SPACEDIM,1,:) = nabla_TF(SPACEDIM,1,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(SPACEDIM,SPACEDIM,:) = nabla_TF(SPACEDIM,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+        enddo
+      endif
+    enddo
   endif
   
   !! Store in variables intended for output.
@@ -1312,6 +1401,24 @@ subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   out_dT=  (in_E/in_rho - HALFcr*norm2(in_v))/c_V &
          - LNS_T0
 end subroutine compute_dT
+! Same as compute_dT, but point by point (unvectorised).
+subroutine compute_dT_i(in_rho, in_v, in_E, out_T, iglob)
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: c_V
+  use specfem_par_LNS, only: LNS_T0, norm2r1, SPACEDIM
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), intent(out) :: out_T
+  integer, intent(in) :: iglob
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(SPACEDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
+  out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V &
+        - LNS_T0(iglob)
+end subroutine compute_dT_i
 ! ------------------------------------------------------------ !
 ! compute_E                                                    !
 ! ------------------------------------------------------------ !
