@@ -36,6 +36,17 @@ module specfem_par_LNS
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: nabla_dT ! Gradient of temperature perturbation.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: sigma_dv ! Viscous stress tensor perturbation. Symmetric, thus only need to save few entries (see sigma_v_0).
   
+  ! ADEs for PMLs.
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Dimension allocated should be (NDIM, NGLLX, NGLLZ, nspec_PML).
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: LNS_PML_rho0dv ! Dimension allocated should be (NDIM, NDIM, NGLLX, NGLLZ, nspec_PML).
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
+  
+
+  
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_alpha ! Coefficient in front of the \delta', that is in front of the \partial_t in the updated strong form. Dimension allocated should be (i,j,ispec_PML) in order to save memory.
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_beta ! Coefficient in front of each auxiliary variable (ADEs). For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
+  
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99 ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
   ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every LNS_MODPRINT iterations
   ! LNS_VERBOSE>=51: printing min/max values for each constitutive variable on CPU 0 every LNS_MODPRINT iterations

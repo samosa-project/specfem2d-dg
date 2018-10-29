@@ -307,6 +307,8 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
   integer :: i, j, i_source, ispec, iglob, iglob_unique
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   
+  ! TODO: shouldn't the source term be added with a "-" sign since it should classically be on the RHS instead? It is a matter of conventions, which should not be considered very important.
+  
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
     
