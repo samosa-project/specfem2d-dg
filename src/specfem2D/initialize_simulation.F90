@@ -236,6 +236,7 @@
   subroutine initialize_simulation_check()
 
   use specfem_par
+  use specfem_par_lns
   use specfem_par_movie
 
   implicit none
@@ -274,9 +275,11 @@
     ! MODIF DG
     !if (NPROC > 1) &
     !  stop 'MPI support for standard Runge-Kutta scheme is not implemented yet'
-
+    
+    if(.not. USE_LNS) then
     if (PML_BOUNDARY_CONDITIONS) &
       stop 'PML boundary conditions not implemented with standard Runge Kutta scheme yet'
+    endif
   endif
 
   ! Bielak parameter setup

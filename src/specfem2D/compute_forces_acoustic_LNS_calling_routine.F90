@@ -52,10 +52,9 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
   !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
   !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: nabla_dT
-  integer :: ier, i_aux!,i,j,ispec
+  integer :: ier, i_aux, i_aux2,i,j,ispec,iglob,ispec_PML
   logical check_linearHypothesis!, check_linearHypothesis_ON_ALL_PROCS, check_linearHypothesis_FIND_POINT
   logical switch_gradient
-  !real(kind=CUSTOM_REAL), dimension(2,1) :: kek
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -135,6 +134,20 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_mu     = ZEROcr
     LNS_eta    = ZEROcr
     LNS_kappa  = ZEROcr
+    
+    if(PML_BOUNDARY_CONDITIONS) then
+      stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
+      aux_PML_drho = ZEROcr
+      aux_PML_rho0dv = ZEROcr
+      aux_PML_dE = ZEROcr
+      RHS_PML_drho = ZEROcr
+      RHS_PML_rho0dv = ZEROcr
+      RHS_PML_dE = ZEROcr
+      LNS_PML_drho = ZEROcr
+      LNS_PML_rho0dv = ZEROcr
+      LNS_PML_dE = ZEROcr
+      call LNS_PML_init_coefs()
+    endif
     
     ! Prepare MPI buffers.
 #ifdef USE_MPI
@@ -222,9 +235,9 @@ subroutine compute_forces_acoustic_LNS_main()
 #endif
   
     call LNS_prevent_nonsense()
-    
   endif ! Endif on (it == 1) and (i_stage == 1).
   
+  !stop "PLEASE DEBUG THE PML ZONES BEFORE RUNNING LOL"
   !stop 'kek'
   
 !#ifdef USE_MPI
@@ -314,6 +327,7 @@ subroutine compute_forces_acoustic_LNS_main()
   !if(it==6 .and. i_stage==1) stop 'kekest'
   
   ! Compute RHS.
+  ! Note: if there is PML BCs, additionnal terms will be queried directly inside the call to compute_forces_acoustic_LNS, since auxiliary variables and coefficients are global variables.
   call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
                                    LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
                                    RHS_drho, RHS_rho0dv, RHS_dE, & ! Output.
@@ -323,21 +337,76 @@ subroutine compute_forces_acoustic_LNS_main()
     ! Inverse mass matrix multiplication, in order to obtain actual RHS.
     RHS_drho(:)            = RHS_drho(:)*rmass_inverse_acoustic_DG(:) ! RHS = A^{-1}*b
     RHS_dE(:)              = RHS_dE(:)  *rmass_inverse_acoustic_DG(:)
-    ! Update the auxiliary register.
-    ! Note: no need to zero it beforehand if scheme_A(1) is 0.
+    ! Update the auxiliary register. Note: no need to zero it beforehand if scheme_A(1) is 0.
     aux_drho               = scheme_A(i_stage)*aux_drho + deltat*RHS_drho ! U_{i} = a_{i}*U_{i-1} + dt*RHS
     aux_dE                 = scheme_A(i_stage)*aux_dE   + deltat*RHS_dE
     ! Update the state register.
     LNS_drho               = LNS_drho + scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
     LNS_dE                 = LNS_dE   + scheme_B(i_stage)*aux_dE
-    ! Group momentum treatment in loop.
+    ! Group momentum treatment in loop on dimension.
     do i_aux=1,NDIM
       RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)
       aux_rho0dv(i_aux,:) = scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
       LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + scheme_B(i_stage)*aux_rho0dv(i_aux,:)
     enddo
+    ! If one wants to do all at once (method which should be working but seems to be somewhat more unstable), comment the previous lines and uncomment the following lines.
+    !LNS_drho               =   LNS_drho &
+    !                         + scheme_B(i_stage)*(  scheme_A(i_stage)*aux_drho &
+    !                                              + deltat*(RHS_drho(:)*rmass_inverse_acoustic_DG(:))) ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
+    !LNS_dE                 =   LNS_dE &
+    !                         + scheme_B(i_stage)*(  scheme_A(i_stage)*aux_dE &
+    !                                              + deltat*(RHS_dE(:)*rmass_inverse_acoustic_DG(:)))
+    !do i_aux=1,NDIM
+    !  LNS_rho0dv(i_aux,:) =   LNS_rho0dv(i_aux,:) &
+    !                        + scheme_B(i_stage)*(  scheme_A(i_stage)*aux_rho0dv(i_aux,:) &
+    !                                             + deltat*(RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)))
+    !enddo
+    
+    ! PML, iterate ADEs.
+    if(PML_BOUNDARY_CONDITIONS) then
+      do i_aux=1,NDIM ! Loop on ADEs.
+        ! Prepare PML ADE RHS. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
+        do ispec=1,nspec; if(ispec_is_PML(ispec)) then; do j=1,NGLLZ; do i=1,NGLLX
+          iglob=ibool_DG(i, j, ispec)
+          ispec_PML=spec_to_PML(ispec)
+          !Write(*,*) "iglob", iglob, "is_acoustic_dg", ispec_is_acoustic_DG(ispec)
+          !WRITE(*,*) "LNS_PML_beta", LNS_PML_beta(i_aux,i,j,ispec_PML)
+          !WRITE(*,*) "LNS_PML_drho", LNS_PML_drho(i_aux,i,j,ispec_PML)
+          !WRITE(*,*) "LNS_drho", LNS_drho(iglob)
+          RHS_PML_drho(i_aux,i,j,ispec_PML) = - LNS_PML_beta(i_aux,i,j,ispec_PML) &
+                                                   * LNS_PML_drho(i_aux,i,j,ispec_PML) &
+                                                 + LNS_drho(iglob) ! A minus sign might have to be used here.
+          RHS_PML_dE(i_aux,i,j,ispec_PML) = - LNS_PML_beta(i_aux,i,j,ispec_PML) &
+                                                 * LNS_PML_dE(i_aux,i,j,ispec_PML) &
+                                               + LNS_dE(iglob) ! A minus sign might have to be used here.
+          do i_aux2=1,NDIM ! Loop on momenta.
+            RHS_PML_rho0dv(i_aux,i_aux2,i,j,ispec_PML) = - LNS_PML_beta(i_aux,i,j,ispec_PML) &
+                                                              * LNS_PML_rho0dv(i_aux,i_aux2,i,j,ispec_PML) &
+                                                            + LNS_rho0dv(i_aux2, iglob) ! A minus sign might have to be used here.
+          enddo
+        enddo; enddo; endif; enddo
+        ! Update PML ADE.
+        aux_PML_drho(i_aux,:,:,:) =   scheme_A(i_stage)*aux_PML_drho(i_aux,:,:,:) &
+                                       + deltat*RHS_PML_drho(i_aux,:,:,:)
+        aux_PML_dE(i_aux,:,:,:)   =   scheme_A(i_stage)*aux_PML_dE(i_aux,:,:,:) &
+                                       + deltat*RHS_PML_dE(i_aux,:,:,:)
+        LNS_PML_drho(i_aux,:,:,:) = LNS_PML_drho(i_aux,:,:,:) + scheme_B(i_stage)*aux_PML_drho(i_aux,:,:,:)
+        LNS_PML_dE(i_aux,:,:,:)   = LNS_PML_dE(i_aux,:,:,:)   + scheme_B(i_stage)*aux_PML_dE(i_aux,:,:,:)
+        do i_aux2=1,NDIM ! Loop on momenta.
+          aux_PML_rho0dv(i_aux,i_aux2,:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(i_aux,i_aux2,:,:,:) &
+                                                 + deltat*RHS_PML_rho0dv(i_aux,i_aux2,:,:,:)
+          LNS_PML_rho0dv(i_aux,i_aux2,:,:,:) =   LNS_PML_rho0dv(i_aux,i_aux2,:,:,:) &
+                                                  + scheme_B(i_stage)*aux_PML_rho0dv(i_aux,i_aux2,:,:,:)
+        enddo
+      enddo
+    endif
     
     ! test
+    if(PML_BOUNDARY_CONDITIONS) then
+      if(myrank==1) then
+        write(*,*) timelocal, minval(aux_PML_drho), maxval(aux_PML_drho)
+      endif
+    endif
     !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
     !stop
     !write(*,*) LNS_kappa
@@ -441,6 +510,69 @@ end subroutine compute_forces_acoustic_LNS_main
 
 
 
+
+
+
+
+
+
+
+
+
+subroutine LNS_PML_init_coefs()
+  ! TODO: select variables to use.
+  use constants
+  use specfem_par
+  use specfem_par_LNS
+  
+  implicit none
+
+  ! Local.
+  integer :: i,j,ispec,ispec_PML
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: pmlk, pmld, pmla
+  
+  if(     (.not. allocated(LNS_PML_alpha)) &
+     .or. (.not. allocated(LNS_PML_beta))) then
+    ! Safeguard.
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Some PML coefficients arrays *"
+    write(*,*) "* are not allocated but should *"
+    write(*,*) "* be.                          *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  do ispec=1,nspec
+    if(ispec_is_PML(ispec)) then
+      ispec_PML=spec_to_PML(ispec)
+      do j=1,NGLLZ
+        do i=1,NGLLX
+          pmlk(1)=K_x_store(i,j,ispec_PML) ! Decrease performance, but increases readability. Since this routine only runs once, we decide it's okay.
+          pmlk(2)=K_z_store(i,j,ispec_PML)
+          pmld(1)=d_x_store(i,j,ispec_PML)
+          pmld(2)=d_z_store(i,j,ispec_PML)
+          pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.01
+          pmla(2)=alpha_z_store(i,j,ispec_PML) + 0.02
+          
+          !write(*,*) coord(:, ibool_before_perio(i, j, ispec)), ":", pmlk, pmld, pmla ! DEBUG
+          
+          LNS_PML_alpha(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
+          
+          if(abs(pmla(2)-pmla(1)) < TINYVAL) then
+            write(*,*) "|a2-a1| is very smol at ", coord(:, ibool_before_perio(i, j, ispec)), ": a1,a2=", pmla ! DEBUG
+          else
+            LNS_PML_beta(1,i,j,ispec_PML) = pmlk(1)*pmld(1) * (   pmlk(2) &
+                                                                + pmld(2)/(pmla(2)-pmla(1)) )
+            LNS_PML_beta(2,i,j,ispec_PML) = pmlk(2)*pmld(2) * (   pmlk(1) &
+                                                                + pmld(1)/(pmla(1)-pmla(2)) )
+          endif
+        enddo
+      enddo
+    endif
+  enddo
+end subroutine LNS_PML_init_coefs
 
 
 

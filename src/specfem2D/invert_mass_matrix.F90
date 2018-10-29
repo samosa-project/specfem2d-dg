@@ -62,9 +62,9 @@
                                 ! MODIF DG
                                 rmass_inverse_acoustic_DG, rmass_inverse_acoustic_DG_b, ibool_DG, &
                                 ! MODIF NS
-                                USE_DISCONTINUOUS_METHOD,&
+                                USE_DISCONTINUOUS_METHOD!,&
                                 ! MODIF STRETCHING
-                                ABC_STRETCH, ibool_before_perio, stretching_ya,stretching_buffer
+                                !ABC_STRETCH, ibool_before_perio, stretching_ya,stretching_buffer
                                 
 
   ! PML arrays
@@ -105,6 +105,7 @@
   
   ! Backward inverse matrix
   if(USE_DISCONTINUOUS_METHOD) then
+    rmass_inverse_acoustic_DG = 0._CUSTOM_REAL
     rmass_inverse_acoustic_DG_b = 0._CUSTOM_REAL
   endif
 
@@ -249,21 +250,20 @@
             rmass_inverse_elastic_three(iglob) = rmass_inverse_elastic_one(iglob)
           endif
 
+          
+        else if (ispec_is_gravitoacoustic(ispec)) then
           ! for gravitoacoustic medium
           !!! PML NOT WORKING YET !!!
-        else if (ispec_is_gravitoacoustic(ispec)) then
-
-        this_element_has_PML = .false.
-        if (PML_BOUNDARY_CONDITIONS) then
-          if (ispec_is_PML(ispec)) stop 'PML not implemented yet for gravitoacoustic case'
-        endif
-
+          this_element_has_PML = .false.
+          if (PML_BOUNDARY_CONDITIONS) then
+            if (ispec_is_PML(ispec)) stop 'PML not implemented yet for gravitoacoustic case'
+          endif
           rmass_inverse_gravitoacoustic(iglob) = rmass_inverse_gravitoacoustic(iglob) &
                   + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) / (kappal/rhol)
-           rmass_inverse_gravito(iglob) = rmass_inverse_gravito(iglob) &
+          rmass_inverse_gravito(iglob) = rmass_inverse_gravito(iglob) &
                   + wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
 
-         else
+        else
           ! for acoustic medium
 
           this_element_has_PML = .false.
@@ -370,21 +370,37 @@
           
           iglob = ibool_DG(i,j,ispec)
           
-          if(.false. .and. ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
-            ! Add jacobian of stretching into the mass matrix.
-            ! This changes nothing in the computational domain of interest.
-            ! We leave this undone (in an 'if(.false.)') because:
-            ! 1) all of what happens in the buffers does not interest us, and
-            ! 2) if it is done then the mass matrix becomes ill-conditionned and any signal touching the buffers will make the code crash.
-            ! By setting smooth buffers (0.9<epsilon<=1), the conditionning of the matrix is less affected, but this kills the purpose of the stretching buffers as it would require larger ones to have the same effect.
-            rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
-                                               stretching_ya(1, ibool_before_perio(i, j, ispec))*&
-                                               stretching_ya(2, ibool_before_perio(i, j, ispec))*&
-                                               jacobian(i,j,ispec)
-          else
-            rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
-                                               jacobian(i,j,ispec)
+          !if(.false. .and. ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+          !  ! Add jacobian of stretching into the mass matrix.
+          !  ! This changes nothing in the computational domain of interest.
+          !  ! We leave this undone (in an 'if(.false.)') because:
+          !  ! 1) all of what happens in the buffers does not interest us, and
+          !  ! 2) if it is done then the mass matrix becomes ill-conditionned and any signal touching the buffers will make the code crash.
+          !  ! By setting smooth buffers (0.9<epsilon<=1), the conditionning of the matrix is less affected, but this kills the purpose of the stretching buffers as it would require larger ones to have the same effect.
+          !  rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
+          !                                     stretching_ya(1, ibool_before_perio(i, j, ispec))*&
+          !                                     stretching_ya(2, ibool_before_perio(i, j, ispec))*&
+          !                                     jacobian(i,j,ispec)
+          !else
+          rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
+                                             jacobian(i,j,ispec)
+          
+          if (PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+            ! This ispec is a PML element, we need to update the mass matrix in order to take the stretching into account.
+            ispec_PML=spec_to_PML(ispec)
+            if (region_CPML(ispec) == CPML_X_ONLY) then
+              rmass_inverse_acoustic_DG(iglob) = rmass_inverse_acoustic_DG(iglob)  &
+                                                 * (K_x_store(i,j,ispec_PML))
+            else if (region_CPML(ispec) == CPML_XZ_ONLY) then
+              rmass_inverse_acoustic_DG(iglob) = rmass_inverse_acoustic_DG(iglob)  &
+                                                 * (K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML))
+            else if (region_CPML(ispec) == CPML_Z_ONLY) then
+              rmass_inverse_acoustic_DG(iglob) = rmass_inverse_acoustic_DG(iglob)  &
+                                                 * (K_z_store(i,j,ispec_PML))
+            endif
           endif
+          
+          !endif
         endif
       enddo
     enddo

@@ -35,6 +35,7 @@
   subroutine prepare_timerun_PML()
 
   use specfem_par
+  use specfem_par_lns ! TODO: select variables to use.
 
   implicit none
 
@@ -355,7 +356,35 @@
       rmemory_potential_acoustic_LDDRK = ZERO
       rmemory_acoustic_dux_dx_LDDRK = ZERO
       rmemory_acoustic_dux_dz_LDDRK = ZERO
-
+      
+      !write(*,*) "we are acoustic and we need pml." ! DEBUG
+      if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+        !write(*,*) "we are acoustic LNS and we need pml." ! DEBUG
+        
+        ! See [Xie et al., 2014] Xie, Z., Komatitsch, D., Martin, R., and Matzen, R. (2014). Improved forward wave propagation and adjoint-based sensitivity kernel calculations using a numerically stable finite-element PML. Geophysical Journal International, 198(3):1714–1747.
+        
+        ! With the formulation of [Xie et al., 2014], we'll need 2 auxiliary ADEs, for each constitutive variable. It is conjectured we'll need 3 for 3D. Thus, allocate the first dimension to NDIM.
+        ! If changes are needed for this point, one will also need to change the various loops using those arrays.
+        
+        allocate(LNS_PML_drho(NDIM,NGLLX,NGLLZ,nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (mass conservation).
+        allocate(LNS_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (momenta).
+        allocate(LNS_PML_dE(NDIM,NGLLX,NGLLZ,nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (energy).
+        
+        allocate(RHS_PML_drho(NDIM,NGLLX,NGLLZ,nspec_PML), &
+                 aux_PML_drho(NDIM,NGLLX,NGLLZ,nspec_PML), &
+                 RHS_PML_dE(NDIM,NGLLX,NGLLZ,nspec_PML), &
+                 aux_PML_dE(NDIM,NGLLX,NGLLZ,nspec_PML))
+        allocate(RHS_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML), &
+                 aux_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML))
+        
+        allocate(LNS_PML_alpha(NGLLX,NGLLZ,nspec_PML))
+        allocate(LNS_PML_beta(NDIM,NGLLX,NGLLZ,nspec_PML))
+        
+        ! Savage memory free. Not really optimal, but less invasive.
+        deallocate(rmemory_potential_acoustic,rmemory_acoustic_dux_dx,rmemory_acoustic_dux_dz, &
+                   rmemory_potential_acoustic_LDDRK,rmemory_acoustic_dux_dx_LDDRK,rmemory_acoustic_dux_dz_LDDRK) 
+      endif
+      
     else
       allocate(rmemory_potential_acoustic(1,1,1,1))
       allocate(rmemory_acoustic_dux_dx(1,1,1,1))
@@ -414,7 +443,9 @@
   if (.not. allocated(rmemory_sfb_potential_ddot_acoustic_LDDRK)) then
     allocate(rmemory_sfb_potential_ddot_acoustic_LDDRK(1,NGLLX,NGLLZ,1))
   endif
-
+  
+  !stop "kek" ! DEBUG
+  
   end subroutine prepare_timerun_PML
 
 
