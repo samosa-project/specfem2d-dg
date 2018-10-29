@@ -8,7 +8,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                        outrhs_drho, outrhs_rho0dv, outrhs_dE, & ! Output (RHS for each constitutive variable).
                                        currentTime) ! Time.
   ! TODO: select variables to use.
-  use constants!, only: CUSTOM_REAL,NGLLX,NGLLZ,SPACEDIM
+  use constants!, only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM
   use specfem_par!, only: nglob_DG,nspec, ispec_is_acoustic_DG,&
                          !xix,xiz,gammax,gammaz,jacobian, &
                          !hprimewgll_xx, &
@@ -31,10 +31,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: cv_drho, cv_dE, in_dp, in_dT
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: cv_rho0dv, in_dm, in_nabla_dT
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: cv_rho0dv, in_dm, in_nabla_dT
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA, nglob_DG), intent(in) :: in_sigma_dv
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(out) :: outrhs_rho0dv
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: outrhs_rho0dv
   real(kind=CUSTOM_REAL), intent(in) :: currentTime
   
   ! Local.
@@ -48,27 +48,27 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   !real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
   !real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
   integer :: ispec, i,j, k,iglob,SPCDM!, iglob_unique
-  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, SPACEDIM) :: cntrb_drho, cntrb_dE
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, NGLLX, NGLLZ, SPACEDIM) :: cntrb_rho0dv
+  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, NDIM) :: cntrb_drho, cntrb_dE
+  real(kind=CUSTOM_REAL), dimension(NDIM, NGLLX, NGLLZ, NDIM) :: cntrb_rho0dv
   ! Variables "cntrb_*" are aimed at assembling the different contributions to constitutive variables.
   ! For drho and dE, "cntrb_*(:,:,1)" contains the contribution along xi, and "cntrb_*(:,:,2)" the contribution along gamma.
   ! For rho0dv, "cntrb_*(1,:,:,1)" contains the contribution to rho0dvx along xi, "cntrb_*(1,:,:,2)" the contribution to rho0dvx along gamma, "cntrb_*(2,:,:,1)" the contribution to rhodvz along xi, and "cntrb_*(2,:,:,2)" the contribution to rhodvz along gamma.
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_dE
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, NGLLX,NGLLZ) :: d0cntrb_rho0dv
+  real(kind=CUSTOM_REAL), dimension(NDIM, NGLLX,NGLLZ) :: d0cntrb_rho0dv
   ! Variable "d0cntrb_*" are aimed at assembling contributions of zero-th degree (outside divergence operator).
   
   
   real(kind=CUSTOM_REAL) :: jacLoc ! Jacobian matrix determinant.
   real(kind=CUSTOM_REAL) :: lambda, halfWeight, flux_n, jump
   
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: tmp_unknown, xil, gammal
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: n_out
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: rho0dv_P
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: tmp_unknown, xil, gammal
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: n_out
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: rho0dv_P
   integer :: iglobM, iglobP
   integer, dimension(3) :: neighbor
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: dv_P, dm_P, nabla_dT_P
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P
   real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P
   logical :: viscousComputation
@@ -88,7 +88,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     case (1)
       call compute_add_sources_acoustic_DG_spread(outrhs_drho, it, i_stage)
     case (2)
-      do SPCDM=1,SPACEDIM
+      do SPCDM=1,NDIM
         call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
       enddo
     case (3)
@@ -101,7 +101,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
     write(*,"(a)")                   " quantity [                 max    ,                  min    ]"
     WRITE(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
-    do SPCDM=1,SPACEDIM
+    do SPCDM=1,NDIM
       WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(SPCDM,:)), ", ", minval(cv_rho0dv(SPCDM,:)), "], i=",SPCDM
     enddo
     WRITE(*,"(a,e24.16,a,e24.16,a)") " dE       [", maxval(cv_dE), ", ", minval(cv_dE), "]"
@@ -123,9 +123,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !gammaxl = gammax(i,j,ispec)
           !gammazl = gammaz(i,j,ispec)
           xil(1)           = xix(i,j,ispec)
-          xil(SPACEDIM)    = xiz(i,j,ispec)
+          xil(NDIM)    = xiz(i,j,ispec)
           gammal(1)        = gammax(i,j,ispec)
-          gammal(SPACEDIM) = gammaz(i,j,ispec)
+          gammal(NDIM) = gammaz(i,j,ispec)
           !wzl = wzgll(j)
           !wxl = wxgll(i)
           wzljacLoc = wzgll(j)*jacLoc
@@ -147,30 +147,30 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! Inviscid stress tensor's contributions.
           !   Mass conservation.
           !tmp_unknown_x = in_dm(1,iglob)
-          !tmp_unknown_z = in_dm(SPACEDIM,iglob)
+          !tmp_unknown_z = in_dm(NDIM,iglob)
           !tmp_unknown=in_dm(:,iglob)
           !cntrb_drho(i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
           !cntrb_drho(i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
           cntrb_drho(i,j,1) = wzljacLoc*DOT_PRODUCT(xil, in_dm(:,iglob)) ! Contribution along xi.
-          cntrb_drho(i,j,SPACEDIM) = wxljacLoc*DOT_PRODUCT(gammal, in_dm(:,iglob)) ! Contribution along gamma.
+          cntrb_drho(i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, in_dm(:,iglob)) ! Contribution along gamma.
           !   x-Momentum.
           !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob)
-          !tmp_unknown_z = cv_rho0dv(SPACEDIM,iglob)*LNS_v0(1,iglob)
+          !tmp_unknown_z = cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)
           !cntrb_rho0dv(1,i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
           !cntrb_rho0dv(1,i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
           tmp_unknown(1) = cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob)
-          tmp_unknown(SPACEDIM) = cv_rho0dv(SPACEDIM,iglob)*LNS_v0(1,iglob)
+          tmp_unknown(NDIM) = cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)
           cntrb_rho0dv(1,i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-          cntrb_rho0dv(1,i,j,SPACEDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
+          cntrb_rho0dv(1,i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           !   z-Momentum.
-          !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(SPACEDIM,iglob)
-          !tmp_unknown_z = cv_rho0dv(SPACEDIM,iglob)*LNS_v0(SPACEDIM,iglob) + in_dp(iglob)
-          !cntrb_rho0dv(SPACEDIM,i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-          !cntrb_rho0dv(SPACEDIM,i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-          tmp_unknown(1) = cv_rho0dv(1,iglob)*LNS_v0(SPACEDIM,iglob)
-          tmp_unknown(SPACEDIM) = cv_rho0dv(SPACEDIM,iglob)*LNS_v0(SPACEDIM,iglob) + in_dp(iglob)
-          cntrb_rho0dv(SPACEDIM,i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-          cntrb_rho0dv(SPACEDIM,i,j,SPACEDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
+          !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)
+          !tmp_unknown_z = cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob)
+          !cntrb_rho0dv(NDIM,i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
+          !cntrb_rho0dv(NDIM,i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
+          tmp_unknown(1) = cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)
+          tmp_unknown(NDIM) = cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob)
+          cntrb_rho0dv(NDIM,i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
+          cntrb_rho0dv(NDIM,i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           
           ! Add viscous stress tensor's contributions.
           if(viscousComputation) then
@@ -181,21 +181,21 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             !cntrb_rho0dv(1,i,j,1) = cntrb_rho0dv(1,i,j,1) + wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
             !cntrb_rho0dv(1,i,j,2) = cntrb_rho0dv(1,i,j,2) + wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
             tmp_unknown(1) = -in_sigma_dv(1,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
-            tmp_unknown(SPACEDIM) = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
+            tmp_unknown(NDIM) = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
             cntrb_rho0dv(1,i,j,1) = cntrb_rho0dv(1,i,j,1) + wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-            cntrb_rho0dv(1,i,j,SPACEDIM) = cntrb_rho0dv(1,i,j,2) + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
+            cntrb_rho0dv(1,i,j,NDIM) = cntrb_rho0dv(1,i,j,2) + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
             !   z-Momentum.
             !tmp_unknown_x = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
             !tmp_unknown_z = -in_sigma_dv(3,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            !cntrb_rho0dv(SPACEDIM,i,j,1) =   cntrb_rho0dv(SPACEDIM,i,j,1) &
+            !cntrb_rho0dv(NDIM,i,j,1) =   cntrb_rho0dv(NDIM,i,j,1) &
             !                               + wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-            !cntrb_rho0dv(SPACEDIM,i,j,2) =   cntrb_rho0dv(SPACEDIM,i,j,2) &
+            !cntrb_rho0dv(NDIM,i,j,2) =   cntrb_rho0dv(NDIM,i,j,2) &
             !                               + wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
             tmp_unknown(1) = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            tmp_unknown(SPACEDIM) = -in_sigma_dv(3,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            cntrb_rho0dv(SPACEDIM,i,j,1) =   cntrb_rho0dv(SPACEDIM,i,j,1) &
+            tmp_unknown(NDIM) = -in_sigma_dv(3,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
+            cntrb_rho0dv(NDIM,i,j,1) =   cntrb_rho0dv(NDIM,i,j,1) &
                                            + wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-            cntrb_rho0dv(SPACEDIM,i,j,SPACEDIM) =   cntrb_rho0dv(SPACEDIM,i,j,2) &
+            cntrb_rho0dv(NDIM,i,j,NDIM) =   cntrb_rho0dv(NDIM,i,j,2) &
                                            + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           endif ! Endif on viscousComputation.
           
@@ -203,41 +203,41 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !if(viscousComputation) then
           !  tmp_unknown_x =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(1,iglob)) &
           !                  + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
-          !                  - LNS_dv(SPACEDIM,iglob)*sigma_v_0(2,iglob) &
-          !                  - LNS_v0(SPACEDIM,iglob)*in_sigma_dv(2,iglob) &
+          !                  - LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) &
+          !                  - LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) &
           !                  + LNS_kappa(iglob)*in_nabla_dT(1,iglob)
-          !  tmp_unknown_z =   LNS_dv(SPACEDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
-          !                  + LNS_v0(SPACEDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
+          !  tmp_unknown_z =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
+          !                  + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
           !                  - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
           !                  - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
-          !                  + LNS_kappa(iglob)*in_nabla_dT(SPACEDIM,iglob)
+          !                  + LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
           !else ! Else on viscousComputation.
           !  tmp_unknown_x =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
           !                  + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob))
-          !  tmp_unknown_z =   LNS_dv(SPACEDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-          !                  + LNS_v0(SPACEDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
+          !  tmp_unknown_z =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
+          !                  + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
           !endif ! Endif on viscousComputation.
           !cntrb_dE(i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
           !cntrb_dE(i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
           if(viscousComputation) then
             tmp_unknown(1) =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(1,iglob)) &
                              + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
-                             - LNS_dv(SPACEDIM,iglob)*sigma_v_0(2,iglob) &
-                             - LNS_v0(SPACEDIM,iglob)*in_sigma_dv(2,iglob) &
+                             - LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) &
+                             - LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) &
                              + LNS_kappa(iglob)*in_nabla_dT(1,iglob)
-            tmp_unknown(SPACEDIM) =   LNS_dv(SPACEDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
-                                    + LNS_v0(SPACEDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
+            tmp_unknown(NDIM) =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
+                                    + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
                                     - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
                                     - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
-                                    + LNS_kappa(iglob)*in_nabla_dT(SPACEDIM,iglob)
+                                    + LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
           else ! Else on viscousComputation.
             tmp_unknown(1) =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
                              + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob))
-            tmp_unknown(SPACEDIM) =   LNS_dv(SPACEDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-                                    + LNS_v0(SPACEDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
+            tmp_unknown(NDIM) =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
+                                    + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
           endif ! Endif on viscousComputation.
           cntrb_dE(i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-          cntrb_dE(i,j,SPACEDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
+          cntrb_dE(i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           
           ! Zero-th degree contributions.
           ! > Mass conservation: none.
@@ -246,25 +246,25 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !   Version 1: most general.
           !d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
           !                         + in_dm(1,iglob)*nabla_v0(1,1,iglob) & ! {\delta_m}_x\partial_xv_{0,x}
-          !                         + in_dm(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,x}
-          !d0cntrb_rho0dv(SPACEDIM,i,j) = (  cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) & ! \rho'g_z
-          !                                + in_dm(1,iglob)*nabla_v0(SPACEDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
-          !                                + in_dm(SPACEDIM,iglob)*nabla_v0(SPACEDIM,SPACEDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
+          !                         + in_dm(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,x}
+          !d0cntrb_rho0dv(NDIM,i,j) = (  cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) & ! \rho'g_z
+          !                                + in_dm(1,iglob)*nabla_v0(NDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
+          !                                + in_dm(NDIM,iglob)*nabla_v0(NDIM,NDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
           !   Version 2: under HV0 (v_{0,z}=0), and SM (d_xv_0=0), dm part of the zero-th degree RHS is simplified.
           !d0cntrb_rho0dv(1,i,j) = (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
-          !                         + cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
-          !d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
+          !                         + cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
+          !d0cntrb_rho0dv(NDIM,i,j) = cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
           !   Version 3: under HV0 (v_{0,z}=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          d0cntrb_rho0dv(1,i,j) = cv_rho0dv(SPACEDIM,iglob)*nabla_v0(1,SPACEDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
-          d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
+          d0cntrb_rho0dv(1,i,j) = cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
+          d0cntrb_rho0dv(NDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
           !   Version 4: under HV0 (v_{0,z}=0), SM (d_xv_0=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
           !d0cntrb_rho0dv(1,i,j) = ZEROcr
-          d0cntrb_rho0dv(SPACEDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
+          d0cntrb_rho0dv(NDIM,i,j) = cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
           ! > Energy.
           !d0cntrb_dE(i,j)       = (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
-          !                         + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(SPACEDIM,iglob)) * jacLoc
+          !                         + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(NDIM,iglob)) * jacLoc
           !   Under potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          d0cntrb_dE(i,j)       = LNS_g(iglob)*in_dm(SPACEDIM,iglob) * jacLoc
+          d0cntrb_dE(i,j)       = LNS_g(iglob)*in_dm(NDIM,iglob) * jacLoc
         enddo
       enddo
       
@@ -277,14 +277,14 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             outrhs_drho(iglob) =   outrhs_drho(iglob) &
                                 + (  cntrb_drho(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                    + cntrb_drho(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            do SPCDM=1,SPACEDIM
+            do SPCDM=1,NDIM
               outrhs_rho0dv(SPCDM,iglob) =   outrhs_rho0dv(SPCDM,iglob) &
                                           + (  cntrb_rho0dv(SPCDM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                              + cntrb_rho0dv(SPCDM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             enddo
-            !outrhs_rho0dv(SPACEDIM,iglob) =   outrhs_rho0dv(SPACEDIM,iglob) &
-            !                      + (  cntrb_rho0dv(SPACEDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-            !                         + cntrb_rho0dv(SPACEDIM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+            !outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
+            !                      + (  cntrb_rho0dv(NDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
+            !                         + cntrb_rho0dv(NDIM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             outrhs_dE(iglob) =   outrhs_dE(iglob) &
                               + (  cntrb_dE(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                  + cntrb_dE(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
@@ -296,7 +296,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           ! Add zero-th order terms.
           !outrhs_drho(iglob)     = outrhs_drho(iglob)     + d0cntrb_drho(i,j) * wxl * wzl
-          do SPCDM=1,SPACEDIM
+          do SPCDM=1,NDIM
             outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxlwzl
           enddo
           outrhs_dE(iglob) = outrhs_dE(iglob) + d0cntrb_dE(i,j) * wxlwzl
@@ -314,7 +314,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           i = link_iface_ijispec(iface1,iface,ispec,1)
           j = link_iface_ijispec(iface1,iface,ispec,2)
           
-          ! Step 1: prepare the normals' parameters (n_out(1), n_out(SPACEDIM), weight, etc.).
+          ! Step 1: prepare the normals' parameters (n_out(1), n_out(NDIM), weight, etc.).
           ! Interior point
           iglobM = ibool_DG(i,j,ispec)
           
@@ -333,7 +333,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           ! TEST WITH IFACE FORMULATION
           n_out(1)        = nx_iface(iface, ispec)
-          n_out(SPACEDIM) = nz_iface(iface, ispec)
+          n_out(NDIM) = nz_iface(iface, ispec)
           !weight = weight_iface(iface1,iface, ispec)
           halfWeight = weight_iface(iface1,iface, ispec)*HALFcr
           neighbor = -1
@@ -366,9 +366,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
           !        neighbor, &
           !        exact_interface_flux, &
-          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(SPACEDIM,iglobM), &
+          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(NDIM,iglobM), &
           !        V_DG(:,:,iglobM), T_DG(:,iglobM), &
-          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(SPACEDIM,iglobP), &
+          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(NDIM,iglobP), &
           !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
           !        nx, nz, weight, currentTime, iface1, iface)
           !        !TEST STRETCH
@@ -415,7 +415,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !endif ! DEBUG
           
           ! Mass conservation (fully inviscid).
-          flux_n = (in_dm(1,iglobM)+dm_P(1))*n_out(1) + (in_dm(SPACEDIM,iglobM)+dm_P(SPACEDIM))*n_out(SPACEDIM)
+          flux_n = (in_dm(1,iglobM)+dm_P(1))*n_out(1) + (in_dm(NDIM,iglobM)+dm_P(NDIM))*n_out(NDIM)
           if(exact_interface_flux) then
             jump = ZERO
           else
@@ -425,8 +425,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! x-Momentum inviscid contributions.
           tmp_unknown(1) =   cv_rho0dv(1,iglobM)*LNS_v0(1,iglobM) + in_dp(iglobM) & ! "M" side.
                            + rho0dv_P(1)*LNS_v0(1,iglobP) + dp_P ! "P" side.
-          tmp_unknown(SPACEDIM) =   cv_rho0dv(SPACEDIM,iglobM)*LNS_v0(1,iglobM) & ! "M" side.
-                                  + rho0dv_P(SPACEDIM)*LNS_v0(1,iglobP) ! "P" side.
+          tmp_unknown(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(1,iglobM) & ! "M" side.
+                                  + rho0dv_P(NDIM)*LNS_v0(1,iglobP) ! "P" side.
           flux_n = DOT_PRODUCT(n_out, tmp_unknown)
           if(exact_interface_flux) then
             jump = ZERO
@@ -435,26 +435,26 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif
           outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           ! z-Momentum inviscid contributions.
-          tmp_unknown(1) =   cv_rho0dv(1,iglobM)*LNS_v0(SPACEDIM,iglobM) & ! "M" side.
-                           + rho0dv_P(1)*LNS_v0(SPACEDIM,iglobP) ! "P" side.
-          tmp_unknown(SPACEDIM) =   cv_rho0dv(SPACEDIM,iglobM)*LNS_v0(SPACEDIM,iglobM) + in_dp(iglobM) & ! "M" side.
-                                  + rho0dv_P(SPACEDIM)*LNS_v0(SPACEDIM,iglobP) + dp_P ! "P" side.
+          tmp_unknown(1) =   cv_rho0dv(1,iglobM)*LNS_v0(NDIM,iglobM) & ! "M" side.
+                           + rho0dv_P(1)*LNS_v0(NDIM,iglobP) ! "P" side.
+          tmp_unknown(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(NDIM,iglobM) + in_dp(iglobM) & ! "M" side.
+                                  + rho0dv_P(NDIM)*LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
           flux_n = DOT_PRODUCT(n_out, tmp_unknown)
           if(exact_interface_flux) then
             jump = ZERO
           else
-            jump = cv_rho0dv(SPACEDIM,iglobM) - rho0dv_P(2)
+            jump = cv_rho0dv(NDIM,iglobM) - rho0dv_P(2)
           endif
-          outrhs_rho0dv(SPACEDIM,iglobM) = outrhs_rho0dv(SPACEDIM,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           ! Energy inviscid contributions.
           tmp_unknown(1) =   LNS_dv(1,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
                            + LNS_v0(1,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
                            + dv_P(1)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
                            + LNS_v0(1,iglobP)*(dE_P + dp_P) ! "P" side, part.
-          tmp_unknown(SPACEDIM) =   LNS_dv(SPACEDIM,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
-                                  + LNS_v0(SPACEDIM,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
-                                  + dv_P(SPACEDIM)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
-                                  + LNS_v0(SPACEDIM,iglobP)*(dE_P + dp_P) ! "P" side, part.
+          tmp_unknown(NDIM) =   LNS_dv(NDIM,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
+                                  + LNS_v0(NDIM,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
+                                  + dv_P(NDIM)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
+                                  + LNS_v0(NDIM,iglobP)*(dE_P + dp_P) ! "P" side, part.
           flux_n = DOT_PRODUCT(n_out, tmp_unknown)
           if(exact_interface_flux) then
             jump = ZERO
@@ -468,33 +468,33 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             ! Note: since we consider here viscous terms, that is purely diffusive phenomena, the acoustic wave speed makes no sense, and thus the jump in the Lax-Friedrich approximation does not appear in the formulations.
             ! x-Momentum viscous contributions. The vector [tmp_unknown_x, tmp_unknown_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
             tmp_unknown(1)        = -in_sigma_dv(1,iglob) -sigma_dv_P(1) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
-            tmp_unknown(SPACEDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
+            tmp_unknown(NDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
             outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*DOT_PRODUCT(n_out, tmp_unknown) ! Add flux' contribution, with dot product \Sigma\cdot n.
             ! z-Momentum viscous contributions. The vector [tmp_unknown_x, tmp_unknown_z] represents the mean average flux at the boundary of the z-momentum (based on the 2nd line of \Sigma_v).
             tmp_unknown(1)        = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            tmp_unknown(SPACEDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            outrhs_rho0dv(SPACEDIM,iglobM) = outrhs_rho0dv(SPACEDIM,iglobM) - halfWeight*DOT_PRODUCT(n_out, tmp_unknown) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            tmp_unknown(NDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
+            outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*DOT_PRODUCT(n_out, tmp_unknown) ! Add flux' contribution, with dot product \Sigma\cdot n.
             ! Energy viscous contributions.
             tmp_unknown(1) = - (  LNS_dv(1,iglobM)*sigma_v_0(1,iglobM) & ! "M" side, part.
                                 + LNS_v0(1,iglobM)*in_sigma_dv(1,iglobM) & ! "M" side, part.
-                                + LNS_dv(SPACEDIM,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
-                                + LNS_v0(SPACEDIM,iglobM)*in_sigma_dv(2,iglobM)) & ! "M" side, part.
+                                + LNS_dv(NDIM,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
+                                + LNS_v0(NDIM,iglobM)*in_sigma_dv(2,iglobM)) & ! "M" side, part.
                              + LNS_kappa(iglobM)*in_nabla_dT(1,iglobM) & ! "M" side, part.
                              - (  dv_P(1)*sigma_v_0(1,iglobP) & ! "P" side, part.
                                 + LNS_v0(1,iglobM)*sigma_dv_P(1) & ! "P" side, part.
-                                + dv_P(SPACEDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
-                                + LNS_v0(SPACEDIM,iglobP)*sigma_dv_P(2)) & ! "P" side, part.
+                                + dv_P(NDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
+                                + LNS_v0(NDIM,iglobP)*sigma_dv_P(2)) & ! "P" side, part.
                              + LNS_kappa(iglobP)*nabla_dT_P(1) ! "P" side, part.
-            tmp_unknown(SPACEDIM) = - (  LNS_dv(SPACEDIM,iglobM)*sigma_v_0(3,iglobM) & ! "M" side, part.
-                                       + LNS_v0(SPACEDIM,iglobM)*in_sigma_dv(3,iglobM) & ! "M" side, part.
+            tmp_unknown(NDIM) = - (  LNS_dv(NDIM,iglobM)*sigma_v_0(3,iglobM) & ! "M" side, part.
+                                       + LNS_v0(NDIM,iglobM)*in_sigma_dv(3,iglobM) & ! "M" side, part.
                                        + LNS_dv(1,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
                                        + LNS_v0(1,iglobM)*in_sigma_dv(2,iglobM)) & ! "M" side, part.
                                     + LNS_kappa(iglobM)*in_nabla_dT(2,iglobM) & ! "M" side, part.
-                                    - (  dv_P(SPACEDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
-                                       + LNS_v0(SPACEDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
+                                    - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
+                                       + LNS_v0(NDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
                                        + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
                                        + LNS_v0(1,iglobP)*sigma_dv_P(2)) & ! "P" side, part.
-                                    + LNS_kappa(iglobP)*nabla_dT_P(SPACEDIM) ! "P" side, part.
+                                    + LNS_kappa(iglobP)*nabla_dT_P(NDIM) ! "P" side, part.
             outrhs_dE(iglobM) = outrhs_dE(iglobM) + halfWeight*DOT_PRODUCT(n_out, tmp_unknown)
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
@@ -590,36 +590,36 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   integer, dimension(3), intent(in) :: neighbor
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
   real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_dE_M, inp_drho_P, inp_dE_P ! Input constitutive variables.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: inp_rho0dv_M, inp_rho0dv_P ! Input constitutive variables.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: inp_rho0dv_M, inp_rho0dv_P ! Input constitutive variables.
   real(kind=CUSTOM_REAL), intent(in) :: inp_dp_M ! Input other variables.
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: T_DG_iP, T_DG_iM ! Input derivatives. MIGHT NEED.
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM), intent(in) :: V_DG_iP, V_DG_iM ! Input derivatives. MIGHT NEED.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: n_out
+  !real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: T_DG_iP, T_DG_iM ! Input derivatives. MIGHT NEED.
+  !real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(in) :: V_DG_iP, V_DG_iM ! Input derivatives. MIGHT NEED.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: n_out
   logical, intent(out) :: exact_interface_flux ! Output switch.
   real(kind=CUSTOM_REAL), intent(out) :: out_drho_P, out_dE_P ! Output constitutive variables.
   !real(kind=CUSTOM_REAL), intent(out) :: Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P ! Output derivatives. MIGHT NEED.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_rho0dv_P ! Output constitutive variable.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: out_dv_P, out_dm_P, out_nabla_dT_P ! Output other variables.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_rho0dv_P ! Output constitutive variable.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_dv_P, out_dm_P, out_nabla_dT_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dp_P ! Output other variables.
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(out) :: out_sigma_dv_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dT_P ! In compute_gradient_TFSF (desintegration method), we need temperature on the other side of the boundary in order to compute the flux.
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: velocity_P ! In compute_gradient_TFSF (desintegration method), we need velocity on the other side of the boundary in order to compute the flux.
+  !real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: velocity_P ! In compute_gradient_TFSF (desintegration method), we need velocity on the other side of the boundary in order to compute the flux.
   logical, intent(in) :: swCompVisc, swCompdT!, swCompv ! Do not unnecessarily compute some quantities.
   
   ! Local.
   integer :: SPCDM
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: velocity_P
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: tang ! Tangential vector.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: velocity_P
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: tang ! Tangential vector.
   real(kind=CUSTOM_REAL) :: normal_v, tangential_v!, &
                             !veloc_x, veloc_z!, gamma_P!, &
-                            !dv_M(1), dv_M(SPACEDIM), inp_dp_M, gamma_P, e1_DG_P
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: veloc_P
+                            !dv_M(1), dv_M(NDIM), inp_dp_M, gamma_P, e1_DG_P
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: veloc_P
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
   !real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM) :: trans_boundary
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
   !real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
   ! Characteristic based BC
   !real(kind=CUSTOM_REAL) :: s_b, rho_inf, v_b_x, v_b_z, un_b, &!, rho_b, p_b, c_b, &
@@ -704,26 +704,26 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
                                             .false., LNS_dummy_1d(1), &
                                             .false., LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in.
         ! Set velocity_P: free slip and normal velocity continuity.
-        !call boundary_condition_DG(i, j, ispec, timelocal, out_drho_P, out_rho0dv_P(1), out_rho0dv_P(SPACEDIM), out_dE_P, &
-        !                           out_dv_P(1), out_dv_P(SPACEDIM), out_dp_P, e1_DG_P) ! Warning, expression of out_dp_P might not be exact.
+        !call boundary_condition_DG(i, j, ispec, timelocal, out_drho_P, out_rho0dv_P(1), out_rho0dv_P(NDIM), out_dE_P, &
+        !                           out_dv_P(1), out_dv_P(NDIM), out_dp_P, e1_DG_P) ! Warning, expression of out_dp_P might not be exact.
         veloc_P = veloc_vector_acoustic_DG_coupling(iglob, :)
         !veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
         !veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
         call build_trans_boundary(n_out, tang, trans_boundary)
         ! Tangential vector
-        ! Since only bottom topography n_out(SPACEDIM) > 0
-        !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-        !tang(SPACEDIM) = n_out(1) ! Recall: n_out(1)=n_x.
+        ! Since only bottom topography n_out(NDIM) > 0
+        !tang(1) = -n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+        !tang(NDIM) = n_out(1) ! Recall: n_out(1)=n_x.
         ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-        !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-        !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+        !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+        !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(NDIM)
         normal_v     = DOT_PRODUCT(n_out, veloc_P)
         tangential_v = DOT_PRODUCT(tang, veloc_P)
         
-        do SPCDM=1,SPACEDIM
+        do SPCDM=1,NDIM
           velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
           !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-          !velocity_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+          !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
         enddo
         ! Set out_dv_P.
         out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
@@ -731,9 +731,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
         ! Set out_dE_P.
         call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
-        !out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 )
+        !out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 )
         ! Set out_rho0dv_P.
-        do SPCDM=1,SPACEDIM
+        do SPCDM=1,NDIM
           out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
         enddo
         !out_rho0dv_P=out_drho_P*out_dv_P
@@ -746,7 +746,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
         ! Set out_dT_P.
         if(swCompdT) then
-          !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
+          !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(NDIM)**2))/c_V
           call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P)
         endif
         
@@ -774,12 +774,12 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Set out_dv_P.
         out_dv_P=out_rho0dv_P/LNS_rho0(iglobM)
         !out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
-        !out_dv_P(SPACEDIM) = out_rho0dv_P(SPACEDIM)/out_drho_P
+        !out_dv_P(NDIM) = out_rho0dv_P(NDIM)/out_drho_P
         
         ! Set out_dp_P.
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
         !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
-        !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
+        !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) )
         
         ! Set out_dm_P: see bottom of routine.
         
@@ -795,7 +795,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         if(swCompdT) then
           call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
         endif
-        !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
+        !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
         
       endif
       
@@ -833,11 +833,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! Set velocity_P: get elastic medium velocities.
       !veloc_P = veloc_elastic(:, iglob)
       call build_trans_boundary(n_out, tang, trans_boundary)
-      !normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(SPACEDIM, iglob)*n_out(SPACEDIM)
+      !normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(NDIM, iglob)*n_out(NDIM)
       normal_v     = DOT_PRODUCT(n_out, veloc_elastic(:,ibool(i_el, j_el, ispec_el)))
-      !tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(SPACEDIM)
+      !tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(NDIM)
       tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-      do SPCDM=1,SPACEDIM
+      do SPCDM=1,NDIM
         velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
       enddo
       
@@ -851,7 +851,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
 
       ! Set out_rho0dv_P.
-      !do SPCDM=1,SPACEDIM
+      !do SPCDM=1,NDIM
       !  out_rho0dv_P(SPCDM) = LNS_rho0(iglobM)*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
       !enddo
       out_rho0dv_P(:)=LNS_rho0(iglobM)*out_dv_P(:)
@@ -906,20 +906,20 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! This is more practical to set the boundary conditions.
       ! The setting of the boundary conditions is thus made here.
       call build_trans_boundary(n_out, tang, trans_boundary)
-      !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-      !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
-      !normal_v = (velocity_P(1)*n_out(1) + velocity_P(SPACEDIM)*n_out(SPACEDIM))
-      !tangential_v = (velocity_P(1)*tang(1) + velocity_P(SPACEDIM)*tang(SPACEDIM))
+      !tang(1) = -n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+      !tang(NDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
+      !normal_v = (velocity_P(1)*n_out(1) + velocity_P(NDIM)*n_out(NDIM))
+      !tangential_v = (velocity_P(1)*tang(1) + velocity_P(NDIM)*tang(NDIM))
       normal_v     = DOT_PRODUCT(n_out, velocity_P)
       tangential_v = DOT_PRODUCT(tang, velocity_P)
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
       !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
       ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-      do SPCDM=1,SPACEDIM
+      do SPCDM=1,NDIM
         velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
         !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
-        !velocity_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+        !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       enddo
       
       ! Set out_dv_P.
@@ -928,10 +928,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! Set out_dE_P.
       call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
       !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - ONEcr) &
-      !         + out_drho_P*HALFcr*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 )
+      !         + out_drho_P*HALFcr*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 )
       
       ! Set out_rho0dv_P.
-      do SPCDM=1,SPACEDIM
+      do SPCDM=1,NDIM
         out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
       enddo
       !out_rho0dv_P=out_drho_P*out_dv_P
@@ -1003,25 +1003,25 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     !veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
     !veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
     call build_trans_boundary(n_out, tang, trans_boundary)
-    ! Tangential vector, since only bottom topography n_out(SPACEDIM) > 0.
-    !tang(1) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-    !tang(SPACEDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
+    ! Tangential vector, since only bottom topography n_out(NDIM) > 0.
+    !tang(1) = -n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+    !tang(NDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
     ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-    !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-    !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(SPACEDIM)
+    !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+    !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(NDIM)
     normal_v     = DOT_PRODUCT(n_out, veloc_P)
     tangential_v = DOT_PRODUCT(tang, veloc_P)
     ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
-    !trans_boundary(1, 1) =  tang(SPACEDIM)
-    !trans_boundary(1, 2) = -n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
+    !trans_boundary(1, 1) =  tang(NDIM)
+    !trans_boundary(1, 2) = -n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
     !trans_boundary(2, 1) = -tang(1)
     !trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
-    !trans_boundary = trans_boundary/(n_out(1) * tang(SPACEDIM) - tang(1) * n_out(SPACEDIM))
+    !trans_boundary = trans_boundary/(n_out(1) * tang(NDIM) - tang(1) * n_out(NDIM))
     ! Set velocity_P: free slip and normal velocity continuity.
-    do SPCDM=1,SPACEDIM
+    do SPCDM=1,NDIM
       velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
       !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-      !velocity_P(SPACEDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
+      !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
     enddo
     ! Set out_dv_P.
     out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
@@ -1029,16 +1029,16 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
     ! Set out_dE_P.
     call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
-    !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) ! Warning, expression of out_dp_P might not be exact.
+    !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) ! Warning, expression of out_dp_P might not be exact.
     ! Set out_rho0dv_P.
-    do SPCDM=1,SPACEDIM
+    do SPCDM=1,NDIM
       out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
     enddo
     !out_rho0dv_P=out_drho_P*out_dv_P
     ! Set gradients, and sigma
     !out_nabla_dT_P
     !call compute_gradient_TFSF(LNS_dv, LNS_dT, .true., .true., switch_gradient, nabla_dv, nabla_dT)
-    !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(SPACEDIM)**2))/c_V
+    !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(NDIM)**2))/c_V
     ! Set out_dm_P: see bottom of routine.
     if(swCompVisc) then
       ! Set out_nabla_dT_P: same as other side.
@@ -1080,7 +1080,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     ! Set out_dp_P.
     call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
     !out_dp_P       = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
-    !               - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(SPACEDIM)**2 ) )
+    !               - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) )
     
     ! Set out_dm_P: see bottom of routine.
     if(swCompVisc) then
@@ -1094,7 +1094,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     if(swCompdT) then
       call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
     endif
-    !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(SPACEDIM)/out_drho_P)**2))/c_V
+    !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
     
   endif
   
@@ -1109,27 +1109,26 @@ end subroutine LNS_get_interfaces_unknowns
 ! build_trans_boundary                                         !
 ! ------------------------------------------------------------ !
 subroutine build_trans_boundary(normal, tangential, transf_matrix)
-  use constants, only: CUSTOM_REAL
-  use specfem_par_LNS, only: SPACEDIM
+  use constants, only: CUSTOM_REAL, NDIM
   
   implicit none
   
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: normal
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(out) :: tangential
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM), intent(out) :: transf_matrix
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: tangential
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: transf_matrix
   
   ! Local.
   ! N./A.
   
-  ! For the tangential vector, it is assumed that we will only have the elastic media under the DG medium, hence we always have n_out(SPACEDIM)>=0.
-  tangential(1)                     = -normal(SPACEDIM) ! Recall: normal(SPACEDIM)=n_z.
-  tangential(SPACEDIM)              =  normal(1) ! Recall: normal(1)=n_x.
-  transf_matrix(1,        1)        =   tangential(SPACEDIM)
-  transf_matrix(1,        SPACEDIM) = - normal(SPACEDIM) ! Recall: normal(SPACEDIM)=n_z.
-  transf_matrix(SPACEDIM, 1)        = - tangential(1)
-  transf_matrix(SPACEDIM, SPACEDIM) =   normal(1) ! Recall: normal(1)=n_x.
-  transf_matrix = transf_matrix/(normal(1)*tangential(SPACEDIM) - tangential(1)*normal(SPACEDIM))
+  ! For the tangential vector, it is assumed that we will only have the elastic media under the DG medium, hence we always have n_out(NDIM)>=0.
+  tangential(1)                     = -normal(NDIM) ! Recall: normal(NDIM)=n_z.
+  tangential(NDIM)              =  normal(1) ! Recall: normal(1)=n_x.
+  transf_matrix(1,        1)        =   tangential(NDIM)
+  transf_matrix(1,        NDIM) = - normal(NDIM) ! Recall: normal(NDIM)=n_z.
+  transf_matrix(NDIM, 1)        = - tangential(1)
+  transf_matrix(NDIM, NDIM) =   normal(1) ! Recall: normal(1)=n_x.
+  transf_matrix = transf_matrix/(normal(1)*tangential(NDIM) - tangential(1)*normal(NDIM))
 end subroutine 
 
 

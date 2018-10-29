@@ -244,14 +244,14 @@
                                                      *(LNS_v0(1,iglob_DG)+LNS_dv(1,iglob_DG))**2) &
                                              + nz*(LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
                                                  *(LNS_v0(1,iglob_DG)+LNS_dv(1,iglob_DG)) &
-                                                 *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG)) )
+                                                 *(LNS_v0(NDIM,iglob_DG)+LNS_dv(NDIM,iglob_DG)) )
           accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
                                    + weight*(  nx*(LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
                                                  *(LNS_v0(1,iglob_DG)+LNS_dv(1,iglob_DG)) &
-                                                 *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG)) &
+                                                 *(LNS_v0(NDIM,iglob_DG)+LNS_dv(NDIM,iglob_DG)) &
                                              + nz*(  LNS_dp(iglob_DG) &
                                                    + (LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &
-                                                     *(LNS_v0(SPACEDIM,iglob_DG)+LNS_dv(SPACEDIM,iglob_DG))**2) )
+                                                     *(LNS_v0(NDIM,iglob_DG)+LNS_dv(NDIM,iglob_DG))**2) )
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
             if(LNS_mu(iglob) > 0. .OR. LNS_eta(iglob) > 0. .OR. LNS_kappa(iglob) > 0.) then
               accel_elastic(1,iglob) =   accel_elastic(1,iglob) &

@@ -544,7 +544,7 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
   real(kind=CUSTOM_REAL), intent(out) :: forced_SF
   
   ! Local.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: x
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: x
   real(kind=CUSTOM_REAL) :: L_0,P_0,t_0,x_0
   integer externalforcingid ! TYPE_FORCING==10.
   
@@ -552,9 +552,9 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
   
   ! Get point position.
   x = real(coord(:, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)
-  x(SPACEDIM) = x(SPACEDIM) - coord_interface ! Remove eventual non-zero altitude of interface.
+  x(NDIM) = x(NDIM) - coord_interface ! Remove eventual non-zero altitude of interface.
   
-  if(abs(x(SPACEDIM))<TINYVAL) then
+  if(abs(x(NDIM))<TINYVAL) then
     ! For now, forcings only occur on bottom boundary. This test thus enables faster treatment.
     
     L_0 = main_spatial_period ! TODO: replace "_0" variable by its longer name. Reduces readability, but will increase computation speed.
@@ -565,7 +565,7 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
     select case (TYPE_FORCING)
       case (99)
         ! Testing purposes case.
-        if(abs(x(SPACEDIM))<TINYVAL) then
+        if(abs(x(NDIM))<TINYVAL) then
           ! If z==0.
           !forced_SF = sin(2.*PI*x(1)/10.)
           forced_SF = cos(2.*PI*current_time/0.08)-1.
