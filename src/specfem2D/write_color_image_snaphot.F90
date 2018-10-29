@@ -99,9 +99,9 @@
           case(1)
             where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(1,:) / LNS_rho0
           case(2)
-            where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(SPACEDIM,:) / LNS_rho0
+            where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(NDIM,:) / LNS_rho0
           case(3)
-            where(LNS_rho0>0.) vector_DG_temp = sqrt((LNS_rho0dv(1,:) / LNS_rho0)**2 + (LNS_rho0dv(SPACEDIM,:) / LNS_rho0)**2)
+            where(LNS_rho0>0.) vector_DG_temp = sqrt((LNS_rho0dv(1,:) / LNS_rho0)**2 + (LNS_rho0dv(NDIM,:) / LNS_rho0)**2)
           case default
             stop "This statement should not have been reached."
         end select

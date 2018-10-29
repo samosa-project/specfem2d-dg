@@ -8,8 +8,8 @@ module specfem_par_LNS
   logical :: USE_LNS
   
   ! 2D/3D generalisation pre-work.
-  integer(kind=selected_int_kind(1)), parameter :: SPACEDIM = 2 ! Spatial dimension (for later generalisation) Min/Maximum values: [-10^1+1=-9, 10^1-1=9] (ok since we only need 2 or 3, and maybe 1).
-  integer, parameter :: NVALSIGMA=int(0.5*SPACEDIM*(SPACEDIM+1)) ! Number of distinct values in the symmetric viscous tensor.
+  !integer(kind=selected_int_kind(1)), parameter :: SPACEDIM = 2 ! Spatial dimension (for later generalisation) Min/Maximum values: [-10^1+1=-9, 10^1-1=9] (ok since we only need 2 or 3, and maybe 1).
+  integer, parameter :: NVALSIGMA=int(0.5*NDIM*(NDIM+1)) ! Number of distinct values in the symmetric viscous tensor.
   
   ! Physical parameters.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa

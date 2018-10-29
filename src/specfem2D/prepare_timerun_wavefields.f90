@@ -347,19 +347,19 @@
                potential_dphi_dx_DG, potential_dphi_dz_DG) ! Not really optimal, but less invasive.
     
     allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG)) ! State.
-    allocate(LNS_rho0dv(SPACEDIM,nglob_DG)) ! State.
+    allocate(LNS_rho0dv(NDIM,nglob_DG)) ! State.
     allocate(LNS_dp(nglob_DG), LNS_dT(nglob_DG)) ! Pressure and temperature perturbation.
-    allocate(LNS_dv(SPACEDIM,nglob_DG), LNS_dm(SPACEDIM,nglob_DG)) ! Velocity perturbation, and momentum (1st order) perturbation.
-    allocate(RHS_drho(nglob_DG), RHS_rho0dv(SPACEDIM,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
-    allocate(aux_drho(nglob_DG), aux_rho0dv(SPACEDIM,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
+    allocate(LNS_dv(NDIM,nglob_DG), LNS_dm(NDIM,nglob_DG)) ! Velocity perturbation, and momentum (1st order) perturbation.
+    allocate(RHS_drho(nglob_DG), RHS_rho0dv(NDIM,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
+    allocate(aux_drho(nglob_DG), aux_rho0dv(NDIM,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
     allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.
-    allocate(LNS_v0(SPACEDIM,nglob_DG)) ! Initial state.
+    allocate(LNS_v0(NDIM,nglob_DG)) ! Initial state.
     
-    allocate(nabla_v0(SPACEDIM,SPACEDIM,nglob_DG)) ! Gradient of initial velocity.
+    allocate(nabla_v0(NDIM,NDIM,nglob_DG)) ! Gradient of initial velocity.
     allocate(LNS_p0(nglob_DG), LNS_T0(nglob_DG)) ! Initial pressure and temperature.
     allocate(sigma_v_0(NVALSIGMA, nglob_DG)) ! Initial viscous stress tensor.
     
-    allocate(nabla_dT(SPACEDIM, nglob_DG)) ! Gradient of temperature perturbation.
+    allocate(nabla_dT(NDIM, nglob_DG)) ! Gradient of temperature perturbation.
     allocate(sigma_dv(NVALSIGMA, nglob_DG)) ! Viscous stress tensor perturbation.
     
     ! Physical parameters.

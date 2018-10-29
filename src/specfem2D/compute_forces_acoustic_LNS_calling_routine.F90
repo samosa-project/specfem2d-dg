@@ -38,7 +38,7 @@ subroutine compute_forces_acoustic_LNS_main()
   !  LNS_dm, LNS_dp, LNS_dT,&
   !  buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P,&
   !  LNS_VERBOSE,&
-  !  SPACEDIM,&
+  !  NDIM,&
   !  LNS_dummy_1d, LNS_dummy_2d!, LNS_dummy_3d
 
   implicit none
@@ -48,10 +48,10 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: LNS_dv
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM,SPACEDIM,nglob_DG) :: nabla_dv
+  !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: LNS_dv
+  real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
   !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: nabla_dT
+  !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: nabla_dT
   integer :: ier, i_aux!,i,j,ispec
   logical check_linearHypothesis!, check_linearHypothesis_ON_ALL_PROCS, check_linearHypothesis_FIND_POINT
   logical switch_gradient
@@ -232,14 +232,14 @@ subroutine compute_forces_acoustic_LNS_main()
 !  if (NPROC > 1 .and. ninterface_acoustic > 0) then
 !    ! Assemble state buffers.
 !    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-!    do i_aux=1,SPACEDIM
+!    do i_aux=1,NDIM
 !      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
 !    enddo
 !    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
 !    
 !    ! Assemble viscous buffers.
 !    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-!      do i_aux=1,SPACEDIM
+!      do i_aux=1,NDIM
 !        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
 !      enddo
 !      do i_aux=1,NVALSIGMA
@@ -256,7 +256,7 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! Precompute momentum perturbation and velocity perturbation.
   LNS_dv=ZEROcr
-  do i_aux=1,SPACEDIM
+  do i_aux=1,NDIM
     LNS_dm(i_aux,:) = LNS_rho0dv(i_aux,:)+LNS_drho*LNS_v0(i_aux,:)
     where(LNS_rho0/=ZEROcr) LNS_dv(i_aux,:)=LNS_rho0dv(i_aux,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
@@ -284,14 +284,14 @@ subroutine compute_forces_acoustic_LNS_main()
   if (NPROC > 1 .and. ninterface_acoustic > 0) then
     ! Assemble state buffers.
     call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-    do i_aux=1,SPACEDIM
+    do i_aux=1,NDIM
       call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
     enddo
     call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
     
     ! Assemble viscous buffers.
     if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-      do i_aux=1,SPACEDIM
+      do i_aux=1,NDIM
         call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
       enddo
       do i_aux=1,NVALSIGMA
@@ -331,7 +331,7 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_drho               = LNS_drho + scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
     LNS_dE                 = LNS_dE   + scheme_B(i_stage)*aux_dE
     ! Group momentum treatment in loop.
-    do i_aux=1,SPACEDIM
+    do i_aux=1,NDIM
       RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)
       aux_rho0dv(i_aux,:) = scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
       LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + scheme_B(i_stage)*aux_rho0dv(i_aux,:)
@@ -347,7 +347,7 @@ subroutine compute_forces_acoustic_LNS_main()
     !write(*,*) 'kek', kek
     !write(*,*) 'v1', norm2(LNS_rho0dv(:,5:6))
     !write(*,*) 'v2', norm2(reshape(LNS_rho0dv(:,5),(/2,1/)))
-    !write(*,*) '|v1-v2|', abs(norm2(LNS_rho0dv(:,5:8))-(LNS_rho0dv(1,5:8)**2 + LNS_rho0dv(SPACEDIM,5:8)**2))
+    !write(*,*) '|v1-v2|', abs(norm2(LNS_rho0dv(:,5:8))-(LNS_rho0dv(1,5:8)**2 + LNS_rho0dv(NDIM,5:8)**2))
     !write(*,*) "kek"
     !write(*,*) size(ibool_before_perio) ! 0 to nspec
     !write(*,*) size(ibool) ! 0 to nspec
@@ -383,7 +383,7 @@ subroutine compute_forces_acoustic_LNS_main()
       !            if(LNS_drho(ibool_DG(i, j, ispec))==minval(LNS_drho)) then
       !              WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
       !              write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), &
-      !                          coord(SPACEDIM, ibool_before_perio(i, j, ispec)), ".*"
+      !                          coord(NDIM, ibool_before_perio(i, j, ispec)), ".*"
       !              !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
       !              !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
       !            endif
@@ -421,11 +421,11 @@ subroutine compute_forces_acoustic_LNS_main()
   !  endif
   !  ! rhovz.
   !  if(CONSTRAIN_HYDROSTATIC) then
-  !    veloc_x = LNS_rho0dv(SPACEDIM,:) - LNS_v0(SPACEDIM,:)
+  !    veloc_x = LNS_rho0dv(NDIM,:) - LNS_v0(NDIM,:)
   !    call SlopeLimit1(veloc_x, timelocal, 1)
-  !    LNS_rho0dv(SPACEDIM,:) = veloc_x + LNS_v0(SPACEDIM,:)
+  !    LNS_rho0dv(NDIM,:) = veloc_x + LNS_v0(NDIM,:)
   !  else
-  !    call SlopeLimit1(LNS_rho0dv(SPACEDIM,:), timelocal, 3)
+  !    call SlopeLimit1(LNS_rho0dv(NDIM,:), timelocal, 3)
   !  endif
   !  ! E.
   !  if(CONSTRAIN_HYDROSTATIC) then
@@ -500,10 +500,10 @@ end subroutine initial_state_LNS
 ! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
-  use constants, only: CUSTOM_REAL, TINYVAL
+  use constants, only: CUSTOM_REAL, TINYVAL, NDIM
   use specfem_par, only: assign_external_model, gammaext_DG, ibool_DG, pext_dg, rhoext, &
 SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
-  use specfem_par_LNS, only: LNS_g, SPACEDIM
+  use specfem_par_LNS, only: LNS_g
 
   implicit none
   
@@ -625,10 +625,10 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
   if(swComputeV) then
     if(TYPE_FORCING/=0) then
       ! If forcing exists, apply it.
-      call forcing_DG(i, j, ispec, timelocal, out_v(SPACEDIM))
+      call forcing_DG(i, j, ispec, timelocal, out_v(NDIM))
     else
       ! Else, force it to be zero.
-      out_v(SPACEDIM) = ZEROcr
+      out_v(NDIM) = ZEROcr
       ! One might want to set vertical wind here, too.
     endif
   endif
@@ -643,7 +643,7 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
   if(swComputeE) then
     call compute_E_i(out_rho, out_v, out_p, out_E, iglob)
     !out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
-    !        + out_rho*HALFcr*( out_v(1)**2 + out_v(SPACEDIM)**2 )
+    !        + out_rho*HALFcr*( out_v(1)**2 + out_v(NDIM)**2 )
   endif
 end subroutine background_physical_parameters
 
@@ -653,10 +653,10 @@ end subroutine background_physical_parameters
 ! Set fluid properties.
 
 subroutine set_fluid_properties(i, j, ispec)
-  use constants, only: CUSTOM_REAL, TINYVAL
+  use constants, only: CUSTOM_REAL, TINYVAL, NDIM
   use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, etaext, &
 gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_conductivity_cte_DG, USE_ISOTHERMAL_MODEL
-  use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu, SPACEDIM
+  use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu
 
   implicit none
   
@@ -723,14 +723,14 @@ end subroutine set_fluid_properties
 
 subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
                                              sigma_v)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: nglob_DG
-  use specfem_par_LNS, only: SPACEDIM, LNS_eta, LNS_mu
+  use specfem_par_LNS, only: LNS_eta, LNS_mu
   
   implicit none
   
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM, nglob_DG), intent(in) :: nabla_v
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM, nglob_DG), intent(in) :: nabla_v
   real(kind=CUSTOM_REAL), dimension(3, nglob_DG), intent(out) :: sigma_v
   
   ! Local.
@@ -745,9 +745,9 @@ subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
   !sigma_v(3,:) = TWOcr*LNS_mu*nabla_v(2,2,:) + LNS_lambda*(nabla_v(1,1,:)+nabla_v(2,2,:))
   
   ! Compact.
-  sigma_v(1,:) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(1,1,:) + LNS_lambda*nabla_v(SPACEDIM,2,:)
-  sigma_v(2,:) = LNS_mu*(nabla_v(1,2,:)+nabla_v(SPACEDIM,1,:))
-  sigma_v(3,:) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(SPACEDIM,2,:) + LNS_lambda*nabla_v(1,1,:)
+  sigma_v(1,:) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(1,1,:) + LNS_lambda*nabla_v(NDIM,2,:)
+  sigma_v(2,:) = LNS_mu*(nabla_v(1,2,:)+nabla_v(NDIM,1,:))
+  sigma_v(3,:) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(NDIM,2,:) + LNS_lambda*nabla_v(1,1,:)
   
 end subroutine LNS_compute_viscous_stress_tensor
 
@@ -787,27 +787,27 @@ end subroutine LNS_compute_viscous_stress_tensor
 !   See doi:10.1016/j.jcp.2007.12.009, section 4.3.2 for the "desintegration method".
    
 subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_SF, timelocal)
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL, NDIM
   use specfem_par, only: gammax, gammaz, hprime_xx, hprime_zz, hprimewgll_xx, hprimewgll_zz,&
 ibool_DG, ispec_is_acoustic_DG, jacobian, link_iface_ijispec, neighbor_dg_iface, nglob_DG, nspec, nx_iface,&
 nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
-  use specfem_par_LNS, only: LNS_dE, LNS_drho, LNS_dummy_1d, LNS_dummy_2d, LNS_rho0dv, LNS_v0, SPACEDIM
+  use specfem_par_LNS, only: LNS_dE, LNS_drho, LNS_dummy_1d, LNS_dummy_2d, LNS_rho0dv, LNS_v0
   
   implicit none
   
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: SF
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG) :: TF
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG) :: TF
   logical, intent(in) :: swTF, swSF, swMETHOD
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(out) :: nabla_SF
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, SPACEDIM, nglob_DG), intent(out) :: nabla_TF
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: nabla_SF
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM, nglob_DG), intent(out) :: nabla_TF
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
   
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: SF_P ! When swMETHOD==.true., this variable is used to store the value of the scalar field SF across the element's boundary, in order to compute the flux.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
   integer :: ispec,i,j,k,iglob, iglobM, iglobP!, iglob_unique
   real(kind=CUSTOM_REAL) :: weight!, flux_n, flux_x, flux_z,  !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         !E_DG_P&!, p_DG_P, &
@@ -821,14 +821,14 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   !real(kind=CUSTOM_REAL) :: temp_SFx, temp_SFz, temp_TFxx, temp_TFzx, temp_TFxz, temp_TFzz
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
   !       rho_DG, rhovx_DG, rhovz_DG, E_DG, veloc_x_DG, veloc_z_DG, T, &
-  !       nabla_SF(1,:), nabla_SF(SPACEDIM,:), nabla_TF(1,1,:), nabla_TF(SPACEDIM,SPACEDIM,:), nabla_TF(1,SPACEDIM,:), nabla_TF(SPACEDIM,1,:)
+  !       nabla_SF(1,:), nabla_SF(NDIM,:), nabla_TF(1,1,:), nabla_TF(NDIM,NDIM,:), nabla_TF(1,NDIM,:), nabla_TF(NDIM,1,:)
   
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM,nglob_DG) :: locgrad_SF
-  !real(kind=CUSTOM_REAL), dimension(SPACEDIM,SPACEDIM,nglob_DG) :: locgrad_TF
+  !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: locgrad_SF
+  !real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: locgrad_TF
   
-  !real(kind=CUSTOM_REAL) :: dxiTF(1), dgamTF(1), dxiTF(SPACEDIM), dgamTF(SPACEDIM), dSF_dxi, dSF_dgamma ! Derivatives in \Lambda.
+  !real(kind=CUSTOM_REAL) :: dxiTF(1), dgamTF(1), dxiTF(NDIM), dgamTF(NDIM), dSF_dxi, dSF_dgamma ! Derivatives in \Lambda.
   real(kind=CUSTOM_REAL) :: dSF_dxi, dSF_dgamma ! Derivatives in \Lambda.
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM) :: dxiTF, dgamTF ! Derivatives in \Lambda.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: dxiTF, dgamTF ! Derivatives in \Lambda.
   !real(kind=CUSTOM_REAL) :: dTFx_dx, dTFx_dz, dTFz_dx, dTFz_dz, dSF_dx, dSF_dz
   real(kind=CUSTOM_REAL) :: wxl, wzl ! Quadrature weights.
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_SFx_1, temp_SFx_2, &
@@ -889,11 +889,11 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             ! - \int_{\Omega} T\nabla\Phi + \int_{\partial\Omega} f\Phi.
             ! The idea is to store in:
             !   nabla_SF(1,:),
-            !   nabla_SF(SPACEDIM,:),
+            !   nabla_SF(NDIM,:),
             !   nabla_TF(1,1,:),
-            !   nabla_TF(1,SPACEDIM,:),
-            !   nabla_TF(SPACEDIM,1,:),
-            !   nabla_TF(SPACEDIM,SPACEDIM,:)
+            !   nabla_TF(1,NDIM,:),
+            !   nabla_TF(NDIM,1,:),
+            !   nabla_TF(NDIM,NDIM,:)
             ! the values of the approximated integrals:
             !  $\int \partial_xT\Phi_x$,
             !  $\int \partial_zT\Phi_z$,
@@ -912,12 +912,12 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             if(swTF) then
               temp_TFxx_1(i,j) = wzl * jacLoc * (xixl * TF(1,iglob))
               temp_TFxz_1(i,j) = wzl * jacLoc * (xizl * TF(1,iglob))
-              temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * TF(SPACEDIM,iglob))
-              temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * TF(SPACEDIM,iglob))
+              temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * TF(NDIM,iglob))
+              temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * TF(NDIM,iglob))
               temp_TFxx_2(i,j) = wxl * jacLoc * (gammaxl * TF(1,iglob))
               temp_TFxz_2(i,j) = wxl * jacLoc * (gammazl * TF(1,iglob))
-              temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * TF(SPACEDIM,iglob))
-              temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * TF(SPACEDIM,iglob))
+              temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * TF(NDIM,iglob))
+              temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * TF(NDIM,iglob))
             endif
             !else
             !  vx_init = rhovx_init(iglob)/rho_init(iglob)
@@ -927,25 +927,25 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             !  temp_SFz_1(i,j)  = wzl * jacLoc * (xizl * (SF(iglob) - T_init(iglob)))
             !  temp_TFxx_1(i,j) = wzl * jacLoc * (xixl * (TF(1,iglob) - vx_init))
             !  temp_TFxz_1(i,j) = wzl * jacLoc * (xizl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * (TF(SPACEDIM,iglob) - vz_init))
-            !  temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * (TF(SPACEDIM,iglob) - vz_init))
+            !  temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * (TF(NDIM,iglob) - vz_init))
+            !  temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * (TF(NDIM,iglob) - vz_init))
             !  
             !  temp_SFx_2(i,j)  = wxl * jacLoc * (gammaxl * (SF(iglob) - T_init(iglob)))
             !  temp_SFz_2(i,j)  = wxl * jacLoc * (gammazl * (SF(iglob) - T_init(iglob)))
             !  temp_TFxx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(1,iglob) - vx_init))
             !  temp_TFxz_2(i,j) = wxl * jacLoc * (gammazl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(SPACEDIM,iglob) - vz_init))
-            !  temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * (TF(SPACEDIM,iglob) - vz_init))
+            !  temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(NDIM,iglob) - vz_init))
+            !  temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * (TF(NDIM,iglob) - vz_init))
             !endif
           else
             ! In that case, we want to compute \int_{\Omega} (\nabla f)\Phi directly as it.
             ! The idea is to store in:
             !   nabla_SF(1,:),
-            !   nabla_SF(SPACEDIM,:),
+            !   nabla_SF(NDIM,:),
             !   nabla_TF(1,1,:),
-            !   nabla_TF(1,SPACEDIM,:),
-            !   nabla_TF(SPACEDIM,1,:),
-            !   nabla_TF(SPACEDIM,SPACEDIM,:)
+            !   nabla_TF(1,NDIM,:),
+            !   nabla_TF(NDIM,1,:),
+            !   nabla_TF(NDIM,NDIM,:)
             ! the actual values of the quantities:
             !   \partial_xT,
             !   \partial_zT,
@@ -973,8 +973,8 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
               if(swTF) then
                 dxiTF(1)         = dxiTF(1)         + TF(1,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
                 dgamTF(1)        = dgamTF(1)        + TF(1,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dxiTF(SPACEDIM)  = dxiTF(SPACEDIM)  + TF(SPACEDIM,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dgamTF(SPACEDIM) = dgamTF(SPACEDIM) + TF(SPACEDIM,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dxiTF(NDIM)  = dxiTF(NDIM)  + TF(NDIM,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dgamTF(NDIM) = dgamTF(NDIM) + TF(NDIM,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
               !else
               !  vx_init = rhovx_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
@@ -984,10 +984,10 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
               !  dgamTF(1) = dgamTF(1) + (TF(1,ibool_DG(i,k,ispec)) - vx_init) &
               !                            * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               !  vz_init = rhovz_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-              !  dxiTF(SPACEDIM) = dxiTF(SPACEDIM) + (TF(SPACEDIM,ibool_DG(k,j,ispec)) - vz_init) &
+              !  dxiTF(NDIM) = dxiTF(NDIM) + (TF(NDIM,ibool_DG(k,j,ispec)) - vz_init) &
               !                      * real(hprime_xx(i,k), kind=CUSTOM_REAL)
               !  vz_init = rhovz_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))
-              !  dgamTF(SPACEDIM) = dgamTF(SPACEDIM) + (TF(SPACEDIM,ibool_DG(i,k,ispec)) - vz_init) &
+              !  dgamTF(NDIM) = dgamTF(NDIM) + (TF(NDIM,ibool_DG(i,k,ispec)) - vz_init) &
               !                            * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               !  dSF_dxi = dSF_dxi + (SF(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
               !                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
@@ -1003,30 +1003,30 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
               !temp_SFx = dSF_dx * jacLoc
               !temp_SFz = dSF_dz * jacLoc
               !nabla_SF(1,iglob) = dSF_dx
-              !nabla_SF(SPACEDIM,iglob) = dSF_dz
+              !nabla_SF(NDIM,iglob) = dSF_dz
               nabla_SF(1,iglob) = dSF_dxi * xixl + dSF_dgamma * gammaxl
-              nabla_SF(SPACEDIM,iglob) = dSF_dxi * xizl + dSF_dgamma * gammazl
+              nabla_SF(NDIM,iglob) = dSF_dxi * xizl + dSF_dgamma * gammazl
             endif
             if(swTF) then
               !dTFx_dx   = dxiTF(1) * xixl + dgamTF(1) * gammaxl
               !dTFx_dz   = dxiTF(1) * xizl + dgamTF(1) * gammazl
-              !dTFz_dx   = dxiTF(SPACEDIM) * xixl + dgamTF(SPACEDIM) * gammaxl
-              !dTFz_dz   = dxiTF(SPACEDIM) * xizl + dgamTF(SPACEDIM) * gammazl
+              !dTFz_dx   = dxiTF(NDIM) * xixl + dgamTF(NDIM) * gammaxl
+              !dTFz_dz   = dxiTF(NDIM) * xizl + dgamTF(NDIM) * gammazl
               !temp_TFxx = dTFx_dx * jacLoc
               !temp_TFxz = dTFx_dz * jacLoc
               !temp_TFzx = dTFz_dx * jacLoc
               !temp_TFzz = dTFz_dz * jacLoc
               !nabla_TF(1,1,iglob) = dTFx_dx
-              !nabla_TF(1,SPACEDIM,iglob) = dTFx_dz
-              !nabla_TF(SPACEDIM,1,iglob) = dTFz_dx
-              !nabla_TF(SPACEDIM,SPACEDIM,iglob) = dTFz_dz
-              do k=1,SPACEDIM ! Re-using index k for spatial dimension.
+              !nabla_TF(1,NDIM,iglob) = dTFx_dz
+              !nabla_TF(NDIM,1,iglob) = dTFz_dx
+              !nabla_TF(NDIM,NDIM,iglob) = dTFz_dz
+              do k=1,NDIM ! Re-using index k for spatial dimension.
                 nabla_TF(k,1,iglob) = dxiTF(k) * xixl + dgamTF(k) * gammaxl
-                nabla_TF(k,SPACEDIM,iglob) = dxiTF(k) * xizl + dgamTF(k) * gammazl
+                nabla_TF(k,NDIM,iglob) = dxiTF(k) * xizl + dgamTF(k) * gammazl
                 !nabla_TF(1,1,iglob) = dxiTF(1) * xixl + dgamTF(1) * gammaxl
-                !nabla_TF(1,SPACEDIM,iglob) = dxiTF(1) * xizl + dgamTF(1) * gammazl
-                !nabla_TF(SPACEDIM,1,iglob) = dxiTF(SPACEDIM) * xixl + dgamTF(SPACEDIM) * gammaxl
-                !nabla_TF(SPACEDIM,SPACEDIM,iglob) = dxiTF(SPACEDIM) * xizl + dgamTF(SPACEDIM) * gammazl
+                !nabla_TF(1,NDIM,iglob) = dxiTF(1) * xizl + dgamTF(1) * gammazl
+                !nabla_TF(NDIM,1,iglob) = dxiTF(NDIM) * xixl + dgamTF(NDIM) * gammaxl
+                !nabla_TF(NDIM,NDIM,iglob) = dxiTF(NDIM) * xizl + dgamTF(NDIM) * gammazl
               enddo
             endif
           endif
@@ -1044,7 +1044,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
               nabla_SF(1,iglob) = nabla_SF(1,iglob) - &
                                (temp_SFx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                 temp_SFx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_SF(SPACEDIM,iglob) = nabla_SF(SPACEDIM,iglob) - &
+              nabla_SF(NDIM,iglob) = nabla_SF(NDIM,iglob) - &
                                (temp_SFz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                 temp_SFz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               endif
@@ -1052,13 +1052,13 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
               nabla_TF(1,1,iglob) = nabla_TF(1,1,iglob) - &
                                 (temp_TFxx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                  temp_TFxx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_TF(1,SPACEDIM,iglob) = nabla_TF(1,SPACEDIM,iglob) - &
+              nabla_TF(1,NDIM,iglob) = nabla_TF(1,NDIM,iglob) - &
                                 (temp_TFxz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                  temp_TFxz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_TF(SPACEDIM,1,iglob) = nabla_TF(SPACEDIM,1,iglob) - &
+              nabla_TF(NDIM,1,iglob) = nabla_TF(NDIM,1,iglob) - &
                                 (temp_TFzx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                  temp_TFzx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_TF(SPACEDIM,SPACEDIM,iglob) = nabla_TF(SPACEDIM,SPACEDIM,iglob) - &
+              nabla_TF(NDIM,NDIM,iglob) = nabla_TF(NDIM,NDIM,iglob) - &
                                 (temp_TFzz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                  temp_TFzz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               endif
@@ -1116,26 +1116,26 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
           !call compute_interface_unknowns(i,j,ispec, drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(SPACEDIM), in_dp_P, T_P, &
+          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(NDIM), in_dp_P, T_P, &
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
           !        neighbor, &
           !        exact_interface_flux, &
-          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(SPACEDIM,iglobM), &
+          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(NDIM,iglobM), &
           !        V_DG(:,:,iglobM), T_DG(:,iglobM), &
-          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(SPACEDIM,iglobP), &
+          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(NDIM,iglobP), &
           !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
           !        nx, nz, weight, currentTime, iface1, iface)
           !        !TEST STRETCH
           !        !nx_unit, nz_unit, weight, currentTime, iface1, iface)
           !call LNS_get_interfaces_unknowns(i, j, ispec, &
           !        drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(SPACEDIM), in_dp_P, T_P, &
+          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(NDIM), in_dp_P, T_P, &
           !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
           !        neighbor, &
           !        exact_interface_flux, &
-          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(SPACEDIM,iglobM), &
+          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(NDIM,iglobM), &
           !        V_DG(:,:,iglobM), T_DG(:,iglobM), &
-          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(SPACEDIM,iglobP), &
+          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(NDIM,iglobP), &
           !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
           !        nx, nz, weight, currentTime, iface1, iface)
             
@@ -1165,12 +1165,12 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
               endif
             endif
             ! Dot products.
-            do i=1,SPACEDIM
+            do i=1,NDIM
               if(swSF) then
                 nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*(SF(iglobM)+SF_P)*n_out(i)*HALFcr
               endif
               if(swTF) then
-                do j=1,SPACEDIM
+                do j=1,NDIM
                   nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + weight*(TF(i,iglobM)+TF_P(i))*n_out(j)*HALFcr
                 enddo
               endif
@@ -1183,10 +1183,10 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             !  !nabla_SF(1,iglobM) = nabla_SF(1,iglobM) + weight*flux_n*HALFcr
             !  !!flux_z = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along z of the scalar field SF.
             !  !!!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
-            !  !!flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-            !  !flux_n = (SF(iglobM)+SF_P)*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-            !  !nabla_SF(SPACEDIM,iglobM) = nabla_SF(SPACEDIM,iglobM) + weight*flux_n*HALFcr
-            !  do i=1,SPACEDIM
+            !  !!flux_n = flux_z*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+            !  !flux_n = (SF(iglobM)+SF_P)*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+            !  !nabla_SF(NDIM,iglobM) = nabla_SF(NDIM,iglobM) + weight*flux_n*HALFcr
+            !  do i=1,NDIM
             !    !flux_n = (SF(iglobM)+SF_P)*n_out(i) ! Recall: n_out(1)=n_x.
             !    !nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*flux_n*HALFcr
             !    nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*(SF(iglobM)+SF_P)*n_out(i)*HALFcr
@@ -1201,20 +1201,20 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
             
             !  !flux_z = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along z of the x-component of the tensor field TF.
             !  !!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
-            !  !flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-            !  !nabla_TF(1,SPACEDIM,iglobM) = nabla_TF(1,SPACEDIM,iglobM) + weight*flux_n*HALFcr
+            !  !flux_n = flux_z*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+            !  !nabla_TF(1,NDIM,iglobM) = nabla_TF(1,NDIM,iglobM) + weight*flux_n*HALFcr
             
-            !  !flux_x = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along x of the z-component of the tensor field TF.
+            !  !flux_x = TF(NDIM,iglobM) + TF_P(NDIM) ! Once multiplied with HALFcr below, will represent flux along x of the z-component of the tensor field TF.
             !  !!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
             !  !flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
-            !  !nabla_TF(SPACEDIM,1,iglobM) = nabla_TF(SPACEDIM,1,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_TF(NDIM,1,iglobM) = nabla_TF(NDIM,1,iglobM) + weight*flux_n*HALFcr
             
-            !  !flux_z = TF(SPACEDIM,iglobM) + TF_P(SPACEDIM) ! Once multiplied with HALFcr below, will represent flux along z of the z-component of the tensor field TF.
+            !  !flux_z = TF(NDIM,iglobM) + TF_P(NDIM) ! Once multiplied with HALFcr below, will represent flux along z of the z-component of the tensor field TF.
             !  !!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
-            !  !flux_n = flux_z*n_out(SPACEDIM) ! Recall: n_out(SPACEDIM)=n_z.
-            !  !nabla_TF(SPACEDIM,SPACEDIM,iglobM) = nabla_TF(SPACEDIM,SPACEDIM,iglobM) + weight*flux_n*HALFcr
-            !  do i=1,SPACEDIM
-            !    do j=1,SPACEDIM
+            !  !flux_n = flux_z*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
+            !  !nabla_TF(NDIM,NDIM,iglobM) = nabla_TF(NDIM,NDIM,iglobM) + weight*flux_n*HALFcr
+            !  do i=1,NDIM
+            !    do j=1,NDIM
             !      nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + weight*(TF(i,iglobM)+TF_P(i))*n_out(j)*HALFcr
             !    enddo
             !  enddo
@@ -1227,19 +1227,19 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   
   if(swMETHOD) then
     ! "Desintegrate".
-    do i=1,SPACEDIM
+    do i=1,NDIM
       if(swSF) then
         nabla_SF(i,:)  = nabla_SF(i,:) * rmass_inverse_acoustic_DG(:)
       endif
-      !nabla_SF(SPACEDIM,:)  = nabla_SF(SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+      !nabla_SF(NDIM,:)  = nabla_SF(NDIM,:) * rmass_inverse_acoustic_DG(:)
       if(swTF) then
-        do j=1,SPACEDIM
+        do j=1,NDIM
           nabla_TF(i,j,:) = nabla_TF(i,j,:) * rmass_inverse_acoustic_DG(:)
-          !nabla_TF(i,SPACEDIM,:) = nabla_TF(i,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(i,NDIM,:) = nabla_TF(i,NDIM,:) * rmass_inverse_acoustic_DG(:)
           !nabla_TF(1,1,:) = nabla_TF(1,1,:) * rmass_inverse_acoustic_DG(:)
-          !nabla_TF(1,SPACEDIM,:) = nabla_TF(1,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
-          !nabla_TF(SPACEDIM,1,:) = nabla_TF(SPACEDIM,1,:) * rmass_inverse_acoustic_DG(:)
-          !nabla_TF(SPACEDIM,SPACEDIM,:) = nabla_TF(SPACEDIM,SPACEDIM,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(1,NDIM,:) = nabla_TF(1,NDIM,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(NDIM,1,:) = nabla_TF(NDIM,1,:) * rmass_inverse_acoustic_DG(:)
+          !nabla_TF(NDIM,NDIM,:) = nabla_TF(NDIM,NDIM,:) * rmass_inverse_acoustic_DG(:)
         enddo
       endif
     enddo
@@ -1248,13 +1248,13 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   !! Store in variables intended for output.
   !if(swSF) then
   !  nabla_SF(1, :) = nabla_SF(1,:)
-  !  nabla_SF(2, :) = nabla_SF(SPACEDIM,:)
+  !  nabla_SF(2, :) = nabla_SF(NDIM,:)
   !endif
   !if(swTF) then
   !  nabla_TF(1, 1, :) = nabla_TF(1,1,:) ! dxTFx
-  !  nabla_TF(1, SPACEDIM, :) = nabla_TF(1,SPACEDIM,:) ! dzTFx
-  !  nabla_TF(SPACEDIM, 1, :) = nabla_TF(SPACEDIM,1,:) ! dxTFz
-  !  nabla_TF(SPACEDIM, SPACEDIM, :) = nabla_TF(SPACEDIM,SPACEDIM,:) ! dzTFz
+  !  nabla_TF(1, NDIM, :) = nabla_TF(1,NDIM,:) ! dzTFx
+  !  nabla_TF(NDIM, 1, :) = nabla_TF(NDIM,1,:) ! dxTFz
+  !  nabla_TF(NDIM, NDIM, :) = nabla_TF(NDIM,NDIM,:) ! dzTFz
   !endif
 end subroutine compute_gradient_TFSF
 
@@ -1282,20 +1282,20 @@ end subroutine compute_gradient_TFSF
 ! ------------------------------------------------------------ !
 ! Computes pressure from constitutive variables.
 subroutine compute_p(in_rho, in_v, in_E, out_p)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG, nglob_DG
-  use specfem_par_LNS, only: norm2, SPACEDIM
+  use specfem_par_LNS, only: norm2
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_p
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_p =   (gammaext_DG - ONEcr) &
           !* (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
-          !                             + in_v(SPACEDIM,:)**2))
+          !                             + in_v(NDIM,:)**2))
           * (in_E - HALFcr*in_rho*norm2(in_v))
 end subroutine compute_p
 ! ------------------------------------------------------------ !
@@ -1304,20 +1304,20 @@ end subroutine compute_p
 ! Computes pressure perturbation from constitutive variables.
 ! Note: this could have been done nearly inline by using the subroutine compute_p, but defining this function enables one to use less RAM.
 subroutine compute_dp(in_rho, in_v, in_E, out_dp)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG, nglob_DG
-  use specfem_par_LNS, only: LNS_p0, norm2, SPACEDIM
+  use specfem_par_LNS, only: LNS_p0, norm2
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dp
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_dp =   (gammaext_DG - ONEcr) &
            !* (in_E - HALFcr * in_rho * (  in_v(1,:)**2 &
-           !                             + in_v(SPACEDIM,:)**2)) &
+           !                             + in_v(NDIM,:)**2)) &
            * (in_E - HALFcr*in_rho*norm2(in_v)) &
            - LNS_p0
 end subroutine compute_dp
@@ -1326,20 +1326,20 @@ end subroutine compute_dp
 ! ------------------------------------------------------------ !
 ! Same as compute_dp, but point by point (unvectorised).
 subroutine compute_dp_i(in_rho, in_v, in_E, out_p, iglob)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG
-  use specfem_par_LNS, only: LNS_p0, norm2r1, SPACEDIM
+  use specfem_par_LNS, only: LNS_p0, norm2r1
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
   integer, intent(in) :: iglob
   real(kind=CUSTOM_REAL), intent(out) :: out_p
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_p =   (gammaext_DG(iglob) - ONEcr) &
-          !* (in_E - HALFcr*in_rho*(in_v(1)**2 + in_v(SPACEDIM)**2)) &
+          !* (in_E - HALFcr*in_rho*(in_v(1)**2 + in_v(NDIM)**2)) &
           !* (in_E - HALFcr*in_rho*minval(norm2(reshape(in_v,(/2,1/))))) & ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
           * (in_E - HALFcr*in_rho*norm2r1(in_v)) & ! Performance seems comparable to explicit formulation above.
           - LNS_p0(iglob)
@@ -1349,17 +1349,17 @@ end subroutine compute_dp_i
 ! ------------------------------------------------------------ !
 ! Computes temperature from constitutive variables.
 subroutine compute_T(in_rho, in_v, in_E, out_T)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: c_V, nglob_DG
-  use specfem_par_LNS, only: norm2, SPACEDIM
+  use specfem_par_LNS, only: norm2
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_T=(in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V
   out_T=(in_E/in_rho - HALFcr*norm2(in_v))/c_V
 end subroutine compute_T
 ! ------------------------------------------------------------ !
@@ -1367,17 +1367,17 @@ end subroutine compute_T
 ! ------------------------------------------------------------ !
 ! Same as compute_T, but point by point (unvectorised).
 subroutine compute_T_i(in_rho, in_v, in_E, out_T)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: c_V
-  use specfem_par_LNS, only: norm2r1, SPACEDIM
+  use specfem_par_LNS, only: norm2r1
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
   real(kind=CUSTOM_REAL), intent(out) :: out_T
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(SPACEDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
   !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
   out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V ! Performance seems comparable to explicit formulation above.
 end subroutine compute_T_i
@@ -1387,34 +1387,34 @@ end subroutine compute_T_i
 ! Computes temperature perturbation from constitutive variables.
 ! Note: this could have been done nearly inline by using the subroutine compute_T, but defining this function enables one to use less RAM.
 subroutine compute_dT(in_rho, in_v, in_E, out_dT)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: c_V, nglob_DG
-  use specfem_par_LNS, only: LNS_T0, norm2, SPACEDIM
+  use specfem_par_LNS, only: LNS_T0, norm2
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_dT=  (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(SPACEDIM,:)**2))/c_V &
+  !out_dT=  (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V &
   out_dT=  (in_E/in_rho - HALFcr*norm2(in_v))/c_V &
          - LNS_T0
 end subroutine compute_dT
 ! Same as compute_dT, but point by point (unvectorised).
 subroutine compute_dT_i(in_rho, in_v, in_E, out_T, iglob)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: c_V
-  use specfem_par_LNS, only: LNS_T0, norm2r1, SPACEDIM
+  use specfem_par_LNS, only: LNS_T0, norm2r1
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
   real(kind=CUSTOM_REAL), intent(out) :: out_T
   integer, intent(in) :: iglob
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(SPACEDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
   !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
   out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V &
         - LNS_T0(iglob)
@@ -1424,19 +1424,19 @@ end subroutine compute_dT_i
 ! ------------------------------------------------------------ !
 ! Computes energy from constitutive variables.
 subroutine compute_E(in_rho, in_v, in_p, out_E)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG, nglob_DG
-  use specfem_par_LNS, only: norm2, SPACEDIM
+  use specfem_par_LNS, only: norm2
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM, nglob_DG), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_E
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_E =   in_p/(gammaext_DG - ONEcr) &
-          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(SPACEDIM,:)**2 )
+          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(NDIM,:)**2 )
           + in_rho*HALFcr*norm2(in_v)
 end subroutine compute_E
 ! ------------------------------------------------------------ !
@@ -1444,20 +1444,20 @@ end subroutine compute_E
 ! ------------------------------------------------------------ !
 ! Same as compute_E, but point by point (unvectorised).
 subroutine compute_E_i(in_rho, in_v, in_p, out_E, iglob)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG
-  use specfem_par_LNS, only: norm2r1, SPACEDIM
+  use specfem_par_LNS, only: norm2r1
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
   integer, intent(in) :: iglob
   real(kind=CUSTOM_REAL), intent(out) :: out_E
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_E =   in_p/(gammaext_DG(iglob) - ONEcr) &
-          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(SPACEDIM,:)**2 )
+          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(NDIM,:)**2 )
           + in_rho*HALFcr*norm2r1(in_v)
 end subroutine compute_E_i
 ! ------------------------------------------------------------ !
@@ -1465,20 +1465,20 @@ end subroutine compute_E_i
 ! ------------------------------------------------------------ !
 ! Same as compute_dE, but point by point (unvectorised).
 subroutine compute_dE_i(in_rho, in_v, in_p, out_E, iglob)
-  use constants, only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG
-  use specfem_par_LNS, only: LNS_E0, norm2r1, SPACEDIM
+  use specfem_par_LNS, only: LNS_E0, norm2r1
   implicit none
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
-  real(kind=CUSTOM_REAL), dimension(SPACEDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
   integer, intent(in) :: iglob
   real(kind=CUSTOM_REAL), intent(out) :: out_E
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_E =   in_p/(gammaext_DG(iglob) - ONEcr) &
-          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(SPACEDIM,:)**2 )
+          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(NDIM,:)**2 )
           + in_rho*HALFcr*norm2r1(in_v) &
           - LNS_E0(iglob)
 end subroutine compute_dE_i
@@ -1578,7 +1578,7 @@ subroutine LNS_warn_nonsense()
             !write(*,*) i,j,ispec,ispec_is_acoustic_DG(ispec) ! DEBUG
             exit outer
           endif
-          do d=1,SPACEDIM
+          do d=1,NDIM
             if((LNS_v0(d,iglob))>TINYVAL) then
               if((LNS_dv(d,iglob)/LNS_v0(d,iglob))>thresholdRatioUp) then
                 broken = 2
