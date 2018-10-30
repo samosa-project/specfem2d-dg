@@ -377,8 +377,8 @@
         allocate(RHS_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML), &
                  aux_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML))
         
-        allocate(LNS_PML_alpha(NGLLX,NGLLZ,nspec_PML))
-        allocate(LNS_PML_beta(NDIM,NGLLX,NGLLZ,nspec_PML))
+        allocate(LNS_PML_a0(NGLLX,NGLLZ,nspec_PML))
+        allocate(LNS_PML_b(NDIM,NGLLX,NGLLZ,nspec_PML))
         
         ! Savage memory free. Not really optimal, but less invasive.
         deallocate(rmemory_potential_acoustic,rmemory_acoustic_dux_dx,rmemory_acoustic_dux_dz, &

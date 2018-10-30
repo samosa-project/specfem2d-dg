@@ -69,6 +69,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   integer :: iglobM, iglobP
   integer, dimension(3) :: neighbor
   
+  ! Variables specifically for PML.
+  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
+  integer :: ispec_PML
+  real(kind=CUSTOM_REAL) :: pml_a0
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
+  
   ! Variables specifically for LNS_get_interfaces_unknowns.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P
   real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
@@ -112,6 +118,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   
   do ispec = 1, nspec ! Loop over elements.
     if (ispec_is_acoustic_DG(ispec)) then ! Only do something for DG elements.
+      if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
+        ! If PML, save ispec_PML now (instead of recalling it for each (i,j)).
+        ispec_PML=spec_to_PML(ispec)
+      endif
+      
       ! --------------------------- !
       ! First set of loops: compute !
       ! volumic contributions.      !
@@ -311,13 +322,36 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! PML
           ! PML
           ! PML
-          !if(PML_BOUNDARY_CONDITIONS .and. anyabs) then ! Test if PML conditions exist broadly over all CPUs (PML_BOUNDARY_CONDITIONS), and if this CPU contains any (anyabs).
+          if(PML_BOUNDARY_CONDITIONS .and. anyabs) then ! Test if PML conditions exist broadly over all CPUs (PML_BOUNDARY_CONDITIONS), and if this CPU contains any (anyabs).
           !  !write(*,*) "USING PMLs."
-          !  if (ispec_is_PML(ispec)) then
+            if (ispec_is_PML(ispec)) then
           !    !write(*,*) ispec, "(",coord(:,ibool_before_perio(i,j,ispec)),") is PML."
           !    !write(*,*) allocated(K_x_store)
-          !  endif ! Endif on ispec_is_PML.
-          !endif ! Endif on PML_BOUNDARY_CONDITIONS.
+          !    ispec_PML=spec_to_PML(ispec)
+              ! Add q.
+              pml_a0 = -LNS_PML_a0(i,j,ispec_PML)
+              d0cntrb_drho(i,j) = pml_a0*cv_drho(iglob) ! d0cntrb_drho is zero outside of PMLs.
+              d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_a0*cv_rho0dv(:,iglob)
+              !do SPCDM=1,NDIM
+              !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_a0*cv_rho0dv(SPCDM,iglob)
+              !enddo
+              d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_a0*cv_dE(iglob)
+              
+              ! Add auxiliary variables.
+              pml_b = -LNS_PML_b(:,i,j,ispec_PML)
+              !pml_ade_rho0dv = LNS_PML_rho0dv(k,:,i,j,ispec_PML)
+              do k = 1, NDIM ! Loop on ADEs.
+                d0cntrb_drho(i,j) = d0cntrb_drho(i,j) + pml_b(k)*LNS_PML_drho(k,i,j,ispec_PML)
+                d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_b(k)*LNS_PML_rho0dv(k,:,i,j,ispec_PML)
+                !do SPCDM=1,NDIM
+                !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_b(k)*
+                !enddo
+                d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_b(k)*LNS_PML_dE(k,i,j,ispec_PML)
+              enddo
+            endif ! Endif on ispec_is_PML.
+          else
+            d0cntrb_drho = ZEROcr ! Make sure d0cntrb_drho if not in PMLs.
+          endif ! Endif on PML_BOUNDARY_CONDITIONS.
           ! PML
           ! PML
           ! PML
@@ -591,9 +625,9 @@ end subroutine compute_forces_acoustic_LNS
 ! LNS_get_interfaces_unknowns                                  !
 ! ------------------------------------------------------------ !
 ! From the coordinates of a GLL point in an element (local coordinates (i, j) and global element number ispec), and its neighbour's identifier (neighbor), compute the values of the constitutive variables at the neighbour.
-! Variables ending in "_P" (for "plus") are output-intended and are the sought values, or exterior values.
-! Variables ending in "_iM" (for "minus") are input-intended and should correspond to the interior values.
-! Variables ending in "_iP" are input-intended, and correspond to the exterior values, if known. Remark that those variables are only used if neighbor(3) != -1.
+! Variables ending in "out_*_P" (for "plus") are output-intended and are the sought values, or exterior values.
+! Variables ending in "inp_*_M" (for "minus") are input-intended and should correspond to the interior values.
+! Variables ending in "inp_*_P" are input-intended, and correspond to the exterior values, if known. Remark that those variables are only used if neighbor(3) != -1.
 ! n_out: outward-pointing normal vector.
 ! exact_interface_flux: switch to disable jump in some cases.
 ! drho_P: \rho', for "P" side.
@@ -715,7 +749,6 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   ! Set out_nabla_dT_P.
   ! Set out_sigma_dv_P.
   ! Set out_dT_P.
-  ! Set velocity_P.
   
   ! Extract calling point iglob.
   iglobM = ibool_DG(i, j, ispec)
@@ -803,9 +836,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         !out_rho0dv_P=out_drho_P*out_dv_P
         ! Set out_dm_P: see bottom of routine.
         if(swCompVisc) then
-          ! Set out_nabla_dT_P: same as other side.
+          ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
           out_nabla_dT_P = nabla_dT(:,iglobM)
-          ! Set out_sigma_dv_P: same as other side.
+          ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
           out_sigma_dv_P = sigma_dv(:,iglobM)
         endif
         ! Set out_dT_P.
@@ -891,7 +924,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ispec_el = ispec_is_acoustic_coupling_el(i, j, ispec, 3)
       !iglob    = ibool(i_el, j_el, ispec_el)
       
-      ! Set out_drho_P: same as other side.
+      ! Set out_drho_P: same as other side, that is a Neumann condition.
       out_drho_P = inp_drho_M
       
       ! Set velocity_P: get elastic medium velocities.
@@ -923,10 +956,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! Set out_dm_P: see bottom of routine.
         
       if(swCompVisc) then
-        ! Set out_nabla_dT_P: same as other side.
+        ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
         out_nabla_dT_P = nabla_dT(:,iglobM)
         
-        ! Set out_sigma_dv_P: same as other side.
+        ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
         out_sigma_dv_P = sigma_dv(:,iglobM)
       endif
       
@@ -951,70 +984,70 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       !   classical outer boundary  !
       !   conditions                !
       ! --------------------------- !
-      
-      ! Set exact_interface_flux.
-      exact_interface_flux = .false.
-      
-      ! Set out_drho_P and out_dp_P.
-      call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
-                                          .true., velocity_P, & ! We get the far-field v field here.
-                                          .false., LNS_dummy_1d(1), &
-                                          .true., out_dp_P) ! Get needed background parameters. Use dummies for values we're not interested in.
-      ! Warning: out_drho_P contains rho=(rho0 + drho) here. Correct this.
-      out_drho_P = out_drho_P - LNS_rho0(iglobM)
-      ! Warning: out_dp_P contains p=(p0 + dp) here. Correct this.
-      out_dp_P = out_dp_P - LNS_p0(iglobM)
-      
-      ! Set velocity_P.
-      ! Convert the velocity components from mesh coordinates to normal/tangential coordinates.
-      ! This is more practical to set the boundary conditions.
-      ! The setting of the boundary conditions is thus made here.
-      call build_trans_boundary(n_out, tang, trans_boundary)
-      !tang(1) = -n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
-      !tang(NDIM) =  n_out(1) ! Recall: n_out(1)=n_x.
-      !normal_v = (velocity_P(1)*n_out(1) + velocity_P(NDIM)*n_out(NDIM))
-      !tangential_v = (velocity_P(1)*tang(1) + velocity_P(NDIM)*tang(NDIM))
-      normal_v     = DOT_PRODUCT(n_out, velocity_P)
-      tangential_v = DOT_PRODUCT(tang, velocity_P)
-      ! Notes:
-      !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
-      !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
-      ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-      do SPCDM=1,NDIM
-        velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
-        !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
-        !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
-      enddo
-      
-      ! Set out_dv_P.
-      out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
-      
-      ! Set out_dE_P.
-      call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! TODO: Warning, expression of out_dp_P might not be exact.
-      !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - ONEcr) &
-      !         + out_drho_P*HALFcr*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 )
-      
-      ! Set out_rho0dv_P.
-      do SPCDM=1,NDIM
-        out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
-      enddo
-      !out_rho0dv_P=out_drho_P*out_dv_P
-      
-      ! Set out_dm_P: see bottom of routine.
+      if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
+        !if(abs(coord(2, ibool_before_perio(i, j, ispec))-25.)<TINYVAL) &
+        !  write(*,*) "TOP PML OUTER BOUNDARY CONDITION IS ATTAINED" ! DEBUG
+        ! --------------------------- !
+        ! Outer PML.                  !
+        ! --------------------------- !
+        ! Set exact_interface_flux.
+        exact_interface_flux = .true.
+        out_drho_P = inp_drho_M ! Set out_drho_P: same as other side, that is a Neumann condition.
+        out_dp_P = inp_dp_M ! Set out_dp_P: same as other side, that is a Neumann condition.
+        out_dv_P = inp_rho0dv_M/LNS_rho0(iglobM) ! Set out_dv_P: same as other side, that is a Neumann condition.
+        call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Set out_dE_P: same as other side, that is a Neumann condition.
+        out_rho0dv_P = inp_rho0dv_M ! Set out_rho0dv_P: same as other side, that is a Neumann condition.
+        ! Set out_dm_P: see bottom of routine.
+        if(swCompVisc) then
+          out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
+          out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
+        endif
+        if(swCompdT) then
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P: same as other side, that is a Neumann condition.
+        endif
+      else
+        ! --------------------------- !
+        ! Not outer PML.              !
+        ! --------------------------- !
+        ! Set exact_interface_flux.
+        exact_interface_flux = .false.
+        ! Get out_drho_P and out_dp_P (actually, this call gets rho=(rho0+drho) and p=(p0+dp), and this needs to be correctly right after).
+        call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
+                                            .true., velocity_P, & ! We get the far-field v field here.
+                                            .false., LNS_dummy_1d(1), &
+                                            .true., out_dp_P) ! Get needed background parameters. Use dummies for values we're not interested in.
+        out_drho_P = out_drho_P - LNS_rho0(iglobM) ! Warning: out_drho_P contains rho=(rho0 + drho) here. Correct this.
+        out_dp_P = out_dp_P - LNS_p0(iglobM) ! Warning: out_dp_P contains p=(p0 + dp) here. Correct this.
+        ! Set velocity_P. Convert the velocity components from mesh coordinates to normal/tangential coordinates. This is more practical to set the boundary conditions. The setting of the boundary conditions is thus made here.
+        call build_trans_boundary(n_out, tang, trans_boundary)
+        normal_v     = DOT_PRODUCT(n_out, velocity_P)
+        tangential_v = DOT_PRODUCT(tang, velocity_P)
+        ! Notes:
+        !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
+        !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
+        ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
+        do SPCDM=1,NDIM
+          velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
+        enddo
+        ! Set out_dv_P.
+        out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
+        ! Set out_dE_P.
+        call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
+        ! Set out_rho0dv_P.
+        do SPCDM=1,NDIM
+          out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+        enddo
+        ! Set out_dm_P: see bottom of routine.
+        if(swCompVisc) then
+          out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
+          out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
+        endif
+        ! Set out_dT_P.
+        if(swCompdT) then
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+        endif
         
-      if(swCompVisc) then
-        ! Set out_nabla_dT_P: same as other side.
-        out_nabla_dT_P = nabla_dT(:,iglobM)
-        
-        ! Set out_sigma_dv_P: same as other side.
-        out_sigma_dv_P = sigma_dv(:,iglobM)
-      endif
-      
-      ! Set out_dT_P.
-      if(swCompdT) then
-        call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-      endif
-      
+      endif ! Endif on PML.
     endif ! Endif on ipoin.
     
   elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0) then
@@ -1105,9 +1138,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(NDIM)**2))/c_V
     ! Set out_dm_P: see bottom of routine.
     if(swCompVisc) then
-      ! Set out_nabla_dT_P: same as other side.
+      ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
       out_nabla_dT_P = nabla_dT(:,iglobM)
-      ! Set out_sigma_dv_P: same as other side.
+      ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
       out_sigma_dv_P = sigma_dv(:,iglobM)
     endif
     ! Set out_dT_P.
@@ -1143,15 +1176,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     
     ! Set out_dp_P.
     call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
-    !out_dp_P       = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
-    !               - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) )
     
     ! Set out_dm_P: see bottom of routine.
     if(swCompVisc) then
-      ! Set out_nabla_dT_P: same as other side.
-      out_nabla_dT_P = nabla_dT(:,iglobM)
-      ! Set out_sigma_dv_P: same as other side.
-      out_sigma_dv_P = sigma_dv(:,iglobM)
+      out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
+      out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
     endif
     
     ! Set out_dT_P.

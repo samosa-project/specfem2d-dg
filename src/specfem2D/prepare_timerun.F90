@@ -35,6 +35,7 @@
   subroutine prepare_timerun()
 
   use specfem_par
+  use specfem_par_lns, only: USE_LNS
   use specfem_par_movie
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
 
@@ -49,10 +50,15 @@
 
   ! prepares constant factors for time scheme and seismograms
   call prepare_timerun_constants()
-
+  
   ! wavefield array initialization
   call prepare_timerun_wavefields()
-
+  
+  ! If LNS, initialise initial fields and physical parameters.
+  if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+  endif
+  
   ! PML preparation
   call prepare_timerun_PML()
   

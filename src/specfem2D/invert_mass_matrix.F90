@@ -385,7 +385,7 @@
           rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
                                              jacobian(i,j,ispec)
           
-          if (PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+          if (PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
             ! This ispec is a PML element, we need to update the mass matrix in order to take the stretching into account.
             ispec_PML=spec_to_PML(ispec)
             if (region_CPML(ispec) == CPML_X_ONLY) then
