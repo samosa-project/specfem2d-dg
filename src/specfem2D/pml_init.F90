@@ -664,7 +664,7 @@
 ! finish the computation of the average position of all sources (not the plane wave incident)
   if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
     ! DG LNS acoustic.
-    call max_all_all_dp(maxval(gammaext_DG*LNS_p0/LNS_rho0), vpmax_glob_acoustic)
+    call max_all_all_dp(maxval(sqrt(gammaext_DG*LNS_p0/LNS_rho0)), vpmax_glob_acoustic)
     vpmax_acoustic = vpmax_glob_acoustic
   else
     ! Classical acoustic.

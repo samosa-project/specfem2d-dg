@@ -322,35 +322,32 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! PML
           ! PML
           ! PML
-          if(PML_BOUNDARY_CONDITIONS .and. anyabs) then ! Test if PML conditions exist broadly over all CPUs (PML_BOUNDARY_CONDITIONS), and if this CPU contains any (anyabs).
-          !  !write(*,*) "USING PMLs."
-            if (ispec_is_PML(ispec)) then
+          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! TODO: a better condition.
           !    !write(*,*) ispec, "(",coord(:,ibool_before_perio(i,j,ispec)),") is PML."
           !    !write(*,*) allocated(K_x_store)
           !    ispec_PML=spec_to_PML(ispec)
-              ! Add q.
-              pml_a0 = -LNS_PML_a0(i,j,ispec_PML)
-              d0cntrb_drho(i,j) = pml_a0*cv_drho(iglob) ! d0cntrb_drho is zero outside of PMLs.
-              d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_a0*cv_rho0dv(:,iglob)
+            ! Add q.
+            pml_a0 = LNS_PML_a0(i,j,ispec_PML)
+            d0cntrb_drho(i,j) = pml_a0*cv_drho(iglob) ! d0cntrb_drho is zero outside of PMLs.
+            d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_a0*cv_rho0dv(:,iglob)
+            !do SPCDM=1,NDIM
+            !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_a0*cv_rho0dv(SPCDM,iglob)
+            !enddo
+            d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_a0*cv_dE(iglob)
+            
+            ! Add auxiliary variables.
+            pml_b = LNS_PML_b(:,i,j,ispec_PML)
+            !pml_ade_rho0dv = LNS_PML_rho0dv(k,:,i,j,ispec_PML)
+            do k = 1, NDIM ! Loop on ADEs.
+              d0cntrb_drho(i,j) = d0cntrb_drho(i,j) + pml_b(k)*LNS_PML_drho(k,i,j,ispec_PML)
+              d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_b(k)*LNS_PML_rho0dv(k,:,i,j,ispec_PML)
               !do SPCDM=1,NDIM
-              !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_a0*cv_rho0dv(SPCDM,iglob)
+              !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_b(k)*
               !enddo
-              d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_a0*cv_dE(iglob)
-              
-              ! Add auxiliary variables.
-              pml_b = -LNS_PML_b(:,i,j,ispec_PML)
-              !pml_ade_rho0dv = LNS_PML_rho0dv(k,:,i,j,ispec_PML)
-              do k = 1, NDIM ! Loop on ADEs.
-                d0cntrb_drho(i,j) = d0cntrb_drho(i,j) + pml_b(k)*LNS_PML_drho(k,i,j,ispec_PML)
-                d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_b(k)*LNS_PML_rho0dv(k,:,i,j,ispec_PML)
-                !do SPCDM=1,NDIM
-                !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_b(k)*
-                !enddo
-                d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_b(k)*LNS_PML_dE(k,i,j,ispec_PML)
-              enddo
-            endif ! Endif on ispec_is_PML.
+              d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_b(k)*LNS_PML_dE(k,i,j,ispec_PML)
+            enddo
           else
-            d0cntrb_drho = ZEROcr ! Make sure d0cntrb_drho if not in PMLs.
+            d0cntrb_drho = ZEROcr ! Make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
           endif ! Endif on PML_BOUNDARY_CONDITIONS.
           ! PML
           ! PML
@@ -393,7 +390,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           wxlwzl= real(wxgll(i)*wzgll(j), kind=CUSTOM_REAL)
           
           ! Add zero-th order terms.
-          !outrhs_drho(iglob)     = outrhs_drho(iglob)     + d0cntrb_drho(i,j) * wxl * wzl
+          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! TODO: a better condition.
+            outrhs_drho(iglob) = outrhs_drho(iglob) + d0cntrb_drho(i,j) * wxlwzl
+          endif
           do SPCDM=1,NDIM
             outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxlwzl
           enddo
@@ -407,6 +406,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
       ! but only on exterior        !
       ! points.                     !
       ! --------------------------- !
+      !if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
+      !  ! NO FLUXES ECSDEE
+      !else
       do  iface = 1, 4
        do  iface1 = 1, NGLLX
           i = link_iface_ijispec(iface1,iface,ispec,1)
@@ -597,6 +599,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
+      !endif
     endif ! End of test if acoustic element
   enddo ! End of loop on elements.
   

@@ -135,7 +135,6 @@ subroutine compute_forces_acoustic_LNS_main()
       LNS_PML_drho = ZEROcr
       LNS_PML_rho0dv = ZEROcr
       LNS_PML_dE = ZEROcr
-      call LNS_PML_init_coefs()
     endif
     
     ! Prepare MPI buffers.
@@ -261,6 +260,7 @@ subroutine compute_forces_acoustic_LNS_main()
     ! PML, iterate ADEs.
     if(PML_BOUNDARY_CONDITIONS) then
       !do i_aux=1,NDIM ! Loop on ADEs.
+      
         ! Prepare PML ADE RHS, vectorially. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
         do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); do j=1,NGLLZ; do i=1,NGLLX
           iglob=ibool_DG(i, j, ispec)
@@ -268,8 +268,8 @@ subroutine compute_forces_acoustic_LNS_main()
           !WRITE(*,*) "LNS_PML_b", LNS_PML_b(i_aux,i,j,ispec_PML)
           !WRITE(*,*) "LNS_PML_drho", LNS_PML_drho(i_aux,i,j,ispec_PML)
           !WRITE(*,*) "LNS_drho", LNS_drho(iglob)
-          pml_alpha(1)    = alpha_x_store(i,j,ispec_PML) + 0.01_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
-          pml_alpha(NDIM) = alpha_z_store(i,j,ispec_PML) + 0.02_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          pml_alpha(1)    = alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          pml_alpha(NDIM) = alpha_z_store(i,j,ispec_PML) + 0.002_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
           RHS_PML_drho(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_drho(:,i,j,ispec_PML) &
                                           - LNS_drho(iglob) ! A minus sign might have to be used here.
           RHS_PML_dE(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_dE(:,i,j,ispec_PML) &
@@ -279,6 +279,7 @@ subroutine compute_forces_acoustic_LNS_main()
                                                     - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
           enddo
         enddo; enddo; endif; enddo
+        
         ! Update PML ADE, vectorially.
         aux_PML_drho(:,:,:,:) = scheme_A(i_stage)*aux_PML_drho(:,:,:,:) + deltat*RHS_PML_drho(:,:,:,:)
         aux_PML_dE(:,:,:,:)   = scheme_A(i_stage)*aux_PML_dE(:,:,:,:)   + deltat*RHS_PML_dE(:,:,:,:)
@@ -415,94 +416,6 @@ end subroutine compute_forces_acoustic_LNS_main
 
 
 ! ------------------------------------------------------------ !
-! LNS_PML_init_coefs                                           !
-! ------------------------------------------------------------ !
-! Initialises coefficients needed for PML implementation.
-! Note: base coefficients ("K_*_store", "d_*_store", and "alpha_*_store" are initialised in pml_init.F90).
-
-subroutine LNS_PML_init_coefs()
-  ! TODO: select variables to use.
-  use constants
-  use specfem_par
-  use specfem_par_LNS
-  
-  implicit none
-
-  ! Local.
-  integer :: i,j,ispec,ispec_PML
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: pmlk, pmld, pmla
-  
-  ! Safeguards.
-  if(     (.not. allocated(LNS_PML_a0)) &
-     .or. (.not. allocated(LNS_PML_b))) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* Some PML coefficients arrays *"
-    write(*,*) "* are not allocated but should *"
-    write(*,*) "* be.                          *"
-    write(*,*) "********************************"
-    stop
-  endif
-  if(.not. PML_BOUNDARY_CONDITIONS) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* PML are not activated and    *"
-    write(*,*) "* you are trying to initialise *"
-    write(*,*) "* the parameters.              *"
-    write(*,*) "********************************"
-    stop
-  endif
-  
-  do ispec=1,nspec
-    if(ispec_is_PML(ispec)) then
-      ispec_PML=spec_to_PML(ispec)
-      do j=1,NGLLZ
-        do i=1,NGLLX
-          pmlk(1)=K_x_store(i,j,ispec_PML) ! Decrease performance, but increases readability. Since this routine only runs once, we decide it's okay.
-          pmlk(2)=K_z_store(i,j,ispec_PML)
-          pmld(1)=d_x_store(i,j,ispec_PML)
-          pmld(2)=d_z_store(i,j,ispec_PML)
-          pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.01_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
-          pmla(2)=alpha_z_store(i,j,ispec_PML) + 0.02_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
-          
-          if(abs(coord(1, ibool_before_perio(i, j, ispec)))<TINYVAL) & ! Monitor slice at x==0.
-            write(*,*) coord(2, ibool_before_perio(i, j, ispec)), ":", pmlk, pmld, pmla ! DEBUG
-          
-          LNS_PML_a0(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
-          
-          if(abs(pmla(2)-pmla(1)) < TINYVAL) then
-            write(*,*) "|a2-a1| is very smol at ", coord(:, ibool_before_perio(i, j, ispec)), ": a1,a2=", pmla ! DEBUG
-          else
-            LNS_PML_b(1,i,j,ispec_PML) = pmlk(1)*pmld(1) * (   pmlk(2) &
-                                                             + pmld(2)/(pmla(2)-pmla(1)) )
-            LNS_PML_b(2,i,j,ispec_PML) = pmlk(2)*pmld(2) * (   pmlk(1) &
-                                                             + pmld(1)/(pmla(1)-pmla(2)) )
-          endif
-        enddo
-      enddo
-    endif
-  enddo
-end subroutine LNS_PML_init_coefs
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-! ------------------------------------------------------------ !
 ! initial_state_LNS                                            !
 ! ------------------------------------------------------------ !
 ! Computes initial state.
@@ -510,7 +423,8 @@ end subroutine LNS_PML_init_coefs
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: ibool_DG, nspec, gravityext,muext, etaext, kappa_DG, tau_epsilon, &
-                         tau_sigma, NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, ispec_is_acoustic_DG, nspec
+                         tau_sigma, NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
+                         !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              LNS_eta, LNS_kappa, sigma_dv, LNS_dummy_1d, LNS_dummy_2d, &
                              LNS_viscous, sigma_v_0, nabla_v0, buffer_LNS_nabla_dT, &
@@ -602,8 +516,92 @@ subroutine initial_state_LNS()
     call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
   endif
 #endif
-  
 end subroutine initial_state_LNS
+
+! ------------------------------------------------------------ !
+! LNS_PML_init_coefs                                           !
+! ------------------------------------------------------------ !
+! Initialises coefficients needed for PML implementation.
+! Note: base coefficients ("K_*_store", "d_*_store", and "alpha_*_store" are initialised in pml_init.F90).
+
+subroutine LNS_PML_init_coefs()
+  ! TODO: select variables to use.
+  use constants
+  use specfem_par
+  use specfem_par_LNS
+  
+  implicit none
+  
+  ! Input/Output.
+  ! N/A.
+
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  integer :: i,j,ispec,ispec_PML
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: pmlk, pmld, pmla
+  
+  ! Safeguards.
+  if(     (.not. allocated(LNS_PML_a0)) &
+     .or. (.not. allocated(LNS_PML_b))) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Some PML coefficients arrays *"
+    write(*,*) "* are not allocated but should *"
+    write(*,*) "* be.                          *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(.not. PML_BOUNDARY_CONDITIONS) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* PML are not activated and    *"
+    write(*,*) "* you are trying to initialise *"
+    write(*,*) "* the parameters.              *"
+    write(*,*) "********************************"
+    stop
+  endif
+  
+  ! These arrays were allocated in prepare_timerun_pml.f90.
+  
+  ! Initialise.
+  LNS_PML_a0 = ZEROcr
+  LNS_PML_b  = ZEROcr
+  
+  ! Value.
+  do ispec=1,nspec
+    if(ispec_is_PML(ispec)) then
+      ispec_PML=spec_to_PML(ispec)
+      do j=1,NGLLZ
+        do i=1,NGLLX
+          pmlk(1)=K_x_store(i,j,ispec_PML) ! Decrease performance, but increases readability. Since this routine only runs once, we decide it's okay.
+          pmlk(2)=K_z_store(i,j,ispec_PML)
+          pmld(1)=d_x_store(i,j,ispec_PML)
+          pmld(2)=d_z_store(i,j,ispec_PML)
+          pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          pmla(2)=alpha_z_store(i,j,ispec_PML) + 0.002_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          
+          
+          LNS_PML_a0(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
+          
+          if(abs(pmla(2)-pmla(1)) < TINYVAL) then
+            write(*,*) "|a2-a1| is very smol at ", coord(:, ibool_before_perio(i, j, ispec)), ": a1,a2=", pmla ! DEBUG
+          else
+            LNS_PML_b(1,i,j,ispec_PML) = - pmla(1)*pmld(1) * (   pmlk(2) &
+                                                               - pmld(2)/(pmla(1)-pmla(2)) )
+            LNS_PML_b(2,i,j,ispec_PML) = - pmla(2)*pmld(2) * (   pmlk(1) &
+                                                               + pmld(1)/(pmla(1)-pmla(2)) )
+          endif
+          
+          if(abs(coord(1, ibool_before_perio(i, j, ispec)))<TINYVAL) & ! Monitor slice at x==0.
+            write(*,*) coord(2, ibool_before_perio(i, j, ispec)), ":", pmlk, pmld, pmla, &
+                       LNS_PML_a0(i,j,ispec_PML), LNS_PML_b(:,i,j,ispec_PML) ! DEBUG
+        enddo
+      enddo
+    endif
+  enddo
+end subroutine LNS_PML_init_coefs
 
 ! ------------------------------------------------------------ !
 ! background_physical_parameters                               !
