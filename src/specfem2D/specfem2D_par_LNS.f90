@@ -7,6 +7,8 @@ module specfem_par_LNS
   ! Switch enabling the use of LNS instead of FNS.
   logical :: USE_LNS
   
+  logical, parameter :: LNS_switch_gradient=.false. ! Switch to activate the use of the "desintegration method" for gradient computation methods, and to desactivate to use the SEM definition of the gradient. ! Warning: LNS_switch_gradient = .true. is not yet fully implemented.
+  
   ! 2D/3D generalisation pre-work.
   !integer(kind=selected_int_kind(1)), parameter :: SPACEDIM = 2 ! Spatial dimension (for later generalisation) Min/Maximum values: [-10^1+1=-9, 10^1-1=9] (ok since we only need 2 or 3, and maybe 1).
   integer, parameter :: NVALSIGMA=int(0.5*NDIM*(NDIM+1)) ! Number of distinct values in the symmetric viscous tensor.
@@ -44,8 +46,8 @@ module specfem_par_LNS
   
 
   
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_alpha ! Coefficient in front of the \delta', that is in front of the \partial_t in the updated strong form. Dimension allocated should be (i,j,ispec_PML) in order to save memory.
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_beta ! Coefficient in front of each auxiliary variable (ADEs). For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_a0 ! Coefficient in front of the \delta', that is in front of the \partial_t in the updated strong form. Dimension allocated should be (i,j,ispec_PML) in order to save memory.
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_b ! Coefficient in front of each auxiliary variable (ADEs). For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
   
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99 ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
   ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every LNS_MODPRINT iterations

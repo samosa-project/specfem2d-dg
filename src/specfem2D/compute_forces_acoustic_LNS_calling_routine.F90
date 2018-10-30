@@ -52,23 +52,19 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
   !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
   !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: nabla_dT
-  integer :: ier, i_aux, i_aux2,i,j,ispec,iglob,ispec_PML
+  integer :: ier, i_aux,i,j,ispec,iglob,ispec_PML
   logical check_linearHypothesis!, check_linearHypothesis_ON_ALL_PROCS, check_linearHypothesis_FIND_POINT
-  logical switch_gradient
+  
+  ! PMLs.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
     return
   endif
   
-  switch_gradient = .false. ! Switch to activate the use of the "desintegration method" for gradient computation methods, and to desactivate to use the SEM definition of the gradient.
-  ! Warning: switch_gradient = .true. is not yet implemented.
-  
-  ! Those are debug switches. They are computationaly very heavy and should not be used on every simulation.
-  ! check_linearHypothesis_ON_ALL_PROCS=.true. and check_linearHypothesis_FIND_POINT=.true. are particularly heavy.
-  check_linearHypothesis=.false.              ! Set to .true. to enable nonpositivity checking.
-  !check_linearHypothesis_ON_ALL_PROCS=.false. ! Only used if check_linearHypothesis==.true.. Set to .false. for checking only on proc 0. Set to .true. for checking on all procs.
-  !check_linearHypothesis_FIND_POINT=.false.   ! Only used if check_linearHypothesis==.true.. Set to .true. to find where nonpositivity was encountered.
+  ! Debug switches. They are computationaly very heavy and should not be used on every simulation.
+  check_linearHypothesis=.true.
   
   ! Stop if time stepping scheme is not implemented.
   if(time_stepping_scheme/=3 .and. time_stepping_scheme/=4 .and. myrank==0) then
@@ -103,25 +99,23 @@ subroutine compute_forces_acoustic_LNS_main()
     !  call setUpVandermonde()
     !endif
     
-    ! Initialise initial state registers.
-    LNS_rho0   = ZEROcr
-    LNS_v0     = ZEROcr
-    LNS_E0     = ZEROcr
     ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
     LNS_drho   = ZEROcr
     LNS_rho0dv = ZEROcr
     LNS_dE     = ZEROcr
-    ! Initialise auxiliary quantities (both initial state & state).
-    LNS_T0     = ZEROcr
+    ! Initialise state auxiliary quantities.
+    !LNS_T0     = ZEROcr
+    !LNS_p0     = ZEROcr
+    !nabla_v0   = ZEROcr
+    !sigma_v_0  = ZEROcr
     LNS_dT     = ZEROcr
-    LNS_p0     = ZEROcr
     LNS_dp     = ZEROcr
     LNS_dv     = ZEROcr
     LNS_dm     = ZEROcr
-    nabla_v0   = ZEROcr
-    sigma_v_0  = ZEROcr
-    sigma_dv   = ZEROcr
-    nabla_dT   = ZEROcr
+    if(LNS_viscous) then
+      sigma_dv   = ZEROcr
+      nabla_dT   = ZEROcr
+    endif
     ! Initialise auxiliary registers (for RK).
     aux_drho   = ZEROcr
     aux_rho0dv = ZEROcr
@@ -129,14 +123,9 @@ subroutine compute_forces_acoustic_LNS_main()
     RHS_drho   = ZEROcr
     RHS_rho0dv = ZEROcr
     RHS_dE     = ZEROcr
-    ! Physical parameters.
-    LNS_g      = ZEROcr
-    LNS_mu     = ZEROcr
-    LNS_eta    = ZEROcr
-    LNS_kappa  = ZEROcr
     
     if(PML_BOUNDARY_CONDITIONS) then
-      stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
+      !stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
       aux_PML_drho = ZEROcr
       aux_PML_rho0dv = ZEROcr
       aux_PML_dE = ZEROcr
@@ -156,111 +145,18 @@ subroutine compute_forces_acoustic_LNS_main()
     endif
 #endif
     
-    !write(*,*) kmato ! DEBUG
-    
     ! Allocate acoustic coupling array.
     allocate(ispec_is_acoustic_coupling_ac(nglob_DG), stat=ier)
     if (ier /= 0) then
       stop "Error allocating 'ispec_is_acoustic_coupling_ac' arrays (see 'compute_forces_acoustic_LNS_calling_routine.F90')."
     endif
     ispec_is_acoustic_coupling_ac = -1
-    
     if(.not. only_DG_acoustic) then
       call find_DG_acoustic_coupling()
     endif
-
-    ! Initialise initial state.
-    !write(*,*) "call initial_state_LNS" ! DEBUG
-    call initial_state_LNS() ! Note: uses gravityext, muext, etaext, and kappa_DG.
-    deallocate(gravityext, muext, etaext, kappa_DG, tau_epsilon, tau_sigma) ! Not really optimal, but less invasive.
-    ! Ugly patch to make it work.
-    ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.
-    ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
-    ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
-    ! TODO: something else, maybe involving correcting the FNS implementation.
-    where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
-    where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
-    where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
-    
-    !write(*,*) "PARAMETERS ", maxval(LNS_g), maxval(LNS_mu), maxval(LNS_eta), maxval(LNS_kappa)!, &
-    !           maxval(gammaext_DG) ! DEBUG
-    !write(*,*) "RHO0 ", minval(LNS_rho0), maxval(LNS_rho0) ! DEBUG
-    !write(*,*) "P0 ", minval(LNS_p0), maxval(LNS_p0) ! DEBUG
-    !write(*,*) "E0 ", minval(LNS_E0), maxval(LNS_E0) ! DEBUG
-    !do ispec=1,nspec
-    !do i=1,NGLLX
-    !do j=1,NGLLZ
-    !if(LNS_rho0(ibool_DG(i,j,ispec))==minval(LNS_rho0)) then
-    !  write(*,*) "rho=min(rho) at ", coord(:, ibool_before_perio(i, j, ispec))
-    !endif
-    !enddo
-    !enddo
-    !enddo
-    !write(*,*) nglob, nglob_DG
-    !stop 'kek'
-    
-    ! Initialise T_0.
-    call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
-    !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
-    
-    ! Detect if viscosity exists somewhere.
-    if(     maxval(LNS_mu) > TINYVAL &
-       .OR. maxval(LNS_eta) > TINYVAL &
-       .OR. maxval(LNS_kappa) > TINYVAL) then
-      LNS_viscous=.true.
-      write(*,*) "LNS: min(mu,eta,kappa)>0, computation will be viscous."
-    else
-      LNS_viscous=.false.
-      write(*,*) "LNS: min(mu,eta,kappa)=0, computation will be inviscid."
-      deallocate(LNS_mu, LNS_eta, LNS_kappa) ! Ambitious deallocate to free memory in the inviscid case.
-#ifdef USE_MPI
-      if(NPROC > 1) then
-        deallocate(buffer_LNS_nabla_dT, buffer_LNS_sigma_dv) ! Even more ambitious deallocate.
-      endif
-#endif
-      deallocate(sigma_dv) ! Even more ambitious deallocate. nabla_dv may be added here if it was declared in specfem_par_lns.
-    endif
-    
-    ! Initialise \nabla v_0.
-    call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, .true., .false., switch_gradient, nabla_v0, LNS_dummy_2d, ZEROcr) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
-    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-      ! Initialise \Sigma_v_0.
-      call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
-    endif
-    
-#ifdef USE_MPI
-    if (NPROC > 1 .and. ninterface_acoustic > 0) then
-      call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
-    endif
-#endif
   
-    call LNS_prevent_nonsense()
+    call LNS_prevent_nonsense() ! Check initial conditions.
   endif ! Endif on (it == 1) and (i_stage == 1).
-  
-  !stop "PLEASE DEBUG THE PML ZONES BEFORE RUNNING LOL"
-  !stop 'kek'
-  
-!#ifdef USE_MPI
-!  ! If MPI, assemble at each iteration.
-!  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-!    ! Assemble state buffers.
-!    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-!    do i_aux=1,NDIM
-!      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
-!    enddo
-!    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
-!    
-!    ! Assemble viscous buffers.
-!    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-!      do i_aux=1,NDIM
-!        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
-!      enddo
-!      do i_aux=1,NVALSIGMA
-!        call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
-!      enddo
-!    endif
-!  endif
-!#endif
   
   if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
     WRITE(*,*) "****************************************************************"
@@ -285,7 +181,7 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! Precompute gradients.
   if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, switch_gradient, nabla_dv, nabla_dT, timelocal) ! Note: we compute nabla_dv only if viscosity is activated.
+    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal) ! Note: we compute nabla_dv only if viscosity is activated.
     ! Precompute \Sigma_v'.
     !write(*,*) "computing sigma_dv"
     call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
@@ -364,49 +260,49 @@ subroutine compute_forces_acoustic_LNS_main()
     
     ! PML, iterate ADEs.
     if(PML_BOUNDARY_CONDITIONS) then
-      do i_aux=1,NDIM ! Loop on ADEs.
-        ! Prepare PML ADE RHS. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
-        do ispec=1,nspec; if(ispec_is_PML(ispec)) then; do j=1,NGLLZ; do i=1,NGLLX
+      !do i_aux=1,NDIM ! Loop on ADEs.
+        ! Prepare PML ADE RHS, vectorially. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
+        do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); do j=1,NGLLZ; do i=1,NGLLX
           iglob=ibool_DG(i, j, ispec)
-          ispec_PML=spec_to_PML(ispec)
           !Write(*,*) "iglob", iglob, "is_acoustic_dg", ispec_is_acoustic_DG(ispec)
-          !WRITE(*,*) "LNS_PML_beta", LNS_PML_beta(i_aux,i,j,ispec_PML)
+          !WRITE(*,*) "LNS_PML_b", LNS_PML_b(i_aux,i,j,ispec_PML)
           !WRITE(*,*) "LNS_PML_drho", LNS_PML_drho(i_aux,i,j,ispec_PML)
           !WRITE(*,*) "LNS_drho", LNS_drho(iglob)
-          RHS_PML_drho(i_aux,i,j,ispec_PML) = - LNS_PML_beta(i_aux,i,j,ispec_PML) &
-                                                   * LNS_PML_drho(i_aux,i,j,ispec_PML) &
-                                                 + LNS_drho(iglob) ! A minus sign might have to be used here.
-          RHS_PML_dE(i_aux,i,j,ispec_PML) = - LNS_PML_beta(i_aux,i,j,ispec_PML) &
-                                                 * LNS_PML_dE(i_aux,i,j,ispec_PML) &
-                                               + LNS_dE(iglob) ! A minus sign might have to be used here.
-          do i_aux2=1,NDIM ! Loop on momenta.
-            RHS_PML_rho0dv(i_aux,i_aux2,i,j,ispec_PML) = - LNS_PML_beta(i_aux,i,j,ispec_PML) &
-                                                              * LNS_PML_rho0dv(i_aux,i_aux2,i,j,ispec_PML) &
-                                                            + LNS_rho0dv(i_aux2, iglob) ! A minus sign might have to be used here.
+          pml_alpha(1)    = alpha_x_store(i,j,ispec_PML) + 0.01_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          pml_alpha(NDIM) = alpha_z_store(i,j,ispec_PML) + 0.02_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          RHS_PML_drho(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_drho(:,i,j,ispec_PML) &
+                                          - LNS_drho(iglob) ! A minus sign might have to be used here.
+          RHS_PML_dE(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_dE(:,i,j,ispec_PML) &
+                                        - LNS_dE(iglob) ! A minus sign might have to be used here.
+          do i_aux=1,NDIM ! Loop on momenta.
+            RHS_PML_rho0dv(:,i_aux,i,j,ispec_PML) =   pml_alpha*LNS_PML_rho0dv(:,i_aux,i,j,ispec_PML) &
+                                                    - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
           enddo
         enddo; enddo; endif; enddo
-        ! Update PML ADE.
-        aux_PML_drho(i_aux,:,:,:) =   scheme_A(i_stage)*aux_PML_drho(i_aux,:,:,:) &
-                                       + deltat*RHS_PML_drho(i_aux,:,:,:)
-        aux_PML_dE(i_aux,:,:,:)   =   scheme_A(i_stage)*aux_PML_dE(i_aux,:,:,:) &
-                                       + deltat*RHS_PML_dE(i_aux,:,:,:)
-        LNS_PML_drho(i_aux,:,:,:) = LNS_PML_drho(i_aux,:,:,:) + scheme_B(i_stage)*aux_PML_drho(i_aux,:,:,:)
-        LNS_PML_dE(i_aux,:,:,:)   = LNS_PML_dE(i_aux,:,:,:)   + scheme_B(i_stage)*aux_PML_dE(i_aux,:,:,:)
-        do i_aux2=1,NDIM ! Loop on momenta.
-          aux_PML_rho0dv(i_aux,i_aux2,:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(i_aux,i_aux2,:,:,:) &
-                                                 + deltat*RHS_PML_rho0dv(i_aux,i_aux2,:,:,:)
-          LNS_PML_rho0dv(i_aux,i_aux2,:,:,:) =   LNS_PML_rho0dv(i_aux,i_aux2,:,:,:) &
-                                                  + scheme_B(i_stage)*aux_PML_rho0dv(i_aux,i_aux2,:,:,:)
-        enddo
-      enddo
+        ! Update PML ADE, vectorially.
+        aux_PML_drho(:,:,:,:) = scheme_A(i_stage)*aux_PML_drho(:,:,:,:) + deltat*RHS_PML_drho(:,:,:,:)
+        aux_PML_dE(:,:,:,:)   = scheme_A(i_stage)*aux_PML_dE(:,:,:,:)   + deltat*RHS_PML_dE(:,:,:,:)
+        LNS_PML_drho(:,:,:,:) = LNS_PML_drho(:,:,:,:) + scheme_B(i_stage)*aux_PML_drho(:,:,:,:)
+        LNS_PML_dE(:,:,:,:)   = LNS_PML_dE(:,:,:,:)   + scheme_B(i_stage)*aux_PML_dE(:,:,:,:)
+        aux_PML_rho0dv(:,:,:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(:,:,:,:,:) &
+                                    + deltat*RHS_PML_rho0dv(:,:,:,:,:)
+        LNS_PML_rho0dv(:,:,:,:,:) =   LNS_PML_rho0dv(:,:,:,:,:) &
+                                    + scheme_B(i_stage)*aux_PML_rho0dv(:,:,:,:,:)
+        !do i_aux=1,NDIM ! Loop on momenta.
+        !  aux_PML_rho0dv(:,i_aux,:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:) &
+        !                                  + deltat*RHS_PML_rho0dv(:,i_aux,:,:,:)
+        !  LNS_PML_rho0dv(:,i_aux,:,:,:) =   LNS_PML_rho0dv(:,i_aux,:,:,:) &
+        !                                  + scheme_B(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:)
+        !enddo
+      !enddo
     endif
     
     ! test
-    if(PML_BOUNDARY_CONDITIONS) then
-      if(myrank==1) then
-        write(*,*) timelocal, minval(aux_PML_drho), maxval(aux_PML_drho)
-      endif
-    endif
+    !if(PML_BOUNDARY_CONDITIONS) then
+    !  if(myrank==1) then
+    !    write(*,*) timelocal, minval(aux_PML_drho), maxval(aux_PML_drho)
+    !  endif
+    !endif
     !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
     !stop
     !write(*,*) LNS_kappa
@@ -518,6 +414,11 @@ end subroutine compute_forces_acoustic_LNS_main
 
 
 
+! ------------------------------------------------------------ !
+! LNS_PML_init_coefs                                           !
+! ------------------------------------------------------------ !
+! Initialises coefficients needed for PML implementation.
+! Note: base coefficients ("K_*_store", "d_*_store", and "alpha_*_store" are initialised in pml_init.F90).
 
 subroutine LNS_PML_init_coefs()
   ! TODO: select variables to use.
@@ -531,15 +432,25 @@ subroutine LNS_PML_init_coefs()
   integer :: i,j,ispec,ispec_PML
   real(kind=CUSTOM_REAL), dimension(NDIM) :: pmlk, pmld, pmla
   
-  if(     (.not. allocated(LNS_PML_alpha)) &
-     .or. (.not. allocated(LNS_PML_beta))) then
-    ! Safeguard.
+  ! Safeguards.
+  if(     (.not. allocated(LNS_PML_a0)) &
+     .or. (.not. allocated(LNS_PML_b))) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
     write(*,*) "********************************"
     write(*,*) "* Some PML coefficients arrays *"
     write(*,*) "* are not allocated but should *"
     write(*,*) "* be.                          *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(.not. PML_BOUNDARY_CONDITIONS) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* PML are not activated and    *"
+    write(*,*) "* you are trying to initialise *"
+    write(*,*) "* the parameters.              *"
     write(*,*) "********************************"
     stop
   endif
@@ -553,20 +464,21 @@ subroutine LNS_PML_init_coefs()
           pmlk(2)=K_z_store(i,j,ispec_PML)
           pmld(1)=d_x_store(i,j,ispec_PML)
           pmld(2)=d_z_store(i,j,ispec_PML)
-          pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.01
-          pmla(2)=alpha_z_store(i,j,ispec_PML) + 0.02
+          pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.01_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
+          pmla(2)=alpha_z_store(i,j,ispec_PML) + 0.02_CUSTOM_REAL ! TODO: make adding the t0 is systematic, or check if this can work without
           
-          !write(*,*) coord(:, ibool_before_perio(i, j, ispec)), ":", pmlk, pmld, pmla ! DEBUG
+          if(abs(coord(1, ibool_before_perio(i, j, ispec)))<TINYVAL) & ! Monitor slice at x==0.
+            write(*,*) coord(2, ibool_before_perio(i, j, ispec)), ":", pmlk, pmld, pmla ! DEBUG
           
-          LNS_PML_alpha(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
+          LNS_PML_a0(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
           
           if(abs(pmla(2)-pmla(1)) < TINYVAL) then
             write(*,*) "|a2-a1| is very smol at ", coord(:, ibool_before_perio(i, j, ispec)), ": a1,a2=", pmla ! DEBUG
           else
-            LNS_PML_beta(1,i,j,ispec_PML) = pmlk(1)*pmld(1) * (   pmlk(2) &
-                                                                + pmld(2)/(pmla(2)-pmla(1)) )
-            LNS_PML_beta(2,i,j,ispec_PML) = pmlk(2)*pmld(2) * (   pmlk(1) &
-                                                                + pmld(1)/(pmla(1)-pmla(2)) )
+            LNS_PML_b(1,i,j,ispec_PML) = pmlk(1)*pmld(1) * (   pmlk(2) &
+                                                             + pmld(2)/(pmla(2)-pmla(1)) )
+            LNS_PML_b(2,i,j,ispec_PML) = pmlk(2)*pmld(2) * (   pmlk(1) &
+                                                             + pmld(1)/(pmla(1)-pmla(2)) )
           endif
         enddo
       enddo
@@ -596,9 +508,13 @@ end subroutine LNS_PML_init_coefs
 ! Computes initial state.
 
 subroutine initial_state_LNS()
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
-  use specfem_par, only: ibool_DG, nspec!, ispec_is_acoustic_DG, nspec
-  use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
+  use specfem_par, only: ibool_DG, nspec, gravityext,muext, etaext, kappa_DG, tau_epsilon, &
+                         tau_sigma, NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, ispec_is_acoustic_DG, nspec
+  use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
+                             LNS_eta, LNS_kappa, sigma_dv, LNS_dummy_1d, LNS_dummy_2d, &
+                             LNS_viscous, sigma_v_0, nabla_v0, buffer_LNS_nabla_dT, &
+                             buffer_LNS_sigma_dv, LNS_switch_gradient, LNS_g
 
   implicit none
   
@@ -607,8 +523,24 @@ subroutine initial_state_LNS()
   
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   integer :: ispec, iglob, i, j
   !real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
+  
+  ! Initialise initial state registers.
+  LNS_rho0   = ZEROcr
+  LNS_v0     = ZEROcr
+  LNS_E0     = ZEROcr
+  ! Initialise initial auxiliary quantities.
+  LNS_T0     = ZEROcr
+  LNS_p0     = ZEROcr
+  nabla_v0   = ZEROcr
+  sigma_v_0  = ZEROcr
+  ! Physical parameters.
+  LNS_g      = ZEROcr
+  LNS_mu     = ZEROcr
+  LNS_eta    = ZEROcr
+  LNS_kappa  = ZEROcr
   
   do ispec = 1, nspec
     !if(ispec_is_acoustic_DG(ispec)) then
@@ -624,6 +556,53 @@ subroutine initial_state_LNS()
       enddo
     !endif
   enddo
+  
+  deallocate(gravityext, muext, etaext, kappa_DG, tau_epsilon, tau_sigma) ! Not really optimal, but less invasive.
+  
+  ! Ugly patch to make it work.
+  ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.
+  ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
+  ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
+  ! TODO: something else, maybe involving correcting the FNS implementation.
+  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
+  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
+  where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
+  
+  ! Initialise T_0.
+  call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+  !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
+  
+  ! Detect if viscosity exists somewhere on this CPU.
+  if(     maxval(LNS_mu) > TINYVAL &
+     .OR. maxval(LNS_eta) > TINYVAL &
+     .OR. maxval(LNS_kappa) > TINYVAL) then
+    LNS_viscous=.true.
+    write(*,*) "LNS: min(mu,eta,kappa)>0, computation will be viscous."
+  else
+    LNS_viscous=.false.
+    write(*,*) "LNS: min(mu,eta,kappa)=0, computation will be inviscid."
+    deallocate(LNS_mu, LNS_eta, LNS_kappa) ! Ambitious deallocate to free memory in the inviscid case.
+#ifdef USE_MPI
+    if(NPROC > 1) then
+      deallocate(buffer_LNS_nabla_dT, buffer_LNS_sigma_dv) ! Even more ambitious deallocate.
+    endif
+#endif
+    deallocate(sigma_dv) ! Even more ambitious deallocate. nabla_dv may be added here if it was declared in specfem_par_lns.
+  endif
+  
+  ! Initialise \nabla v_0.
+  call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, .true., .false., LNS_switch_gradient, nabla_v0, LNS_dummy_2d, ZEROcr) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
+  if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+    ! Initialise \Sigma_v_0.
+    call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
+  endif
+  
+#ifdef USE_MPI
+  if (NPROC > 1 .and. ninterface_acoustic > 0) then
+    call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
+  endif
+#endif
+  
 end subroutine initial_state_LNS
 
 ! ------------------------------------------------------------ !

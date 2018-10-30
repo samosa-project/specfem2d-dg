@@ -427,6 +427,8 @@
   use specfem_par, only: ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store
 
+  use specfem_par, only: USE_DISCONTINUOUS_METHOD, gammaext_dg
+  use specfem_par_lns
 
   implicit none
 
@@ -660,16 +662,25 @@
 
 
 ! finish the computation of the average position of all sources (not the plane wave incident)
-  call max_all_all_dp(vpmax_acoustic, vpmax_glob_acoustic)
+  if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    ! DG LNS acoustic.
+    call max_all_all_dp(maxval(gammaext_DG*LNS_p0/LNS_rho0), vpmax_glob_acoustic)
+    vpmax_acoustic = vpmax_glob_acoustic
+  else
+    ! Classical acoustic.
+    call max_all_all_dp(vpmax_acoustic, vpmax_glob_acoustic)
+    vpmax_acoustic = vpmax_glob_acoustic
+  endif
   call max_all_all_dp(vpmax_elastic, vpmax_glob_elastic)
-  vpmax_acoustic = vpmax_glob_acoustic
   vpmax_elastic = vpmax_glob_elastic
 
   d0_x_left_acoustic = - (NPOWER + 1) * vpmax_acoustic * log(Rcoef) / (2.d0 * thickness_PML_x_left)
   d0_x_right_acoustic = - (NPOWER + 1) * vpmax_acoustic * log(Rcoef) / (2.d0 * thickness_PML_x_right)
   d0_z_bottom_acoustic = - (NPOWER + 1) * vpmax_acoustic * log(Rcoef) / (2.d0 * thickness_PML_z_bottom)
   d0_z_top_acoustic = - (NPOWER + 1) * vpmax_acoustic * log(Rcoef) / (2.d0 * thickness_PML_z_top)
-
+  
+  write(*,*) "d0_z_top_acoustic", d0_z_top_acoustic, "vpmax_acoustic", vpmax_acoustic ! DEBUG
+  
   d0_x_left_elastic = - (NPOWER + 1) * vpmax_elastic * log(Rcoef) / (2.d0 * thickness_PML_x_left)
   d0_x_right_elastic = - (NPOWER + 1) * vpmax_elastic * log(Rcoef) / (2.d0 * thickness_PML_x_right)
   d0_z_bottom_elastic = - (NPOWER + 1) * vpmax_elastic * log(Rcoef) / (2.d0 * thickness_PML_z_bottom)

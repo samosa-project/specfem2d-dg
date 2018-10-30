@@ -97,11 +97,11 @@
         ! LNS.
         select case (imagetype_JPEG)
           case(1)
-            where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(1,:) / LNS_rho0
+            where(LNS_rho0>TINYVAL) vector_DG_temp = LNS_rho0dv(1,:) / LNS_rho0
           case(2)
-            where(LNS_rho0>0.) vector_DG_temp = LNS_rho0dv(NDIM,:) / LNS_rho0
+            where(LNS_rho0>TINYVAL) vector_DG_temp = LNS_rho0dv(NDIM,:) / LNS_rho0
           case(3)
-            where(LNS_rho0>0.) vector_DG_temp = sqrt((LNS_rho0dv(1,:) / LNS_rho0)**2 + (LNS_rho0dv(NDIM,:) / LNS_rho0)**2)
+            where(LNS_rho0>TINYVAL) vector_DG_temp = sqrt((LNS_rho0dv(1,:) / LNS_rho0)**2 + (LNS_rho0dv(NDIM,:) / LNS_rho0)**2)
           case default
             stop "This statement should not have been reached."
         end select
@@ -139,7 +139,7 @@
         ! LNS.
         select case (imagetype_JPEG)
           case(4)
-            stop "imagetype_JPEG 4 not implemented yet for LNS."
+            vector_DG_temp = LNS_dE
           case(5)
             where(LNS_rho0>0.) vector_DG_temp = LNS_dp / LNS_rho0
           case(6)
@@ -172,7 +172,14 @@
         endif
       else
         ! LNS.
-        stop "imagetype_JPEG not implemented yet for LNS."
+        select case (imagetype_JPEG)
+          case(7)
+            vector_DG_temp = LNS_drho
+          case(8)
+            vector_DG_temp = LNS_rho0dv(1,:)/sqrt(LNS_rho0)
+          case(9)
+            vector_DG_temp = LNS_rho0dv(NDIM,:)/sqrt(LNS_rho0)
+        end select
       endif
     endif
     if (myrank == 0) then
