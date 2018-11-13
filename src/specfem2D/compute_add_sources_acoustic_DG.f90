@@ -320,7 +320,7 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
             do i = 1, NGLLX
               iglob_unique = ibool_before_perio(i, j, ispec)
               iglob = ibool_DG(i, j, ispec)
-              temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_timerun.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+              temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_source_spatial_function.f90" for the subroutine initialising the vector "source_spatial_function_DG".
               jacobianl = jacobian(i, j, ispec)
               
               if(ABC_STRETCH) then

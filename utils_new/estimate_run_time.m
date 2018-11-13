@@ -134,6 +134,8 @@ function [x,t,RUNINFO]=load()
   RUN_RAWDATA(i,:)=[1866000 1680000 0.471 110000  256 5000 116 50 101666]; RUNINFO{i}={668844,'OKQ45 redone'}; i=i+1;
   RUN_RAWDATA(i,:)=[3546400 3546400 0.441  15500  480  500 452 25 250007]; RUNINFO{i}={642746,'MB Huge 642746'}; i=i+1;
   RUN_RAWDATA(i,:)=[3627000 3627000 0.441  76500  480  500 452 25 250010]; RUNINFO{i}={672048,'MB Huge 672048'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29100   10500 0.471   2500   64  100   2 50     85]; RUNINFO{i}={71913, 'OKQ45 small for test impedance'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29100       0 0.471   2500   64  100   2 50     47]; RUNINFO{i}={71936, 'OKQ45 small for test impedance but potential'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

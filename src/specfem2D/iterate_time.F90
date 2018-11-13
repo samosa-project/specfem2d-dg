@@ -45,7 +45,7 @@ subroutine iterate_time()
   use specfem_par
   use specfem_par_gpu
   use specfem_par_noise,only: NOISE_TOMOGRAPHY,save_everywhere
-  use specfem_par_LNS, only: USE_LNS
+  use specfem_par_LNS, only: USE_LNS, LNS_viscous
 
   implicit none
 
@@ -93,6 +93,11 @@ subroutine iterate_time()
         write(IMAIN,*) " |-> using DG."
         if(USE_LNS) then
           write(IMAIN,*) "     |-> using LNS."
+          if(LNS_viscous) then
+            write(*,*) "         |-> LNS: min(mu,eta,kappa)>0, computation will be viscous."
+          else
+            write(*,*) "         |-> LNS: max(mu,eta,kappa)=0, computation will be inviscid."
+          endif
         else
           write(IMAIN,*) "     |-> using FNS."
         endif

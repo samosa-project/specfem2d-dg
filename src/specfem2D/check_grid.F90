@@ -351,6 +351,11 @@
       write(IMAIN,*)
       write(IMAIN,*) '*** Max CFL stability condition of the time scheme &
                          &based on P wave velocity (must be below about 0.50 or so) = ',courant_stability_number_max
+      if(courant_stability_number_max>0.5 .or. courant_stability_number_max<0.4) then
+        ! If CFL isn't optimal, advise user a better choice.
+        write(IMAIN,*) "*** (Advised DT to get to 0.49: ", (0.49*deltat/courant_stability_number_max), ". ",&
+                       " If done, multiply NSTEP by ",courant_stability_number_max/0.49," to get same end time.)"
+      endif
       write(IMAIN,*)
       call flush_IMAIN()
     endif

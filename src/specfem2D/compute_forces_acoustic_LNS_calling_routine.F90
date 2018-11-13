@@ -306,7 +306,7 @@ subroutine compute_forces_acoustic_LNS_main()
     !endif
     !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
     !stop
-    !write(*,*) LNS_kappa
+    !write(*,*) "soudnspeed lol", minval(sqrt(gammaext_DG*LNS_p0/LNS_rho0)), maxval(sqrt(gammaext_DG*LNS_p0/LNS_rho0))
     !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
     !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
     !kek = reshape(LNS_rho0dv(:,5),(/2,1/))
@@ -491,10 +491,10 @@ subroutine initial_state_LNS()
      .OR. maxval(LNS_eta) > TINYVAL &
      .OR. maxval(LNS_kappa) > TINYVAL) then
     LNS_viscous=.true.
-    write(*,*) "LNS: min(mu,eta,kappa)>0, computation will be viscous."
+    !write(*,*) "LNS: min(mu,eta,kappa)>0, computation will be viscous."
   else
     LNS_viscous=.false.
-    write(*,*) "LNS: min(mu,eta,kappa)=0, computation will be inviscid."
+    !write(*,*) "LNS: max(mu,eta,kappa)=0, computation will be inviscid."
     deallocate(LNS_mu, LNS_eta, LNS_kappa) ! Ambitious deallocate to free memory in the inviscid case.
 #ifdef USE_MPI
     if(NPROC > 1) then

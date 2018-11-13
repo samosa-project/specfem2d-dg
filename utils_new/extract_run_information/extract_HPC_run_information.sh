@@ -54,7 +54,7 @@ echo "  Synthetics saving: $synthfreq timesteps."
 
 dateregexep="D a t e : [0-9][0-9] - [0-9][0-9] - [0-9][0-9][0-9][0-9]"
 timeregexp="T i m e : [0-9][0-9]:[0-9][0-9]:[0-9][0-9]"
-slurmregexp="[0-9][0-9][0-9][0-9][0-9][0-9]"
+slurmregexp="[0-9]?[0-9][0-9][0-9][0-9][0-9]"
 
 DATELINE1=$(grep -e "$dateregexep" $slurm | head -1)
 DATELINE2=$(grep -e "$dateregexep" $slurm | tail -1) # If job did not terminate completely, this is the same as DATELINE1.
@@ -115,7 +115,7 @@ elapsed=$(($STAMPEND-$STAMPSTART))
 echo "  Run duration:      $elapsed seconds."
 
 cflrounded=$(printf %.3f $cfl)
-slurmid=$(echo $slurm | grep -o $slurmregexp | tail -1)
+slurmid=$(echo $slurm | grep -Po $slurmregexp | tail -1)
 foldername=$(echo $folder | grep -o "/[^/]*$" | grep -o "[^/]*")
 echo "  One-liner to copy-paste in Matlab script './utils_new/estimate_run_time.m':"
 echo "  RUN_RAWDATA(i,:)=[$nelemtot $nelemacous $cflrounded $lasttimestep $NPROC $snapfreq $nbstations $synthfreq $elapsed]; RUNINFO{i}={$slurmid,'$foldername'}; i=i+1;"
