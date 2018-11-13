@@ -145,9 +145,11 @@ subroutine compute_forces_acoustic_DG_main()
     endif
 #endif
     
-    write(*,*) "RHO0 ", minval(rho_init), maxval(rho_init) ! DEBUG
-    write(*,*) "P0 ", minval(p_DG_init), maxval(p_DG_init) ! DEBUG
-    write(*,*) "E0 ", minval(E_init), maxval(E_init) ! DEBUG
+    if(myrank==0) then
+      write(*,*) "min, max RHO0 on proc ", myrank, " : ", minval(rho_init), maxval(rho_init) ! DEBUG
+      write(*,*) "min, max P0   on proc ", myrank, " : ", minval(p_DG_init), maxval(p_DG_init) ! DEBUG
+      write(*,*) "min, max E0   on proc ", myrank, " : ", minval(E_init), maxval(E_init) ! DEBUG
+    endif
     
   endif ! Endif on (it == 1) and (i_stage == 1).
   

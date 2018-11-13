@@ -866,6 +866,17 @@
       stop
     endif
   endif
+  
+  if(trim(MODEL)=='external_DG' .and. .not. USE_DISCONTINUOUS_METHOD) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Cannot use MODEL=external_DG *"
+      write(*,*) "* and USE_DISCONTINUOUS_METHOD=.false."
+      write(*,*) "* simultaneously.              *"
+      write(*,*) "********************************"
+      stop
+  endif
 
   end subroutine check_parameters
 

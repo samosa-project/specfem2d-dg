@@ -238,6 +238,7 @@
         iglob_DG = ibool_DG(i, j, ispec_acoustic)
         if(USE_LNS) then
           ! LNS coupling.
+          ! Set solid stress = fluid stress. That is, pass \Sigma\cdot n as stress in the normal direction (instead of pressure in classical SPECFEM).
           accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
                                    + weight*(  nx*(  LNS_dp(iglob_DG) &
                                                    + (LNS_rho0(iglob_DG)+LNS_drho(iglob_DG)) &

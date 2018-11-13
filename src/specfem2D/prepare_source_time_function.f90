@@ -225,10 +225,6 @@ subroutine prepare_source_time_function()
             hdur_gauss(i_source) = hdur(i_source) * 5.d0 / 3.d0
             source_time_function(i_source, it, i_stage) = factor(i_source) * 0.5d0*(1.0d0 + &
                 netlib_specfun_erf(SOURCE_DECAY_MIMIC_TRIANGLE*t_used/hdur_gauss(i_source)))
-            
-          else if (time_function_type(i_source) == 10) then
-              source_time_function(i_source, it, i_stage) = (factor(i_source)/(2.*PI**0.5*f0_source(i_source))) * &
-                  (1.+ netlib_specfun_erf(PI*f0_source(i_source)*t_used))
 
           else if (time_function_type(i_source) == 6) then
             ! ocean acoustics type I
@@ -299,6 +295,41 @@ subroutine prepare_source_time_function()
             else
               source_time_function(i_source, it, i_stage) = ZERO
             endif
+            
+          else if (time_function_type(i_source) == 10) then
+            ! Gaussian primitive.
+            source_time_function(i_source, it, i_stage) = (factor(i_source)/(2.*PI**0.5*f0_source(i_source))) * &
+                                                          (1.+ netlib_specfun_erf(PI*f0_source(i_source)*t_used))
+          else if (time_function_type(i_source) == 11) then
+            ! Hardcoded.
+            if(it==1 .and. i_stage==1 .and. myrank == 0) then
+              write(*,*) "********************************"
+              write(*,*) "*           WARNING            *"
+              write(*,*) "********************************"
+              write(*,*) "* You are using                *"
+              write(*,*) "* time_function_type=11. This  *"
+              write(*,*) "* means a hardcoded STF will   *"
+              write(*,*) "* be used. See                 *"
+              write(*,*) "* 'prepare_source_time_function.f90'."
+              write(*,*) "* Be sure of what you are      *"
+              write(*,*) "* doing.                       *"
+              write(*,*) "********************************"
+              call flush_IMAIN()
+            endif
+            
+            if(t_used>=0. .and. t_used<=3./f0_source(i_source)) then
+              source_time_function(i_source, it, i_stage)= 0.5 * (1. - cos(PI*t_used*f0_source(i_source)/3.)) &
+                                                               * cos(2.*PI*f0_source(i_source)*t_used + 0.)
+            else if(t_used>3./f0_source(i_source) .and. t_used<=7./f0_source(i_source)) then
+              source_time_function(i_source, it, i_stage)=       cos(2.*PI*f0_source(i_source)*t_used + 0.)
+            else if(t_used>7./f0_source(i_source) .and. t_used<=10./f0_source(i_source)) then
+              source_time_function(i_source, it, i_stage)= 0.5 * (1. - cos(  PI*(t_used-10./f0_source(i_source)) &
+                                                                           * f0_source(i_source)/3.)) &
+                                                               * cos(2.*PI*f0_source(i_source)*t_used + 0.)
+            else
+              source_time_function(i_source, it, i_stage)=0.
+            endif
+              
           else
             call exit_MPI(myrank,'unknown source time function')
           endif

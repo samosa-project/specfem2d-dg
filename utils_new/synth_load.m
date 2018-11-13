@@ -53,8 +53,8 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TNTGlanes
-fig_title = strcat('Tirs de Mine Glanes');
-rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
+% fig_title = strcat('Tirs de Mine Glanes');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
@@ -131,7 +131,13 @@ rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strc
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
 % Quake, 45.
-% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71980_isothermal');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_pot');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71931_d9');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71920_force_instead_of_moment_d9');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71913');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); rescale_factor = 1e-3;
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
@@ -142,9 +148,16 @@ rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strc
 
 % Tests.
 % fig_title = 'test';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt_BUTONCALMIP/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fts_lns_19s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fts_fns_26s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_f_lns_44s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_f_fns_62s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_stf_lns_27s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_stf_fns_45s/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/axisym_test'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_external_forcing'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
@@ -444,6 +457,7 @@ if (renorm_statbystat == 0)
   clear('renorm_statbystat', 'rescale_factor');
 end
 
+global synth_load_was_ran
 synth_load_was_ran = 1;
 
 if (display_or_load == 2)
@@ -451,7 +465,7 @@ if (display_or_load == 2)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Old things.                 %
+% Old things.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (ismember(plot_amplitude, [1, 2, 3]))

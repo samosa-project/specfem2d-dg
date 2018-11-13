@@ -93,13 +93,14 @@ end subroutine prepare_timerun_ssf
 ! Compute values of the source spatial function at all points.
 
 subroutine prepare_source_spatial_function_DG
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: coord, ibool_before_perio, IMAIN, ispec_is_acoustic_DG, &
                          ispec_selected_source, myrank, NSOURCES, nspec, &
                          source_spatial_function_DG, source_type, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA, x_source, z_source 
   implicit none
   
   ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer :: i_source, iglob_unique, ispec, i, j
   real(kind=CUSTOM_REAL) :: distsqrd
   character(len=33) :: filename ! Used for saving values. Length: 16 for "OUTPUT_FILES/SSF" + 8 for process numbering + 1 + 8 for source numbering.
@@ -130,32 +131,51 @@ subroutine prepare_source_spatial_function_DG
     else
       ! The central point of the source is indeed in a DG element.
       ! TODO: More cases may exist where the use of a spread source spatial function has to be discarded. Identify those and produce relevant tests and error messages.
+      
+      !if(source_type(i_source)==2 .and. myrank == 0) then
+      !  write(*,*) "********************************"
+      !  write(*,*) "*           WARNING            *"
+      !  write(*,*) "********************************"
+      !  write(*,*) "* You are using source_type=2  *"
+      !  write(*,*) "* within a DG simulation and   *"
+      !  write(*,*) "* where SPREAD_SSF is          *"
+      !  write(*,*) "* activated. This means a      *"
+      !  write(*,*) "* hardcoded SSF will be used.  *"
+      !  write(*,*) "* Be sure of what you are      *"
+      !  write(*,*) "* doing.                       *"
+      !  write(*,*) "********************************"
+      !  call flush_IMAIN()
+      !endif
+      
       do ispec = 1, nspec
         if(ispec_is_acoustic_DG(ispec)) then
           do i = 1, NGLLX
             do j = 1, NGLLZ
               iglob_unique = ibool_before_perio(i, j, ispec)
-              if(source_type(i_source) == 1) then
-                ! If the source is an elastic force or an acoustic pressure.
-                distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
-                           + (coord(2, iglob_unique) - z_source(i_source))**2.
-                source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
-                !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
-                !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
-              else
-                if(myrank == 0) then
-                  write(*,*) "********************************"
-                  write(*,*) "*            ERROR             *"
-                  write(*,*) "********************************"
-                  write(*,*) "* This source type as spread   *"
-                  write(*,*) "* source spatial function is   *"
-                  write(*,*) "* not implemented.             *"
-                  write(*,*) "* i_source              = ", i_source
-                  write(*,*) "* source_type(i_source) = ", source_type(i_source)
-                  write(*,*) "********************************"
-                  stop
-                endif
-              endif ! Endif source_type. ! TODO: Implement the case source_type = 2.
+              select case (source_type(i_source))
+                case (1)
+                  ! If the source is an elastic force or an acoustic pressure.
+                  distsqrd =   (coord(1, iglob_unique) - x_source(i_source))**2. &
+                             + (coord(2, iglob_unique) - z_source(i_source))**2.
+                  source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
+                  !source_spatial_function_DG(i_source, iglob_unique) = sin(-distsqrd/(SIGMA_SSF**2.)) ! Test purposes.
+                  !if(distsqrd<SIGMA_SSF**2*log(10.)*8) source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SIGMA_SSF**2.)) ! Only set the SSF where SSF(x) > 10^(-8).
+                !case (2)
+                !  source_spatial_function_DG(i_source, iglob_unique) = 
+                case default
+                  if(myrank == 0) then
+                    write(*,*) "********************************"
+                    write(*,*) "*            ERROR             *"
+                    write(*,*) "********************************"
+                    write(*,*) "* This source type as spread   *"
+                    write(*,*) "* source spatial function is   *"
+                    write(*,*) "* not implemented.             *"
+                    write(*,*) "* i_source              = ", i_source
+                    write(*,*) "* source_type(i_source) = ", source_type(i_source)
+                    write(*,*) "********************************"
+                    stop
+                  endif
+              end select ! Endselect on source_type.
               
               ! Plane waves tests.
               if(.false.) then
@@ -166,12 +186,12 @@ subroutine prepare_source_spatial_function_DG
                 if(abs(coord(2, iglob_unique))<15. .and. abs(coord(1, iglob_unique))<35.) then
                   source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.1)
                 else
-                  source_spatial_function_DG(i_source, iglob_unique) = 0.
+                  source_spatial_function_DG(i_source, iglob_unique) = ZEROcr
                 endif
               endif
               
               if(SPREAD_SSF_SAVE) then
-                if(source_spatial_function_DG(i_source, iglob_unique)>1.d-50) then
+                if(source_spatial_function_DG(i_source, iglob_unique)>TINYVAL) then
                   ! Do not save zeros, because that would be silly.
                   ! Do not save negligible values either.
                   write(504,*) coord(1, iglob_unique), coord(2, iglob_unique), source_spatial_function_DG(i_source, iglob_unique)
@@ -182,6 +202,11 @@ subroutine prepare_source_spatial_function_DG
         endif ! Endif on ispec_is_acoustic_DG(ispec).
       enddo ! Enddo on ispec.
     endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
+    
+    !write(*,*) "MINMAX SSF", minval(source_spatial_function_DG), maxval(source_spatial_function_DG)
+    where(source_spatial_function_DG(:, :)<TINYVAL) source_spatial_function_DG=ZEROcr ! Set to zero where value is too small.
+    !write(*,*) "MINMAX SSF", minval(source_spatial_function_DG), maxval(source_spatial_function_DG)
+    
     if(SPREAD_SSF_SAVE) then
       close(504)
       if(myrank == 0) then
