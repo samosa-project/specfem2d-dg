@@ -224,7 +224,7 @@ subroutine compute_forces_acoustic_LNS_main()
   ! Compute RHS.
   ! Note: if there is PML BCs, additionnal terms will be queried directly inside the call to compute_forces_acoustic_LNS, since auxiliary variables and coefficients are global variables.
   call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
-                                   LNS_dm, LNS_dp, LNS_dT, nabla_dT, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
+                                   LNS_dm, LNS_dp, nabla_dT, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
                                    RHS_drho, RHS_rho0dv, RHS_dE, & ! Output.
                                    timelocal) ! Time.
   
@@ -619,7 +619,7 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
   ! Input/Output.
   integer, intent(in) :: i, j, ispec
   real(kind=CUSTOM_REAL), intent(out) :: out_rho, out_E, out_p
-  real(kind=CUSTOM_REAL), dimension(2), intent(out) :: out_v
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_v
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
   logical, intent(in) :: swComputeV, swComputeE, swComputeP
   
@@ -1249,7 +1249,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
           !        nx, nz, weight, currentTime, iface1, iface)
             
             call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
-                  LNS_drho(iglobM), LNS_rho0dv(:,iglobM), LNS_dE(iglobM), & ! Input constitutive variables, "M" side.
+                  LNS_drho(iglobM), LNS_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
                   LNS_drho(iglobP), LNS_rho0dv(:,iglobP), LNS_dE(iglobP), & ! Input constitutive variables, "P" side.
                   LNS_dummy_1d(1), & ! Input other variable, "M" side.
                   !V_DG(:,:,iglobM), T_DG(:,iglobM), & ! Input derivatives, "M" side. MIGHT NEED.
