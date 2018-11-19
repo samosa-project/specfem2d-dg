@@ -21,16 +21,16 @@ format longG;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 4*113;
+nstations   = 4*13;
 nstepseismo = 25;
 
-neltot      = 3627000;
-neldg       = 3627000;
+neltot      = 11503;
+neldg       = 11503;
 
 nstepsnap   = 500;
-nsteptot    = 200000;
+nsteptot    = 20000;
 
-nproc       = 10*48;
+nproc       = 4;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

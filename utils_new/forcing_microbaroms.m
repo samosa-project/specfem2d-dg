@@ -43,12 +43,12 @@ plot_forcing=0;
 % T0 = 14; % Temporal period.
 % T0 = 12.5; % Temporal period.
 T0 = 13.54; % Temporal period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
-nT0 = 100; % Number of temporal periods (must be integer to prevent FFT misbehaving).
+nT0 = 20; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % L0 = 200; % Spatial period.
 L0 = 286.2; % Spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
-nL0 = 120; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
+nL0 = 27; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 MINX = - 0.5 * nL0 * L0; % Set forcing maximum x here.
 MAXX = 0.5 * nL0 * L0; % Set forcing maximum x here.
@@ -76,20 +76,24 @@ A_aimed=7.08/20; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.201605230
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
 % activate_apo = 0; % Deactivate apodisations.
-napoxlr=10; % Number of periods for space apodisation on left/right sides.
+napoxlr=8; % Number of periods for space apodisation on left/right sides.
 % napoxlr=2; % Number of periods for space apodisation on left/right sides.
 napot0=1; % Number of periods for time apodisation at t=0.
 napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 
 % SPECFEM-DG related.
-% If an external mesh is used, the positions of points at z=0 must be implemented in the section "SPECFEM x mesh" below, instead.
-dt = 1.5d-2; % Set DT as in parfile.
-% nx = 1060; % Set nx as in parfile.
-% xmin = -45e3; xmax = 45e3; % Set as in parfile.
-% nx = 377; % Set nx as in parfile.
-nx = 8060; % Set nx as in parfile.
-% xmin = MINX; xmax = MAXX; % Set as in parfile.
-xmin = -52e3; xmax = 512e3; % Set as in parfile.
+dt = 1e-2; % Set DT as in parfile.
+loadgmsh=1;
+if(loadgmsh)
+  path_to_Nodes_file='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/EXTMSH/Nodes_extMesh';
+else
+  % nx = 1060; % Set nx as in parfile.
+  % xmin = -45e3; xmax = 45e3; % Set as in parfile.
+  % nx = 377; % Set nx as in parfile.
+  nx = 8060; % Set nx as in parfile.
+  % xmin = MINX; xmax = MAXX; % Set as in parfile.
+  xmin = -52e3; xmax = 512e3; % Set as in parfile.
+end
 periodise = 0; % Set this if microbaroms do not touch lateral edges of mesh.
 % periodise = 1; % Set this if microbaroms do touch lateral edges of mesh.
 
@@ -97,7 +101,8 @@ periodise = 0; % Set this if microbaroms do not touch lateral edges of mesh.
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_periodic/';
 % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_patch/';
-EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_huge/';
+% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_huge/';
+EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/';
 
 disp(['[',mfilename,'] Preparing meshgrids.']);
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +116,14 @@ t = 0:dt:MAXTIME+5*dt; % Span a bit more than what is needed.
 %%%%%%%%%%%%%%%%%%%%%%%
 % Space, SPECFEM.     %
 %%%%%%%%%%%%%%%%%%%%%%%
-x_specfem = linspace(xmin, xmax, nx + 1); % Set x span. This array must reproduce exactly mesh at z=0 (with GLL points).
+if(loadgmsh)
+  % Load from GMSH.
+  XXX=importdata(path_to_Nodes_file,' ',1);
+  x_specfem=sort(XXX.data(find(XXX.data(:,2)==0),1));
+  x_specfem=x_specfem(1:2:end); % If order=2, we have to remove intermediate points.
+else
+  x_specfem = linspace(xmin, xmax, nx + 1); % Set x span. This array must reproduce exactly mesh at z=0 (with GLL points).
+end
 max_dx_specfem=max(diff(x_specfem)); % Find back dx.
 n=2; x_specfem=x_specfem(x_specfem>=MINX-n*max_dx_specfem & x_specfem<=MAXX+n*max_dx_specfem); % Remove useless points on the side, but span n elements more on each side.
 NGLL = 5; GLL = fliplr([lglnodes(NGLL-1)/2+0.5]'); GLL = GLL(1:end-1); % Better method, and flexible w.r.t NGLL, but needs function lglnodes from https://fr.mathworks.com/matlabcentral/fileexchange/4775-legende-gauss-lobatto-nodes-and-weights.
@@ -136,14 +148,16 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 % Check steps.        %
 %%%%%%%%%%%%%%%%%%%%%%%
-meshok=-1;
-while(not(ismember(meshok,[0,1])))
-  meshok=input(['[',mfilename,'] > SPECFEM grid is xmin=',num2str(xmin),', xmax=',num2str(xmax),', nx=',num2str(nx),'. This has to match parfile. Is that so (0 for no, 1 for yes)? > ']);
+if(not(loadgmsh))
+  meshok=-1;
+  while(not(ismember(meshok,[0,1])))
+    meshok=input(['[',mfilename,'] > SPECFEM grid is xmin=',num2str(xmin),', xmax=',num2str(xmax),', nx=',num2str(nx),'. This has to match parfile. Is that so (0 for no, 1 for yes)? > ']);
+  end
+  if(meshok==0)
+    error(['[',mfilename,', ERROR] > Mesh was not ok, re-chose parametrisation in script.']);
+  end
+  clear('meshok');
 end
-if(meshok==0)
-  error(['[',mfilename,', ERROR] > Mesh was not ok, re-chose parametrisation in script.']);
-end
-clear('meshok');
 disp(['[',mfilename,'] > dt=',num2str(dt),', that is ',num2str(floor(T0/dt)),' iterations per main time period.']);
 disp(['[',mfilename,'] > dx=',num2str(dx),', that is ',num2str(floor(L0/dx)),' elements per main spatial period.']);
 disp(['[',mfilename,'] > dx=',num2str(dx),', max(dxSPCFM)=',num2str(max_dx_specfem),'. One should have dx>=dxSPCFM to prevent aliasing.']);
@@ -478,7 +492,7 @@ disp(['[',mfilename,'] Exporting to file.']);
 exportok=-1;
 % disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
 while(not(ismember(exportok,[0,1])))
-  bytespervalue=25.335164059114234; % [4418901533/178467744 + 4624117614/178467744] / 2. Formerly 39.985880510267151.
+  bytespervalue=25.711366938627620; % [4418901533/178467744 + 4624117614/178467744 + 33990482/1306800 + 223496176/8541907] / 4. Formerly 39.985880510267151.
   expectedsize=prod(size(veloc_specfem))*bytespervalue;
   disp(['[',mfilename,'] > File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
   exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? Path will be confirmed later. > ']);

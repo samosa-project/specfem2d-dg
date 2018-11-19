@@ -147,7 +147,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
-% fig_title = 'test';
+fig_title = 'test';
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt_BUTONCALMIP/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
