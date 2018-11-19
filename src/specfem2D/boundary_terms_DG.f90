@@ -744,7 +744,7 @@ end subroutine forcing_DG
 
 subroutine prepare_external_forcing()
 
-  use constants,only: CUSTOM_REAL, HUGEVAL, TINYVAL
+  use constants,only: CUSTOM_REAL, HUGEVAL, TINYVAL, NDIM
 
   use specfem_par, only: EXTERNAL_FORCING_FILENAME, EXTERNAL_FORCING_MAXTIME,&
                          EXTFORC_MINX, EXTFORC_MAXX, &
@@ -758,7 +758,8 @@ subroutine prepare_external_forcing()
 
   ! Local variables.
   logical :: fileexists, counting_nx
-  real(kind=CUSTOM_REAL) :: t, x, z, val, tmp_t_old
+  real(kind=CUSTOM_REAL) :: t, x, val, tmp_t_old
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: Xspcfm
   integer :: io, istat,NSTEPFORCING,nx,it,ix,ibbp,ispec,i,j,nx_paired,nx_paired_tot
   
   if(.not. only_DG_acoustic) then
@@ -837,25 +838,30 @@ subroutine prepare_external_forcing()
         do j = 1, NGLLZ
           do i = 1, NGLLX
             ibbp=ibool_before_perio(i, j, ispec)
-            z = coord(2, ibbp) ! Get z-coordinate of GLL point.
-            if(abs(z)>TINYVAL) then
-              ! If too far away from 0, cycle point.
+            Xspcfm = coord(:, ibbp) ! Get coordinates of GLL point.
+            if(abs(Xspcfm(NDIM))>TINYVAL) then ! If z is too far away from 0, cycle point.
               cycle
             else
-              if(abs(x-coord(1, ibbp))/(abs(x)+abs(coord(1, ibbp)))<1e-6) then ! 1e-6 is a relative empiric threshold based on precision we can obtain by generating forcings with our Matlab script. Basically, we chose '%.8e' as printing format for x (in the script), which means we have 8 significant digits, thus theoretically we have a relative precision of 1e-8. We chose the threshold to be 1e-6 in order to a have a safety margin. It is acceptable because we expect the GLL points never to be (relatively) 1e-7 apart.
+              !if(.true.) then! .and. abs(Xspcfm(1))<650.) then ! DEBUG
+              !  if(ispec==nspec) stop
+              !  write(*,*) Xspcfm(1)
+              !endif
+              !write(*,*) "abs(x-coord(1, ibbp))", abs(x-coord(1, ibbp)) ! DEBUG
+              !if(.true. .and. abs(x-0.)<650. .and. abs(Xspcfm(1)-0.)<650.) then ! DEBUG
+              !  write(*,*) t, x, Xspcfm(1), abs(x-Xspcfm(1)),&
+              !             nx, nx_paired
+              !endif
+              if(     abs(x-Xspcfm(1))<1e-6 &
+                 .or. abs(x-Xspcfm(1))/(abs(x)+abs(Xspcfm(1)))<1e-5) then ! 1e-6 is a relative empiric threshold based on precision we can obtain by generating forcings with our Matlab script. Basically, we chose '%.8e' as printing format for x (in the script), which means we have 8 significant digits, thus theoretically we have a relative precision of 1e-8. We chose the threshold to be 1e-6 in order to a have a safety margin. It is acceptable because we expect the GLL points never to be (relatively) 1e-7 apart.
                 EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)=nx
                 !write(*,*) EXTFORC_MAP_ibbp_TO_LOCAL(ibbp) ! DEBUG
                 nx_paired=nx_paired+1
-              endif
-              if(.false. .and. abs(x-12000.)<200. .and. abs(coord(1, ibbp)-12000.)<200.) then ! DEBUG
-                write(*,*) t, x, coord(1, ibbp), abs(x-coord(1, ibbp))/(abs(x)+abs(coord(1, ibbp))),&
-                           nx, nx_paired
               endif
             endif
           enddo ! Enddo on i.
         enddo ! Enddo on j.
       enddo ! Enddo on ispec.
-    endif
+    endif ! Endif on counting_nx.
     if(x<=EXTFORC_MINX) then
       EXTFORC_MINX=x
     endif
@@ -962,29 +968,29 @@ subroutine prepare_external_forcing()
   
   ! DEBUG
   !write(*,*) EXTERNAL_FORCING(floor((DT+2*DT/stage_time_scheme)/DT+1),:)
-  if(.false.) then
-    do ispec = 1, nspec
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          ibbp=ibool_before_perio(i, j, ispec)
-          z = coord(2, ibbp)
-          if(z/=0.) then
-            cycle
-          else
-            write(*,*) coord(1,ibbp), z, ibbp, EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)
-          endif
-        enddo ! Enddo on i.
-      enddo ! Enddo on j.
-    enddo ! Enddo on ispec.
-  endif
-  if(.false.) then
-    write(*,*) "this must be 0"
-    write(*,*) EXTERNAL_FORCING(1,:)
-    write(*,*) "this must be non 0"
-    write(*,*) EXTERNAL_FORCING(2,:)
-    write(*,*) "this must be non 0"
-    write(*,*) EXTERNAL_FORCING(3,:)
-  endif
+  !if(.false.) then
+  !  do ispec = 1, nspec
+  !    do j = 1, NGLLZ
+  !      do i = 1, NGLLX
+  !        ibbp=ibool_before_perio(i, j, ispec)
+  !        z = coord(2, ibbp)
+  !        if(z/=0.) then
+  !          cycle
+  !        else
+  !          write(*,*) coord(1,ibbp), z, ibbp, EXTFORC_MAP_ibbp_TO_LOCAL(ibbp)
+  !        endif
+  !      enddo ! Enddo on i.
+  !    enddo ! Enddo on j.
+  !  enddo ! Enddo on ispec.
+  !endif
+  !if(.false.) then
+  !  write(*,*) "this must be 0"
+  !  write(*,*) EXTERNAL_FORCING(1,:)
+  !  write(*,*) "this must be non 0"
+  !  write(*,*) EXTERNAL_FORCING(2,:)
+  !  write(*,*) "this must be non 0"
+  !  write(*,*) EXTERNAL_FORCING(3,:)
+  !endif
   !stop
 end subroutine prepare_external_forcing
 

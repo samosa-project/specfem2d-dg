@@ -4,7 +4,7 @@
 ! TODO: Description.
 
 subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constitutive variables.
-                                       in_dm, in_dp, in_dT, in_nabla_dT, in_sigma_dv, & ! Precomputed quantities.
+                                       in_dm, in_dp, in_nabla_dT, in_sigma_dv, & ! Precomputed quantities.
                                        outrhs_drho, outrhs_rho0dv, outrhs_dE, & ! Output (RHS for each constitutive variable).
                                        currentTime) ! Time.
   ! TODO: select variables to use.
@@ -30,7 +30,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   implicit none
   
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: cv_drho, cv_dE, in_dp, in_dT
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: cv_drho, cv_dE, in_dp!, in_dT
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: cv_rho0dv, in_dm, in_nabla_dT
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA, nglob_DG), intent(in) :: in_sigma_dv
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE
@@ -475,7 +475,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !        !nx_unit, nz_unit, weight, currentTime, iface1, iface)
           
           call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, currentTime, & ! Point identifier (input).
-                  cv_drho(iglobM), cv_rho0dv(:,iglobM), cv_dE(iglobM), & ! Input constitutive variables, "M" side.
+                  cv_drho(iglobM), cv_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
                   cv_drho(iglobP), cv_rho0dv(:,iglobP), cv_dE(iglobP), & ! Input constitutive variables, "P" side. Note they make no sense if neighbor(1)<=-1.
                   in_dp(iglobM), & ! Input other variable, "M" side.
                   !V_DG(:,:,iglobM), T_DG(:,iglobM), & ! Input derivatives, "M" side. MIGHT NEED.
@@ -654,7 +654,7 @@ end subroutine compute_forces_acoustic_LNS
 !                  !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
 !                  out_dv_P) ! Output other variables.
 subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
-             inp_drho_M, inp_rho0dv_M, inp_dE_M, & ! Input constitutive variables, "M" side.
+             inp_drho_M, inp_rho0dv_M, & ! Input constitutive variables, "M" side.
              inp_drho_P, inp_rho0dv_P, inp_dE_P, & ! Input constitutive variables, "P" side.
              inp_dp_M, & ! Input other variable, "M" side.
              !V_DG_iM, T_DG_iM, V_DG_iP, T_DG_iP, & ! Input derivatives. MIGHT NEED.
@@ -690,7 +690,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   integer, intent(in) :: i, j, ispec, iface1, iface
   integer, dimension(3), intent(in) :: neighbor
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
-  real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_dE_M, inp_drho_P, inp_dE_P ! Input constitutive variables.
+  real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_drho_P, inp_dE_P ! Input constitutive variables.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: inp_rho0dv_M, inp_rho0dv_P ! Input constitutive variables.
   real(kind=CUSTOM_REAL), intent(in) :: inp_dp_M ! Input other variables.
   !real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: T_DG_iP, T_DG_iM ! Input derivatives. MIGHT NEED.
@@ -800,7 +800,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         iglob = ibool(i, j, ispec)
         ! Set out_drho_P.
         call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
-                                            .true., velocity_P, &
+                                            .true., velocity_P(1), & ! "(1)" here is to please Intel compilers. It should not interfere too much since the concerned array is nicely allocated.
                                             .false., LNS_dummy_1d(1), &
                                             .false., LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in.
         ! Set velocity_P: free slip and normal velocity continuity.
@@ -1016,7 +1016,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         exact_interface_flux = .false.
         ! Get out_drho_P and out_dp_P (actually, this call gets rho=(rho0+drho) and p=(p0+dp), and this needs to be correctly right after).
         call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
-                                            .true., velocity_P, & ! We get the far-field v field here.
+                                            .true., velocity_P(1), & ! We get the far-field v field here. "(1)" here is to please Intel compilers. It should not interfere too much since the concerned array is nicely allocated.
                                             .false., LNS_dummy_1d(1), &
                                             .true., out_dp_P) ! Get needed background parameters. Use dummies for values we're not interested in.
         out_drho_P = out_drho_P - LNS_rho0(iglobM) ! Warning: out_drho_P contains rho=(rho0 + drho) here. Correct this.

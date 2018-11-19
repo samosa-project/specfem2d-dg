@@ -178,6 +178,16 @@
                   if((knods(ngnod_begin(nedgeother),num2) == knods(ngnod_begin(nedgeloc),numelem)) &
                      .and. &
                      (knods(ngnod_end(nedgeother),num2) == knods(ngnod_end(nedgeloc),numelem))) then
+                    write(*,*) "********************************"
+                    write(*,*) "*            ERROR             *"
+                    write(*,*) "********************************"
+                    write(*,*) "* Improper topology of the     *"
+                    write(*,*) "* input mesh detected. If      *"
+                    write(*,*) "* using GMSH, maybe two        *"
+                    write(*,*) "* elements on either side of a *"
+                    write(*,*) "* boundary aren't oriented in  *"
+                    write(*,*) "* the same direction.          *"
+                    write(*,*) "********************************"
                     call exit_MPI(myrank,'Improper topology of the input mesh detected')
                   !--- sinon voir si cette arete a deja ete generee
                   else if((knods(ngnod_begin(nedgeother),num2) == knods(ngnod_end(nedgeloc),numelem)) &
