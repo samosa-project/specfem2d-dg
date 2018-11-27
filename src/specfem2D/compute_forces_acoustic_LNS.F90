@@ -1218,11 +1218,11 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
   ! N./A.
   
   ! For the tangential vector, it is assumed that we will only have the elastic media under the DG medium, hence we always have n_out(NDIM)>=0.
-  tangential(1)                     = -normal(NDIM) ! Recall: normal(NDIM)=n_z.
-  tangential(NDIM)              =  normal(1) ! Recall: normal(1)=n_x.
-  transf_matrix(1,        1)        =   tangential(NDIM)
-  transf_matrix(1,        NDIM) = - normal(NDIM) ! Recall: normal(NDIM)=n_z.
-  transf_matrix(NDIM, 1)        = - tangential(1)
+  tangential(1)    = -normal(NDIM) ! Recall: normal(NDIM)=n_z.
+  tangential(NDIM) =  normal(1) ! Recall: normal(1)=n_x.
+  transf_matrix(1, 1)       =   tangential(NDIM)
+  transf_matrix(1, NDIM)    = - normal(NDIM) ! Recall: normal(NDIM)=n_z.
+  transf_matrix(NDIM,    1) = - tangential(1)
   transf_matrix(NDIM, NDIM) =   normal(1) ! Recall: normal(1)=n_x.
   transf_matrix = transf_matrix/(normal(1)*tangential(NDIM) - tangential(1)*normal(NDIM))
 end subroutine 
