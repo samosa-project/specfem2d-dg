@@ -167,7 +167,7 @@
 subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
-  use constants,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL, TINYVAL
+  use constants,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL, TINYVAL, FOUR_THIRDS
 
   use specfem_par, only: ibool_before_perio, ibool_DG, coord, &
         rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
@@ -268,7 +268,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       endif
       gammaext_DG(ibool_DG(i, j, ispec)) = cp/c_V
       muext(i, j, ispec) = dynamic_viscosity_cte_DG
-      etaext(i, j, ispec) = (4.0d0/3.0d0)*dynamic_viscosity_cte_DG
+      etaext(i, j, ispec) = FOUR_THIRDS*dynamic_viscosity_cte_DG
       kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG
       tau_epsilon(i, j, ispec) = tau_eps_cte_DG
       tau_sigma(i, j, ispec)   = tau_sig_cte_DG
@@ -705,8 +705,8 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
               write(*,*) "* x_min = ", EXTFORC_MINX, "(included)"
               write(*,*) "* x     = ", x
               write(*,*) "* x_max = ", EXTFORC_MAXX, "(included)"
-              write(*,*) "* t     = ", current_time, "(excluded)"
-              write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME
+              write(*,*) "* t     = ", current_time
+              write(*,*) "* t_max = ", EXTERNAL_FORCING_MAXTIME, "(excluded)"
               write(*,*) "********************************"
               stop
             endif
@@ -1294,6 +1294,12 @@ end subroutine prepare_external_forcing
         veloc_x_DG_P = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       endif
+      
+      !if(abs(coord(1, ibool(i, j, ispec))) < 1. &
+      !   .and. abs(coord(2, ibool(i, j, ispec))) < 1e-6 &
+      !   .and. timelocal>0.78) then ! DEBUG
+      !  write(*,*)  coord(2, ibool(i, j, ispec)), veloc_z, veloc_z_DG_P ! DEBUG
+      !endif
       
       ! No stress continuity.
       p_DG_P = p_DG_iM

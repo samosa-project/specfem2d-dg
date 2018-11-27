@@ -187,6 +187,12 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           gammaxl = gammax(i,j,ispec)
           gammazl = gammaz(i,j,ispec)
           
+          !if(abs(coord(1, ibool(i, j, ispec))) < 1. &
+          !   .and. abs(coord(2, ibool(i, j, ispec))-9.) < 1. &
+          !   .and. timelocal>0.78) then ! DEBUG
+          !  write(*,*) coord(2, ibool(i, j, ispec)), veloc_z_DG(iglob) ! DEBUG
+          !endif
+          
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! Here are updated the operator \nabla and the jacobian, but only if stretching is activated and we are in a buffer.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.

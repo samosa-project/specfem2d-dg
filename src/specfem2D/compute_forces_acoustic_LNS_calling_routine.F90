@@ -607,6 +607,7 @@ end subroutine LNS_PML_init_coefs
 ! background_physical_parameters                               !
 ! ------------------------------------------------------------ !
 ! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
+! Note: This model-building routine builds essentially the same model as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
@@ -657,18 +658,8 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
   
   iglob = ibool_DG(i, j, ispec)
   
-  !write(*,*) "assign_external_model", assign_external_model
-  
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
-    ! > If initialisation (condition on timelocal), set gravity, viscosity coefficients (mu, eta, and kappa).
-    !write(*,*) "abs(timelocal)", abs(timelocal)
-    !if(abs(timelocal)<TINYVAL) then
-    !  LNS_g(iglob) = gravityext(i, j, ispec)
-    !  LNS_mu(iglob) = muext(i, j, ispec)
-    !  LNS_eta(iglob) = etaext(i, j, ispec)
-    !  LNS_kappa(iglob) = kappa_DG(i, j, ispec)
-    !endif
     
     ! > Set density.
     out_rho = rhoext(i, j, ispec)
@@ -686,23 +677,6 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
     
-    ! > If initialisation (condition on timelocal), set gravity, viscosity coefficients (mu, eta, and kappa), and gamma.
-    !write(*,*) "kek" ! DEBUG
-    !if(abs(timelocal)<TINYVAL) then
-    !  ! We are at t=0.
-    !  if(USE_ISOTHERMAL_MODEL) then
-    !    ! > Isothermal case.
-    !    LNS_g(iglob) = real(gravity_cte_DG, kind=CUSTOM_REAL)
-    !  else
-    !    ! > Isobaric case. Since we need to stay hydrostatic, the gravity field needs to stay 0.
-    !    LNS_g(iglob) = ZEROcr
-    !  endif
-    !  gammaext_DG(iglob) = cp/c_V
-    !  LNS_mu(iglob) = dynamic_viscosity_cte_DG
-    !  LNS_eta(iglob) = (4./3.)*dynamic_viscosity_cte_DG
-    !  LNS_kappa(iglob) = thermal_conductivity_cte_DG
-    !endif
-    
     if(USE_ISOTHERMAL_MODEL) then
       ! > Set density.
       H = SCALE_HEIGHT ! Also for pressure, below.
@@ -715,9 +689,6 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
       ! > Set density.
       out_rho = surface_density
       ! > Set pressure.
-      !write(*,*) sound_velocity ! DEBUG
-      !write(*,*) out_rho ! DEBUG
-      !write(*,*) gammaext_DG(ibool_DG(i, j, ispec)) ! DEBUG
       if(swComputeP) then
         out_p = (sound_velocity**2)*out_rho/gammaext_DG(iglob) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
       endif
@@ -742,17 +713,9 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
     endif
   endif
   
-  !! > Set gravity potentials.
-  !if(timelocal == ZEROcr) then
-  !  potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROcr
-  !  potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
-  !endif
-  
   ! Set energy based on pressure.
   if(swComputeE) then
     call compute_E_i(out_rho, out_v, out_p, out_E, iglob)
-    !out_E =   out_p/(gammaext_DG(iglob) - ONEcr) &
-    !        + out_rho*HALFcr*( out_v(1)**2 + out_v(NDIM)**2 )
   endif
 end subroutine background_physical_parameters
 
@@ -760,9 +723,10 @@ end subroutine background_physical_parameters
 ! set_fluid_properties                                         !
 ! ------------------------------------------------------------ !
 ! Set fluid properties.
+! Note: This property-setting routine sets essentially the same values as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
 
 subroutine set_fluid_properties(i, j, ispec)
-  use constants, only: CUSTOM_REAL, TINYVAL, NDIM
+  use constants, only: CUSTOM_REAL, TINYVAL, NDIM, FOUR_THIRDS
   use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, etaext, &
 gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_conductivity_cte_DG, USE_ISOTHERMAL_MODEL
   use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu
@@ -798,7 +762,7 @@ gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_cond
     endif
     gammaext_DG(iglob) = cp/c_V
     LNS_mu(iglob) = dynamic_viscosity_cte_DG
-    LNS_eta(iglob) = (4._CUSTOM_REAL/3._CUSTOM_REAL)*dynamic_viscosity_cte_DG
+    LNS_eta(iglob) = FOUR_THIRDS*dynamic_viscosity_cte_DG
     LNS_kappa(iglob) = thermal_conductivity_cte_DG
     !LNS_v0(1, iglob) = wind ! Read horizontal wind from the scalar value read from parfile.
     ! One might want to initialise vertical wind here, too.

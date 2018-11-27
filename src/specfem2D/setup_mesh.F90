@@ -87,8 +87,22 @@
   call any_all_l(any_gravitoacoustic, GRAVITOACOUSTIC_SIMULATION)
 
   ! check for acoustic
-  if (ATTENUATION_VISCOELASTIC_SOLID .and. .not. ELASTIC_SIMULATION) &
+  if (ATTENUATION_VISCOELASTIC_SOLID .and. .not. ELASTIC_SIMULATION) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Currently cannot have        *"
+    write(*,*) "* viscoelastic attenuation if  *"
+    write(*,*) "* acoustic/poroelastic         *"
+    write(*,*) "* simulation only. Set         *"
+    write(*,*) "* ATTENUATION_VISCOELASTIC_SOLID"
+    write(*,*) "* in parameter file to         *"
+    write(*,*) "* .false., or add a            *"
+    write(*,*) "* viscoelastic medium to the   *"
+    write(*,*) "* simulation.                  *"
+    write(*,*) "********************************"
     call exit_MPI(myrank,'currently cannot have attenuation if acoustic/poroelastic simulation only')
+  endif
 
   ! sets up domain coupling, i.e. edge detection for domain coupling
   call get_coupling_edges()
