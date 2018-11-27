@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-clear all;
+% clear all;
 % close all;
 clc;
 format compact;
@@ -54,6 +54,8 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TNTGlanes
 % fig_title = strcat('Tirs de Mine Glanes');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_75040/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_74752/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
@@ -61,6 +63,8 @@ unknown = 'BXZ'; % _z.
 
 % Microbaroms ULDB.
 % fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
@@ -131,8 +135,12 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
 % Quake, 45.
-fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
+% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221612_local');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221544_local');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_75118_isoth_d6_savedvdg');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71980_isothermal');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_pot');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71931_d9');
@@ -148,7 +156,18 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ_test_imp'); OFd = strcat(
 
 % Tests.
 fig_title = 'test';
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_pot'); OFd = strcat(rootd, '/OUTPUT_FILES_826234/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_826226/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_826213/');
+
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local_butd7/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local_butd7/');
+
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns_t=105s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns_t=195s/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt_BUTONCALMIP/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
@@ -259,7 +278,7 @@ nstat = size(pos_stations(istattab, 1), 1);
 % Ask for geometric attenuation (relies on distance to source).
 geometric_attenuation = - 1;
 while (not(ismember(geometric_attenuation, [0, 1, 2, 3])))
-  geometric_attenuation = input(['[',mfilename,'] Apply geometric attenuation factor to data? (0 for no, 1 for d, 2 for x, 3 for z) > ']);
+  geometric_attenuation = input(['[',mfilename,'] Apply geometric attenuation factor to data? (0 for no, 1 for d, 2 for |x|, 3 for |z|) > ']);
 end
 % Ask if plot y-axis should be normalised to same scale.
 normalise_ylims = 0; % Default value.
@@ -349,9 +368,9 @@ for istat = 1:nstat
       case 1
         geom_att_fact = dist_to_sources(istat_glob) ^ 0.5; % Geometric attenuation respective to raw distance to source.
       case 2
-        geom_att_fact = xstattab(istat_glob) ^ 0.5; % Geometric attenuation respective to horizontal distance to source.
+        geom_att_fact = abs(xstattab(istat_glob)) ^ 0.5; % Geometric attenuation respective to horizontal distance to source.
       case 3
-        geom_att_fact = ystattab(istat_glob) ^ 0.5; % Geometric attenuation respective to vertical distance to source.
+        geom_att_fact = abs(ystattab(istat_glob)) ^ 0.5; % Geometric attenuation respective to vertical distance to source.
       otherwise
         error(['[',mfilename,', ERROR] Geometric attenuation parameter not implemented.']);
     end

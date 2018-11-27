@@ -26,8 +26,12 @@ suffix="_crop";
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/SH_final/snapshots_edits/cropping';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/snapshots_edits/redone';
 % FOLDER='/home/l.martire/Downloads/gifs/exp_ballons_helium/shhard';
-FOLDER='/home/l.martire/Downloads/gifs/exp_ballons_helium/shsoft';
+% FOLDER='/home/l.martire/Downloads/gifs/exp_ballons_helium/shsoft';
 % FOLDER='/home/l.martire/Documents/MATLAB/snapshot_beautifier_tests/';
+% FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/tir_de_mine/OUTPUT_FILES_74752/illustration';
+% FOLDER='/home/l.martire/Documents/SPECFEM/Ongoing_Work/18_microbaroms/microbaroms_patch/OUTPUT_FILES_668482_disp7_isp6_full/cropppp';
+% FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_826213/croppp';
+FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_lnsf2s_local/croppp';
 
 if(not(strcmp(FOLDER(end),'/'))); FOLDER=[FOLDER,'/']; end;
 list=dir(strcat(FOLDER, '*.jpg'));
@@ -42,7 +46,7 @@ disp(strcat("[",mfilename,"] Treating folder '",FOLDER,"', containing ",num2str(
 
 save_raw=-1;
 while(not(ismember(save_raw,[0,1])))
-  save_raw=input(['[',mfilename,'] > Formatted (0) or raw (1) snapshots? > ']);
+  save_raw=input(['[',mfilename,'] > Which type of cropped snapshots (0: formatted, 1: raw)? > ']);
 end
 
 ext="KEK";
@@ -130,7 +134,11 @@ for s=1:size(list,1)
     set(gca,'TickLabelInterpreter', 'latex');
     xlabel(strcat("$x$ (",xunit,")"));
     ylabel(strcat("$z$ (",zunit,")"));
-    yticks([1,interface_nz_from_top,nNZ]);
+    if(interface_nz_from_top<nNZ)
+      yticks([1,interface_nz_from_top,nNZ]);
+    else
+      yticks([1,nNZ]);
+    end
     yticklabels({strcat(" $",sprintf("%.1f",top_zval-zint),"$")," $0$",strcat(" $",sprintf("%.1f",bottom_zval-zint),"$")});
     xticks([1,source_nx_from_left,nNX]);
     xticklabels({strcat(" $",sprintf("%.1f",left_xval-xs),"$")," $0$",strcat("$",sprintf("%.1f",right_xval-xs),"$ ")});
@@ -143,7 +151,7 @@ for s=1:size(list,1)
     f.set('pos',[10 10 1.1*nNX 1.1*nNZ]);
     figure(s);
     gcf;
-    tightfig;
+%     tightfig;
 
     saveas(gcf,newsnap{s},ext);
   end

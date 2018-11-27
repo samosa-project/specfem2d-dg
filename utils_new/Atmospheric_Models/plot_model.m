@@ -32,7 +32,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   DZW=gradient(W,Z);
   DZW(1:2)=DZW(3); % Correction hack.
   
-  figure();
+  figure('units','normalized','outerposition',[0 0 1 1]);
   
   ax(1)=subplot(231);
   myplot(RHO, Z, marker, colour, datestr, 'sx');
@@ -45,6 +45,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   myplot(max(C+W,C-W), Z, marker, 'r', 'downwind $c_e$', 'p');
   legend('Location', 'best');
   yticklabels([]);
+  addatmosphericseparationlines([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))], atmalts);
+  forcexlimminmax([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))]);
   
   title({[posstr,', ',datestr],apf107str,''});
   
@@ -52,28 +54,36 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   myplot(NSQ, Z, marker, colour, datestr, 'p');
   xlabel('$N^2$ (rad$^2$/s$^2$)'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   yticklabels([]);
+  forcexlimminmax(NSQ);
   
   ax(4)=subplot(234);
   myplot(T, Z, marker, colour, datestr, 'p');
   xlabel('$T$ ($^\circ$C)');
   ylabel('$z$ (m)'); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
-  for i=1:length(atmalts)
-    line([min(T), max(T)],[atmalts(i),atmalts(i)],'linestyle',':','color','k','linewidth',2);
-  end
+  addatmosphericseparationlines(T, atmalts);
+  forcexlimminmax(T);
   
   ax(5)=subplot(235);
   myplot(W, Z, marker, colour, datestr, 'p');
   xlabel('$w$ (m/s)');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
+  addatmosphericseparationlines(W, atmalts);
+  forcexlimminmax(W);
   
   ax(6)=subplot(236);
   myplot(DZW, Z, marker, colour, datestr, 'p');
   xlabel('$\partial_zw$ (1/s)');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
+  forcexlimminmax(DZW);
   
   linkaxes(ax,'y');
+  
+  spl=split(atmospheric_model_file,'.');
+  spl{3}='jpg';
+  spl=join(spl,'.');
+  saveas(gcf,spl{1}, 'jpg');
 end
 
 function myplot(XDATA, YDATA, MARKER, COLOUR, DISPLAYNAME, TYPE)
@@ -86,4 +96,14 @@ function myplot(XDATA, YDATA, MARKER, COLOUR, DISPLAYNAME, TYPE)
   set(gca, 'TickLabelInterpreter','latex');
   set(gca,'TickDir','both');
   grid on;
+end
+
+function addatmosphericseparationlines(v, atmalts)
+  for i=1:length(atmalts)
+    line([min(v), max(v)],[atmalts(i),atmalts(i)],'linestyle',':','color','k','linewidth',1,'HandleVisibility','off');
+  end
+end
+
+function forcexlimminmax(v)
+  xlim([min(v), max(v)]);
 end
