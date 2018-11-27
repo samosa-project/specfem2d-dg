@@ -19,7 +19,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 set(groot, 'defaultSurfaceEdgeColor', 'none');
 
 plot_process=0;
-plot_forcing=0;
+plot_forcing=1;
 
 % 3 steps:
 % 1) Prepare forcing in spacetime.
@@ -46,9 +46,10 @@ T0 = 13.54; % Temporal period from WAVEWATCH3 multi_1.partition.glo_30m.20160523
 nT0 = 20; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % L0 = 200; % Spatial period.
-L0 = 286.2; % Spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
+L0 = 286.2; % k1, spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
+L02 = -299.28; % k2.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
-nL0 = 27; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
+nL0 = 54; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 MINX = - 0.5 * nL0 * L0; % Set forcing maximum x here.
 MAXX = 0.5 * nL0 * L0; % Set forcing maximum x here.
@@ -70,8 +71,8 @@ invspread = 5; % Inverse spread factor for Gaussian convolution in frequency ran
 % A_aimed=1e-2; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 % A_aimed=1; % Aimed amplitude for velocity (peak-to-peak is 2 times that). Velocity of 1m/s results in 50 Pa amplitude (100 Pa p2p). Microbaroms are typically 0.1-0.5 Pa amplitude (0.2-1 Pa p2p), which is 1-5 microbar.
 % A_aimed=7; % Aimed amplitude for displacement (peak-to-peak is 2 times that). [m].
-% A_aimed=7.08; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
-A_aimed=7.08/20; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000, divided by 20.
+A_aimed=7.08; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
+% A_aimed=7.08/20; % Amplitude from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000, divided by 20.
 
 % Apodisation related.
 activate_apo = 1; % Activate apodisations.
@@ -82,7 +83,7 @@ napot0=1; % Number of periods for time apodisation at t=0.
 napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 
 % SPECFEM-DG related.
-dt = 1e-2; % Set DT as in parfile.
+dt = 0.75e-2; % Set DT as in parfile.
 loadgmsh=1;
 if(loadgmsh)
   path_to_Nodes_file='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/EXTMSH/Nodes_extMesh';
@@ -120,7 +121,14 @@ if(loadgmsh)
   % Load from GMSH.
   XXX=importdata(path_to_Nodes_file,' ',1);
   x_specfem=sort(XXX.data(find(XXX.data(:,2)==0),1));
-  x_specfem=x_specfem(1:2:end); % If order=2, we have to remove intermediate points.
+  elmtorder=-1;
+  while(not(ismember(elmtorder,[1,2])))
+    elmtorder=input(['[',mfilename,'] > GMSH loading (from ''',path_to_Nodes_file,'''). What is the element order (1 or 2)? > ']);
+  end
+  if(elmtorder==2)
+    x_specfem=x_specfem(1:2:end); % If order=2, we have to remove intermediate shaping points in order to compute GLL points accurately. In other words, we only want corner points.
+  end
+  clear('elmtorder');
 else
   x_specfem = linspace(xmin, xmax, nx + 1); % Set x span. This array must reproduce exactly mesh at z=0 (with GLL points).
 end
@@ -154,13 +162,13 @@ if(not(loadgmsh))
     meshok=input(['[',mfilename,'] > SPECFEM grid is xmin=',num2str(xmin),', xmax=',num2str(xmax),', nx=',num2str(nx),'. This has to match parfile. Is that so (0 for no, 1 for yes)? > ']);
   end
   if(meshok==0)
-    error(['[',mfilename,', ERROR] > Mesh was not ok, re-chose parametrisation in script.']);
+    error(['[',mfilename,', ERROR] Mesh was not ok, re-chose parametrisation in script.']);
   end
   clear('meshok');
 end
-disp(['[',mfilename,'] > dt=',num2str(dt),', that is ',num2str(floor(T0/dt)),' iterations per main time period.']);
-disp(['[',mfilename,'] > dx=',num2str(dx),', that is ',num2str(floor(L0/dx)),' elements per main spatial period.']);
-disp(['[',mfilename,'] > dx=',num2str(dx),', max(dxSPCFM)=',num2str(max_dx_specfem),'. One should have dx>=dxSPCFM to prevent aliasing.']);
+disp(['[',mfilename,'] dt=',num2str(dt),', that is ',num2str(floor(T0/dt)),' iterations per main time period.']);
+disp(['[',mfilename,'] dx=',num2str(dx),', that is ',num2str(floor(L0/dx)),' elements per main spatial period.']);
+disp(['[',mfilename,'] dx=',num2str(dx),', max(dxSPCFM)=',num2str(max_dx_specfem),'. One should have dx>=dxSPCFM to prevent aliasing.']);
 % Ask user to verify mesh is ok.
 meshok=-1;
 % disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
@@ -210,7 +218,7 @@ k = - k_max:dk:k_max;
 % t = 0:dt:nT0 * T0;
 % x = - 0.5 * nL0 * L0:dx:0.5 * nL0 * L0;
 % 2D ranges.
-disp(['[',mfilename,'] > Meshgrid would be (', num2str(numel(x)), ', ', num2str(numel(t)),'), that is ',sprintf('%.0e',numel(x)*numel(t)),' reals. Too heavy computations might crash your computer. 9e7 was ok, 1e8 chugged a bit, 2e8 chugged hard.']);
+disp(['[',mfilename,'] Meshgrid would be (', num2str(numel(x)), ', ', num2str(numel(t)),'), that is ',sprintf('%.0e',numel(x)*numel(t)),' reals. Too heavy computations might crash your computer. 9e7 was ok, 1e8 chugged a bit, 2e8 chugged hard.']);
 proceed=-1;
 % disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
 while(not(ismember(proceed,[0,1,2])))
@@ -230,7 +238,6 @@ clear('proceed');
 
 [T, X] = meshgrid(t, x);
 [F, K] = meshgrid(f, k);
-clear('f', 'k'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Frequency range.    %
@@ -245,8 +252,38 @@ clear('f', 'k'); % Clear variables as soon as possible, as they are not needed a
 
 disp(['[',mfilename,'] Creating spectrum in frequency range.']);
 spectrum_displ=0*F;
-spectrum_displ(abs(abs(F)-1/T0)==min(min(abs(abs(F)-1/T0))) & abs(abs(K)-1/L0)==min(min(abs(abs(K)-1/L0))))=1; % Diracs at pertinent places.
-clear('F', 'K'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
+% spectrum_displ(abs(abs(F)-1/T0)==min(min(abs(abs(F)-1/T0))) & abs(abs(K)-1/L0)==min(min(abs(abs(K)-1/L0))))=1; % Diracs at pertinent places: (1/T0, 1/L0), (-1/T0, 1/L0), (-1/T0, -1/L0), (1/T0, -1/L0).
+
+indices_f=find(abs(abs(f)-1/T0)==min(min(abs(abs(f)-1/T0))));
+index_k1=find(abs(k-1/L0)==min(min(abs(k-1/L0))));
+index_k2=find(abs(k-1/L02)==min(min(abs(k-1/L02))));
+
+spectrum_displ(index_k1,indices_f)=1; % (+/-f, k1)
+spectrum_displ(index_k2,indices_f)=1; % (+/-f, k2)
+actualf=unique(abs(f(indices_f)));
+
+if(not(plot_process))
+  clear('F', 'K'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
+end
+disp(['[',mfilename,'] Actual modelled      time period (1/f)  is ', sprintf('%7.2f ',(1./actualf)'), 'instead of ', sprintf('%7.2f',T0), ' (rel. error is ',sprintf('%3.2f ',abs((1./actualf)'-T0)/abs(T0)*100),'%).']);
+disp(['[',mfilename,']   -       -     1st space   -    (1/k1) is ', sprintf('%7.2f ',(1./k(index_k1))'), '   -    of ', sprintf('%7.2f',L0), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k1))'-L0)/abs(L0)*100),'%).']);
+disp(['[',mfilename,']   -       -     2nd space   -    (1/k2) is ', sprintf('%7.2f ',(1./k(index_k2))'), '   -    of ', sprintf('%7.2f',L02), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k2))'-L02)/abs(L02)*100),'%).']);
+disp(['[',mfilename,'] Resulting K = k1+k2 = ',sprintf('%.3e',k(index_k1)),'+',sprintf('%.3e',k(index_k2)),' = ',sprintf('%.3e',k(index_k1)+k(index_k2)), ', that is L = ',sprintf('%7.2f',1/(k(index_k1)+k(index_k2))),'.']);
+disp(['[',mfilename,', INFO] Errors stem only from the spectrum resolution, which is dictated by the spacetime range resolution.']);
+disp(['[',mfilename,', INFO] Artificially increasing the length of the spacetime range will increase the frequency range resolution, but also dramatically increase the RAM load.']);
+disp(['[',mfilename,', INFO] The nearest exact (1/f)   with same resolution are [',sprintf('%7.2f ',1./unique(abs(f(indices_f+[-1,1]')))'), '].']);
+disp(['[',mfilename,', INFO]  -     -     -    (1/k1)s  -    -       -       -  [',sprintf('%7.2f ',1./k(index_k1+[-1,1])), '].']);
+disp(['[',mfilename,', INFO]  -     -     -    (1/k2)s  -    -       -       -  [',sprintf('%7.2f ',1./k(index_k2+[-1,1])), '].']);
+% Check with user.
+cont=-1;
+% disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
+while(not(ismember(cont,[0,1])))
+  cont=input(['[',mfilename,'] > Is that ok (0 for no, 1 for yes)? > ']);
+end
+if(cont==0)
+  error(['[',mfilename,', ERROR] Modelled periods were not ok, stopping script.']);
+end
+clear('cont');
 
 spectrum_displ_R = real(spectrum_displ);
 clear('spectrum_displ'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
@@ -272,7 +309,9 @@ clear('Fgm', 'Kgm'); % Clear variables as soon as possible, as they are not need
 RPhase = exp(1j * 2 * pi * rand(size(spectrum_displ_R)));
 % RPhase = 1; % No phase.
 spectrum_displ_R_convolved = conv2(spectrum_displ_R, GMask, 'same');
-clear('GMask', 'spectrum_displ_R'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
+if(not(plot_process))
+  clear('GMask', 'spectrum_displ_R'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
+end
 spectrum_displ_new = spectrum_displ_R_convolved .* RPhase;
 if(not(plot_process))
   clear('spectrum_displ_R_convolved'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
@@ -359,13 +398,13 @@ disp(['[',mfilename,'] Converting to velocity and adjusting amplitude.']);
 % disp(['[',mfilename,'] Displacement amplitude is now [',num2str(min(min(s_displ_new))),', ',num2str(max(max(s_displ_new))),']']);
 % [s_vel_new,~]=gradient(s_displ_new,t,x);
 % disp(['[',mfilename,'] Forcing amplitude in velocity is [',num2str(min(min(s_vel_new))),', ',num2str(max(max(s_vel_new))),']']);
-disp(['[',mfilename,'] > Displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
+disp(['[',mfilename,'] Displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
 ampli_displ=max(abs(min(min(displ))),abs(max(max(displ))));
 displ=displ*A_aimed/ampli_displ; % Scale displacement to aimed wave height.
-disp(['[',mfilename,'] > Rescaled displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
+disp(['[',mfilename,'] Rescaled displacement is in [',num2str(min(min(displ))),', ',num2str(max(max(displ))),'].']);
 [veloc,~]=gradient(displ,t,x);
 clear('displ'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
-disp(['[',mfilename,'] > Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),'].']);
+disp(['[',mfilename,'] Velocity is in [',num2str(min(min(veloc))),', ',num2str(max(max(veloc))),'].']);
 % if(periodise)
 % %   disp(['[',mfilename,'] > Periodisation: ', num2str(100*mean(abs((veloc(1,:)-mean(veloc([1,end],:),1))./mean(veloc([1,end],:),1))), '% mean change.']);
 %   % Make sure one side is equal to the other.
@@ -387,7 +426,7 @@ if(activate_apo)
   apox([1,end]) = 0; % Tweak to make sure forcing starts at 0.
   
   if(periodise)
-    disp("Deactivating spatial apodisation due to periodisation.");
+    disp(['[',mfilename,'] Deactivating spatial apodisation due to periodisation.']);
     apox = 1; % Deactivate apodisation.
   end
   
@@ -398,18 +437,18 @@ end
 
 disp(['[',mfilename,'] Verifying zero-mean, zero-start, and zero-end.']);
 mmveloc=mean(mean(veloc));
-disp(['[',mfilename,'] > Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
+disp(['[',mfilename,'] Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
 disp(['[',mfilename,']                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
-disp(['[',mfilename,'] > Mean of velocity: ',num2str(mmveloc),'.']);
+disp(['[',mfilename,'] Mean of velocity: ',num2str(mmveloc),'.']);
 while(mmveloc>1e-18)
-  disp(['[',mfilename,'] > Tweaking again.']);
+  disp(['[',mfilename,'] Tweaking again.']);
   veloc=veloc-mean(mean(veloc));
   veloc(:,[1,end])=0;
   veloc([1,end],:)=0;
   mmveloc=mean(mean(veloc));
-  disp(['[',mfilename,'] > Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
+  disp(['[',mfilename,'] Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
   disp(['[',mfilename,']                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
-  disp(['[',mfilename,'] > Mean of velocity: ',num2str(mmveloc),'.']);
+  disp(['[',mfilename,'] Mean of velocity: ',num2str(mmveloc),'.']);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -494,7 +533,7 @@ exportok=-1;
 while(not(ismember(exportok,[0,1])))
   bytespervalue=25.711366938627620; % [4418901533/178467744 + 4624117614/178467744 + 33990482/1306800 + 223496176/8541907] / 4. Formerly 39.985880510267151.
   expectedsize=prod(size(veloc_specfem))*bytespervalue;
-  disp(['[',mfilename,'] > File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
+  disp(['[',mfilename,'] File would be ~', num2str(expectedsize), ' bytes (',num2str(expectedsize/1000),' kB, ',num2str(expectedsize/1000000),' MB).']);
   exportok=input(['[',mfilename,'] > Export to file (0 for no, 1 for yes)? Path will be confirmed later. > ']);
 end
 if(exportok==0)
@@ -505,12 +544,12 @@ else
   EXPORTFILENAME = [EXPORTFILEDIR, 'external_bottom_forcing',datestr_of_now,'.dat'];
   % Ask user to verify export path is ok.
   pathok=-1;
-  disp(['[',mfilename,'] > Export path is ''',EXPORTFILENAME,'''.']);
+  disp(['[',mfilename,'] Export path is ''',EXPORTFILENAME,'''.']);
   while(not(ismember(pathok,[0,1])))
     pathok=input(['[',mfilename,'] > Is that ok (0 for no, 1 for yes)? > ']);
   end
   if(pathok==0)
-    error(['[',mfilename,'] > Export path was not ok, re-chose in script.']);
+    error(['[',mfilename,'] Export path was not ok, re-chose in script.']);
   end
   clear('pathok');
   % Export.
@@ -528,7 +567,7 @@ else
       fprintf(f_new, "\n");
     end
     if (ismember(it, floor((1:10) * 0.1 * size(T_specfem,2))))
-       disp(['[',mfilename,'] > Writing to file (', num2str(ceil(it / size(T_specfem,2) * 100)), ' % complete).']);
+       disp(['[',mfilename,'] Writing to file (', num2str(ceil(it / size(T_specfem,2) * 100)), ' % complete).']);
     end
   end
   fclose('all');

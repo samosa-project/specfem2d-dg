@@ -16,21 +16,21 @@
 clc
 format longG;
 
-[data, t, inf]=load(); % Load data (see function below).
+[data, t, info]=load(); % Load data (see function below).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 4*13;
+nstations   = 72;
 nstepseismo = 25;
 
-neltot      = 11503;
-neldg       = 11503;
+neltot      = 17220;
+neldg       = 17220;
 
-nstepsnap   = 500;
-nsteptot    = 20000;
+nstepsnap   = 250;
+nsteptot    = 35000;
 
-nproc       = 4;
+nproc       = 32;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,6 +38,12 @@ nproc       = 4;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 weigth=[1,100,5,1,50]; % Importance of each parameter.
 meandata=mean(data,1);
+% for i=numel(t)-3:numel(t)
+for i=1:numel(t)
+  ID=info{i}(1); ID=ID{1};
+  disp(['[',mfilename,'] Run ID ',sprintf('%7d',ID),' (',sprintf('%5.1f',data(i,2)*100),'% DG): ',sprintf('%.2e',t(i)),' s per element per iteration (total CPU time, not real time)          (''',char(string(info{i}(2))),''').']);
+end
+disp(' ');
 
 point=[nstations,neldg/neltot,nstepsnap/nsteptot,nstepseismo/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
 
@@ -47,7 +53,7 @@ disp(['[',mfilename,']                     [        n_stations       percent_DG 
 disp(strcat("[",mfilename,"] Current point:      [ ", sprintf("%17.3e", point), "]."));
 % idp=dsearchn(data,point);
 idp=dsearchn((data-meandata)./weigth,(point-meandata)./weigth); % Optimised search.
-disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.3e", data(idp,:)), "] (",inf{idp}{2},")."));
+disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.3e", data(idp,:)), "] (",info{idp}{2},")."));
 disp(strcat("[",mfilename,"] Weights:            [ ", sprintf("%17.f", weigth), "]."));
 time=t(idp);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,6 +142,13 @@ function [x,t,RUNINFO]=load()
   RUN_RAWDATA(i,:)=[3627000 3627000 0.441  76500  480  500 452 25 250010]; RUNINFO{i}={672048,'MB Huge 672048'}; i=i+1;
   RUN_RAWDATA(i,:)=[  29100   10500 0.471   2500   64  100   2 50     85]; RUNINFO{i}={71913, 'OKQ45 small for test impedance'}; i=i+1;
   RUN_RAWDATA(i,:)=[  29100       0 0.471   2500   64  100   2 50     47]; RUNINFO{i}={71936, 'OKQ45 small for test impedance but potential'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  57887   39553 0.441  28000   16  250  29 25  18010]; RUNINFO{i}={74752, 'tir de mine heavy & incomplete'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  17220   17220 0.570  21400   32  500  52 25   1083]; RUNINFO{i}={74710, 'mb gmsh'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  19425   13563 0.464  40000   16  250  29 25   6580]; RUNINFO{i}={75040, 'tir de mine light & full'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1669]; RUNINFO{i}={830669,'FNS visc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25    809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

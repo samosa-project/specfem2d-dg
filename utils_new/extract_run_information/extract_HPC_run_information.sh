@@ -33,7 +33,7 @@ nelemacous=$(grep "Total number of acoustic elements:" $slurm | grep -o "[0-9]*"
 echo "  Total elements:    $nelemtot."
 echo "  Acoustic elements: $nelemacous (included above)."
 
-cfl=$(grep "Max CFL stability condition" $slurm -A2 | grep -o "[0-9]\.[0-9]*" | tail -1)
+cfl=$(grep "Max CFL stability condition" $slurm -A2 | grep -o "[0-9]\.[0-9]*" | head -2 | tail -1)
 
 echo "  CFL:               $cfl."
 
