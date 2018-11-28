@@ -62,7 +62,7 @@ unknown = 'BXZ'; % _z.
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
-% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
@@ -70,7 +70,7 @@ unknown = 'BXZ'; % _z.
 
 % StratoBaro, 66, June, 12:00
 % fig_title = strcat('Microbaroms, lat66, June, 12:00');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
@@ -156,6 +156,8 @@ unknown = 'BXZ'; % _z.
 
 % Tests.
 fig_title = 'test';
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_pot'); OFd = strcat(rootd, '/OUTPUT_FILES_826234/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_826226/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_826213/');
@@ -163,7 +165,7 @@ fig_title = 'test';
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local_butd7/');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local_butd7/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local_butd7/');
 
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns_t=105s/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns_t=195s/');
@@ -274,6 +276,9 @@ while (not(length(display_or_load) == 1 && ismember(display_or_load, [0, 1, 2]))
 end
 % Ask for stations.
 istattab = input(['[',mfilename,'] Stations (Matlab format, e.g. [1, 4, 7] or 1:20)? > ']);
+istattab = reshape(istattab,[1,numel(istattab)]);
+disp(['[',mfilename,'] Loading [station_id, x, z, d] (absolute x and z, d relative to source):']);
+disp([istattab', pos_stations(istattab,:),dist_to_sources(istattab)]);
 nstat = size(pos_stations(istattab, 1), 1);
 % Ask for geometric attenuation (relies on distance to source).
 geometric_attenuation = - 1;
@@ -456,8 +461,8 @@ end
 
 % Display information.
 disp([' ']);
-disp(['[',mfilename,'] Data loaded. [matlab_id, station_id]:']);
-disp([(1:length(istattab))',istattab']);
+disp(['[',mfilename,'] Data loaded. [matlab_id, station_id, x, z, d]:']);
+disp([(1:length(istattab))',istattab', pos_stations(istattab,:),dist_to_sources(istattab)]);
 disp(strcat("  Example: Data of station ", num2str(istattab(1)), " are in         Zamp(", num2str(1), ", :)."));
 disp(strcat("           Corresponding time values are in Ztime(", num2str(1), ", :)."));
 disp([' ']);
