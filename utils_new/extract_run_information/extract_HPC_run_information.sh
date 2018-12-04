@@ -1,5 +1,10 @@
 #!/bin/bash
-# Reads an output folder and extracts all available information.
+# Author:        Léo Martire.
+# Mail:          leo.martire@outlook.com
+# Description:   Reads an output folder and extracts all available information.
+# Last modified: See file metadata.
+# Usage:         N/A.
+# Notes:         N/A.
 
 if [[ $# -ne 1 ]]; then
   echo
