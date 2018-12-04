@@ -105,7 +105,7 @@ distance = distance / dist_factor;
 
 % Remove mean value.
 for i = 1:nstat
-  % Enventually normalise.
+  % Eventually normalise.
   if (normalise == 1)
     data_v(i, :) = (data_v(i, :) - min(data_v(i, :))) / (max(data_v(i, :)) - min(data_v(i, :)));
   end

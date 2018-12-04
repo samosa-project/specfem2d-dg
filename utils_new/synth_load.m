@@ -63,14 +63,14 @@ unknown = 'BXZ'; % _z.
 
 % Microbaroms ULDB.
 fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % StratoBaro, 66, June, 12:00
 % fig_title = strcat('Microbaroms, lat66, June, 12:00');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
@@ -155,8 +155,8 @@ rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/microbaroms_patch'); OFd = st
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Tests.
-fig_title = 'test';
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% fig_title = 'test';
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_pot'); OFd = strcat(rootd, '/OUTPUT_FILES_826234/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_826226/');
