@@ -47,7 +47,7 @@ nT0 = 20; % Number of temporal periods (must be integer to prevent FFT misbehavi
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % L0 = 200; % Spatial period.
 L0 = 286.2; % k1, spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
-L02 = -299.28; % k2.
+L02 = -290.91; % k2.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 nL0 = 54; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
@@ -83,8 +83,9 @@ napot0=1; % Number of periods for time apodisation at t=0.
 napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 
 % SPECFEM-DG related.
+% loadgmsh=0; % Load a GMSH external mesh?
+loadgmsh=1; % Load a GMSH external mesh?
 dt = 0.75e-2; % Set DT as in parfile.
-loadgmsh=1;
 if(loadgmsh)
   path_to_Nodes_file='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/EXTMSH/Nodes_extMesh';
 else
@@ -266,14 +267,14 @@ if(not(plot_process))
   clear('F', 'K'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
 end
 disp(['[',mfilename,'] Actual modelled      time period (1/f)  is ', sprintf('%7.2f ',(1./actualf)'), 'instead of ', sprintf('%7.2f',T0), ' (rel. error is ',sprintf('%3.2f ',abs((1./actualf)'-T0)/abs(T0)*100),'%).']);
-disp(['[',mfilename,']   -       -     1st space   -    (1/k1) is ', sprintf('%7.2f ',(1./k(index_k1))'), '   -    of ', sprintf('%7.2f',L0), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k1))'-L0)/abs(L0)*100),'%).']);
-disp(['[',mfilename,']   -       -     2nd space   -    (1/k2) is ', sprintf('%7.2f ',(1./k(index_k2))'), '   -    of ', sprintf('%7.2f',L02), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k2))'-L02)/abs(L02)*100),'%).']);
+disp([blanks(length(mfilename)+2),'   -       -     1st space   -    (1/k1) is ', sprintf('%7.2f ',(1./k(index_k1))'), '   -    of ', sprintf('%7.2f',L0), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k1))'-L0)/abs(L0)*100),'%).']);
+disp([blanks(length(mfilename)+2),'   -       -     2nd space   -    (1/k2) is ', sprintf('%7.2f ',(1./k(index_k2))'), '   -    of ', sprintf('%7.2f',L02), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k2))'-L02)/abs(L02)*100),'%).']);
 disp(['[',mfilename,'] Resulting K = k1+k2 = ',sprintf('%.3e',k(index_k1)),'+',sprintf('%.3e',k(index_k2)),' = ',sprintf('%.3e',k(index_k1)+k(index_k2)), ', that is L = ',sprintf('%7.2f',1/(k(index_k1)+k(index_k2))),'.']);
 disp(['[',mfilename,', INFO] Errors stem only from the spectrum resolution, which is dictated by the spacetime range resolution.']);
 disp(['[',mfilename,', INFO] Artificially increasing the length of the spacetime range will increase the frequency range resolution, but also dramatically increase the RAM load.']);
 disp(['[',mfilename,', INFO] The nearest exact (1/f)   with same resolution are [',sprintf('%7.2f ',1./unique(abs(f(indices_f+[-1,1]')))'), '].']);
-disp(['[',mfilename,', INFO]  -     -     -    (1/k1)s  -    -       -       -  [',sprintf('%7.2f ',1./k(index_k1+[-1,1])), '].']);
-disp(['[',mfilename,', INFO]  -     -     -    (1/k2)s  -    -       -       -  [',sprintf('%7.2f ',1./k(index_k2+[-1,1])), '].']);
+disp([blanks(length(mfilename)+8),'  -     -     -    (1/k1)s  -    -       -       -  [',sprintf('%7.2f ',1./k(index_k1+[-1,1])), '].']);
+disp([blanks(length(mfilename)+8),'  -     -     -    (1/k2)s  -    -       -       -  [',sprintf('%7.2f ',1./k(index_k2+[-1,1])), '].']);
 % Check with user.
 cont=-1;
 % disp(['[',mfilename,'] > Interpolating mesh (final mesh) spans [',num2str(min(xSPCFMwGLL)), ', ', num2str(max(xSPCFMwGLL)), '] m with ',num2str(nx), ' points. This mesh HAS TO match SPECFEM''s mesh.']);
@@ -438,7 +439,7 @@ end
 disp(['[',mfilename,'] Verifying zero-mean, zero-start, and zero-end.']);
 mmveloc=mean(mean(veloc));
 disp(['[',mfilename,'] Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
-disp(['[',mfilename,']                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+disp([blanks(length(mfilename)+2),'                             at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
 disp(['[',mfilename,'] Mean of velocity: ',num2str(mmveloc),'.']);
 while(mmveloc>1e-18)
   disp(['[',mfilename,'] Tweaking again.']);
@@ -447,7 +448,7 @@ while(mmveloc>1e-18)
   veloc([1,end],:)=0;
   mmveloc=mean(mean(veloc));
   disp(['[',mfilename,'] Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
-  disp(['[',mfilename,']                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+  disp([blanks(length(mfilename)+2),'                               at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
   disp(['[',mfilename,'] Mean of velocity: ',num2str(mmveloc),'.']);
 end
 
@@ -561,13 +562,14 @@ else
   f_new = fopen(EXPORTFILENAME, 'w');
 %   for it = 1:itstop
 %     for ix = ixmin:ixmax
+  disp(['[',mfilename,'] Writing to file: ', num2str(0)), ' % complete.']);
   for it = 1:size(T_specfem,2)
     for ix = 1:size(X_specfem,1)
       fprintf(f_new, '%.5g %.8g %.4g', T_specfem(1, it), X_specfem(ix, 1), veloc_specfem(ix, it));
       fprintf(f_new, "\n");
     end
     if (ismember(it, floor((1:10) * 0.1 * size(T_specfem,2))))
-       disp(['[',mfilename,'] Writing to file (', num2str(ceil(it / size(T_specfem,2) * 100)), ' % complete).']);
+      disp([blanks(length(mfilename)+2),'                  ', num2str(ceil(it / size(T_specfem,2) * 100)), ' % complete.']);
     end
   end
   fclose('all');

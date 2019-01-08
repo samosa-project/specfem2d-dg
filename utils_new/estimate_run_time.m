@@ -149,6 +149,9 @@ function [x,t,RUNINFO]=load()
   RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1;
   RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
   RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25    809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500  87 25    351]; RUNINFO{i}={120363,'mb gmsh FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500  87 25    325]; RUNINFO{i}={120414,'mb gmsh LNS 200km'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87 25    931]; RUNINFO{i}={120557,'mb gmsh LNS 400km'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

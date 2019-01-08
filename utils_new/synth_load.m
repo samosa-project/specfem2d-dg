@@ -5,8 +5,8 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-% clear all;
-% close all;
+clear all;
+close all;
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
@@ -63,7 +63,10 @@ unknown = 'BXZ'; % _z.
 
 % Microbaroms ULDB.
 fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
+rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1203633_FNS/');
+% rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
 % rootd=strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
@@ -244,8 +247,10 @@ fclose('all');
 try
   A = importdata(strcat(OFd, 'STATIONS'));
 catch
+  disp(['[',mfilename,'] STATIONS file not found in OUTPUT_FILES directory.']);
   try
     A = importdata(strcat(rootd, '/DATA/STATIONS'));
+    disp(['[',mfilename,'] STATIONS file found in root directory (OUTPUT_FILES*/../DATA/ folder).']);
   catch
     error(['[',mfilename,', ERROR] Cannot find STATIONS file.']);
   end
@@ -486,7 +491,25 @@ global synth_load_was_ran
 synth_load_was_ran = 1;
 
 if (display_or_load == 2)
-  synth_plot;
+  
+  distancechoice = - 1;
+  while (~ ismember(distancechoice, [1, 2, 3, 4]))
+    distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
+  end
+  switch distancechoice
+    case 1
+      distance = xstattab; dist_symbol = "x"; dist_name = "horizontal distance";
+    case 2
+      distance = abs(xstattab); dist_symbol = "|x|"; dist_name = "horizontal distance";
+    case 3
+      distance = ystattab; dist_symbol = "z"; dist_name = "altitude";
+    case 4
+      distance = dist_to_sources; dist_symbol = "d"; dist_name = "distance";
+  end
+  addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo');
+  plot_time_v_dist(Ztime,Zamp,distance(istattab));
+  
+%   synth_plot;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
