@@ -86,6 +86,7 @@ if (nstat > 1)
       IDs_to_process = 1:nstat;
   end
 else
+  avgwpsds = 0;
   WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
   IDs_to_process = 1;
 end
@@ -118,9 +119,10 @@ for i = IDs_to_process
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % PSD and plot.               %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  [WPSD, WPSD_f] = custom_psd(time, signal);
+  [~, ~, ~, ~, PSD,PSD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), 1);
+%   [PSD, PSD_f] = custom_psd(time, signal);
 
-  WPSD_tab(i, :) = WPSD;
+  WPSD_tab(i, :) = PSD;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,14 +144,14 @@ if (ismember(avgwpsds, [0, 1, 2]))
   set(gca, 'TickLabelInterpreter', 'latex');
 
   figure();
-  loglog(WPSD_f, WPSD_to_plot);
-  xlim([WPSD_f(1), WPSD_f(end)]);
+  loglog(PSD_f, WPSD_to_plot);
+  xlim([PSD_f(1), PSD_f(end)]);
   xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
   title(WPSD_txt);
   set(gca, 'TickLabelInterpreter', 'latex');
   grid;
 
-  disp(sprintf("[", mfilename, "] Amplitude of signal: %1.6e",max(timeseries_to_plot)-min(timeseries_to_plot)));
+  disp(['[', mfilename, '] Amplitude of signal: ',sprintf('%1.6e',max(timeseries_to_plot)-min(timeseries_to_plot))]);
 elseif (avgwpsds == 3)
   figure();
   colours = jet(numel(IDs_to_process));
@@ -161,11 +163,11 @@ elseif (avgwpsds == 3)
     else
       error(['[', mfilename, ', ERROR] coord_units = ', coord_units, 'not implemented.']);
     end
-    loglog(WPSD_f, WPSD_tab(i, :), 'displayname', PSDName, 'color', colours(i, :));
+    loglog(PSD_f, WPSD_tab(i, :), 'displayname', PSDName, 'color', colours(i, :));
     hold on;
   end
   legend('location', 'best');
-  xlim([WPSD_f(1), WPSD_f(end)]);
+  xlim([PSD_f(1), PSD_f(end)]);
   xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
   title(WPSD_txt);
   set(gca, 'TickLabelInterpreter', 'latex');
@@ -194,7 +196,7 @@ elseif (avgwpsds == 4)
     case 4
       SURFx = dist_to_sources(istattab(IDs_to_process)) / renorm_for_unit; dist_symbol = 'd';
   end
-  SURFy = WPSD_f;
+  SURFy = PSD_f;
   [SURFX, SURFY] = meshgrid(SURFx, SURFy);
   surf(SURFX, SURFY, log10(WPSD_tab'));
   shading interp;

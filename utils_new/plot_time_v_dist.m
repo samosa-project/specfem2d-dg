@@ -143,11 +143,19 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
 
   % Remove mean value.
   for i = 1:nbstat
+    gap2detrend = abs(data_v(i, :)-detrend(data_v(i, :)));
+    maxpercentdetrend=100*[max(gap2detrend)]/(max(data_v(i, :)) - min(data_v(i, :)));
+    if(max(maxpercentdetrend)>5)
+      disp(['[',mfilename,'] For dataset n°',num2str(i),', detrend would shift data values by a quantity which is ',sprintf('%.2g',maxpercentdetrend),' % of signal amplitude. Discarding detrend.'])
+    else
+      data_v(i, :) = detrend(data_v(i, :));
+    end
+%     data_v(i, :) = data_v(i, :) - mean(data_v(i, :));
+
     % Eventually normalise.
     if (normalise == 1)
       data_v(i, :) = (data_v(i, :) - min(data_v(i, :))) / (max(data_v(i, :)) - min(data_v(i, :)));
     end
-    data_v(i, :) = data_v(i, :) - mean(data_v(i, :));
   end
 
   % Plotting tools.

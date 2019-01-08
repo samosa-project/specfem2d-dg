@@ -6,7 +6,7 @@
 % Notes:         N/A.
 
 clear all;
-close all;
+% close all;
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
