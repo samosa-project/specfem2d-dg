@@ -39,6 +39,17 @@ raw_t = Ztime; raw_s = Zamp; cd(OFd);
 % Parameters and              %
 % pre-treatment.              %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if(not(all(size(raw_t)==size(raw_s))))
+  error(['[(',mfilename,', ERROR] time data and amplitude should have the same size, but right now do not.']);
+end
+
+nstat=min(size(Ztime));
+
+NWINDOWZZZZ=-1;
+while (not(length(NWINDOWZZZZ) == 1 && NWINDOWZZZZ>0))
+  NWINDOWZZZZ = input(['[', mfilename, '] Number of windows for PSD (integer, >0, higher values <=> smoother curve & higher lowest frequency)? > ']);
+end
+
 normalise_wpsd = - 1;
 while (not(length(normalise_wpsd) == 1 && ismember(normalise_wpsd, [0, 1])))
   normalise_wpsd = input(['[', mfilename, '] Normalise Welch PSD (0 for no, 1 for yes)? > ']);
@@ -55,8 +66,8 @@ end
 % signal = cumtrapz(raw_t, raw_s); signal_name = "displacement"; unit="m";
 
 % TODO: Ask for user input.
-% signal_name = "SIGNAL"; signal_unit="UNIT";
-signal_name = "$\delta P$"; signal_unit = "Pa";
+signal_name = "SIGNAL"; signal_unit="UNIT";
+% signal_name = "$\delta P$"; signal_unit = "Pa";
 
 avgwpsds = - 1;
 if (nstat > 1)
@@ -66,28 +77,28 @@ if (nstat > 1)
   switch(avgwpsds)
     case 0
       disp(['[', mfilename, '] Will compute Welch PSD of first data.']);
-      WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
+      WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1;
     case 1
       disp(['[', mfilename, '] Averaging Welch PSDs. Be wary of the stations you use.']);
-      WPSD_txt = strcat("Average of Welch PSDs of ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
+      WPSD_txt = strcat("Average of Welch PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1:nstat;
     case 2
       disp(['[', mfilename, '] Computing Welch PSD of average signal. Be wary of the stations you use.']);
-      WPSD_txt = strcat("Welch PSD of averaged ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
+      WPSD_txt = strcat("Welch PSD of averaged ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1;
     case 3
       disp(['[', mfilename, '] Plotting every PSD on top of each other.']);
-      WPSD_txt = strcat("Welch PSDs of ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
+      WPSD_txt = strcat("Welch PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1:nstat;
     case 4
       disp(['[', mfilename, '] Plotting every PSD as surf.']);
-      WPSD_txt = strcat("Welch PSDs of ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
+      WPSD_txt = strcat("Welch PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1:nstat;
   end
 else
   avgwpsds = 0;
-  WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "$^2$/Hz]", normalise_wpsd_txt);
+  WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
   IDs_to_process = 1;
 end
 
@@ -119,8 +130,8 @@ for i = IDs_to_process
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % PSD and plot.               %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  [~, ~, ~, ~, PSD,PSD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), 1);
-%   [PSD, PSD_f] = custom_psd(time, signal);
+  [~, ~, ~, ~, PSD,PSD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), NWINDOWZZZZ); % UNIT/HZ^.5
+%   [PSD, PSD_f] = custom_psd(time, signal); % UNIT^2/HZ
 
   WPSD_tab(i, :) = PSD;
 end

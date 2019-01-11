@@ -1,6 +1,22 @@
 % Author:        Léo Martire.
 % Mail:          leo.martire@outlook.com
-% Description:   Builds an atmospheric model file (directly compatible with SPECFEM) using MSISE and ECMWF models.
+% Description:   Builds an atmospheric model file (directly compatible
+%                with SPECFEM) using MSISE and ECMWF models.
+%                  From ECMWF exclusively: T,
+%                                          p,
+%                                          g,
+%                                          meridional wind,
+%                                          zonal wind.
+%                  From MSISE exclusively: rho,
+%                                          scale_height,
+%                                          kappa,
+%                                          mu, mu_vol,
+%                                          c_p, c_v,
+%                                          gamma.
+%                  Computed from both: soundspeed (gamma MSISE, p ECMWF,
+%                                                  rho MSISE),
+%                                      N^2 (gamma MSISE, g ECMWF,
+%                                           rho MSISE, p ECMWF).
 % Last modified: See file metadata.
 % Usage:         1) Download an ERA5 from ECMWF's API (use the function 'prepare_call_ECMWF_API').
 %                2) Call this script.
@@ -128,8 +144,8 @@ W_Z_e2m=spline(z_ecmwf,w_Z_ecmwf,ALTITUDE);
 % - N^2 can be computed from gamma_MSISE, g_ECMWF, and T_ECMWF (N^2=(gamma-1)*g^2/(gamma*R*T)).
 disp(['[',mfilename,'] Computing missing quantities (sound speed, Brunt-Väisälä frequency).']);
 % Version 1, assuming the molar mass of air does not change and is equal to dry air molar mass. Relying on 1 MSISE quantity.
-soundspeed_merged=sqrt(GAMMA.*R.*T_e2m/M_dryair);
-Nsquared_merged=(GAMMA-1).*g_e2m.^2.*M_dryair./(GAMMA.*R.*T_e2m);
+% soundspeed_merged=sqrt(GAMMA.*R.*T_e2m/M_dryair);
+% Nsquared_merged=(GAMMA-1).*g_e2m.^2.*M_dryair./(GAMMA.*R.*T_e2m);
 % Version 2, more exact. Relying on 2 MSISE quantities.
 soundspeed_merged=sqrt(GAMMA.*p_e2m./DENSITY);
 Nsquared_merged=(GAMMA-1).*g_e2m.^2.*DENSITY./(GAMMA.*p_e2m);
@@ -139,3 +155,7 @@ w_P=cos(wind_proj*pi/180.)*W_Z_e2m+sin(wind_proj*pi/180.)*w_M_e2m;
 disp(['[',mfilename,'] Rewriting model to another file.']);
 new_o_file=['msiseecmwf_',o_file];
 rewrite_atmos_model(new_o_file, o_file, ALTITUDE, DENSITY, T_e2m, soundspeed_merged, p_e2m, LOCALPRESSURESCALE, g_e2m, Nsquared_merged, KAPPA, MU, MUVOL, w_M_e2m, W_Z_e2m, w_P, CP, CV, GAMMA);
+
+kek=what(o_folder);
+fullnewpath=[kek.path,filesep,new_o_file];
+disp(['[',mfilename,'] Model stored in: ''',fullnewpath,'''.']);
