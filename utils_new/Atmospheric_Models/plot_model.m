@@ -81,9 +81,10 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   linkaxes(ax,'y');
   
   spl=split(atmospheric_model_file,'.');
-  spl{3}='jpg';
+  spl{length(spl)+1}='jpg';
   spl=join(spl,'.');
   saveas(gcf,spl{1}, 'jpg');
+  disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
 end
 
 function myplot(XDATA, YDATA, MARKER, COLOUR, DISPLAYNAME, TYPE)

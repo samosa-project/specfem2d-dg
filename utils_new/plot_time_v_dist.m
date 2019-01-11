@@ -4,7 +4,9 @@
 %                fashion, with some distance as abscissas.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         N/A.
+% Notes:         Needs:
+%                a) .m scripts and functions (if not alongside this script, recover via Léo):
+%                  1) bulkfilter.m
 
 function [] = plot_time_v_dist(Ztime,Zamp,distance)
 
@@ -48,52 +50,8 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
 %     disp(['[', mfilename, ', WARNING] Data was rescaled by a factor ', num2str(rescale), '.']);
 %   end
 
-  filter_data = - 1;
-  % while(not(ismember(filter_data,[0,1,2,3])))
-  %   filter_data=input(['  Filter (0 for no, 1 for high-pass, 2 for low-pass, 3 for band-pass)? > ']);
-  while (not(ismember(filter_data, [0, 1, 2, 3])))
-    filter_data = input(['[', mfilename, '] Filter (0 for no, 1 for high-pass, 2 for low-pass, 3 for band-pass)? > ']);
-  end
-  if (filter_data ~= 0)
-    filter_fchp = -1;
-    filter_fclp = -1;
-    filter_dhp = 0.65;
-    filter_dlp = 0.65;
-    filter_ord = 2;
-    if(ismember(filter_data, [1, 3]))
-      while (filter_fchp <= 0)
-        filter_fchp = input(['[', mfilename, '] High-pass cutoff frequency? > ']);
-      end
-    end
-    if(ismember(filter_data, [2, 3]))
-      while (filter_fclp <= 0)
-        filter_fclp = input(['[', mfilename, '] Low-pass cutoff frequency? > ']);
-      end
-    end
-    
-    for i = 1:nbstat
-      switch filter_data
-        case 1
-          [filt_f,~,filt_hhp,~]=custom_Filter(mean(1./diff(data_t(i, :))),length(data_t(i, :)),filter_fclp,filter_fchp,filter_dlp,filter_dhp,filter_ord);
-          data_v(i, :) = real(ifft(fft(detrend(data_v(i, :))) .* fftshift(filt_hhp)));
-          disp(['[',mfilename,'] Highpass filtered data over ',num2str([filter_fchp]),' Hz with homemade order ',num2str(filter_ord),' filter.']);
-        case 2
-          [filt_f,filt_hlp,~,~]=custom_Filter(mean(1./diff(data_t(i, :))),length(data_t(i, :)),filter_fclp,filter_fchp,filter_dlp,filter_dhp,filter_ord);
-          data_v(i, :) = real(ifft(fft(detrend(data_v(i, :))) .* fftshift(filt_hlp)));
-          disp(['[',mfilename,'] Lowpass filtered data under ',num2str([filter_fclp]),' Hz with homemade order ',num2str(filter_ord),' filter.']);
-        case 3
-%           [~, data_v_HP] = custom_filter(data_t(i, :), data_v(i, :), filter_fcutoff);
-          [filt_f,~,~,filt_hbp]=custom_Filter(mean(1./diff(data_t(i, :))),length(data_t(i, :)),filter_fclp,filter_fchp,filter_dlp,filter_dhp,filter_ord);
-          data_v(i, :) = real(ifft(fft(detrend(data_v(i, :))) .* fftshift(filt_hbp)));
-%           data_v(i, :) = data_v_HP;
-          disp(['[',mfilename,'] Bandpass filtered data between (',num2str([filter_fchp,filter_fclp]),') Hz with homemade order ',num2str(filter_ord),' filter.']);
-%           disp(['[', mfilename, ', WARNING] Data was high-pass filtered, with cutoff frequency ', num2str(filter_fchp), '.']);
-%           clear('data_v_HP');
-        otherwise
-          error(['[', mfilename, ', ERROR] Filtering type not implemented.']);
-      end
-    end
-  end
+  data_v=bulkfilter(data_t,data_v);
+  
   fign = - 1;
   fign = input(['[', mfilename, '] Figure number? > ']);
 %   colour = - 1;
@@ -224,7 +182,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
   end
   if (labeleach == 1)
     % YTicks.
-    yticks(distance);
+    yticks(distance(isort));
 %     % Stations' names labels.
 %     for i = 1:size(isort, 1)
 %       text(1.01 * tmax, distance(istattab(isort(i))), name{isort(i)}, 'HorizontalAlignment', 'left');

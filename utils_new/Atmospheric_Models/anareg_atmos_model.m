@@ -23,6 +23,7 @@ richardson_advice='Should be >1, or at least >0.25 to prevent instability.';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Nstepsgaussiansmoooth=20; % Number of vertical steps on which sliding Gaussian smoothing is applied.
 % Base parameters.
 interpolate = 0; % Set to 1 to activate interpolation.
 interp_delta = 4000; % Interpolation step (m).
@@ -49,8 +50,7 @@ DATAFILE=input(['[',mfilename,'] Input atmospheric model file to use > '],'s'); 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(['[',mfilename,'] Loading.']);
-disp(['[',mfilename,'] > File:']);
+disp(['[',mfilename,'] Loading file:']);
 disp(strcat("  '",DATAFILE, "'."));
 [datestr, posstr, ~, ~, ~, ~, ~] = extract_atmos_model_setup(DATAFILE);
 [Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, ...
@@ -60,6 +60,7 @@ disp(strcat("  '",DATAFILE, "'."));
 % Nf = NBVSQ .^ 0.5 / (2 * pi); % 1/s
 N = NBVSQ .^ 0.5; % rad/s
 plot_model(DATAFILE, '-', 'k', []);
+smoooth_n_splin_txt=['WAS SMOOTHED (sliding Gaussian spread on ' ,sprintf('%.3g',mean(diff(Z))*Nstepsgaussiansmoooth),' m + spline)'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -202,20 +203,23 @@ if(strcmp(method, 'bruteforce_rho'))
 %   nRHO=smoooth(nRHO,10); disp(['[',mfilename,']   [WARNING] RHO WAS SMOOTHED.']); % Smooth using sliding Gaussian on 10 points.
 %   i1=find(abs(Z-7.2e4)==min(abs(Z-7.2e4))); i2=find(abs(Z-7.32e4)==min(abs(Z-7.32e4))); work_RHO=bruteforced_RHO; work_RHO(i1:i2)=polyval(polyfit([Z(i1), Z(i2)], [work_RHO(i1), work_RHO(i2)], 1),Z(i1:i2)); nRHO=work_RHO;
 %   spline=fit(Z,nRHO,'smoothingspline','smoothingparam',1e-11); nRHO=spline(Z); disp(['[',mfilename,']   [WARNING] RHO WAS SMOOTHED.']); % Smooth using splines.
-
+%   spline=fit(Z,smoooth(nRHO,20),'smoothingspline','smoothingparam',1e-10); nRHO=spline(Z); disp(['[',mfilename,', WARNING] > RHO WAS SMOOTHED (Gaussian + spline).']); % Smooth using sliding Gaussian and then splines.
+  nRHO=smoooth_n_splinnnn(Z,nRHO,Nstepsgaussiansmoooth); disp(['[',mfilename,', WARNING] > RHO ',smoooth_n_splin_txt,'.']);
+  
   disp(['[',mfilename,'] > Maximum relative difference on RHO: ', num2str(max(abs(nRHO-RHO)./RHO)*100), '%.']);
   
   nHR=hydrostatic_ratio(D, P, nRHO, G);
   if(max(abs(nHR-1))>1e-12)
-    figure(); plot(nHR, Z, ones(size(Z)), Z, 'k:');
+    figure(); plot(nHR, Z, ones(size(Z)), Z, 'k:'); title('New Hydrostatic Ratio');
   end
   disp(['[',mfilename,'] > New maximum relative gap to hydrostatic state (via ratio): ', num2str(max(abs(nHR-1))*100), '%.']);
   
-  disp(['[',mfilename,'] > Recomputing sound speed.']);
-  nSOUNDSPEED=sqrt(GAMMA.*P./bruteforced_RHO);
+  disp(['[',mfilename,'] > Recomputing sound speed, using gamma, p, and regularised rho.']);
+  nSOUNDSPEED=sqrt(GAMMA.*P./nRHO);
 %   nSOUNDSPEED=smoooth(nSOUNDSPEED,20); disp(['[',mfilename,']   [WARNING] SOUNDSPEED WAS SMOOTHED (Gaussian).']); % Smooth using sliding Gaussian on 20 points.
 %   spline=fit(Z,nSOUNDSPEED,'smoothingspline','smoothingparam',1e-11); nSOUNDSPEED=spline(Z); disp(['[',mfilename,']   [WARNING] SOUNDSPEED WAS SMOOTHED (spline).']); % Smooth using splines.
-  spline=fit(Z,smoooth(nSOUNDSPEED,20),'smoothingspline','smoothingparam',1e-10); nSOUNDSPEED=spline(Z); disp(['[',mfilename,', WARNING] > SOUNDSPEED WAS SMOOTHED (Gaussian + spline).']); % Smooth using sliding Gaussian on 20 points, and then splines.
+%   spline=fit(Z,smoooth(nSOUNDSPEED,20),'smoothingspline','smoothingparam',1e-10); nSOUNDSPEED=spline(Z); disp(['[',mfilename,', WARNING] > SOUND SPEED WAS SMOOTHED (Gaussian + spline).']); % Smooth using sliding Gaussian and then splines.
+  nSOUNDSPEED=smoooth_n_splinnnn(Z,nSOUNDSPEED,Nstepsgaussiansmoooth); disp(['[',mfilename,', WARNING] > SOUND SPEED ',smoooth_n_splin_txt,'.']);
 %   figure();
 %   semilogx(SOUNDSPEED, Z, nSOUNDSPEED, Z);
 %   xlim([0.5 * min([SOUNDSPEED;nSOUNDSPEED]), 2 * max([SOUNDSPEED;nSOUNDSPEED])]);
@@ -223,7 +227,7 @@ if(strcmp(method, 'bruteforce_rho'))
 %   legend('old $c$', 'new $c$', 'Location', 'northeast');
 %   title(tit_plus);
   
-  disp(['[',mfilename,'] > Recomputing Brunt-Väisälä frequency.']);
+  disp(['[',mfilename,'] > Recomputing Brunt-Väisälä frequency, using gamma, g, and sound speed.']);
   nN=sqrt((GAMMA-1).*(G./nSOUNDSPEED).^2); % rad/s
 %   figure();
 %   semilogx(N.^2, Z, nN.^2, Z);
@@ -232,7 +236,12 @@ if(strcmp(method, 'bruteforce_rho'))
 %   legend('old $N^2$', 'new $N^2$', 'Location', 'best');
 %   title(tit_plus);
   
-  nTEMP=TEMP;nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nG=G;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
+  nTEMP=TEMP;
+  nTEMP=smoooth_n_splinnnn(Z,nTEMP,Nstepsgaussiansmoooth); disp(['[',mfilename,', WARNING] > TEMPERATURE ',smoooth_n_splin_txt,'. Maximum difference: ',sprintf('%.1g',max(abs(nTEMP-TEMP))),' K.']);
+  nG=G;
+  nG=smoooth_n_splinnnn(Z,nG,Nstepsgaussiansmoooth); disp(['[',mfilename,', WARNING] > G ',smoooth_n_splin_txt,'. This is more a safeguard than anything else. Maximum difference: ',sprintf('%.1g',max(abs(nG-G))),' m/s^2.']);
+  
+  nP=P;nLOCALPRESSURESCALE=LOCALPRESSURESCALE;nKAPPA=KAPPA;nVISCMU=VISCMU;nMUVOL=MUVOL;nWNORTH=WNORTH;nWEAST=WEAST;nW=W;nCP=CP;nCV=CV;nGAMMA=GAMMA; % Not modified.
 
   plot_hydrostat_unbalance(Z, nRHO, nTEMP, nP, nG, nKAPPA, nVISCMU, nW, tit_plus, save_plots);
   
@@ -260,6 +269,46 @@ if(strcmp(method, 'bruteforce_rho'))
 %   if save_plots == 1
 %     saveas(gcf, strcat(DATAFILE,'__new_mach.png'));
 %   end
+  
+  % Eventually force wind to 0 at surface.
+  decision_w0atz0=-1;
+  while(not(ismember(decision_w0atz0,[0,1])))
+    decision_w0atz0=input(['[',mfilename,'] > Force w(z=0)=0? (0 for no, 1 for yes) > ']);
+  end
+  if(decision_w0atz0)
+  %   width=20*max(diff(Z)); % Spread over 20 steps.
+    width=input(['[',mfilename,'] > Height of apodisation (in meters)? > ']);
+  %   b=-1.82138636771844967304021031862099524348122888360095; % 1e-2 level.
+    b=-2.75106390571206079614551316854267817109677902559646; % 1e-3 level.
+  %   b=-3.45891073727950002215092763595756951991566980804288674707621013; % 1e-6 level.
+    a=-2*b/width;
+    apoWind=erf(a*Z+b)/2+0.5;
+    apoWind(Z==0)=0;
+    nW=apoWind.*nW;
+  end
+  if(decision_w0atz0)
+    nnRichard=Richardson_number(nW, D, nN);
+    disp(['[',mfilename,'] > New minimum Richardson number after setting w(z=0)=0: ',num2str(min(nnRichard)), ' (@z=', num2str(Z(nnRichard==min(nnRichard))), ' m). ', richardson_advice]);
+  end
+
+  % Eventually force viscosity parameters to 0.
+  decision_mu=-1;
+  while(not(ismember(decision_mu,[0,1])))
+    decision_mu=input(['[',mfilename,'] > Force mu=0? (0 for no, 1 for yes) > ']);
+  end
+  decision_kap=-1;
+  while(not(ismember(decision_kap,[0,1])))
+    decision_kap=input(['[',mfilename,'] > Force kappa=0? (0 for no, 1 for yes) > ']);
+  end
+  if(decision_mu && not(decision_kap))
+    nVISCMU=0*nVISCMU;prefix='reg+mu0_'; disp(['[',mfilename,']   [WARNING] MU WAS SET TO ZERO.']);
+  elseif(decision_kap && not(decision_mu))
+    nKAPPA=0*nKAPPA;prefix='reg+kappa0_'; disp(['[',mfilename,']   [WARNING] KAPPA WAS SET TO ZERO.']);
+  elseif(decision_mu && decision_kap)
+    nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix='reg+mukappa0_'; disp(['[',mfilename,']   [WARNING] MU AND KAPPA WERE SET TO ZERO.']);
+  else
+    prefix='reg_';
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,49 +335,16 @@ if(decision==0)
   disp(['[',mfilename,'] > Outputting cancelled, stopping script.']); return;
 end
 
-decision_w0atz0=-1;
-while(not(ismember(decision_w0atz0,[0,1])))
-  decision_w0atz0=input(['[',mfilename,'] > Force w(z=0)=0? (0 for no, 1 for yes) > ']);
-end
-if(decision_w0atz0)
-%   width=20*max(diff(Z)); % Spread over 20 steps.
-  width=input(['[',mfilename,'] > Height of apodisation (in meters)? > ']);
-%   b=-1.82138636771844967304021031862099524348122888360095; % 1e-2 level.
-  b=-2.75106390571206079614551316854267817109677902559646; % 1e-3 level.
-%   b=-3.45891073727950002215092763595756951991566980804288674707621013; % 1e-6 level.
-  a=-2*b/width;
-  apoWind=erf(a*Z+b)/2+0.5;
-  apoWind(Z==0)=0;
-  nW=apoWind.*nW;
-end
-
-decision_mu=-1;
-while(not(ismember(decision_mu,[0,1])))
-  decision_mu=input(['[',mfilename,'] > Force mu=0? (0 for no, 1 for yes) > ']);
-end
-decision_kap=-1;
-while(not(ismember(decision_kap,[0,1])))
-  decision_kap=input(['[',mfilename,'] > Force kappa=0? (0 for no, 1 for yes) > ']);
-end
-
-if(decision_mu && not(decision_kap))
-  nVISCMU=0*nVISCMU;prefix='reg+mu0_'; disp(['[',mfilename,']   [WARNING] MU WAS SET TO ZERO.']);
-elseif(decision_kap && not(decision_mu))
-  nKAPPA=0*nKAPPA;prefix='reg+kappa0_'; disp(['[',mfilename,']   [WARNING] KAPPA WAS SET TO ZERO.']);
-elseif(decision_mu && decision_kap)
-  nVISCMU=0*nVISCMU;nKAPPA=0*nKAPPA;prefix='reg+mukappa0_'; disp(['[',mfilename,']   [WARNING] MU AND KAPPA WERE SET TO ZERO.']);
-else
-  prefix='reg_';
-end
 SPL=split(DATAFILE, '/'); SPL(end)=strcat(prefix, SPL(end)); nDATAFILE=join(SPL, '/');nDATAFILE=nDATAFILE{1};
 rewrite_atmos_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCALPRESSURESCALE, nG, nN.^2, nKAPPA, nVISCMU, nMUVOL, nWNORTH, nWEAST, nW, nCP, nCV, nGAMMA);
 plot_model(nDATAFILE, '-', 'k', []);
-if(decision_w0atz0)
-  nnRichard=Richardson_number(nW, D, nN);
-  disp(['[',mfilename,'] > New minimum Richardson number after setting w(z=0)=0: ',num2str(min(nnRichard)), ' (@z=', num2str(Z(nnRichard==min(nnRichard))), ' m). ', richardson_advice]);
-end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function sQ=smoooth_n_splinnnn(Z,Q,n)
+  spline=fit(Z,smoooth(Q,n),'smoothingspline','smoothingparam',1e-10);
+  sQ=spline(Z);
+end
 
 function sQ=smoooth(Q,n)
   sQ=smoothdata(Q,'gaussian',n);

@@ -3,7 +3,7 @@
 % Description:   TODO.
 % Last modified: See file metadata.
 % Usage:         N/A.
-% Notes:         analyse_atmospheric_model.m should have been ran before.
+% Notes:         It might not be a good idea to run this script alone. At the very least, anareg_atmospheric_model.m should have been ran before.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Bruteforce Density.         %
