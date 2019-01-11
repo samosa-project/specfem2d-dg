@@ -267,12 +267,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                              + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
                              - LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) &
                              - LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) &
-                             + LNS_kappa(iglob)*in_nabla_dT(1,iglob)
+                             - LNS_kappa(iglob)*in_nabla_dT(1,iglob)
             tmp_unknown(NDIM) =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
                                 + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
                                 - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
                                 - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
-                                + LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
+                                - LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
           else ! Else on viscousComputation.
             !tmp_unknown(1) =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
             !                 + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob))
@@ -496,18 +496,50 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           lambda = ZERO
           jump   = ZERO
           ! Save some allocations.
-          lambda = max(  abs(  dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM)) & ! v_-\cdot n
-                             + sqrt(abs(  gammaext_DG(iglobM) &
-                                        * (LNS_p0(iglobM)+in_dp(iglobM)) &
-                                        / (LNS_rho0(iglobM)+cv_drho(iglobM)))) & ! Local sound speed.
-                            ) & ! Local sound speed, side "M".
-                       , abs(  dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP)) & ! v_+\cdot n
-                             + sqrt(abs(  gammaext_DG(iglobP) &
-                                        * (LNS_p0(iglobP)+dp_P) &
-                                        / (LNS_rho0(iglobP)+drho_P))) & ! Local sound speed.
-                            ) & ! Local sound speed, side "P".
+          !lambda = max(  abs(  dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM)) & ! v_-\cdot n
+          !                   + sqrt(abs(  gammaext_DG(iglobM) &
+          !                              * (LNS_p0(iglobM)+in_dp(iglobM)) &
+          !                              / (LNS_rho0(iglobM)+cv_drho(iglobM)))) & ! Local sound speed.
+          !                  ) & ! Local sound speed, side "M".
+          !             , abs(  dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP)) & ! v_+\cdot n
+          !                   + sqrt(abs(  gammaext_DG(iglobP) &
+          !                              * (LNS_p0(iglobP)+dp_P) &
+          !                              / (LNS_rho0(iglobP)+drho_P))) & ! Local sound speed.
+          !                  ) & ! Local sound speed, side "P".
+          !             )
+          ! REMOVE ABS INSIDE SQRT AND MOVE ABS TO V.N ONLY
+          !lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))) & ! v_-\cdot n
+          !             + sqrt(  gammaext_DG(iglobM) &
+          !                    * (LNS_p0(iglobM)+in_dp(iglobM)) &
+          !                    / (LNS_rho0(iglobM)+cv_drho(iglobM))) & ! Local sound speed, side "M".
+          !             , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) & ! v_+\cdot n
+          !             + sqrt(  gammaext_DG(iglobP) &
+          !                    * (LNS_p0(iglobP)+dp_P) &
+          !                    / (LNS_rho0(iglobP)+drho_P)) & ! Local sound speed, side "P".
+          !             )
+          ! REMOVE CONTRIBUTIONS FROM PERTURBATIONS.
+          !lambda = max(  abs(  dot_product(n_out, LNS_v0(:,iglobM)) & ! v_-\cdot n
+          !                   + sqrt(  gammaext_DG(iglobM) &
+          !                          * LNS_p0(iglobM) &
+          !                          / LNS_rho0(iglobM)) & ! Local sound speed.
+          !                  ) & ! Local sound speed, side "M".
+          !             , abs(  dot_product(n_out, LNS_v0(:,iglobP)) & ! v_-\cdot n
+          !                   + sqrt(  gammaext_DG(iglobP) &
+          !                          * LNS_p0(iglobP) &
+          !                          / LNS_rho0(iglobP)) & ! Local sound speed.
+          !                  ) & ! Local sound speed, side "P".
+          !             )
+          ! REMOVE ABS INSIDE SQRT AND MOVE ABS TO V.N ONLY AND REMOVE CONTRIBUTIONS FROM PERTURBATIONS.
+          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
+                       + sqrt(  gammaext_DG(iglobM) &
+                              * LNS_p0(iglobM) &
+                              / LNS_rho0(iglobM)) & ! Local sound speed, side "M".
+                       , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
+                       + sqrt(  gammaext_DG(iglobP) &
+                              * LNS_p0(iglobP) &
+                              / LNS_rho0(iglobP)) & ! Local sound speed, side "P".
                        )
-          !lambda=.2*lambda ! TEEEEEEEEEEEEEEEEEEST
+          !lambda=.0*lambda ! TEEEEEEEEEEEEEEEEEEST
           !if(lambda>400.) then
           !  !       abs(coord(2,ibool_before_perio(i,j,ispec)))<=2. & ! DEBUG
           !  ! .and. abs(coord(1,ibool_before_perio(i,j,ispec))-25.)<=3.) then ! DEBUG
@@ -609,23 +641,23 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             tmp_unknown(1) = - (  LNS_dv(1,iglobM)*sigma_v_0(1,iglobM) & ! "M" side, part.
                                 + LNS_v0(1,iglobM)*in_sigma_dv(1,iglobM) & ! "M" side, part.
                                 + LNS_dv(NDIM,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
-                                + LNS_v0(NDIM,iglobM)*in_sigma_dv(2,iglobM)) & ! "M" side, part.
-                             + LNS_kappa(iglobM)*in_nabla_dT(1,iglobM) & ! "M" side, part.
+                                + LNS_v0(NDIM,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
+                                + LNS_kappa(iglobM)*in_nabla_dT(1,iglobM)) & ! "M" side, part.
                              - (  dv_P(1)*sigma_v_0(1,iglobP) & ! "P" side, part.
                                 + LNS_v0(1,iglobM)*sigma_dv_P(1) & ! "P" side, part.
                                 + dv_P(NDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
-                                + LNS_v0(NDIM,iglobP)*sigma_dv_P(2)) & ! "P" side, part.
-                             + LNS_kappa(iglobP)*nabla_dT_P(1) ! "P" side, part.
+                                + LNS_v0(NDIM,iglobP)*sigma_dv_P(2) & ! "P" side, part.
+                                + LNS_kappa(iglobP)*nabla_dT_P(1)) ! "P" side, part.
             tmp_unknown(NDIM) = - (  LNS_dv(NDIM,iglobM)*sigma_v_0(3,iglobM) & ! "M" side, part.
                                    + LNS_v0(NDIM,iglobM)*in_sigma_dv(3,iglobM) & ! "M" side, part.
                                    + LNS_dv(1,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
-                                   + LNS_v0(1,iglobM)*in_sigma_dv(2,iglobM)) & ! "M" side, part.
-                                + LNS_kappa(iglobM)*in_nabla_dT(2,iglobM) & ! "M" side, part.
+                                   + LNS_v0(1,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
+                                   + LNS_kappa(iglobM)*in_nabla_dT(2,iglobM)) & ! "M" side, part.
                                 - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
                                    + LNS_v0(NDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
                                    + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
-                                   + LNS_v0(1,iglobP)*sigma_dv_P(2)) & ! "P" side, part.
-                                + LNS_kappa(iglobP)*nabla_dT_P(NDIM) ! "P" side, part.
+                                   + LNS_v0(1,iglobP)*sigma_dv_P(2) & ! "P" side, part.
+                                   + LNS_kappa(iglobP)*nabla_dT_P(NDIM)) ! "P" side, part.
             outrhs_dE(iglobM) = outrhs_dE(iglobM) + halfWeight*DOT_PRODUCT(n_out, tmp_unknown)
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
