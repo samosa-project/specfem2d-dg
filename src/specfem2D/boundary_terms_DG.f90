@@ -1518,6 +1518,7 @@ end subroutine prepare_external_forcing
     !       already known)        !
     ! --------------------------- !
     exact_interface_flux = .false.
+    !exact_interface_flux = .true. !TEST
     iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
     gamma_P = gammaext_DG(iglobP)
     rho_DG_P     = rho_DG_iP

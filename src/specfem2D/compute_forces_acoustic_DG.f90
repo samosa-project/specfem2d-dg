@@ -497,6 +497,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                        + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
                        abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
                        + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))
+          !lambda = lambda*1.2 !TEST
           
           !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
           !   .and. coord(2,ibool_before_perio(i,j,ispec))>=0. & ! DEBUG

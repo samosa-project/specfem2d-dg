@@ -125,7 +125,7 @@ subroutine compute_forces_acoustic_LNS_main()
     RHS_dE     = ZEROcr
     
     if(PML_BOUNDARY_CONDITIONS) then
-      !stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
+      stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
       aux_PML_drho = ZEROcr
       aux_PML_rho0dv = ZEROcr
       aux_PML_dE = ZEROcr
@@ -516,6 +516,9 @@ subroutine initial_state_LNS()
     call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
   endif
 #endif
+  
+!  write(*,*) 'min max v0x', minval(LNS_v0(1,:)), maxval(LNS_v0(1,:)) ! DEBUG
+!  stop
 end subroutine initial_state_LNS
 
 ! ------------------------------------------------------------ !
