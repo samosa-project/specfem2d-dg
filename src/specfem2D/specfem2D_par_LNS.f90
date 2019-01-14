@@ -14,7 +14,7 @@ module specfem_par_LNS
   integer, parameter :: NVALSIGMA=int(0.5*NDIM*(NDIM+1)) ! Number of distinct values in the symmetric viscous tensor.
   
   ! Physical parameters.
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_c0
   logical :: LNS_viscous ! General switch being true if (maxval(LNS_mu) > 0. .OR. maxval(LNS_eta) > 0. .OR. maxval(LNS_kappa) > 0.) and false if not. See compute_forces_acoustic_LNS_calling_routine. In the latter case, enables faster verification and thus faster skipping of some parts of the code.
   
   ! State registers.

@@ -530,14 +530,20 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !                  ) & ! Local sound speed, side "P".
           !             )
           ! REMOVE ABS INSIDE SQRT AND MOVE ABS TO V.N ONLY AND REMOVE CONTRIBUTIONS FROM PERTURBATIONS.
+          !lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
+          !             + sqrt(  gammaext_DG(iglobM) &
+          !                    * LNS_p0(iglobM) &
+          !                    / LNS_rho0(iglobM)) & ! Local sound speed, side "M".
+          !             , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
+          !             + sqrt(  gammaext_DG(iglobP) &
+          !                    * LNS_p0(iglobP) &
+          !                    / LNS_rho0(iglobP)) & ! Local sound speed, side "P".
+          !             )
+          ! TEST GLOBALISED C0
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
-                       + sqrt(  gammaext_DG(iglobM) &
-                              * LNS_p0(iglobM) &
-                              / LNS_rho0(iglobM)) & ! Local sound speed, side "M".
+                       + LNS_c0(iglobM) & ! Local sound speed, side "M".
                        , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
-                       + sqrt(  gammaext_DG(iglobP) &
-                              * LNS_p0(iglobP) &
-                              / LNS_rho0(iglobP)) & ! Local sound speed, side "P".
+                       + LNS_c0(iglobP) & ! Local sound speed, side "P".
                        )
           !lambda=.0*lambda ! TEEEEEEEEEEEEEEEEEEST
           !if(lambda>400.) then
