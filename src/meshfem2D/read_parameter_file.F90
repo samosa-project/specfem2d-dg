@@ -155,7 +155,7 @@
   USE_LNS = .false. ! Default value, used if the parameter is not found in parfile.
   if(USE_DISCONTINUOUS_METHOD) then
     call read_value_logical_p(USE_LNS, 'solver.USE_LNS')
-    !if (err_occurred() /= 0) stop 'error reading parameter USE_LNS in Par_file'
+    if (err_occurred() /= 0) write(*,*) 'Error reading parameter USE_LNS in Par_file. Setting to .false., do not worry.'
   endif
   
   call read_value_logical_p(REMOVE_DG_FLUID_TO_SOLID, 'solver.REMOVE_DG_FLUID_TO_SOLID')
