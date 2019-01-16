@@ -19,7 +19,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 set(groot, 'defaultSurfaceEdgeColor', 'none');
 
 plot_process=0;
-plot_forcing=1;
+plot_forcing=0;
 
 % 3 steps:
 % 1) Prepare forcing in spacetime.
@@ -47,7 +47,7 @@ nT0 = 20; % Number of temporal periods (must be integer to prevent FFT misbehavi
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % L0 = 200; % Spatial period.
 L0 = 286.2; % k1, spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
-L02 = -290.91; % k2.
+L02 = -289.73; % k2.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 nL0 = 54; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
@@ -85,7 +85,7 @@ napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 % SPECFEM-DG related.
 % loadgmsh=0; % Load a GMSH external mesh?
 loadgmsh=1; % Load a GMSH external mesh?
-dt = 0.75e-2; % Set DT as in parfile.
+dt = 5e-3; % Set DT as in parfile.
 if(loadgmsh)
   path_to_Nodes_file='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/EXTMSH/Nodes_extMesh';
 else
@@ -209,12 +209,14 @@ clear('meshok');
 
 % Temporal frequency range.
 f_max = 0.5 / dt;
-df = 1 / (t(end)-t(1));
-f = - f_max:df:f_max;
+% df = 1 / (t(end)-t(1));
+% f = - f_max:df:f_max;
+f = linspace(-f_max,f_max,length(t));
 % Spatial frequency range.
 k_max = 0.5 / dx;
-dk = 1 / (x(end)-x(1));
-k = - k_max:dk:k_max;
+% dk = 1 / (x(end)-x(1));
+% k = - k_max:dk:k_max;
+k = linspace(-k_max,k_max,length(x));
 % Temporal and spatial spaces.
 % t = 0:dt:nT0 * T0;
 % x = - 0.5 * nL0 * L0:dx:0.5 * nL0 * L0;
@@ -301,7 +303,7 @@ clear('spectrum_displ'); % Clear variables as soon as possible, as they are not 
 sig_T = ((1 / T0) / 3) / invspread; % Width of the Gaussian mask in time.
 sig_X = ((1 / L0) / 3) / invspread; % Width of the Gaussian mask in space.
 disp(['[',mfilename,'] Convolving spectrum in frequency range and adding random phase. sigma_T=',num2str(sig_T),', sigma_X=',num2str(sig_X),'.']);
-[Fgm, Kgm] = meshgrid(0:df:2 / T0, 0:dk:2 / L0);
+[Fgm, Kgm] = meshgrid(0:mean(diff(f)):2 / T0, 0:mean(diff(k)):2 / L0);
 GMask = exp(- ((Fgm - 1 / T0) .^ 2 / (2 * sig_T ^ 2) + (Kgm - 1 / L0) .^ 2 / (2 * sig_X ^ 2)));
 GMask = GMask / max(max(GMask)); % Normalise, not to mess with maximum amplitude.
 clear('Fgm', 'Kgm'); % Clear variables as soon as possible, as they are not needed after this point, in order to free memory.
@@ -562,7 +564,7 @@ else
   f_new = fopen(EXPORTFILENAME, 'w');
 %   for it = 1:itstop
 %     for ix = ixmin:ixmax
-  disp(['[',mfilename,'] Writing to file: ', num2str(0)), ' % complete.']);
+  disp(['[',mfilename,'] Writing to file: ', num2str(0), ' % complete.']);
   for it = 1:size(T_specfem,2)
     for ix = 1:size(X_specfem,1)
       fprintf(f_new, '%.5g %.8g %.4g', T_specfem(1, it), X_specfem(ix, 1), veloc_specfem(ix, it));

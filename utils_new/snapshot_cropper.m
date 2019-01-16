@@ -31,7 +31,8 @@ suffix="_crop";
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/tir_de_mine/OUTPUT_FILES_74752/illustration';
 % FOLDER='/home/l.martire/Documents/SPECFEM/Ongoing_Work/18_microbaroms/microbaroms_patch/OUTPUT_FILES_668482_disp7_isp6_full/cropppp';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_826213/croppp';
-FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_lnsf2s_local/croppp';
+% FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_lnsf2s_local/croppp';
+FOLDER='/home/l.martire/Documents/Ongoing_Work/1811_glanes/190116_presentation_JPL/simulation';
 
 if(not(strcmp(FOLDER(end),'/'))); FOLDER=[FOLDER,'/']; end;
 list=dir(strcat(FOLDER, '*.jpg'));

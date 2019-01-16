@@ -9,10 +9,6 @@
 %                  1) bulkfilter.m
 
 function [] = plot_time_v_dist(Ztime,Zamp,distance)
-
-  % clear all;
-  % close all;
-  % clc;
   format compact;
   set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
   set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
@@ -112,7 +108,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
 
     % Eventually normalise.
     if (normalise == 1)
-      data_v(i, :) = (data_v(i, :) - min(data_v(i, :))) / (max(data_v(i, :)) - min(data_v(i, :)));
+      data_v(i, :) = data_v(i, :) / (max(data_v(i, :)) - min(data_v(i, :))); % Transform into signal with 1 p2p amplitude (without any shift).
     end
   end
 

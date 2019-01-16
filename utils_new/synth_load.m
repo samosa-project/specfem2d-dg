@@ -86,10 +86,16 @@ fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_chglambda/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_chglambda/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_chglambda2woperturb/');
-rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_chglambda2woperturb/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_chglambda2woperturb/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_1222576_M0_refined/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_1222565_M.3_refined/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1_cfl.245/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1_cfl.245/');
+rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.6_dx1_cfl.245/');
 
 % TNTGlanes
 % fig_title = strcat('Tirs de Mine Glanes');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1216334/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204916_spuriousreflexions/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_75040/');

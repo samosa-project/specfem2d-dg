@@ -15,7 +15,9 @@ set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
 f0=100;
+% wind=0;
 wind=102;
+% wind=204;
 c=340;
 
 M=wind/c;
