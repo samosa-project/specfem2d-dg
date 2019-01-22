@@ -21,16 +21,16 @@ format longG;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 87;
+nstations   = 4;
 nstepseismo = 25;
 
-neltot      = 88307;
-neldg       = 88307;
+neltot      = 9595000;
+neldg       = 9595000;
 
-nstepsnap   = 500;
-nsteptot    = 40000;
+nstepsnap   = 200;
+nsteptot    = 2000;
 
-nproc       = 112;
+nproc       = 224;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,7 +41,7 @@ meandata=mean(data,1);
 % for i=numel(t)-3:numel(t)
 for i=1:numel(t)
   ID=info{i}(1); ID=ID{1};
-  disp(['[',mfilename,'] Run ID ',sprintf('%7d',ID),' (',sprintf('%5.1f',data(i,2)*100),'% DG): ',sprintf('%.2e',t(i)),' s per element per iteration (total CPU time, not real time)          (''',char(string(info{i}(2))),''').']);
+  disp(['[',mfilename,'] Run ID ',sprintf('%7d',ID),' (',sprintf('%5.1f',data(i,2)*100),'% DG):       ',sprintf('%.2e',t(i)),' s CPU, per el., per it.       (''',char(string(info{i}(2))),''').']);
 end
 disp(' ');
 
