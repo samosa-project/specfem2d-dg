@@ -99,7 +99,9 @@
        ! display position of the receiver
        print *,'Receiver ',irec_global_number,' = ',xrec,zrec
 
-       write(15,"('S',i4.4,'    AA ',f20.7,1x,f20.7,'       0.0         0.0')") irec_global_number,xrec,zrec
+       !write(15,"('S',i4.4,'    AA ',f20.7,1x,f20.7,'       0.0         0.0')") irec_global_number,xrec,zrec ! SPECFEM historic output, cut at 7 decimal places.
+       !write(15,"('S',i4.4,'    AA ',e24.17,1x,e24.17,'       0.0         0.0')") irec_global_number,xrec,zrec ! Exact scientific notation output. Maybe works with more compilers.
+       write(15,"('S',i4.4,'    AA ',g24.17,1x,g24.17,'       0.0         0.0')") irec_global_number,xrec,zrec ! More human-readable output.
 
     enddo
   enddo

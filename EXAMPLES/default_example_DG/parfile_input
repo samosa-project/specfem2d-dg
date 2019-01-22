@@ -152,13 +152,14 @@ REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BE
 #  1: Gaussian time derivative, localised around forcing_initial_time, and for all abscissas.
 #  2: Gaussian time and space derivative, localised around (forcing_initial_time, forcing_initial_loc).
 #  3: Gaussian second time derivative, localised around forcing_initial_time, and for all abscissas.
+#  4: Gaussian pulse, localised around (forcing_initial_time, forcing_initial_loc).
 #  9: hardcoded custom forcing (set it up directly in the code).
 # 10: read from 'external_bottom_forcing.dat' (generated with 'utils_new/forcings.m'). The lines of this file should be formatted as 't x value', using the same DT as above and points x should correspond to the mesh. The time values in this file will be read as time values from beginning of simulation, thus including any time shift induced by non-Dirac sources (i.e. 'negative times').
 TYPE_FORCING                    = 0
-main_spatial_period             = 1. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2.
-main_time_period                = 1. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3.
-forcing_initial_loc             = 0. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2.
-forcing_initial_time            = 0. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3.
+main_spatial_period             = 1. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2,4.
+main_time_period                = 1. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
+forcing_initial_loc             = 0. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2,4.
+forcing_initial_time            = 0. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
 
 #---------------------------------------------------------------------#
 #                                                                     #

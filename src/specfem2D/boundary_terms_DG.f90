@@ -600,6 +600,14 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
         ! Gaussian second derivative.
         forced_SF = (1.-2.*(PI*(current_time-t0-t_0)/P_0)**2) * exp(-((current_time-t0-t_0)*PI/P_0)**2)
       
+      case (4)
+        ! Gaussian pulse.
+        forced_SF = exp(-((current_time-t0-t_0)*PI/P_0)**2)*exp(-((x(1)-x_0)*pi/L_0)**2);
+        ! Matlab test script:
+        ! x=-50:2:50; t=0:5e-4:.5; [X,T]=meshgrid(x,t); t_0=5e-2; P_0=1/80; x_0=0; L_0=1;
+        ! G=exp(-((T-t_0)*pi/P_0).^2).*exp(-((X-x_0)*pi/L_0).^2);
+        ! figure(); surf(X,T,G);
+      
       case (9)
         ! Hardcoded forcing.
         
