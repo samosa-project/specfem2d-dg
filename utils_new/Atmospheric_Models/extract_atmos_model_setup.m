@@ -5,7 +5,7 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [datestr, posstr, year, daysincenewyear, secondssincenewday, lat, lon, f107a, f107, ap] = extract_atmos_model_setup(DATAFILE)
+function [datestring, posstr, year, daysincenewyear, secondssincenewday, lat, lon, f107a, f107, ap] = extract_atmos_model_setup(DATAFILE)
   fid = fopen(DATAFILE);
   if(fid==-1)
     error(strcat("Cannot open file ", DATAFILE,').'))
@@ -17,9 +17,9 @@ function [datestr, posstr, year, daysincenewyear, secondssincenewday, lat, lon, 
     line = fgetl(fid);
     if(count==1)
       year=str2num(regexprep(regexprep(line, 'day.*', ''), 'year', ''));
-      daysincenewyear=str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ day', ''));
-      lat=str2num(regexprep(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat', ''), 'lon.*', ''));
-      lon=str2num(regexprep(line, 'year *[0-9]+ day *[0-9]+ seconds *[0-9]+\.[0-9]+ *lat *-?[0-9]+\.[0-9]+ *lon', ''));
+      daysincenewyear=str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ *day', ''));
+      lat=str2num(regexprep(regexprep(line, 'year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat', ''), 'lon.*', ''));
+      lon=str2num(regexprep(line, 'year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat *-?[0-9]+\.[0-9]+ *lon', ''));
       if(lon<=180)
         lonstr=[sprintf('%1.1f',lon),'$^\circ$E'];
       else
@@ -48,16 +48,17 @@ function [datestr, posstr, year, daysincenewyear, secondssincenewday, lat, lon, 
       dom=daysincenewyear-prevsum;
       yyyymmdd=[num2str(year),'/',pad(num2str(m),2,'left','0'),'/',pad(num2str(dom),2,'left','0')];
       % Build hh:mm:ss.
-      secondssincenewday=str2num(regexprep(regexprep(line, 'lat.*', ''), 'year *[0-9]+ day *[0-9]+ seconds', ''));
-      hhmm=[pad(num2str(floor(secondssincenewday/3600)),2,'left','0'),':',pad(num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)),2,'left','0')];
-      hhmmss=[hhmm,':','00'];
+      secondssincenewday=str2num(regexprep(regexprep(line, 'lat.*', ''), 'year *[0-9]+ *day *[0-9]+ *seconds', ''));
+%       hhmm=[pad(num2str(floor(secondssincenewday/3600)),2,'left','0'),':',pad(num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)),2,'left','0')];
+%       hhmmss=[hhmm,':','00'];
+      hhmmss=datestr(seconds(secondssincenewday),'hh:MM:SS');
       % Convert to local time using longitude.
       CoordinatedUniversalTimeStr=[yyyymmdd,' ',hhmmss];
       localsat=UTC2SolarApparentTime(CoordinatedUniversalTimeStr,lon); % See https://fr.mathworks.com/matlabcentral/fileexchange/32804-convert-utc-to-solar-apparent-time.
       splitlocalsat=split(localsat, ' ');
       % Build date string.
 %       datestr=[num2str(daysincenewyear), '$^{th}$ of ', num2str(year), ', ',num2str(floor(secondssincenewday/3600)),':',num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)), ' UT'];
-      datestr=[yyyymmdd, ', ', hhmmss, ' UT, ', splitlocalsat{2}, ' LT'];
+      datestring=[yyyymmdd, ', ', hhmmss, ' UT, ', splitlocalsat{2}, ' LT'];
       
     elseif(count==2)
       f107a=str2num(regexprep(regexprep(line, '.*F107A', ''), 'F107.*', ''));

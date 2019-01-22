@@ -36,13 +36,14 @@ alpha=linspace(0,pi,NSTATIONS);
 k=2*pi*f0/c;
 r=20/k;
 
-A=0.98;
+% A=0.98;
+A=1;
 
 p_th= A*(sqrt(1-M^2*sin(alpha).^2) - M*cos(alpha)) ./ (sqrt(2*pi*k*r)*(1-M^2)*(1-M^2*sin(alpha).^2).^0.75);
 p0_th= A ./ (sqrt(2*pi*k*r));
 
 figure();
-plot(alpha*180/pi,p_th/p0_th,'k','displayname','th. using Ostashev''s eq. (72)');
+plot(alpha*180/pi,p_th/p0_th,'k','displayname','Ostashev''s (72)');
 set(gca,'ticklabelinterpreter','latex');
 set(gca,'xtick',180*[0,0.25,0.5,0.75,1]);
 xlim([0,180]);
@@ -86,3 +87,13 @@ end
 disp(' ');
 
 disp(['[',mfilename,'] Check if dx<',num2str(dxmax),' and dt<',num2str(dtmax),'']);
+
+% GMSH point definition
+if(0)
+  for angi=1:length(alpha)
+    disp(['Point(',num2str(4+angi),') = {',char(sprintf('%.18g',r*cos(alpha(angi)))),',',char(sprintf('%.18g',r*sin(alpha(angi)))),',0};']);
+  end
+  for angi=1:length(alpha)
+    disp(['Point{',num2str(4+angi),'} In Surface{1};']);
+  end
+end

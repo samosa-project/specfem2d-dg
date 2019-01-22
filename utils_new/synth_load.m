@@ -89,9 +89,25 @@ fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_chglambda2woperturb/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_1222576_M0_refined/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_1222565_M.3_refined/');
+
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1_cfl.245/');
 % rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1_cfl.245/');
-rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.6_dx1_cfl.245/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.6_dx1_cfl.245/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx.5_cfl.49/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.6_dx.5_cfl.49/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1_cfl.245_FNS/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1_cfl.245_FNS/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1.33_cfl.184_FNS/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1.33_cfl.184_FNS/'); % alright base result
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M-.3_dx1_cfl.245/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/stationspositionz/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440/'); % bad result, source was offset to the right
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440_spreadssf/'); % alright result
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx.5gmshstruct_cfl.424_spreadssf/'); % very good result
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % alright result
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf
+% rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf
+rootd = strcat(SPCFMloc, 'specfem-dg-master/EXAMPLES/validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
 % TNTGlanes
 % fig_title = strcat('Tirs de Mine Glanes');
