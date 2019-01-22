@@ -1496,14 +1496,14 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: eta_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: mu_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: p_model
-  real(kind=CUSTOM_REAL), dimension(nlines_model) :: Htab_model
+  !real(kind=CUSTOM_REAL), dimension(nlines_model) :: Htab_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: kappa_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: cp_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: cv_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: gamma_model
   integer :: i, j, ispec, ii, io, indglob_DG
-  real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3 ! Dummy reals for reading parameters which we do not care about.
-  double precision :: z, frac, tmp1, pii, piim1, piim2, piip1!,gamma_temp,gamma_temp_prev,x,max_z
+  real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3, dummy4, dummy5 ! Dummy reals for reading parameters which we do not care about.
+  double precision :: z, frac, pii, piim1, piim2, piip1!,tmp1, gamma_temp,gamma_temp_prev,x,max_z
   
   z_model=ZERO
   density_model=ZERO
@@ -1515,7 +1515,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   eta_model=ZERO
   mu_model=ZERO
   p_model=ZERO
-  Htab_model=ZERO
+  !Htab_model=ZERO
   kappa_model=ZERO
   cp_model=ZERO
   cv_model=ZERO
@@ -1545,21 +1545,21 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   do i=1,nlines_model
     ! Read values.
     ! tmp1 = Temperature
-    read(100,*,iostat=io) z_model(i),density_model(i),tmp1,&
-                          vp_model(i),p_model(i),Htab_model(i),&
+    read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
+                          vp_model(i),p_model(i),dummy2,&
                           gravity_model(i),Nsq_model(i),&
-                          kappa_model(i),mu_model(i),dummy1,&
-                          dummy2,dummy3,wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
+                          kappa_model(i),mu_model(i),dummy3,&
+                          dummy4,dummy5,wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
     eta_model(i) = (FOUR_THIRDS) * mu_model(i)
     IF(io/=0) EXIT
     if(.false.) then ! DEBUG
-      write(*,*) 'z_model(i),density_model(i),tmp1',&
-                 'vp_model(i),p_model(i),Htab_model(i)',&
+      write(*,*) 'z_model(i),density_model(i)',&!,tmp1',&
+                 'vp_model(i),p_model(i),',&!Htab_model(i)',&
                  'gravity_model(i),Nsq_model(i)',&
                  'kappa_model(i),mu_model(i),dummy1,',&
                  'dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)'
-      write(*,*) z_model(i),density_model(i),tmp1,&
-                 vp_model(i),p_model(i),Htab_model(i),&
+      write(*,*) z_model(i),density_model(i),&!,tmp1,&
+                 vp_model(i),p_model(i),&!Htab_model(i),&
                  gravity_model(i),Nsq_model(i),&
                  kappa_model(i),mu_model(i),dummy1,&
                  dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
@@ -1737,7 +1737,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
               write(*,*) wz_model(1)
               write(*,*) p_model(1)
               write(*,*) gamma_model(1)
-              write(*,*) Htab_model(1)
+              !write(*,*) Htab_model(1)
               write(*,*) eta_model(1)
               write(*,*) mu_model(1)
               write(*,*) kappa_model(1)

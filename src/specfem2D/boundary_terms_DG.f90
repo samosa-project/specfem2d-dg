@@ -338,7 +338,18 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   
   ! If bottom forcing is activated, set (overwrite) velocities.
   if(TYPE_FORCING>0 .and. abs(z)<TINYVAL) then
-    call forcing_DG(i, j, ispec, timelocal, veloc_z_DG_P) ! Used the subroutine 'forcing_DG' defined below, instead of crowding this one.
+    ! Used the subroutine 'forcing_DG' defined below, instead of crowding this one.
+    call forcing_DG(i, j, ispec, timelocal, veloc_z_DG_P) 
+    
+    ! If forcing on other quantities is to be used, a code like the one below would work.
+    !if(TYPE_FORCING==4) then
+    !  p0=p_DG_P
+    !  call forcing_DG(i, j, ispec, timelocal, p_DG_P)
+    !  p_DG_P=p0+p_DG_P
+    !else
+    !  call forcing_DG(i, j, ispec, timelocal, veloc_z_DG_P)
+    !endif
+    
     ! Read forcing parameters from parameter file.
     !lambdo = main_spatial_period
     !xo     = forcing_initial_loc
@@ -602,11 +613,12 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
       
       case (4)
         ! Gaussian pulse.
-        forced_SF = exp(-((current_time-t0-t_0)*PI/P_0)**2)*exp(-((x(1)-x_0)*pi/L_0)**2);
+        forced_SF = exp(-((current_time-t0-t_0)*PI/P_0)**2)*exp(-((x(1)-x_0)*pi/L_0)**2)
+        !forced_SF = erf((current_time-t_0)*PI/P_0)*exp(-((x(1)-x_0)*pi/L_0)**2)
         ! Matlab test script:
         ! x=-50:2:50; t=0:5e-4:.5; [X,T]=meshgrid(x,t); t_0=5e-2; P_0=1/80; x_0=0; L_0=1;
         ! G=exp(-((T-t_0)*pi/P_0).^2).*exp(-((X-x_0)*pi/L_0).^2);
-        ! figure(); surf(X,T,G);
+        ! figure(); surf(X,T,G); shading interp;
       
       case (9)
         ! Hardcoded forcing.
