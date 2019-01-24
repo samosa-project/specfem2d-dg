@@ -143,9 +143,10 @@
           case(5)
             where(LNS_rho0>0.) vector_DG_temp = LNS_dp / LNS_rho0
           case(6)
-            stop "imagetype_JPEG 5 not implemented yet for LNS."
+            vector_DG_temp = LNS_dT
+            !stop "imagetype_JPEG 6 not implemented yet for LNS."
           case default
-            stop "This statement should not have been reached."
+            stop "This statement should not have been reached (write_color_image_snaphot.F90)."
         end select
       endif
     endif
