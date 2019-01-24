@@ -8,7 +8,9 @@
 function [] = rewrite_atmos_model(NEWDATAFILE, OLDDATAFILE, Z, RHO, TEMP, SOUNDSPEED, P, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, VISCMU, MUVOL, WNORTH, WEAST, W, CP, CV, GAMMA)
   dimensions=[size(Z);size(RHO);size(TEMP);size(SOUNDSPEED);size(P);size(LOCALPRESSURESCALE);size(G);size(NBVSQ);size(KAPPA);size(VISCMU);size(MUVOL);size(WNORTH);size(WEAST);size(W);size(CP);size(CV);size(GAMMA)];
   if(any(dimensions(:,1)/dimensions(1,1)~=1) || any(dimensions(:,2)/dimensions(1,2)~=1))
-    error(['  [',mfilename,' ERROR] Dimensions of all datasets must agree.']);
+    disp(['  [',mfilename,', ERROR] Dimensions of inputs:']);
+    dimensions
+    error(['  [',mfilename,', ERROR] Dimensions of all datasets must agree.']);
   end
   
   disp(['  [',mfilename,'] Maximum acceptable DX for CFD computation with this atmospheric model is ',num2str(min(SOUNDSPEED).*(1-max(W./SOUNDSPEED))),' / (max(f)*NPointsPerWavelength).']);

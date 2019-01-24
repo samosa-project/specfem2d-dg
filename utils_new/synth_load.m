@@ -54,12 +54,13 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DAG
-fig_title = strcat('DAG');
+% fig_title = strcat('DAG');
 % rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
-rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
+% rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
+% rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
 
 % TNTGlanes
-% fig_title = strcat('Validation LNS');
+fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_FNS/');
@@ -110,7 +111,7 @@ rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_t
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440_spreadssf/'); % alright result
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx.5gmshstruct_cfl.424_spreadssf/'); % very good result
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % alright result
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf
+rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
