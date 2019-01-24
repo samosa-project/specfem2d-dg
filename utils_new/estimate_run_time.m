@@ -24,13 +24,13 @@ format longG;
 nstations   = 4;
 nstepseismo = 25;
 
-neltot      = 9595000;
-neldg       = 9595000;
+neltot      = 93000;
+neldg       = neltot;
 
-nstepsnap   = 200;
-nsteptot    = 2000;
+nstepsnap   = 500;
+nsteptot    = 40000;
 
-nproc       = 224;
+nproc       = 64;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,6 +153,7 @@ function [x,t,RUNINFO]=load()
   RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500  87 25    325]; RUNINFO{i}={120414,'mb gmsh LNS 200km'}; i=i+1;
   RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87 25    931]; RUNINFO{i}={120557,'mb gmsh LNS 400km (1)'}; i=i+1;
   RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87 25    941]; RUNINFO{i}={120621,'mb gmsh LNS 400km (2)'}; i=i+1;
+  RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500   4 25  41137]; RUNINFO{i}={130337,'test DAG FNS'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

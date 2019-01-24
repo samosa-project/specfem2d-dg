@@ -91,8 +91,8 @@ function [dx_c_mach] = model_getdxdt(atmospheric_model_file)
       nelts(l)=ceil((interfaces(l+1)-interfaces(l))/bestdx(l));
     end
     
-    format_layerz=['%',num2str(ceil(log10(Nlayerz))),'i'];
-    format_elts=['%',num2str(ceil(log10(sum(nelts)))),'i'];
+    format_layerz=['%',num2str(floor(log10(Nlayerz))+1),'i'];
+    format_elts=['%',num2str(floor(log10(sum(nelts)))+1),'i'];
     
     disp(' ');
     disp('# Number of Interfaces:');
@@ -122,4 +122,3 @@ function [dx_c_mach] = model_getdxdt(atmospheric_model_file)
     disp(['[',mfilename,'] Copy-paste the two previous blocks, respectively in the interfacefile and the parfile.']);
   end
 end
-

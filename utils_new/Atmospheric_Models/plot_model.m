@@ -18,13 +18,14 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   set(0, 'DefaultLegendInterpreter', 'latex');
   
   [Z, RHO, T, C, ~, ~, ...
-   ~, NSQ, ~, ~, ~, ~, ~, W, ~, ~, GAMMA] = ...
+   ~, NSQ, ~, ~, ~, ~, ~, W, ~, ~, ~] = ...
    extract_atmos_model(atmospheric_model_file, 3, 0, 0);
 
-  [datestr, posstr, ~, d, s, ~, ~, F107A, F107, AP] = extract_atmos_model_setup(atmospheric_model_file);
+  [datestr, posstr, ~, ~, ~, ~, ~, F107A, F107, AP] = extract_atmos_model_setup(atmospheric_model_file);
   apf107str=strcat("F10.7 avg. = ", sprintf("%.1f",F107A), ", F10.7 = ", sprintf("%.1f",F107), ", AP = ", sprintf("%.1f",AP));
   
   T=T-273.15;
+  thresheqzero=1e-6;
   
 %   D = differentiation_matrix(Z, 0);
 %   DZW = D*W;
@@ -41,12 +42,18 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
   ax(2)=subplot(232);
   myplot(C, Z, marker, colour, '$c$', 'p'); xlabel('$c$ (m/s)'); hold on
-  myplot(min(C+W,C-W), Z, marker, 'b', 'upwind $c_e$', 'p');
-  myplot(max(C+W,C-W), Z, marker, 'r', 'downwind $c_e$', 'p');
-  legend('Location', 'best');
+  if(max(abs(W))>thresheqzero)
+    % If wind==0, no need to plot effective sound speed.
+    myplot(min(C+W,C-W), Z, marker, 'b', 'upwind $c_e$', 'p');
+    myplot(max(C+W,C-W), Z, marker, 'r', 'downwind $c_e$', 'p');
+    legend('Location', 'best');
+  end
   yticklabels([]);
   addatmosphericseparationlines([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))], atmalts);
-  forcexlimminmax([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))]);
+  if(max(abs(W))>thresheqzero)
+    % If wind==0, no need to adjust.
+    forcexlimminmax([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))]);
+  end
   
   title({[posstr,', ',datestr],apf107str,''});
   
@@ -54,14 +61,22 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   myplot(NSQ, Z, marker, colour, datestr, 'p');
   xlabel('$N^2$ (rad$^2$/s$^2$)'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   yticklabels([]);
-  forcexlimminmax(NSQ);
+  if(max(abs(NSQ-mean(NSQ)))>thresheqzero)
+    % If NSQ==cst, no need to adjust.
+    forcexlimminmax(NSQ);
+  else
+    xlim(max(NSQ)*[.9,1.1]);
+  end
   
   ax(4)=subplot(234);
   myplot(T, Z, marker, colour, datestr, 'p');
   xlabel('$T$ ($^\circ$C)');
   ylabel('$z$ (m)'); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   addatmosphericseparationlines(T, atmalts);
-  forcexlimminmax(T);
+  if(max(abs(T-mean(T)))>thresheqzero)
+    % If T==cst, no need to adjust.
+    forcexlimminmax(T);
+  end
   
   ax(5)=subplot(235);
   myplot(W, Z, marker, colour, datestr, 'p');
@@ -69,14 +84,20 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   addatmosphericseparationlines(W, atmalts);
-  forcexlimminmax(W);
+  if(max(abs(W-mean(W)))>thresheqzero)
+    % If W==cst, no need to adjust.
+    forcexlimminmax(W);
+  end
   
   ax(6)=subplot(236);
   myplot(DZW, Z, marker, colour, datestr, 'p');
   xlabel('$\partial_zw$ (1/s)');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
-  forcexlimminmax(DZW);
+  if(max(abs(DZW))>thresheqzero)
+    % If DZW==0 (W==cst), no need to adjust.
+    forcexlimminmax(DZW);
+  end
   
   linkaxes(ax,'y');
   
