@@ -4,6 +4,9 @@ module specfem_par_LNS
 
   implicit none
   
+  ! Constants (maybe move to constants.h.in).
+  real(kind=CUSTOM_REAL), parameter :: R_ADIAB = 8.3144598
+  
   ! Switch enabling the use of LNS instead of FNS.
   logical :: USE_LNS
   

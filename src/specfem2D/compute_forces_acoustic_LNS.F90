@@ -916,7 +916,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Set out_dT_P.
         if(swCompdT) then
           !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(NDIM)**2))/c_V
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
         
       else
@@ -962,7 +963,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
         ! Set out_dT_P.
         if(swCompdT) then
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
         !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
         
@@ -1037,7 +1039,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       
       ! Set out_dT_P.
       if(swCompdT) then
-        call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+        !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+        call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
       endif
       
       !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
@@ -1075,7 +1078,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
           out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
         endif
         if(swCompdT) then
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P: same as other side, that is a Neumann condition.
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P: same as other side, that is a Neumann condition.
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
       else
         ! --------------------------- !
@@ -1116,7 +1120,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
         ! Set out_dT_P.
         if(swCompdT) then
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
         
       endif ! Endif on PML.
@@ -1217,7 +1222,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     endif
     ! Set out_dT_P.
     if(swCompdT) then
-      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+      !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
     endif
     
   else
