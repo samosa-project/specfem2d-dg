@@ -1471,11 +1471,12 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         ispec_is_elastic,ispec_is_acoustic_DG,&!Htabext_DG&
         mesh_zmax,tau_sigma, tau_epsilon,&
         rhoext,vpext,vsext,&
-        QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext,&
+        QKappa_attenuationext,Qmu_attenuationext,gravityext,&!Nsqext,&
         nspec,coord,ibool,myrank,&
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
+        USE_DISCONTINUOUS_METHOD
   
   implicit none
   
@@ -1490,7 +1491,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: density_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: vp_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: gravity_model
-  real(kind=CUSTOM_REAL), dimension(nlines_model) :: Nsq_model
+  !real(kind=CUSTOM_REAL), dimension(nlines_model) :: Nsq_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: wx_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: wz_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: eta_model
@@ -1502,14 +1503,14 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: cv_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: gamma_model
   integer :: i, j, ispec, ii, io, indglob_DG
-  real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3, dummy4, dummy5 ! Dummy reals for reading parameters which we do not care about.
+  real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3, dummy4, dummy5, dummy6 ! Dummy reals for reading parameters which we do not care about.
   double precision :: z, frac, pii, piim1, piim2, piip1!,tmp1, gamma_temp,gamma_temp_prev,x,max_z
   
   z_model=ZERO
   density_model=ZERO
   vp_model=ZERO
   gravity_model=ZERO
-  Nsq_model=ZERO
+  !Nsq_model=ZERO
   wx_model=ZERO
   wz_model=ZERO
   eta_model=ZERO
@@ -1520,6 +1521,18 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   cp_model=ZERO
   cv_model=ZERO
   gamma_model=ZERO
+  
+  ! Safeguard.
+  if(.not. USE_DISCONTINUOUS_METHOD) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Currently cannot use the     *"
+    write(*,*) "* 'external_DG' model if not   *"
+    write(*,*) "* using the DG method.         *"
+    write(*,*) "********************************"
+    stop
+  endif
   
   if(myrank==0) then
     write(*,*) "> Reading atmospheric model file '", trim(EXTERNAL_DG_ONLY_MODEL_FILENAME),&
@@ -1547,7 +1560,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     ! tmp1 = Temperature
     read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
                           vp_model(i),p_model(i),dummy2,&
-                          gravity_model(i),Nsq_model(i),&
+                          gravity_model(i),dummy6,&!Nsq_model(i),&
                           kappa_model(i),mu_model(i),dummy3,&
                           dummy4,dummy5,wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
     eta_model(i) = (FOUR_THIRDS) * mu_model(i)
@@ -1555,12 +1568,12 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     if(.false.) then ! DEBUG
       write(*,*) 'z_model(i),density_model(i)',&!,tmp1',&
                  'vp_model(i),p_model(i),',&!Htab_model(i)',&
-                 'gravity_model(i),Nsq_model(i)',&
+                 'gravity_model(i),',&!Nsq_model(i)',&
                  'kappa_model(i),mu_model(i),dummy1,',&
                  'dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)'
       write(*,*) z_model(i),density_model(i),&!,tmp1,&
                  vp_model(i),p_model(i),&!Htab_model(i),&
-                 gravity_model(i),Nsq_model(i),&
+                 gravity_model(i),&!Nsq_model(i),&
                  kappa_model(i),mu_model(i),dummy1,&
                  dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
     endif
@@ -1760,7 +1773,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             rhoext(i, j, ispec) = density_model(1)
             vpext(i, j, ispec) = vp_model(1)
             gravityext(i, j, ispec) = gravity_model(1)
-            Nsqext(i, j, ispec) = Nsq_model(1)
+            !Nsqext(i, j, ispec) = Nsq_model(1)
             vsext(i, j, ispec) = ZERO
             Qmu_attenuationext(i, j, ispec) = HUGEVAL
             QKappa_attenuationext(i, j, ispec) = HUGEVAL
@@ -1782,7 +1795,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             !rhoext(i, j, ispec) = exp(log(density_model(ii-1)) + frac*(log(density_model(ii))-log(density_model(ii-1)))) ! DEBUG: exponential interpolation
             vpext(i, j, ispec) = vp_model(ii-1) + frac*(vp_model(ii)-vp_model(ii-1))
             gravityext(i, j, ispec) = gravity_model(ii-1) + frac*(gravity_model(ii)-gravity_model(ii-1))
-            Nsqext(i, j, ispec) = Nsq_model(ii-1) + frac*(Nsq_model(ii)-Nsq_model(ii-1))
+            !Nsqext(i, j, ispec) = Nsq_model(ii-1) + frac*(Nsq_model(ii)-Nsq_model(ii-1))
             vsext(i, j, ispec) = ZERO
             Qmu_attenuationext(i, j, ispec) = HUGEVAL
             QKappa_attenuationext(i, j, ispec) = HUGEVAL
@@ -1816,7 +1829,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             rhoext(i, j, ispec) = density_model(ii)*pii + density_model(ii-1)*piim1 + density_model(ii-2)*piim2
             vpext(i, j, ispec) = vp_model(ii)*pii + vp_model(ii-1)*piim1 + vp_model(ii-2)*piim2
             gravityext(i, j, ispec) = gravity_model(ii)*pii + gravity_model(ii-1)*piim1 + gravity_model(ii-2)*piim2
-            Nsqext(i, j, ispec) = Nsq_model(ii)*pii + Nsq_model(ii-1)*piim1 + Nsq_model(ii-2)*piim2
+            !Nsqext(i, j, ispec) = Nsq_model(ii)*pii + Nsq_model(ii-1)*piim1 + Nsq_model(ii-2)*piim2
             vsext(i, j, ispec) = ZERO
             Qmu_attenuationext(i, j, ispec) = HUGEVAL
             QKappa_attenuationext(i, j, ispec) = HUGEVAL
@@ -1843,19 +1856,19 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             write(*,*) "********************************"
             stop
           endif
-          if(Nsqext(i, j, ispec) <= ZERO) then
-            write(*,*) "********************************"
-            write(*,*) "*            ERROR             *"
-            write(*,*) "********************************"
-            write(*,*) "* A negative Nsq (Nsquare) was *"
-            write(*,*) "* found in the model.          *"
-            write(*,*) "********************************"
-            write(*,*) ispec,i,j,ii,&
-                       coord(1,indglob_DG),coord(2,indglob_DG),&
-                       Nsqext(i, j, ispec),gravityext(i, j, ispec),vpext(i, j, ispec)
-            write(*,*) "********************************"
-            stop
-          endif
+          !if(Nsqext(i, j, ispec) <= ZERO) then
+          !  write(*,*) "********************************"
+          !  write(*,*) "*            ERROR             *"
+          !  write(*,*) "********************************"
+          !  write(*,*) "* A negative Nsq (Nsquare) was *"
+          !  write(*,*) "* found in the model.          *"
+          !  write(*,*) "********************************"
+          !  write(*,*) ispec,i,j,ii,&
+          !             coord(1,indglob_DG),coord(2,indglob_DG),&
+          !             Nsqext(i, j, ispec),gravityext(i, j, ispec),vpext(i, j, ispec)
+          !  write(*,*) "********************************"
+          !  stop
+          !endif
         enddo ! Enddo on i.
       enddo ! Enddo on j.
     else
