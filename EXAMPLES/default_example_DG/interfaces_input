@@ -15,3 +15,5 @@
 # Recommended: N = f_0 * Np * th / vp, where N is the number of elements, f_0 the highest expected frequency, Np the wanted number of points per wavelength, th the layer's thickness, vp the layer's P-wave speed.
 # Layer 1 (bottom and only layer):
  50
+
+# Note: If you are using an external atmospheric model for DG (MODEL=external_DG in parfile), you can use the script './utils_new/Atmospheric_Models/model_getdxdt.m' to produce automatically the best interface and layers.
