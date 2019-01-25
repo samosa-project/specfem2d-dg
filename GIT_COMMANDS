@@ -5,21 +5,13 @@
 *) Ignore binary modifications. Move to "./specfem-dg", and execute:
 
 git update-index --assume-unchanged ./bin/!(*.*)
-
 git update-index --assume-unchanged ./obj/*.o
-
 git update-index --assume-unchanged ./obj/*.mod
-
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/bin/!(*.*)
-
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/lib/*.a
-
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/*.[oa]
-
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotchmetis/*.[oa]
-
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/libscotch/dummysizes
-
 git update-index --assume-unchanged ./src/meshfem2D/scotch_6.0.4/src/scotch/!(*.*)
 
 *) List assume-unchanged files:
@@ -30,15 +22,48 @@ git ls-files -v | grep -e "^[a-z]"
 
 git ls-files -v | grep -e "^[a-z]" | cut -c 3- | tr '\012' '\000' | xargs -0 git update-index --no-assume-unchanged
 
-*) Fetch repository branch.
+*) Fetch repository current branch.
 
 git fetch origin
 
-*) Pull repository branch.
+*) Fetch repository specific branch.
 
-git pull
+git fetch origin/<BRANCH>
 
-*) Print a concise list of file differences between two branches.
+*) Pull repository current branch.
 
-git diff --stat --color <branch1>..<branch2> <FOLDER>
+git pull origin
+
+*) Pull repository specific branch.
+
+git pull origin/<BRANCH>
+
+*) Delete last unpushed git commit (without losing local modifications).
+
+git reset --soft HEAD~1
+
+*) Delete last unpushed git commit (losing local modifications).
+
+git reset --hard HEAD~1
+
+*) Fetch a folder or file from another (local) BRANCH.
+
+git checkout <BRANCH> <FOLDER|FILE>
+
+*) Print a full diff of file(s) between two BRANCHes.
+
+git diff --color <BRANCH1>..<BRANCH2> <FOLDER|FILE>
 git diff --stat --color master..LNS .
+
+*) Print a concise list of file differences between two BRANCHes.
+
+git diff --stat --color <BRANCH1>..<BRANCH2> <FOLDER|FILE>
+git diff --stat --color master..LNS .
+
+*) Apply a given commit (through its hash) from another branch to current branch.
+
+git cherry-pick <HASH>
+
+*) Apply last commit on BRANCH1 to BRANCH2.
+
+LASTCOMMIT=$(git log --format=oneline | head -1 | cut -d " " -f 1); git checkout <BRANCH2>; git cherry-pick $LASTCOMMIT; git checkout <BRANCH1>
