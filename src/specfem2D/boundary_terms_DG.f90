@@ -43,7 +43,7 @@
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,PI
 
   use specfem_par, only: ibool_DG, &
-        rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, nspec!, ibool_before_perio, coord
+        rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, nspec
 
   implicit none
   
@@ -72,10 +72,6 @@
        rhovz_DG(iglob) = rhovz_DG_P
        E_DG(iglob)     = E_DG_P
        e1_DG(iglob)    = e1_DG_P
-       !if(abs(coord(2,ibool_before_perio(i,j,ispec)))<1.) then ! DEBUG
-       !  write(*,*) coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
-       !             rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P ! DEBUG
-       !endif ! DEBUG
       enddo
     enddo
   enddo  
@@ -1315,12 +1311,6 @@ end subroutine prepare_external_forcing
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       endif
       
-      !if(abs(coord(1, ibool(i, j, ispec))) < 1. &
-      !   .and. abs(coord(2, ibool(i, j, ispec))) < 1e-6 &
-      !   .and. timelocal>0.78) then ! DEBUG
-      !  write(*,*)  coord(2, ibool(i, j, ispec)), veloc_z, veloc_z_DG_P ! DEBUG
-      !endif
-      
       ! No stress continuity.
       p_DG_P = p_DG_iM
 
@@ -1333,16 +1323,6 @@ end subroutine prepare_external_forcing
       
       ! Deduce temperature.
       T_P = (E_DG_iM/rho_DG_iM - 0.5*(veloc_x_DG_iM**2 + veloc_z_DG_iM**2))/c_V
-      
-      !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
-      !   .and. coord(2,ibool_before_perio(i,j,ispec))>=0. & ! DEBUG
-      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
-      !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
-      !             !p_DG_iM, p_DG_P ! DEBUG
-      !             !rhovx_DG_P, rhovz_DG_P ! DEBUG
-      !             !veloc_x_DG_P, veloc_z_DG_P ! DEBUG
-      !             !trans_boundary ! DEBUG
-      !endif ! DEBUG
 
     else
       ! --------------------------- !
