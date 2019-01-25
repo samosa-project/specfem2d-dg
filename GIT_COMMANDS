@@ -37,3 +37,8 @@ git fetch origin
 *) Pull repository branch.
 
 git pull
+
+*) Print a concise list of file differences between two branches.
+
+git diff --stat --color <branch1>..<branch2> <FOLDER>
+git diff --stat --color master..LNS .
