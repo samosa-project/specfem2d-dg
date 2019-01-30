@@ -54,13 +54,14 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DAG
-% fig_title = strcat('DAG');
+fig_title = strcat('DAG');
 % rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
 % rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
 % rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
+rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');
 
 % TNTGlanes
-fig_title = strcat('Validation LNS');
+% fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_FNS/');
@@ -111,7 +112,7 @@ fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440_spreadssf/'); % alright result
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx.5gmshstruct_cfl.424_spreadssf/'); % very good result
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % alright result
-rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
@@ -138,94 +139,10 @@ rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_
 % rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
 % rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
-% StratoBaro, 66, June, 12:00
-% fig_title = strcat('Microbaroms, lat66, June, 12:00');
-% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656744_straight_1mps_isp6/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656505_straight_1e-2mps_isp6/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656465_straight_1mps_test/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655513_analytic/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655494_alright/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655487/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655369_unstable/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_650851/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_644923_EBF_ispread3/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641616_EBF_ispread1.5/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641395_testEBF_stopped/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_639014_long_betterEBF_crash/');
-% rootd=strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES_test1/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_637450_long_EBF_crash/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_634307_testexternalforcing/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622147_final_test/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622125/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622037/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621952/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621860/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621802/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_599638_testmicrobarom/');
-
-% StratoExplo, 66, June, 12:00
-% fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRdfsdfATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
-
-% Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
-% rootd=strcat(SPCFMEXloc,'SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
-% rootd=strcat(SPCFMEXloc,'SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/'); % With additionnal stations for comparison with data.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/'); % Same as 593959 only with Qp converted to Qk and additionnal stations.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=0_618645/');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
-% rootd = strcat(SPCFMEXloc,'SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % Original (used in paper).
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
-
-% Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
-% rootd=strcat(SPCFMEXloc,'SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/'); % Original (used in paper).
-% rootd=strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661601_full_dec1m/'); % Same as 593960 but axisymmetric.
-% rootd=strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
-
-% Quake, 45.
-% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221612_local');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221544_local');
-% rootd=strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_75118_isoth_d6_savedvdg');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71980_isothermal');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_pot');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71931_d9');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71920_force_instead_of_moment_d9');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71913');
-% rootd=strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); rescale_factor = 1e-3;
-% rootd=strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
-
-% Quake, 0.
-% fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
-% rootd=strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
-% rootd=strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
-
 % Tests.
-% fig_title = 'test';
+fig_title = 'test';
+rootd=strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+
 % rootd=strcat(SPCFMEXloc,'tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
 % rootd=strcat(SPCFMEXloc,'demo_pot'); OFd = strcat(rootd, '/OUTPUT_FILES_826234/');
@@ -600,6 +517,93 @@ if (ismember(plot_amplitude, [1, 2, 3]))
   figure();
   loglog(sorted_dist, sorted_amp);
 end
+
+
+% StratoBaro, 66, June, 12:00
+% fig_title = strcat('Microbaroms, lat66, June, 12:00');
+% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656744_straight_1mps_isp6/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656505_straight_1e-2mps_isp6/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656465_straight_1mps_test/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655513_analytic/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655494_alright/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655487/');
+% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655369_unstable/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_650851/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_644923_EBF_ispread3/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641616_EBF_ispread1.5/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641395_testEBF_stopped/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_639014_long_betterEBF_crash/');
+% rootd=strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
+% rootd=strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES_test1/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_637450_long_EBF_crash/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_634307_testexternalforcing/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622147_final_test/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622125/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622037/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621952/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621860/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621802/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_599638_testmicrobarom/');
+
+% StratoExplo, 66, June, 12:00
+% fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRdfsdfATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
+% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
+
+% Seismic Hammer, soft soil.
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd=strcat(SPCFMEXloc,'SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
+% rootd=strcat(SPCFMEXloc,'SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/'); % With additionnal stations for comparison with data.
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/'); % Same as 593959 only with Qp converted to Qk and additionnal stations.
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=0_618645/');
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
+% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
+% rootd = strcat(SPCFMEXloc,'SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % Original (used in paper).
+% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
+
+% Seismic Hammer, hard soil.
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
+% rootd=strcat(SPCFMEXloc,'SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/'); % Original (used in paper).
+% rootd=strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661601_full_dec1m/'); % Same as 593960 but axisymmetric.
+% rootd=strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
+
+% Quake, 45.
+% fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221612_local');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221544_local');
+% rootd=strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_75118_isoth_d6_savedvdg');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71980_isothermal');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_pot');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71931_d9');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71920_force_instead_of_moment_d9');
+% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71913');
+% rootd=strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); rescale_factor = 1e-3;
+% rootd=strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+
+% Quake, 0.
+% fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
+% rootd=strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
+% rootd=strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Seismic Hammer, hard soil.
 % fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1;

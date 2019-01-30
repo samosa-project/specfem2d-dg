@@ -18,6 +18,8 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 
 set(groot, 'defaultSurfaceEdgeColor', 'none');
 
+rng(0123456789); % Set seed to produce same forcing everytime.
+
 plot_process=0;
 plot_forcing=0;
 
@@ -47,7 +49,7 @@ nT0 = 20; % Number of temporal periods (must be integer to prevent FFT misbehavi
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % L0 = 200; % Spatial period.
 L0 = 286.2; % k1, spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
-L02 = -289.73; % k2.
+L02 = -291.31; % k2.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 nL0 = 54; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
@@ -271,7 +273,7 @@ end
 disp(['[',mfilename,'] Actual modelled      time period (1/f)  is ', sprintf('%7.2f ',(1./actualf)'), 'instead of ', sprintf('%7.2f',T0), ' (rel. error is ',sprintf('%3.2f ',abs((1./actualf)'-T0)/abs(T0)*100),'%).']);
 disp([blanks(length(mfilename)+2),'   -       -     1st space   -    (1/k1) is ', sprintf('%7.2f ',(1./k(index_k1))'), '   -    of ', sprintf('%7.2f',L0), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k1))'-L0)/abs(L0)*100),'%).']);
 disp([blanks(length(mfilename)+2),'   -       -     2nd space   -    (1/k2) is ', sprintf('%7.2f ',(1./k(index_k2))'), '   -    of ', sprintf('%7.2f',L02), ' ( -    -    is ',sprintf('%3.2f ',abs((1./k(index_k2))'-L02)/abs(L02)*100),'%).']);
-disp(['[',mfilename,'] Resulting K = k1+k2 = ',sprintf('%.3e',k(index_k1)),'+',sprintf('%.3e',k(index_k2)),' = ',sprintf('%.3e',k(index_k1)+k(index_k2)), ', that is L = ',sprintf('%7.2f',1/(k(index_k1)+k(index_k2))),'.']);
+disp(['[',mfilename,'] Resulting K_+ = 0.5(k1+k2) = 0.5(',sprintf('%.3e',k(index_k1)),'+',sprintf('%.3e',k(index_k2)),') = ',sprintf('%.3e',0.5*(k(index_k1)+k(index_k2))), ', that is L = ',sprintf('%7.2f',2/(k(index_k1)+k(index_k2))),'. Must be somewhat dominant with respect to ',sprintf('%7.2f',MAXX-MINX),'.']);
 disp(['[',mfilename,', INFO] Errors stem only from the spectrum resolution, which is dictated by the spacetime range resolution.']);
 disp(['[',mfilename,', INFO] Artificially increasing the length of the spacetime range will increase the frequency range resolution, but also dramatically increase the RAM load.']);
 disp(['[',mfilename,', INFO] The nearest exact (1/f)   with same resolution are [',sprintf('%7.2f ',1./unique(abs(f(indices_f+[-1,1]')))'), '].']);

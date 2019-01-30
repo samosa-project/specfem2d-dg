@@ -26,6 +26,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
   if(not(numel(distance)==nbstat))
     error(['[',mfilename,', ERROR] distance array should contain the same number of stations as the number of data series, but right now do not.']);
   end
+  distance=reshape(distance,[nbstat, 1]);
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load.                       %
@@ -77,7 +78,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
   if (strcmp(dist_unit, "km"))
     dist_factor = 1000;
   end
-  dist_unit = strcat(" (", dist_unit, ")");
+  dist_unit = [' [', dist_unit, ']'];
 %   switch distancechoice
 %     case 1
 %       distance = xstattab; dist_symbol = "x"; dist_name = "horizontal distance";
@@ -151,8 +152,8 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
       plot(data_t(istat, :), distance(istat_glob) + dist_over_ptp * data_v(istat, :), 'displayname', name{istat}, 'color', colour);
       hold on;
     end
-    xlim([min(data_t(1:nbstat, 1)), max(data_t(1:nbstat, end))]);
-    xlabel('time (s)');
+    xlim([min(data_t(:, 1)), max(data_t(:, end))]);
+    xlabel('time [s]');
     ylabel(strcat("$", dist_symbol, " + \left(", coef_string, "\right)\times ", unknown_name,'$'));
     scalez = input(['[', mfilename, '] Rechoose coefficient (0 for no, new value for yes)? > ']);
   end
@@ -215,10 +216,5 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
   % ax=gca();
   % set(ax, 'Position', [1,1,0.9,1].*ax.Position);
   grid on;
-
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  % Clear variables.             %
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  clear('coef_string', 'colour', 'data_t', 'data_v', 'dist_factor', 'dist_name', 'dist_over_ptp', 'distancechoice', 'fign', 'i', 'isort', 'istat', 'istat_glob', 'labeleach', 'name', 'normalise', 'scale', 'spls', 'tmax', 'tmin', 'yticklabel');
 end
 

@@ -77,10 +77,6 @@ function [dx_c_mach] = model_getdxdt(atmospheric_model_file)
         Nlayerz = input(['[',mfilename,'] Number of layers (1 <= N <= ',num2str(maxlayerz),') [1]? > ']);
       end
     end
-    nx = [];
-    while (not(length(nx) == 1))
-      nx = input(['[',mfilename,'] nx (as in parfile) [1]? > ']);
-    end
     
     IDregionDG=1; % ID of the DG material in parfile.
 
@@ -89,6 +85,12 @@ function [dx_c_mach] = model_getdxdt(atmospheric_model_file)
     for l=1:Nlayerz
       bestdx(l)=min(dx(Z>interfaces(l) & Z<interfaces(l+1)));
       nelts(l)=ceil((interfaces(l+1)-interfaces(l))/bestdx(l));
+    end
+    
+    nx = [];
+    while (not(length(nx) == 1))
+      disp(['[',mfilename,'] With these layers, ',num2str(min(bestdx)),' <= dz <= ',num2str(max(bestdx)),'.']);
+      nx = input(['[',mfilename,'] nx (as in parfile) [1]? > ']);
     end
     
     format_layerz=['%',num2str(floor(log10(Nlayerz))+1),'i'];
@@ -120,5 +122,8 @@ function [dx_c_mach] = model_getdxdt(atmospheric_model_file)
     
     disp(' ');
     disp(['[',mfilename,'] Copy-paste the two previous blocks, respectively in the interfacefile and the parfile.']);
+    
+    disp(' ');
+    disp(['[',mfilename,'] dt_max = CFL * min(dx) * pGLL / max(c). Here, safest is to choose dt = ',sprintf('%.3e',0.49*min(bestdx)*percentGLL/max(C)),'.']);
   end
 end
