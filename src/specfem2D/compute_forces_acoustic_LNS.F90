@@ -1264,7 +1264,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     
     ! Set out_dT_P.
     if(swCompdT) then
-      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+      !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
     endif
     !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
     
