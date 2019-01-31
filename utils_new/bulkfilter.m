@@ -1,25 +1,30 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Asks user if a packed data should be filtered. If so,
 %                ask user parameters of filter, and filter all of them.
-% Last modified: See file metadata.
-% Usage:         N/A.
 % Notes:         Needs:
 %                a) .m scripts and functions (if not alongside this script, recover via Léo):
 %                  1) custom_Filter.m
+%
+% Usage:
+%   [data_v_filtered] = bulkfilter(data_t, data_v)
+% with:
+%   data_t a (Ns * Nt) array of time stamps,
+%   data_v a (Ns * Nt) array of values,
+% yields:
+%   data_v_filtered the (Ns * Nt) filtered array of values.
 
-function [data_v_filtered] = bulkfilter(data_t,data_v)
-  possible_orders=[1,2,4]; % Possible (implemented) filter orders.
+function [data_v_filtered] = bulkfilter(data_t, data_v)
+  possible_orders = [1, 2, 4]; % Possible (implemented) filter orders.
   
   % Make sure data has right shape.
   % The following lines assume we have more time steps than stations to plot.
-  data_t=reshape(data_t,[min(size(data_t)), max(size(data_t))]);
-  data_v=reshape(data_v,[min(size(data_v)), max(size(data_v))]);
-  if(not(all(size(data_t)==size(data_v))))
-    error(['[',mfilename,', ERROR] time data and amplitude should have the same size, but right now do not.']);
+  data_t = reshape(data_t, [min(size(data_t)), max(size(data_t))]);
+  data_v = reshape(data_v, [min(size(data_v)), max(size(data_v))]);
+  if(not(all(size(data_t) == size(data_v))))
+    error(['[', mfilename, ', ERROR] time data and amplitude should have the same size, but right now do not.']);
   end
   
-  nbstat=size(data_t,1);
+  nbstat=size(data_t, 1);
   
   filter_data = - 1;
   % while(not(ismember(filter_data,[0,1,2,3])))

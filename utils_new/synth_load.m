@@ -141,7 +141,9 @@ rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_ugly
 
 % Tests.
 fig_title = 'test';
-rootd=strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+
+%rootd=strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
 % rootd=strcat(SPCFMEXloc,'tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
