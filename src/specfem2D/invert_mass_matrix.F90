@@ -70,6 +70,7 @@
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,region_CPML,spec_to_PML, &
                          K_x_store,K_z_store,d_x_store,d_z_store
+  use specfem_par_lns, only: USE_LNS, ibool_LNS_PML, rmass_inverse_acoustic_LNS_PML
 
   implicit none
 
@@ -85,13 +86,43 @@
   double precision :: rhol,kappal,mu_relaxed,lambda_relaxed
   double precision :: rho_s,rho_f,rho_bar,phi,tort
   integer :: ispec_PML
-  logical :: this_element_has_PML
+  logical :: this_element_has_PML, LNS_PML_activated
 
   if (myrank == 0) then
     write(IMAIN,*) "  initializing mass matrices"
     call flush_IMAIN()
   endif
-
+  
+  if(USE_DISCONTINUOUS_METHOD) then
+    ! Safeguard.
+    if(.not. USE_LNS .and. PML_BOUNDARY_CONDITIONS) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* PML are not implemented for  *"
+      write(*,*) "* FNS (classical DG).          *"
+      write(*,*) "********************************"
+      stop
+    endif
+    
+    ! For rmass_inverse_acoustic_LNS_PML below.
+    if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
+      LNS_PML_activated = .true.
+      if(.not. allocated(rmass_inverse_acoustic_LNS_PML)) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* PML inverse mass matrix is   *"
+        write(*,*) "* not allocated but should be. *"
+        write(*,*) "********************************"
+        stop
+      endif
+      rmass_inverse_acoustic_LNS_PML = 0._CUSTOM_REAL
+    else
+      LNS_PML_activated = .false.
+    endif
+  endif
+  
   ! initialize mass matrix
   if (any_elastic) rmass_inverse_elastic_one(:) = 0._CUSTOM_REAL
   if (any_elastic) rmass_inverse_elastic_three(:) = 0._CUSTOM_REAL
@@ -365,8 +396,8 @@
         if(USE_DISCONTINUOUS_METHOD) then
           ! Backward method.
           ! TODO: Remove?
-          rmass_inverse_acoustic_DG_b(iglob) = rmass_inverse_acoustic_DG_b(iglob) &
-                     + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) 
+          rmass_inverse_acoustic_DG_b(iglob) =   rmass_inverse_acoustic_DG_b(iglob) &
+                                               + wxgll(i)*wzgll(j)*jacobian(i,j,ispec) 
           
           iglob = ibool_DG(i,j,ispec)
           
@@ -385,22 +416,28 @@
           rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
                                              jacobian(i,j,ispec)
           
-          if (PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
+          ! LNS PML additions.
+          if (LNS_PML_activated .and. ispec_is_PML(ispec)) then
             ! This ispec is a PML element, we need to update the mass matrix in order to take the stretching into account.
-            ispec_PML=spec_to_PML(ispec)
+            ispec_PML = spec_to_PML(ispec)
+            
+            ! Inverse mass matrix for auxiliary variables evolution equations.
+            ! No coefficient appear in front of \partial_t in the auxiliary variables evolution equations, thus it is simply the full DG mass matrix.
+            rmass_inverse_acoustic_LNS_PML(ibool_LNS_PML(i,j,ispec_PML)) = rmass_inverse_acoustic_DG(iglob)
+            
+            ! Update classical mass matrix to account for factor in front of \partial_t.
             if (region_CPML(ispec) == CPML_X_ONLY) then
-              rmass_inverse_acoustic_DG(iglob) = rmass_inverse_acoustic_DG(iglob)  &
+              rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  * (K_x_store(i,j,ispec_PML))
             else if (region_CPML(ispec) == CPML_XZ_ONLY) then
-              rmass_inverse_acoustic_DG(iglob) = rmass_inverse_acoustic_DG(iglob)  &
+              rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  * (K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML))
             else if (region_CPML(ispec) == CPML_Z_ONLY) then
-              rmass_inverse_acoustic_DG(iglob) = rmass_inverse_acoustic_DG(iglob)  &
+              rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  * (K_z_store(i,j,ispec_PML))
             endif
-          endif
+          endif ! Endif on LNS_PML_activated.
           
-          !endif
         endif
       enddo
     enddo
@@ -798,7 +835,10 @@
                                 rmass_w_inverse_poroelastic, &
                                 rmass_inverse_acoustic_DG, &
                                 rmass_inverse_acoustic_DG_b, &
-                                USE_DISCONTINUOUS_METHOD
+                                USE_DISCONTINUOUS_METHOD, &
+                                PML_BOUNDARY_CONDITIONS, anyabs ! LNS PML additions.
+  use specfem_par_lns, only: USE_LNS,rmass_inverse_acoustic_LNS_PML ! LNS PML additions.
+  
   implicit none
   include 'constants.h'
   
@@ -822,6 +862,11 @@
     if(USE_DISCONTINUOUS_METHOD) then
       where(rmass_inverse_acoustic_DG <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG = 1._CUSTOM_REAL
       where(rmass_inverse_acoustic_DG_b <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG_b = 1._CUSTOM_REAL
+      
+      ! LNS PML additions.
+      if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
+        where(rmass_inverse_acoustic_LNS_PML <= 0._CUSTOM_REAL) rmass_inverse_acoustic_LNS_PML = 1._CUSTOM_REAL
+      endif
     endif
   endif
   if (any_gravitoacoustic) then
@@ -855,6 +900,11 @@
     rmass_inverse_acoustic_DG_b(:) = 1._CUSTOM_REAL /rmass_inverse_acoustic_DG_b(:)
     ! Forward method.
     rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
+      
+    ! LNS PML additions.
+    if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
+      rmass_inverse_acoustic_LNS_PML = 1._CUSTOM_REAL / rmass_inverse_acoustic_LNS_PML
+    endif
   endif
   !WRITE(*,*) "after inversion" ! DEBUG
   !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG

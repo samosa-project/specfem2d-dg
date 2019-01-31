@@ -825,6 +825,24 @@
       stop
     endif
     
+    if(ABC_STRETCH .and. USE_LNS) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* The stretching absorbing     *"
+      write(*,*) "* boundary conditions are not  *"
+      write(*,*) "* implemented for LNS          *"
+      write(*,*) "* simulations. However, they   *"
+      write(*,*) "* are for FNS simulations, but *"
+      write(*,*) "* only work without wind.      *"
+      write(*,*) "********************************"
+      write(*,*) "* Set all ABC_STRETCH_* inputs *"
+      write(*,*) "* to .false. in parfile, or    *"
+      write(*,*) "* set USE_LNS to .false..      *"
+      write(*,*) "********************************"
+      stop
+    endif
+    
     if(ABC_STRETCH .and. (     ABC_STRETCH_TOP_LBUF<=0. .or. ABC_STRETCH_LEFT_LBUF<=0. &
                           .or. ABC_STRETCH_RIGHT_LBUF<=0. .or. ABC_STRETCH_BOTTOM_LBUF<=0.)) then
       write(*,*) "********************************"

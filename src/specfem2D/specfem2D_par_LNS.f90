@@ -21,6 +21,7 @@ module specfem_par_LNS
   logical :: LNS_viscous ! General switch being true if (maxval(LNS_mu) > 0. .OR. maxval(LNS_eta) > 0. .OR. maxval(LNS_kappa) > 0.) and false if not. See compute_forces_acoustic_LNS_calling_routine. In the latter case, enables faster verification and thus faster skipping of some parts of the code.
   
   ! State registers.
+  ! Pretty much all these arrays are allocated in 'prepare_timerun_wavefields.f90'.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_rho0, LNS_E0 ! Initial state.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_v0 ! Initial state.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_drho, LNS_dE ! State.
@@ -41,15 +42,24 @@ module specfem_par_LNS
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: nabla_dT ! Gradient of temperature perturbation.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: sigma_dv ! Viscous stress tensor perturbation. Symmetric, thus only need to save few entries (see sigma_v_0).
   
-  ! ADEs for PMLs.
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Dimension allocated should be (NDIM, NGLLX, NGLLZ, nspec_PML).
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: LNS_PML_rho0dv ! Dimension allocated should be (NDIM, NDIM, NGLLX, NGLLZ, nspec_PML).
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
+  ! PMLs.
+  ! Pretty much all these arrays are allocated in 'prepare_timerun_pml.f90'.
+  integer :: nglob_PML ! Number of PML points (spatial duplicates included).
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_LNS_PML ! Inverse mass matrix. Size allocated should be (nglob_PML).
+  integer, dimension(:,:,:), allocatable :: ibool_LNS_PML ! Same as ibool_DG (see 'specfem2D_par'), but for PML only.
+  !real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Size allocated should be (NADE, NGLLX, NGLLZ, nspec_PML).
+  !real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: LNS_PML_rho0dv ! Size allocated should be (NADE, NDIM, NGLLX, NGLLZ, nspec_PML).
+  !real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
+  !real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Size allocated should be (NADE, NGLLX*NGLLZ*nspec_PML).
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_rho0dv ! Size allocated should be (NADE, NDIM, NGLLX*NGLLZ*nspec_PML).
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
   
 
-  
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_a0 ! Coefficient in front of the \delta', that is in front of the \partial_t in the updated strong form. Dimension allocated should be (i,j,ispec_PML) in order to save memory.
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_kapp ! Constant coefficient in the stretching s. Size allocated should be (NDIM, NGLLX, NGLLZ, nspec_PML).
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_alpha ! Coefficient in front of the auxiliary variables. For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_a0 ! Coefficient in front of the \delta, that is in front of the q in the updated strong form. Size allocated should be (NGLLX,NGLLZ,nspec_PML) in order to save memory.
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_b ! Coefficient in front of each auxiliary variable (ADEs). For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
   
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99 ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].

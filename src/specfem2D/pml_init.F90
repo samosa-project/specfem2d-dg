@@ -60,12 +60,14 @@
   ! PML arrays
   use specfem_par, only: nspec_PML,ispec_is_PML,spec_to_PML,region_CPML,which_PML_elem, &
                          mask_ibool_PML,NELEM_PML_THICKNESS,PML_interior_interface
-
+  use specfem_par_lns ! TODO: select variables to use.
+  
   implicit none
 
   ! local parameters
   integer, dimension(nglob) ::   icorner_iglob
   integer :: nspec_PML_tot,ibound,ispecabs,ncorner,i_coef,i,j,k,ispec,iglob
+  integer :: ispec_PML, ier
 
   nspec_PML = 0
 
@@ -283,6 +285,42 @@
     write(IMAIN,*) "Total number of PML spectral elements: ", nspec_PML_tot
     write(IMAIN,*)
     call flush_IMAIN()
+  endif
+  
+  if(USE_LNS) then
+    if (myrank == 0) then
+      write(IMAIN,*) "LNS PML: associating (i, j, ispecPML)->iglobPML (see pml_init.F90)."
+      write(IMAIN,*)
+      call flush_IMAIN()
+    endif
+    
+    ! Once PML number is known, allocate ibool_LNS_PML.
+    ! This kind of thing is usually done in 'initialize_simulation.F90' (see ibool_DG and others), but we chose to put it here in order to save RAM.
+    ! Indeed, allocating over the whole grid would be suboptimal since PML only fill a small part of the mesh (or at least should).
+    allocate(ibool_LNS_PML(NGLLX,NGLLZ,nspec_PML), stat=ier)
+    if(ier /= 0) stop 'Error allocating ibool_LNS_PML array (see pml_init.F90).'
+    
+    ! Once ibool_LNS_PML is allocated, build conversion.
+    ! This kind of thing is usually done in 'createnum_*.f90' (see ibool_DG and others), but for the same reason as above, we choose to do it here.
+    ! Indeed, to do this we need allocation (and thus nspec_PML), but this routine is called after the 'createnum_*' ones.
+    nglob_PML = 0
+    do ispec = 1, nspec
+      if(ispec_is_PML(ispec)) then
+       ispec_PML=spec_to_PML(ispec)
+        do i = 1, NGLLX
+          do j = 1, NGLLZ
+            !if(ispec_is_acoustic(numelem)) then
+            ! Generate numbering for DG simulations
+            nglob_PML = nglob_PML + 1
+            ibool_LNS_PML(i, j, ispec_PML) = nglob_PML
+            !endif
+          enddo
+        enddo
+      endif
+    enddo
+    !if(myrank==0) then ! DEBUG
+    !  write(*,*) nglob_PML ! DEBUG
+    !endif ! DEBUG
   endif
 
   end subroutine pml_init

@@ -98,6 +98,9 @@ subroutine iterate_time()
           else
             write(*,*) "         |-> LNS: max(mu,eta,kappa)=0, computation will be inviscid."
           endif
+          if(PML_BOUNDARY_CONDITIONS) then
+            write(*,*) "         |-> LNS: using PML boundary conditions."
+          endif
         else
           write(IMAIN,*) "     |-> using FNS."
         endif
