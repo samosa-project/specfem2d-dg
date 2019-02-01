@@ -147,6 +147,16 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           xigammal(1,NDIM)    = xiz(i,j,ispec) ! = \partial_z\xi from report
           xigammal(NDIM,1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
           xigammal(NDIM,NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
+          
+          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+            ! Need to include stretching on base stress tensor.
+            ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
+            ! \Sigma_x needs to become \kappa_2\Sigma_x, and \Sigma_z needs to become \kappa_1\Sigma_z.
+            ! Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include kappa_i in those directly.
+            xigammal(:,1) = LNS_PML_kapp(2,i,j,ispec_PML)*xigammal(:,1) ! Multiply x component by kappa_2.
+            xigammal(:,NDIM) = LNS_PML_kapp(1,i,j,ispec_PML)*xigammal(:,NDIM) ! Multiply z component by kappa_1.
+          endif
+          
           !wzl = wzgll(j)
           !wxl = wxgll(i)
           !wzljacLoc = wzgll(j)*jacLoc

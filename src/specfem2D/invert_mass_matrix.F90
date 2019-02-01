@@ -70,7 +70,7 @@
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,region_CPML,spec_to_PML, &
                          K_x_store,K_z_store,d_x_store,d_z_store
-  use specfem_par_lns, only: USE_LNS, ibool_LNS_PML, rmass_inverse_acoustic_LNS_PML
+  use specfem_par_lns, only: USE_LNS, ibool_LNS_PML, rmass_inverse_acoustic_LNS_PML,LNS_PML_kapp
 
   implicit none
 
@@ -428,13 +428,16 @@
             ! Update classical mass matrix to account for factor in front of \partial_t.
             if (region_CPML(ispec) == CPML_X_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
-                                                 * (K_x_store(i,j,ispec_PML))
+                                                 !* (K_x_store(i,j,ispec_PML))
+                                                 * LNS_PML_kapp(1,i,j,ispec_PML)
             else if (region_CPML(ispec) == CPML_XZ_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
-                                                 * (K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML))
+                                                 !* (K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML))
+                                                 * LNS_PML_kapp(1,i,j,ispec_PML)*LNS_PML_kapp(2,i,j,ispec_PML)
             else if (region_CPML(ispec) == CPML_Z_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
-                                                 * (K_z_store(i,j,ispec_PML))
+                                                 !* (K_z_store(i,j,ispec_PML))
+                                                 * LNS_PML_kapp(2,i,j,ispec_PML)
             endif
           endif ! Endif on LNS_PML_activated.
           
