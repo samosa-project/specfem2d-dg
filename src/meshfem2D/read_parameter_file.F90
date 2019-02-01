@@ -790,6 +790,18 @@
   
   
   if(USE_DISCONTINUOUS_METHOD) then
+    ! Stop if time stepping scheme is not implemented.
+    if(USE_LNS .and. time_stepping_scheme/=2 .and. time_stepping_scheme/=3 .and. time_stepping_scheme/=4) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* This time_stepping_scheme is *"
+      write(*,*) "* not implemented for LNS yet. *"
+      write(*,*) "* time_stepping_scheme ", time_stepping_scheme
+      write(*,*) "********************************"
+      stop
+    endif
+    
     if(AXISYM) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"

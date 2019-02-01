@@ -35,15 +35,16 @@
   subroutine prepare_timerun()
 
   use specfem_par
-  use specfem_par_lns, only: USE_LNS
+  use specfem_par_lns, only: USE_LNS, LNS_scheme_A, LNS_scheme_B, LNS_scheme_C
   use specfem_par_movie
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
 
   implicit none
   
-  integer ispec,i,j,iglob_unique
+  integer ispec,i,j,iglob_unique,ier
   !integer counter !DEBUG
-  real(kind=CUSTOM_REAL) x_buffer !TEST
+  !real(kind=CUSTOM_REAL) x_buffer !TEST
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
 
   ! Test compatibility with axisymmetric formulation
   if (AXISYM) call check_compatibility_axisym()
@@ -54,9 +55,35 @@
   ! wavefield array initialization
   call prepare_timerun_wavefields()
   
-  ! If LNS, initialise initial fields and physical parameters.
+  ! If LNS, initialise initial fields and physical parameters, and time integration coefficients.
   if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
     call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+    
+    allocate(LNS_scheme_A(stage_time_scheme), &
+             LNS_scheme_B(stage_time_scheme), &
+             LNS_scheme_C(stage_time_scheme), stat=ier)
+    if (ier /= 0) stop 'Error allocating LNS_scheme_* arrays (see prepare_timerun.F90).'
+    LNS_scheme_A = ZEROcr
+    LNS_scheme_B = ZEROcr
+    LNS_scheme_C = ZEROcr
+    ! Load LSRK coefficients.
+    if (time_stepping_scheme == 2) then
+      ! 6 stages.
+      LNS_scheme_A = real(ALPHA_LDDRK, kind=CUSTOM_REAL)
+      LNS_scheme_B = real(BETA_LDDRK, kind=CUSTOM_REAL)
+      LNS_scheme_C = real(C_LDDRK, kind=CUSTOM_REAL)
+    else if (time_stepping_scheme == 3) then
+      ! 5 stages.
+      LNS_scheme_A = real(rk4a_d, kind=CUSTOM_REAL)
+      LNS_scheme_B = real(rk4b_d, kind=CUSTOM_REAL)
+      LNS_scheme_C = real(rk4c_d, kind=CUSTOM_REAL)
+    else if (time_stepping_scheme == 4) then
+      ! 3 stages.
+      LNS_scheme_A = real(ls33rk_a, kind=CUSTOM_REAL)
+      LNS_scheme_B = real(ls33rk_b, kind=CUSTOM_REAL)
+      LNS_scheme_C = real(ls33rk_c, kind=CUSTOM_REAL)
+    endif
+    !write(*,*) 'LNS_scheme_*', LNS_scheme_A, LNS_scheme_B, LNS_scheme_C; stop 'kek' ! DEBUG
   endif
   
   ! PML preparation
@@ -232,33 +259,33 @@
     call find_normals()
   endif
   
-  if(.false.) then ! TEST HACK: IMPACT OF WIND WHEN USING STRETCHING BUFFERS
-    ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!
-    ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
-    ! TODO: This is a hack.
-    if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
-      do ispec = 1, nspec
-        if(ispec_is_acoustic_DG(ispec)) then
-          do j = 1, NGLLZ
-            do i = 1, NGLLX
-              x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
-              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then ! If in left buffer.
-                x_buffer = 1.-(x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
-              else if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then ! If in right buffer.
-                x_buffer = 1.-(mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
-              else
-                x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
-              endif
-              !if(x_buffer<1.) write(*,*) coord(1, ibool_before_perio(i, j, ispec)), x_buffer
-              !windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
-              windxext(i, j, ispec) = windxext(i, j, ispec)/stretching_ya(1, ibool_before_perio(i, j, ispec))
-            enddo ! Enddo on i.
-          enddo ! Enddo on j.
-        endif ! Endif on ispec_is_acoustic_DG.
-      enddo ! Enddo on ispec.
-    endif ! Endif on ABC_STRETCH.
-    !stop 'kek'
-  endif
+!  if(.false.) then ! TEST HACK: IMPACT OF WIND WHEN USING STRETCHING BUFFERS
+!    ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!
+!    ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.
+!    ! TODO: This is a hack.
+!    if(ABC_STRETCH_LEFT .or. ABC_STRETCH_RIGHT) then
+!      do ispec = 1, nspec
+!        if(ispec_is_acoustic_DG(ispec)) then
+!          do j = 1, NGLLZ
+!            do i = 1, NGLLX
+!              x_buffer = coord(1, ibool_before_perio(i, j, ispec)) ! Get horizontal coordinate.
+!              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then ! If in left buffer.
+!                x_buffer = 1.-(x_buffer - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
+!              else if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then ! If in right buffer.
+!                x_buffer = 1.-(mesh_xmax - x_buffer)/ABC_STRETCH_RIGHT_LBUF ! x_buffer is now a local buffer coordinate now (0 at beginning, 1 at end).
+!              else
+!                x_buffer = 1. ! Everywhere else, set to 1. in order to have no impact.
+!              endif
+!              !if(x_buffer<1.) write(*,*) coord(1, ibool_before_perio(i, j, ispec)), x_buffer
+!              !windxext(i, j, ispec) = x_buffer * windxext(i, j, ispec)
+!              windxext(i, j, ispec) = windxext(i, j, ispec)/stretching_ya(1, ibool_before_perio(i, j, ispec))
+!            enddo ! Enddo on i.
+!          enddo ! Enddo on j.
+!        endif ! Endif on ispec_is_acoustic_DG.
+!      enddo ! Enddo on ispec.
+!    endif ! Endif on ABC_STRETCH.
+!    !stop 'kek'
+!  endif
   
   ! synchronizes all processes
   call synchronize_all()

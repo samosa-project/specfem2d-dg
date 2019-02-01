@@ -47,7 +47,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
-  real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
+  !real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
   !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: LNS_dv
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
   !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
@@ -58,6 +58,10 @@ subroutine compute_forces_acoustic_LNS_main()
   ! PMLs.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
   logical, parameter :: DEBUG__DO_ITERATE_AUXVARS = .true. ! DEBUG. Activate/deactivate time evolution of auxiliary variables.
+    
+  if(PML_BOUNDARY_CONDITIONS) then
+    stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
+  endif
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -67,31 +71,8 @@ subroutine compute_forces_acoustic_LNS_main()
   ! Debug switches. They are computationaly very heavy and should not be used on every simulation.
   check_linearHypothesis=.false.
   
-  ! Stop if time stepping scheme is not implemented.
-  if(time_stepping_scheme/=3 .and. time_stepping_scheme/=4 .and. myrank==0) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* This time_stepping_scheme is *"
-    write(*,*) "* not implemented for DG yet.  *"
-    write(*,*) "* time_stepping_scheme ", time_stepping_scheme
-    write(*,*) "********************************"
-    stop
-  endif
-  ! Load LSRK coefficients.
-  if (time_stepping_scheme == 3) then
-    ! 5 stages.
-    scheme_A = real(rk4a_d, kind=CUSTOM_REAL)
-    scheme_B = real(rk4b_d, kind=CUSTOM_REAL)
-    scheme_C = real(rk4c_d, kind=CUSTOM_REAL)
-  else if (time_stepping_scheme == 4) then
-    ! 3 stages.
-    scheme_A = real(ls33rk_a, kind=CUSTOM_REAL)
-    scheme_B = real(ls33rk_b, kind=CUSTOM_REAL)
-    scheme_C = real(ls33rk_c, kind=CUSTOM_REAL)
-  endif
   ! Compute current time.
-  timelocal = (it-1)*deltat + scheme_C(i_stage)*deltat
+  timelocal = (it-1)*deltat + LNS_scheme_C(i_stage)*deltat
   
   ! Intialisation.
   if(it == 1 .and. i_stage == 1) then
@@ -124,10 +105,6 @@ subroutine compute_forces_acoustic_LNS_main()
     RHS_drho   = ZEROcr
     RHS_rho0dv = ZEROcr
     RHS_dE     = ZEROcr
-    
-    if(PML_BOUNDARY_CONDITIONS) then
-      stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
-    endif
     
     ! Prepare MPI buffers.
 #ifdef USE_MPI
@@ -221,185 +198,184 @@ subroutine compute_forces_acoustic_LNS_main()
                                    RHS_drho, RHS_rho0dv, RHS_dE, & ! Output.
                                    timelocal) ! Time.
   
-  if (time_stepping_scheme == 3 .or. time_stepping_scheme == 4) then
-    ! Inverse mass matrix multiplication, in order to obtain actual RHS.
-    RHS_drho               = RHS_drho*rmass_inverse_acoustic_DG ! RHS = A^{-1}*b
-    RHS_dE                 = RHS_dE*rmass_inverse_acoustic_DG
-    ! Update the auxiliary register. Note: no need to zero it beforehand if scheme_A(1) is 0.
-    aux_drho               = scheme_A(i_stage)*aux_drho + deltat*RHS_drho ! U_{i} = a_{i}*U_{i-1} + dt*RHS
-    aux_dE                 = scheme_A(i_stage)*aux_dE   + deltat*RHS_dE
-    ! Update the state register.
-    LNS_drho               = LNS_drho + scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
-    LNS_dE                 = LNS_dE   + scheme_B(i_stage)*aux_dE
-    ! Group momentum treatment in loop on dimension.
-    do i_aux=1,NDIM
-      RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)
-      aux_rho0dv(i_aux,:) = scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
-      LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + scheme_B(i_stage)*aux_rho0dv(i_aux,:)
-    enddo
-    ! If one wants to do all at once (method which should be working but seems to be somewhat more unstable), comment the previous lines and uncomment the following lines.
-    !LNS_drho               =   LNS_drho &
-    !                         + scheme_B(i_stage)*(  scheme_A(i_stage)*aux_drho &
-    !                                              + deltat*(RHS_drho(:)*rmass_inverse_acoustic_DG(:))) ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
-    !LNS_dE                 =   LNS_dE &
-    !                         + scheme_B(i_stage)*(  scheme_A(i_stage)*aux_dE &
-    !                                              + deltat*(RHS_dE(:)*rmass_inverse_acoustic_DG(:)))
-    !do i_aux=1,NDIM
-    !  LNS_rho0dv(i_aux,:) =   LNS_rho0dv(i_aux,:) &
-    !                        + scheme_B(i_stage)*(  scheme_A(i_stage)*aux_rho0dv(i_aux,:) &
-    !                                             + deltat*(RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)))
-    !enddo
-    
-    ! PML, iterate ADEs.
-    if(PML_BOUNDARY_CONDITIONS) then
-        if(DEBUG__DO_ITERATE_AUXVARS) then
-          ! Prepare PML ADE RHS, vectorially. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
-          do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); do j=1,NGLLZ; do i=1,NGLLX
-            iglob=ibool_DG(i, j, ispec)
-            !Write(*,*) "iglob", iglob, "is_acoustic_dg", ispec_is_acoustic_DG(ispec)
-            !WRITE(*,*) "LNS_PML_b", LNS_PML_b(i_aux,i,j,ispec_PML)
-            !WRITE(*,*) "LNS_PML_drho", LNS_PML_drho(i_aux,i,j,ispec_PML)
-            !WRITE(*,*) "LNS_drho", LNS_drho(iglob)
-            !pml_alpha(1)    = alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL
-            !pml_alpha(NDIM) = alpha_z_store(i,j,ispec_PML) + 0.002_CUSTOM_REAL
-            pml_alpha = LNS_PML_alpha(:,i,j,ispec_PML)
-            !RHS_PML_drho(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_drho(:,i,j,ispec_PML) &
-            !                                - LNS_drho(iglob) ! A minus sign might have to be used here.
-            !RHS_PML_dE(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_dE(:,i,j,ispec_PML) &
-            !                              - LNS_dE(iglob) ! A minus sign might have to be used here.
-            !do i_aux=1,NDIM ! Loop on momenta.
-            !  RHS_PML_rho0dv(:,i_aux,i,j,ispec_PML) =   pml_alpha*LNS_PML_rho0dv(:,i_aux,i,j,ispec_PML) &
-            !                                          - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
-            !enddo
-            iglobPML = ibool_LNS_PML(i, j, ispec_PML)
-            
-            !RHS_PML_drho(:,iglobPML) =   pml_alpha*LNS_PML_drho(:,iglobPML) &
-            !                           - LNS_drho(iglob) ! A minus sign might have to be used here.
-            !RHS_PML_dE(:,iglobPML) =   pml_alpha*LNS_PML_dE(:,iglobPML) &
-            !                         - LNS_dE(iglob) ! A minus sign might have to be used here.
-            !do i_aux=1,NDIM ! Loop on momenta.
-            !  RHS_PML_rho0dv(:,i_aux,iglobPML) =   pml_alpha*LNS_PML_rho0dv(:,i_aux,iglobPML) &
-            !                                     - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
-            !enddo
-            do i_ade=1,NDIM
-              RHS_PML_drho(i_ade,iglobPML) =   pml_alpha(i_ade)*LNS_PML_drho(i_ade,iglobPML) &
-                                             - LNS_drho(iglob) ! A minus sign might have to be used here.
-              RHS_PML_dE(i_ade,iglobPML) =   pml_alpha(i_ade)*LNS_PML_dE(i_ade,iglobPML) &
-                                           - LNS_dE(iglob) ! A minus sign might have to be used here.
-              do i_aux=1,NDIM ! Loop on momenta.
-                RHS_PML_rho0dv(i_ade,i_aux,iglobPML) =   pml_alpha(i_ade)*LNS_PML_rho0dv(i_ade,i_aux,iglobPML) &
-                                                       - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
-              enddo
-            enddo
-          enddo; enddo; endif; enddo
+  ! Inverse mass matrix multiplication, in order to obtain actual RHS.
+  RHS_drho               = RHS_drho*rmass_inverse_acoustic_DG ! RHS = A^{-1}*b
+  RHS_dE                 = RHS_dE*rmass_inverse_acoustic_DG
+  ! Update the auxiliary register. Note: no need to zero it beforehand if LNS_scheme_A(1) is 0.
+  aux_drho               = LNS_scheme_A(i_stage)*aux_drho + deltat*RHS_drho ! U_{i} = a_{i}*U_{i-1} + dt*RHS
+  aux_dE                 = LNS_scheme_A(i_stage)*aux_dE   + deltat*RHS_dE
+  ! Update the state register.
+  LNS_drho               = LNS_drho + LNS_scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
+  LNS_dE                 = LNS_dE   + LNS_scheme_B(i_stage)*aux_dE
+  ! Group momentum treatment in loop on dimension.
+  do i_aux=1,NDIM
+    RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)
+    aux_rho0dv(i_aux,:) = LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
+    LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + LNS_scheme_B(i_stage)*aux_rho0dv(i_aux,:)
+  enddo
+  ! If one wants to do all at once (method which should be working but seems to be somewhat more unstable), comment the previous lines and uncomment the following lines.
+  !LNS_drho               =   LNS_drho &
+  !                         + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_drho &
+  !                                              + deltat*(RHS_drho(:)*rmass_inverse_acoustic_DG(:))) ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
+  !LNS_dE                 =   LNS_dE &
+  !                         + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_dE &
+  !                                              + deltat*(RHS_dE(:)*rmass_inverse_acoustic_DG(:)))
+  !do i_aux=1,NDIM
+  !  LNS_rho0dv(i_aux,:) =   LNS_rho0dv(i_aux,:) &
+  !                        + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) &
+  !                                             + deltat*(RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)))
+  !enddo
+  
+  ! PML, iterate ADEs.
+  if(PML_BOUNDARY_CONDITIONS) then
+      if(DEBUG__DO_ITERATE_AUXVARS) then
+        ! Prepare PML ADE RHS, vectorially. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
+        do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); do j=1,NGLLZ; do i=1,NGLLX
+          iglob=ibool_DG(i, j, ispec)
+          !Write(*,*) "iglob", iglob, "is_acoustic_dg", ispec_is_acoustic_DG(ispec)
+          !WRITE(*,*) "LNS_PML_b", LNS_PML_b(i_aux,i,j,ispec_PML)
+          !WRITE(*,*) "LNS_PML_drho", LNS_PML_drho(i_aux,i,j,ispec_PML)
+          !WRITE(*,*) "LNS_drho", LNS_drho(iglob)
+          !pml_alpha(1)    = alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL
+          !pml_alpha(NDIM) = alpha_z_store(i,j,ispec_PML) + 0.002_CUSTOM_REAL
+          pml_alpha = LNS_PML_alpha(:,i,j,ispec_PML)
+          !RHS_PML_drho(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_drho(:,i,j,ispec_PML) &
+          !                                - LNS_drho(iglob) ! A minus sign might have to be used here.
+          !RHS_PML_dE(:,i,j,ispec_PML) =   pml_alpha*LNS_PML_dE(:,i,j,ispec_PML) &
+          !                              - LNS_dE(iglob) ! A minus sign might have to be used here.
+          !do i_aux=1,NDIM ! Loop on momenta.
+          !  RHS_PML_rho0dv(:,i_aux,i,j,ispec_PML) =   pml_alpha*LNS_PML_rho0dv(:,i_aux,i,j,ispec_PML) &
+          !                                          - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
+          !enddo
+          iglobPML = ibool_LNS_PML(i, j, ispec_PML)
           
-          ! Inverse mass matrix multiplication, in order to obtain actual RHS, for every auxiliary variable.
+          !RHS_PML_drho(:,iglobPML) =   pml_alpha*LNS_PML_drho(:,iglobPML) &
+          !                           - LNS_drho(iglob) ! A minus sign might have to be used here.
+          !RHS_PML_dE(:,iglobPML) =   pml_alpha*LNS_PML_dE(:,iglobPML) &
+          !                         - LNS_dE(iglob) ! A minus sign might have to be used here.
+          !do i_aux=1,NDIM ! Loop on momenta.
+          !  RHS_PML_rho0dv(:,i_aux,iglobPML) =   pml_alpha*LNS_PML_rho0dv(:,i_aux,iglobPML) &
+          !                                     - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
+          !enddo
           do i_ade=1,NDIM
-            RHS_PML_drho(i_ade,:)           = RHS_PML_drho(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-            RHS_PML_dE(i_ade,:)             = RHS_PML_dE(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+            RHS_PML_drho(i_ade,iglobPML) =   pml_alpha(i_ade)*LNS_PML_drho(i_ade,iglobPML) &
+                                           - LNS_drho(iglob) ! A minus sign might have to be used here.
+            RHS_PML_dE(i_ade,iglobPML) =   pml_alpha(i_ade)*LNS_PML_dE(i_ade,iglobPML) &
+                                         - LNS_dE(iglob) ! A minus sign might have to be used here.
             do i_aux=1,NDIM ! Loop on momenta.
-              RHS_PML_rho0dv(i_ade,i_aux,:) = RHS_PML_rho0dv(i_ade,i_aux,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+              RHS_PML_rho0dv(i_ade,i_aux,iglobPML) =   pml_alpha(i_ade)*LNS_PML_rho0dv(i_ade,i_aux,iglobPML) &
+                                                     - LNS_rho0dv(i_aux, iglob) ! A minus sign might have to be used here.
             enddo
           enddo
-          
-          ! Update PML ADE, vectorially.
-          !aux_PML_drho(:,:,:,:) = scheme_A(i_stage)*aux_PML_drho(:,:,:,:) + deltat*RHS_PML_drho(:,:,:,:)
-          !aux_PML_dE(:,:,:,:)   = scheme_A(i_stage)*aux_PML_dE(:,:,:,:)   + deltat*RHS_PML_dE(:,:,:,:)
-          !LNS_PML_drho(:,:,:,:) = LNS_PML_drho(:,:,:,:) + scheme_B(i_stage)*aux_PML_drho(:,:,:,:)
-          !LNS_PML_dE(:,:,:,:)   = LNS_PML_dE(:,:,:,:)   + scheme_B(i_stage)*aux_PML_dE(:,:,:,:)
-          !aux_PML_rho0dv(:,:,:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(:,:,:,:,:) &
-          !                            + deltat*RHS_PML_rho0dv(:,:,:,:,:)
-          !LNS_PML_rho0dv(:,:,:,:,:) =   LNS_PML_rho0dv(:,:,:,:,:) &
-          !                            + scheme_B(i_stage)*aux_PML_rho0dv(:,:,:,:,:)
-          ! 1st dim = ADE number. 2nd dim = point number. 3rd dim (momentum) = spatial dimension number.
-          aux_PML_drho(:,:) = scheme_A(i_stage)*aux_PML_drho(:,:) + deltat*RHS_PML_drho(:,:)
-          aux_PML_dE(:,:)   = scheme_A(i_stage)*aux_PML_dE(:,:)   + deltat*RHS_PML_dE(:,:)
-          aux_PML_rho0dv(:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(:,:,:) &
-                                  + deltat*RHS_PML_rho0dv(:,:,:)
-          LNS_PML_drho(:,:) = LNS_PML_drho(:,:) + scheme_B(i_stage)*aux_PML_drho(:,:)
-          LNS_PML_rho0dv(:,:,:) =   LNS_PML_rho0dv(:,:,:) &
-                                  + scheme_B(i_stage)*aux_PML_rho0dv(:,:,:)
-          LNS_PML_dE(:,:)   = LNS_PML_dE(:,:)   + scheme_B(i_stage)*aux_PML_dE(:,:)
-          
-          write(*,*) "minmax drho, LNS_PML_drho", minval(LNS_drho), maxval(LNS_drho), & ! DEBUG
-                                                  minval(aux_PML_drho), maxval(aux_PML_drho) ! DEBUG
-          write(*,*) "minmax rho0dv, LNS_PML_rho0dv", minval(LNS_rho0dv), maxval(LNS_rho0dv), & ! DEBUG
-                                                      minval(LNS_PML_rho0dv), maxval(LNS_PML_rho0dv) ! DEBUG
-          write(*,*) "minmax dE, LNS_PML_dE", minval(LNS_dE), maxval(LNS_dE), & ! DEBUG
-                                                  minval(LNS_PML_dE), maxval(LNS_PML_dE) ! DEBUG
-          !do i_aux=1,NDIM ! Loop on momenta.
-          !  aux_PML_rho0dv(:,i_aux,:,:,:) =   scheme_A(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:) &
-          !                                  + deltat*RHS_PML_rho0dv(:,i_aux,:,:,:)
-          !  LNS_PML_rho0dv(:,i_aux,:,:,:) =   LNS_PML_rho0dv(:,i_aux,:,:,:) &
-          !                                  + scheme_B(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:)
-          !enddo
-        endif ! Endif on DEBUG__DO_ITERATE_AUXVARS.
-    endif
-    
-    ! test
-    !if(PML_BOUNDARY_CONDITIONS) then
-    !  if(myrank==1) then
-    !    write(*,*) timelocal, minval(aux_PML_drho), maxval(aux_PML_drho)
-    !  endif
-    !endif
-    !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
-    !stop
-    !write(*,*) "soudnspeed lol", minval(sqrt(gammaext_DG*LNS_p0/LNS_rho0)), maxval(sqrt(gammaext_DG*LNS_p0/LNS_rho0))
-    !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
-    !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
-    !kek = reshape(LNS_rho0dv(:,5),(/2,1/))
-    !write(*,*) 'kek', kek
-    !write(*,*) 'v1', norm2(LNS_rho0dv(:,5:6))
-    !write(*,*) 'v2', norm2(reshape(LNS_rho0dv(:,5),(/2,1/)))
-    !write(*,*) '|v1-v2|', abs(norm2(LNS_rho0dv(:,5:8))-(LNS_rho0dv(1,5:8)**2 + LNS_rho0dv(NDIM,5:8)**2))
-    !write(*,*) "kek"
-    !write(*,*) size(ibool_before_perio) ! 0 to nspec
-    !write(*,*) size(ibool) ! 0 to nspec
-    !write(*,*) size(ibool_DG) ! 0 to nglob_dg
-    !write(*,*) size(coord(2,:))
-    !write(*,*) ibool
-    !write(*,*) size(pack(ibool(:,:,:), ibool(:,:,:)<4))
-    !write(*,*) size(LNS_rho0dv(2,:))
-    !write(*,*) pack(LNS_rho0dv(2,:),abs(coord(2,:))<1.)
-    !stop
-    
-    ! Eventually check non-positivity.
-    !LNS_dv(1,:)=1e4*LNS_dv(1,:)
-    !LNS_v0=0.*LNS_v0+1d-5
-    
-    if(check_linearHypothesis) then
-      call LNS_warn_nonsense()
-      !if(     check_linearHypothesis_ON_ALL_PROCS &
-      !   .or. ((.not. check_linearHypothesis_ON_ALL_PROCS) .and. myrank==0) &
-      !  ) then
-      !  ! If:    we check on all procs,
-      !  !     or we check only on proc 0 and we are on proc 0.
-      !  if(minval(LNS_drho) < 10d-14) then
-      !    WRITE(*,*) "***************************************************************"
-      !    WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(LNS_drho), "    *"
-      !    if(check_linearHypothesis_FIND_POINT) then
-      !      ! Find where density is low.
-      !      do ispec = 1,nspec
-      !        do j = 1,NGLLZ
-      !          do i = 1,NGLLX
-      !            !write(*,*) LNS_drho(ibool_DG(ispec, i, j))
-      !            !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
-      !            if(LNS_drho(ibool_DG(i, j, ispec))==minval(LNS_drho)) then
-      !              WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
-      !              write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), &
-      !                          coord(NDIM, ibool_before_perio(i, j, ispec)), ".*"
-      !              !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
-      !              !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
-      !            endif
-      !          enddo
-      !        enddo
-      !      enddo
-      !    endif ! Endif on check_linearHypothesis_FIND_POINT.
-      !    WRITE(*,*) "***************************************************************"
-      !  endif ! Endif on minval(LNS_drho).
-      !endif ! Endif on check_linearHypothesis_ON_ALL_PROCS.
-    endif ! Endif on check_linearHypothesis.
+        enddo; enddo; endif; enddo
+        RHS_PML_drho=-RHS_PML_drho; RHS_PML_rho0dv=-RHS_PML_rho0dv; RHS_PML_dE=-RHS_PML_dE ! DEBUG: flip RHS to pinpoint sign errors??.
+        
+        ! Inverse mass matrix multiplication, in order to obtain actual RHS, for every auxiliary variable.
+        do i_ade=1,NDIM
+          RHS_PML_drho(i_ade,:)           = RHS_PML_drho(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+          RHS_PML_dE(i_ade,:)             = RHS_PML_dE(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+          do i_aux=1,NDIM ! Loop on momenta.
+            RHS_PML_rho0dv(i_ade,i_aux,:) = RHS_PML_rho0dv(i_ade,i_aux,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+          enddo
+        enddo
+        
+        ! Update PML ADE, vectorially.
+        !aux_PML_drho(:,:,:,:) = LNS_scheme_A(i_stage)*aux_PML_drho(:,:,:,:) + deltat*RHS_PML_drho(:,:,:,:)
+        !aux_PML_dE(:,:,:,:)   = LNS_scheme_A(i_stage)*aux_PML_dE(:,:,:,:)   + deltat*RHS_PML_dE(:,:,:,:)
+        !LNS_PML_drho(:,:,:,:) = LNS_PML_drho(:,:,:,:) + LNS_scheme_B(i_stage)*aux_PML_drho(:,:,:,:)
+        !LNS_PML_dE(:,:,:,:)   = LNS_PML_dE(:,:,:,:)   + LNS_scheme_B(i_stage)*aux_PML_dE(:,:,:,:)
+        !aux_PML_rho0dv(:,:,:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,:,:,:,:) &
+        !                            + deltat*RHS_PML_rho0dv(:,:,:,:,:)
+        !LNS_PML_rho0dv(:,:,:,:,:) =   LNS_PML_rho0dv(:,:,:,:,:) &
+        !                            + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,:,:,:,:)
+        ! 1st dim = ADE number. 2nd dim = point number. 3rd dim (momentum) = spatial dimension number.
+        aux_PML_drho(:,:) = LNS_scheme_A(i_stage)*aux_PML_drho(:,:) + deltat*RHS_PML_drho(:,:)
+        aux_PML_dE(:,:)   = LNS_scheme_A(i_stage)*aux_PML_dE(:,:)   + deltat*RHS_PML_dE(:,:)
+        aux_PML_rho0dv(:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,:,:) &
+                                + deltat*RHS_PML_rho0dv(:,:,:)
+        LNS_PML_drho(:,:) = LNS_PML_drho(:,:) + LNS_scheme_B(i_stage)*aux_PML_drho(:,:)
+        LNS_PML_rho0dv(:,:,:) =   LNS_PML_rho0dv(:,:,:) &
+                                + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,:,:)
+        LNS_PML_dE(:,:)   = LNS_PML_dE(:,:)   + LNS_scheme_B(i_stage)*aux_PML_dE(:,:)
+        
+        write(*,*) "minmax drho, LNS_PML_drho", minval(LNS_drho), maxval(LNS_drho), & ! DEBUG
+                                                minval(aux_PML_drho), maxval(aux_PML_drho) ! DEBUG
+        write(*,*) "minmax rho0dv, LNS_PML_rho0dv", minval(LNS_rho0dv), maxval(LNS_rho0dv), & ! DEBUG
+                                                    minval(LNS_PML_rho0dv), maxval(LNS_PML_rho0dv) ! DEBUG
+        write(*,*) "minmax dE, LNS_PML_dE", minval(LNS_dE), maxval(LNS_dE), & ! DEBUG
+                                                minval(LNS_PML_dE), maxval(LNS_PML_dE) ! DEBUG
+        !do i_aux=1,NDIM ! Loop on momenta.
+        !  aux_PML_rho0dv(:,i_aux,:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:) &
+        !                                  + deltat*RHS_PML_rho0dv(:,i_aux,:,:,:)
+        !  LNS_PML_rho0dv(:,i_aux,:,:,:) =   LNS_PML_rho0dv(:,i_aux,:,:,:) &
+        !                                  + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:)
+        !enddo
+      endif ! Endif on DEBUG__DO_ITERATE_AUXVARS.
   endif
+  
+  ! test
+  !if(PML_BOUNDARY_CONDITIONS) then
+  !  if(myrank==1) then
+  !    write(*,*) timelocal, minval(aux_PML_drho), maxval(aux_PML_drho)
+  !  endif
+  !endif
+  !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
+  !stop
+  !write(*,*) "soudnspeed lol", minval(sqrt(gammaext_DG*LNS_p0/LNS_rho0)), maxval(sqrt(gammaext_DG*LNS_p0/LNS_rho0))
+  !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
+  !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
+  !kek = reshape(LNS_rho0dv(:,5),(/2,1/))
+  !write(*,*) 'kek', kek
+  !write(*,*) 'v1', norm2(LNS_rho0dv(:,5:6))
+  !write(*,*) 'v2', norm2(reshape(LNS_rho0dv(:,5),(/2,1/)))
+  !write(*,*) '|v1-v2|', abs(norm2(LNS_rho0dv(:,5:8))-(LNS_rho0dv(1,5:8)**2 + LNS_rho0dv(NDIM,5:8)**2))
+  !write(*,*) "kek"
+  !write(*,*) size(ibool_before_perio) ! 0 to nspec
+  !write(*,*) size(ibool) ! 0 to nspec
+  !write(*,*) size(ibool_DG) ! 0 to nglob_dg
+  !write(*,*) size(coord(2,:))
+  !write(*,*) ibool
+  !write(*,*) size(pack(ibool(:,:,:), ibool(:,:,:)<4))
+  !write(*,*) size(LNS_rho0dv(2,:))
+  !write(*,*) pack(LNS_rho0dv(2,:),abs(coord(2,:))<1.)
+  !stop
+  
+  ! Eventually check non-positivity.
+  !LNS_dv(1,:)=1e4*LNS_dv(1,:)
+  !LNS_v0=0.*LNS_v0+1d-5
+  
+  if(check_linearHypothesis) then
+    call LNS_warn_nonsense()
+    !if(     check_linearHypothesis_ON_ALL_PROCS &
+    !   .or. ((.not. check_linearHypothesis_ON_ALL_PROCS) .and. myrank==0) &
+    !  ) then
+    !  ! If:    we check on all procs,
+    !  !     or we check only on proc 0 and we are on proc 0.
+    !  if(minval(LNS_drho) < 10d-14) then
+    !    WRITE(*,*) "***************************************************************"
+    !    WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(LNS_drho), "    *"
+    !    if(check_linearHypothesis_FIND_POINT) then
+    !      ! Find where density is low.
+    !      do ispec = 1,nspec
+    !        do j = 1,NGLLZ
+    !          do i = 1,NGLLX
+    !            !write(*,*) LNS_drho(ibool_DG(ispec, i, j))
+    !            !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
+    !            if(LNS_drho(ibool_DG(i, j, ispec))==minval(LNS_drho)) then
+    !              WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
+    !              write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), &
+    !                          coord(NDIM, ibool_before_perio(i, j, ispec)), ".*"
+    !              !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
+    !              !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
+    !            endif
+    !          enddo
+    !        enddo
+    !      enddo
+    !    endif ! Endif on check_linearHypothesis_FIND_POINT.
+    !    WRITE(*,*) "***************************************************************"
+    !  endif ! Endif on minval(LNS_drho).
+    !endif ! Endif on check_linearHypothesis_ON_ALL_PROCS.
+  endif ! Endif on check_linearHypothesis.
   
   ! --------------------------- !
   ! Remove high-order           !

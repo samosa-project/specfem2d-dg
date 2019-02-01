@@ -7,6 +7,9 @@ module specfem_par_LNS
   ! Constants (maybe move to constants.h.in).
   real(kind=CUSTOM_REAL), parameter :: R_ADIAB = 8.3144598
   
+  ! LSRK coefficients.
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_scheme_A, LNS_scheme_B, LNS_scheme_C ! Size should be stage_time_scheme.
+  
   ! Switch enabling the use of LNS instead of FNS.
   logical :: USE_LNS
   
