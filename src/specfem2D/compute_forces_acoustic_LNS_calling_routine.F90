@@ -124,6 +124,14 @@ subroutine compute_forces_acoustic_LNS_main()
     endif
   
     call LNS_prevent_nonsense() ! Check initial conditions.
+    
+    do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); ! DEBUG
+      write(*,*) '     ', coord(:,ibool_before_perio(3,3,ispec)), ' is PML, ispec_PML=',ispec_PML,'.' ! DEBUG
+    endif; enddo ! DEBUG
+    write(*,*) 'nglob_PML', nglob_PML
+    write(*,*) LNS_PML_drho ! DEBUG
+    stop 'kek'; ! DEBUG
+    
   endif ! Endif on (it == 1) and (i_stage == 1).
   
   if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
@@ -268,7 +276,7 @@ subroutine compute_forces_acoustic_LNS_main()
             enddo
           enddo
         enddo; enddo; endif; enddo
-        RHS_PML_drho=-RHS_PML_drho; RHS_PML_rho0dv=-RHS_PML_rho0dv; RHS_PML_dE=-RHS_PML_dE ! DEBUG: flip RHS to pinpoint sign errors??.
+        !RHS_PML_drho=-RHS_PML_drho; RHS_PML_rho0dv=-RHS_PML_rho0dv; RHS_PML_dE=-RHS_PML_dE ! DEBUG: flip RHS to pinpoint sign errors??.
         
         ! Inverse mass matrix multiplication, in order to obtain actual RHS, for every auxiliary variable.
         do i_ade=1,NDIM
@@ -599,7 +607,7 @@ subroutine LNS_PML_init_coefs()
           LNS_PML_alpha(1,i,j,ispec_PML) = alpha_x_store(i,j,ispec_PML)
           LNS_PML_alpha(2,i,j,ispec_PML) = alpha_z_store(i,j,ispec_PML)
           !LNS_PML_alpha(1,i,j,ispec_PML) = LNS_PML_alpha(1,i,j,ispec_PML)
-          !LNS_PML_alpha(2,i,j,ispec_PML) = LNS_PML_alpha(2,i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: check if this is necessary (must be in angles)
+          LNS_PML_alpha(2,i,j,ispec_PML) = LNS_PML_alpha(2,i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: check if this is necessary (must be in angles)
           
           LNS_PML_kapp(1,i,j,ispec_PML) = K_x_store(i,j,ispec_PML)
           LNS_PML_kapp(2,i,j,ispec_PML) = K_z_store(i,j,ispec_PML)
