@@ -398,6 +398,23 @@
         allocate(rmass_inverse_acoustic_LNS_PML(nglob_PML),stat=ier)
         if (ier /= 0) stop 'Error: could not allocate rmass_inverse_acoustic_LNS_PML (see prepare_timerun_pml.f90).'
         
+        LNS_PML_drho = ZERO
+        LNS_PML_rho0dv = ZERO
+        LNS_PML_dE = ZERO
+        RHS_PML_drho = ZERO
+        aux_PML_drho = ZERO
+        RHS_PML_rho0dv = ZERO
+        aux_PML_rho0dv = ZERO
+        RHS_PML_dE = ZERO
+        aux_PML_dE = ZERO
+        
+        LNS_PML_kapp = ZERO
+        LNS_PML_alpha = ZERO
+        LNS_PML_a0 = ZERO
+        LNS_PML_b  = ZERO
+        
+        rmass_inverse_acoustic_LNS_PML = ZERO
+        
         ! Savage memory free. Not really optimal, but less invasive.
         deallocate(rmemory_potential_acoustic,rmemory_acoustic_dux_dx,rmemory_acoustic_dux_dz, &
                    rmemory_potential_acoustic_LDDRK,rmemory_acoustic_dux_dx_LDDRK,rmemory_acoustic_dux_dz_LDDRK) 

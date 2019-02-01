@@ -117,7 +117,6 @@
         write(*,*) "********************************"
         stop
       endif
-      rmass_inverse_acoustic_LNS_PML = 0._CUSTOM_REAL
     else
       LNS_PML_activated = .false.
     endif

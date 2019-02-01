@@ -57,7 +57,7 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! PMLs.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
-  logical, parameter :: DEBUG__DO_ITERATE_AUXVARS = .false. ! DEBUG. Activate/deactivate time evolution of auxiliary variables.
+  logical, parameter :: DEBUG__DO_ITERATE_AUXVARS = .true. ! DEBUG. Activate/deactivate time evolution of auxiliary variables.
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -127,15 +127,6 @@ subroutine compute_forces_acoustic_LNS_main()
     
     if(PML_BOUNDARY_CONDITIONS) then
       stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
-      aux_PML_drho = ZEROcr
-      aux_PML_rho0dv = ZEROcr
-      aux_PML_dE = ZEROcr
-      RHS_PML_drho = ZEROcr
-      RHS_PML_rho0dv = ZEROcr
-      RHS_PML_dE = ZEROcr
-      LNS_PML_drho = ZEROcr
-      LNS_PML_rho0dv = ZEROcr
-      LNS_PML_dE = ZEROcr
     endif
     
     ! Prepare MPI buffers.
@@ -591,6 +582,7 @@ subroutine LNS_PML_init_coefs()
 
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   integer :: i,j,ispec,ispec_PML
   real(kind=CUSTOM_REAL), dimension(NDIM) :: pmlk, pmld, pmla
   
@@ -620,11 +612,6 @@ subroutine LNS_PML_init_coefs()
   
   ! These arrays were allocated in prepare_timerun_pml.f90.
   
-  ! Initialise.
-  LNS_PML_alpha = ZEROcr
-  LNS_PML_a0 = ZEROcr
-  LNS_PML_b  = ZEROcr
-  
   ! Value.
   do ispec=1,nspec
     if(ispec_is_PML(ispec)) then
@@ -633,11 +620,19 @@ subroutine LNS_PML_init_coefs()
         do i=1,NGLLX
           ! Note: K_x_store, K_z_store, d_x_store, d_z_store, alpha_x_store, alpha_z_store are initialised in 'pml_init.F90'.
           
-          LNS_PML_alpha(1,i,j,ispec_PML) = alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: check if this is necessary (must be in angles)
-          LNS_PML_alpha(2,i,j,ispec_PML) = alpha_z_store(i,j,ispec_PML) + 0.002_CUSTOM_REAL ! TODO: check if this is necessary (must be in angles)
+          LNS_PML_alpha(1,i,j,ispec_PML) = alpha_x_store(i,j,ispec_PML)
+          LNS_PML_alpha(2,i,j,ispec_PML) = alpha_z_store(i,j,ispec_PML)
+          !LNS_PML_alpha(1,i,j,ispec_PML) = LNS_PML_alpha(1,i,j,ispec_PML)
+          !LNS_PML_alpha(2,i,j,ispec_PML) = LNS_PML_alpha(2,i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: check if this is necessary (must be in angles)
           
           LNS_PML_kapp(1,i,j,ispec_PML) = K_x_store(i,j,ispec_PML)
           LNS_PML_kapp(2,i,j,ispec_PML) = K_z_store(i,j,ispec_PML)
+          
+          ! If 1<=LNS_PML_kapp<=2 linearly, we can transform it.
+          !write(*,*) 'minmax LNS_PML_kapp', minval(LNS_PML_kapp), maxval(LNS_PML_kapp) ! DEBUG
+          !LNS_PML_kapp(:,i,j,ispec_PML) = ONEcr - (ONEcr - 0.2_CUSTOM_REAL) &
+          !                     * (ONEcr - (ONEcr - (LNS_PML_kapp(:,i,j,ispec_PML)-ONEcr))**3.25_CUSTOM_REAL)**6._CUSTOM_REAL ! Arina's stretching
+          !LNS_PML_kapp(:,i,j,ispec_PML) = ONEcr/LNS_PML_kapp(:,i,j,ispec_PML)
           
           !pmlk(1)=K_x_store(i,j,ispec_PML) ! Decrease performance, but increases readability. Since this routine only runs once, we decide it's okay.
           !pmlk(2)=K_z_store(i,j,ispec_PML)
