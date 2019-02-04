@@ -10,6 +10,18 @@ function [datestring, posstr, year, daysincenewyear, secondssincenewday, lat, lo
   if(fid==-1)
     error(strcat("Cannot open file ", DATAFILE,').'))
   end
+  
+  datestring='';
+  posstr='';
+  year=-1;
+  daysincenewyear=-1;
+  secondssincenewday=-1;
+  lat=-1;
+  lon=-1;
+  f107a=-1;
+  f107=-1;
+  ap=-1;
+  
   stop=0;
   count=0;
   while(stop==0)
@@ -17,6 +29,12 @@ function [datestring, posstr, year, daysincenewyear, secondssincenewday, lat, lo
     line = fgetl(fid);
     if(count==1)
       year=str2num(regexprep(regexprep(line, 'day.*', ''), 'year', ''));
+      
+      if(isempty(year))
+        disp(['[',mfilename,'] Regexp on ''year'' has found nothing, assuming header is empty.']);
+        break;
+      end
+      
       daysincenewyear=str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ *day', ''));
       lat=str2num(regexprep(regexprep(line, 'year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat', ''), 'lon.*', ''));
       lon=str2num(regexprep(line, 'year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat *-?[0-9]+\.[0-9]+ *lon', ''));

@@ -8,13 +8,15 @@
 
 clear all;
 close all;
-clc;
+% clc;
 set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
 set(0, 'defaultTextFontSize', 12);
 set(0, 'defaultAxesFontSize', 12); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
+spl=split(mfilename('fullpath'),filesep); spl{end}=''; spl=join(spl,filesep); cd(spl{1});
+addpath('./tools/');
 richardson_advice='Should be >1, or at least >0.25 to prevent instability.';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,39 +342,6 @@ rewrite_atmos_model(nDATAFILE, DATAFILE, Z, nRHO, nTEMP, nSOUNDSPEED, nP, nLOCAL
 plot_model(nDATAFILE, '-', 'k', []);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function sQ=smoooth_n_splinnnn(Z,Q,n)
-  spline=fit(Z,smoooth(Q,n),'smoothingspline','smoothingparam',1e-10);
-  sQ=spline(Z);
-end
-
-function sQ=smoooth(Q,n)
-  sQ=smoothdata(Q,'gaussian',n);
-%   disp(strcat("[WARNING] Smoothed quantity ", inputname(1), " by a Gaussian filter over ", num2str(n), " elements."));
-end
-
-function [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W)
-  D=differentiation_matrix(Z, 0);
-  term1 = abs(D * (VISCMU .* (D * W)));
-  term2 = abs(D * (KAPPA .* (D * TEMP) + W .* VISCMU .* (D * W)));
-  term3 = abs(D * P + RHO .* G);
-end
-
-function plot_hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W, tit_plus, save_plots)
-  figure();
-  [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W);
-  semilogx(term1, Z, 'r'); hold on;
-  semilogx(term2, Z, 'g');
-  semilogx(term3, Z, 'b');
-  tmp_valmat=cell2mat(get(get(gca, 'children'), 'XData')); tmp_plot_maxval=max(max(tmp_valmat)); tmp_valmat(tmp_valmat==0)=Inf; tmp_plot_minval=min(min(tmp_valmat));
-  xlim([0.5*tmp_plot_minval, 2*tmp_plot_maxval]);
-  xlabel({'amplitude of hydrostatic unbalance terms', '(projected wind)'}); ylabel('altitude (m)');
-  legend('$\left|\partial_z\left(\mu\partial_zw\right)\right|$', '$\left|\partial_z\left(\kappa\partial_zT+w\mu\partial_zw\right)\right|$', '$\left|\partial_zp + \rho g_z\right|$', 'Location', 'best');
-  title(tit_plus);
-  if save_plots == 1
-    saveas(gcf, strcat(DATAFILE,'__unbalance_terms.png'));
-  end
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Older DATAFILE paths.       %
