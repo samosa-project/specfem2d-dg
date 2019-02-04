@@ -623,9 +623,9 @@ subroutine LNS_PML_init_coefs()
           !pmlk(2)=K_z_store(i,j,ispec_PML)
           pmlk=LNS_PML_kapp(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
           
-          pmld(1)=d_x_store(i,j,ispec_PML)
-          pmld(2)=d_z_store(i,j,ispec_PML)
-          !pmld=0._CUSTOM_REAL ! test pure stretching
+          !pmld(1)=d_x_store(i,j,ispec_PML)
+          !pmld(2)=d_z_store(i,j,ispec_PML)
+          pmld=0._CUSTOM_REAL ! test pure stretching
           
           pmla=LNS_PML_alpha(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
           !pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL
