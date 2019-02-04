@@ -1429,24 +1429,41 @@
   c25(:,:,:) = 0.d0
 
   end subroutine define_external_model_atmos_tabular_gravitoacoustic
-
+  
+! ------------------------------------------------------------ !
+! external_model_DG_testfile                                   !
+! ------------------------------------------------------------ !
+! Finds the total number of lines contained in the 'atmospheric_model.dat' file.
+subroutine external_model_DG_testfile()
+  use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+  implicit none
+  ! Local variables.
+  integer io
+  OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
+  READ(100,*,iostat=io)
+  if(io/=0) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot read atmospheric      *"
+    write(*,*) "* model file                   *"
+    write(*,*) "* ", trim(EXTERNAL_DG_ONLY_MODEL_FILENAME)
+    write(*,*) "********************************"
+    stop
+  endif
+  CLOSE(100)
+end subroutine external_model_DG_testfile
 ! ------------------------------------------------------------ !
 ! external_model_DG_only_find_nblines                          !
 ! ------------------------------------------------------------ !
-! TODO: Description.
-
+! Finds the total number of lines contained in the 'atmospheric_model.dat' file.
 subroutine external_model_DG_only_find_nblines(nlines_header, nlines_model)
-  
   use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
-  
   implicit none
-  
   ! Input/output.
   integer, intent(out) :: nlines_header, nlines_model
-  
   ! Local variables.
   integer nlines_file, io
-  
   nlines_header=3; ! Number of header lines in model file. ! TODO: Find a way of discriminating this automatically.
   nlines_file = 0
   OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
@@ -1458,6 +1475,45 @@ subroutine external_model_DG_only_find_nblines(nlines_header, nlines_model)
   CLOSE(100)
   nlines_model=nlines_file-nlines_header
 end subroutine external_model_DG_only_find_nblines
+! ------------------------------------------------------------ !
+! external_model_DG_only_find_nbcols                           !
+! ------------------------------------------------------------ !
+! Finds the number of columns contained in the 'atmospheric_model.dat' file.
+subroutine external_model_DG_only_find_nbcols(nlines_header,ncols)
+  use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+  implicit none
+  ! Input/output.
+  integer, intent(in) :: nlines_header
+  integer, intent(out) :: ncols
+  ! Local variables.
+  integer, parameter :: MAX_NUM_OF_COLS=30
+  integer, parameter :: MAX_LINE_LENGTH=1000
+  character(len=MAX_LINE_LENGTH) line
+  integer i, io, reading_unit
+  double precision, dimension(MAX_NUM_OF_COLS) :: kek
+  reading_unit=100
+  OPEN(reading_unit, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
+  ! Skip header.
+  DO i=1,nlines_header
+    READ(reading_unit,*,iostat=io)
+  enddo
+  ! Get first line of model.
+  DO
+    READ(reading_unit,'(A)',iostat=io) line
+    IF (io/=0) stop "Error reading line in atmospheric model file."
+    exit
+  ENDDO
+  CLOSE(reading_unit)
+  !write(*,*) line
+  do i=1,MAX_NUM_OF_COLS!,1,-1
+    READ(line,*,iostat=io) kek(1:i)
+    !write(*,*) 'io', io
+    if(io==-1) exit
+  enddo
+  !write(*,*) 'i',(i-1)
+  !stop 'kek'
+  ncols=i-1
+end subroutine external_model_DG_only_find_nbcols
 
 ! ------------------------------------------------------------ !
 ! define_external_model_DG_only                                !
@@ -1466,7 +1522,7 @@ end subroutine external_model_DG_only_find_nblines
 
 subroutine define_external_model_DG_only(nlines_header, nlines_model)
 
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN,FOUR_THIRDS
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN,FOUR_THIRDS,TINYVAL,PI
   use specfem_par,only: ibool_DG, cp, c_V, coord_interface, &
         ispec_is_elastic,ispec_is_acoustic_DG,&!Htabext_DG&
         mesh_zmax,tau_sigma, tau_epsilon,&
@@ -1502,8 +1558,14 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: cp_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: cv_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: gamma_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: fr_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: svib_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: tau_sigma_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: tau_epsilon_model
   integer :: i, j, ispec, ii, io, indglob_DG
+  integer ncolz
   real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3, dummy4, dummy5, dummy6 ! Dummy reals for reading parameters which we do not care about.
+  real(kind=CUSTOM_REAL) ONE_over_twopifr ! For CO2 relaxation.
   double precision :: z, frac, pii, piim1, piim2, piip1!,tmp1, gamma_temp,gamma_temp_prev,x,max_z
   
   z_model=ZERO
@@ -1521,6 +1583,39 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   cp_model=ZERO
   cv_model=ZERO
   gamma_model=ZERO
+  fr_model=ZERO
+  svib_model=ZERO
+  tau_sigma_model=ONE
+  tau_epsilon_model=ONE
+  
+  rhoext = ZERO
+  vpext = ZERO
+  gravityext = ZERO
+  vsext = ZERO
+  Qmu_attenuationext = ZERO
+  QKappa_attenuationext = ZERO
+  windxext = ZERO
+  pext_DG = ZERO
+  gammaext_DG(indglob_DG) = ZERO
+  etaext = ZERO
+  muext = ZERO
+  kappa_DG = ZERO
+  tau_sigma = ONE ! Relaxation deactivated by default.
+  tau_epsilon = ONE ! Relaxation deactivated by default.
+  !if(myrank==0) then
+  !  write(*,*) "********************************"
+  !  write(*,*) "*           WARNING            *"
+  !  write(*,*) "********************************"
+  !  write(*,*) "* The support for atmospheric  *"
+  !  write(*,*) "* relaxation when using        *"
+  !  write(*,*) "* external DG models is not    *"
+  !  write(*,*) "* implemented yet. Relaxation  *"
+  !  write(*,*) "* is deactivated by setting    *"
+  !  write(*,*) "* both relaxation times to 1.  *"
+  !  write(*,*) "* See                          *"
+  !  write(*,*) "* 'define_external_model.f90'. *"
+  !  write(*,*) "********************************"
+  !endif
   
   ! Safeguard.
   if(.not. USE_DISCONTINUOUS_METHOD) then
@@ -1533,10 +1628,27 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     write(*,*) "********************************"
     stop
   endif
+  call external_model_DG_testfile() ! Test-reading the file.
   
   if(myrank==0) then
     write(*,*) "> Reading atmospheric model file '", trim(EXTERNAL_DG_ONLY_MODEL_FILENAME),&
                "' and setting the external model accordingly."
+  endif
+  
+  call external_model_DG_only_find_nbcols(nlines_header,ncolz)
+  if(ncolz/=17 .and. ncolz/=19) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Atmospheric models can only  *"
+    write(*,*) "* take either 17 or 19         *"
+    write(*,*) "* columns. See                 *"
+    write(*,*) "* 'define_external_model.f90'. *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(myrank==0) then
+    write(*,*) "> Atmospheric model file contains ",ncolz," columns."
   endif
   
   ! Read and store values of model.
@@ -1545,38 +1657,51 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   DO i=1,nlines_header
     ! Read and skip in header.
     READ(100,*,iostat=io)
-    if(io/=0) then
-      write(*,*) "********************************"
-      write(*,*) "*            ERROR             *"
-      write(*,*) "********************************"
-      write(*,*) "* Cannot read atmospheric      *"
-      write(*,*) "* model file.                  *"
-      write(*,*) "********************************"
-      stop
-    endif
+    IF (io/=0) stop "Error reading line in atmospheric model file."
   enddo
   do i=1,nlines_model
     ! Read values.
-    ! tmp1 = Temperature
-    read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
-                          vp_model(i),p_model(i),dummy2,&
-                          gravity_model(i),dummy6,&!Nsq_model(i),&
-                          kappa_model(i),mu_model(i),dummy3,&
-                          dummy4,dummy5,wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
-    eta_model(i) = (FOUR_THIRDS) * mu_model(i)
-    IF(io/=0) EXIT
-    if(.false.) then ! DEBUG
-      write(*,*) 'z_model(i),density_model(i)',&!,tmp1',&
-                 'vp_model(i),p_model(i),',&!Htab_model(i)',&
-                 'gravity_model(i),',&!Nsq_model(i)',&
-                 'kappa_model(i),mu_model(i),dummy1,',&
-                 'dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)'
-      write(*,*) z_model(i),density_model(i),&!,tmp1,&
-                 vp_model(i),p_model(i),&!Htab_model(i),&
-                 gravity_model(i),&!Nsq_model(i),&
-                 kappa_model(i),mu_model(i),dummy1,&
-                 dummy2, dummy3, wx_model(i),cp_model(i),cv_model(i),gamma_model(i)
+    if(ncolz==17) then
+      ! Default model, do not try to read fr and svib.
+      read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
+                            vp_model(i),p_model(i),dummy2,&
+                            gravity_model(i),dummy6,&!Nsq_model(i),&
+                            kappa_model(i),mu_model(i),dummy3,&
+                            dummy4,dummy5,wx_model(i),&
+                            cp_model(i),cv_model(i),gamma_model(i)
+    elseif(ncolz==19) then
+      ! Read also fr and svib.
+      read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
+                            vp_model(i),p_model(i),dummy2,&
+                            gravity_model(i),dummy6,&!Nsq_model(i),&
+                            kappa_model(i),mu_model(i),dummy3,&
+                            dummy4,dummy5,wx_model(i),&
+                            cp_model(i),cv_model(i),gamma_model(i),&
+                            fr_model(i), svib_model(i)
     endif
+    
+    eta_model(i) = (FOUR_THIRDS) * mu_model(i)
+    ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
+    tau_sigma_model(i) = 0.5*ONE_over_twopifr*(-svib_model(i) + sqrt(svib_model(i)**2.+4.)) ! See 10.1007/s11214-016-0324-6, equation (11).
+    tau_epsilon_model(i) = tau_sigma_model(i) + svib_model(i)*ONE_over_twopifr ! See 10.1007/s11214-016-0324-6, equation (11).
+    
+    IF(io/=0) EXIT
+    !if(.true.) then ! DEBUG
+    !  write(*,*) 'z_model(i),density_model(i)',&!,tmp1',&
+    !             'vp_model(i),p_model(i),',&!Htab_model(i)',&
+    !             'gravity_model(i),',&!Nsq_model(i)',&
+    !             'kappa_model(i),mu_model(i),dummy1,',&
+    !             'dummy2, dummy3, wx_model(i),',&
+    !             'cp_model(i),cv_model(i),gamma_model(i)',&
+    !             'fr_model(i), svib_model(i)'
+    !  write(*,*) z_model(i),density_model(i),&!,tmp1,&
+    !             vp_model(i),p_model(i),&!Htab_model(i),&
+    !             gravity_model(i),&!Nsq_model(i),&
+    !             kappa_model(i),mu_model(i),dummy1,&
+    !             dummy2, dummy3, wx_model(i),&
+    !             cp_model(i),cv_model(i),gamma_model(i),&
+    !             fr_model(i), svib_model(i)
+    !endif
   ENDDO 
   CLOSE(100)
   
@@ -1674,24 +1799,6 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     stop
   endif
   
-  ! Relaxation deactivated.
-  tau_sigma = ONE
-  tau_epsilon = ONE
-  if(myrank==0) then
-    write(*,*) "********************************"
-    write(*,*) "*           WARNING            *"
-    write(*,*) "********************************"
-    write(*,*) "* The support for atmospheric  *"
-    write(*,*) "* relaxation when using        *"
-    write(*,*) "* external DG models is not    *"
-    write(*,*) "* implemented yet. Relaxation  *"
-    write(*,*) "* is deactivated by setting    *"
-    write(*,*) "* both relaxation times to 1.  *"
-    write(*,*) "* See                          *"
-    write(*,*) "* 'define_external_model.f90'. *"
-    write(*,*) "********************************"
-  endif
-  
   ! TODO: Correctly affect those variables.
   cp = cp_model(1)
   c_V = cv_model(1)
@@ -1785,6 +1892,8 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             etaext(i, j, ispec) = eta_model(1)
             muext(i, j, ispec) = mu_model(1)
             kappa_DG(i, j, ispec) = kappa_model(1)
+            tau_sigma(i, j, ispec) = tau_sigma_model(i)
+            tau_epsilon(i, j, ispec) = tau_epsilon_model(i)
           elseif (ii == 2) then
             ! Altitude of point is > 1st line of model, and <= 2nd line of model.
             ! Interpolate using the values at lines 1 (ii-1) and 2 (ii) of model.
@@ -1807,6 +1916,8 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             muext(i, j, ispec)  = mu_model(ii-1) + frac*(mu_model(ii)-mu_model(ii-1))
             !Htabext_DG(indglob_DG) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
             kappa_DG(i, j, ispec)  = kappa_model(ii-1) + frac*(kappa_model(ii)-kappa_model(ii-1))
+            tau_sigma(i, j, ispec) = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
+            tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
           else
             ! Altitude of point is > (ii-1)-th line of model, and <= (ii)-th line of model.
             ! Interpolate using the values at lines (ii-2), (ii-1), and ii of model.
@@ -1841,18 +1952,36 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             muext(i, j, ispec)  = mu_model(ii)*pii + mu_model(ii-1)*piim1 + mu_model(ii-2)*piim2
             !Htabext_DG(indglob_DG) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
             kappa_DG(i, j, ispec)  = kappa_model(ii)*pii + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
+            tau_sigma(i, j, ispec) = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
+            tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
           endif ! Endif on ii.
           
-          if(rhoext(i, j, ispec) <= ZERO) then
+          if(rhoext(i, j, ispec) <= TINYVAL) then
             write(*,*) "********************************"
             write(*,*) "*            ERROR             *"
             write(*,*) "********************************"
-            write(*,*) "* A negative density was found *"
+            write(*,*) "* A negative (<=0) density was *"
             write(*,*) "* found after interpolation.   *"
             write(*,*) "********************************"
             write(*,*) ispec,i,j,ii,&
                        coord(1,indglob_DG),coord(2,indglob_DG),&
                        rhoext(i, j, ispec)
+            write(*,*) "********************************"
+            stop
+          endif
+          if(tau_sigma(i, j, ispec) <= TINYVAL .or. tau_epsilon(i, j, ispec) <= TINYVAL) then
+            write(*,*) "********************************"
+            write(*,*) "*            ERROR             *"
+            write(*,*) "********************************"
+            write(*,*) "* A negative (<=0) relaxation  *"
+            write(*,*) "* time (tau_sigma or           *"
+            write(*,*) "* tau_epsilon) was found after *"
+            write(*,*) "* interpolation.               *"
+            write(*,*) "********************************"
+            write(*,*) ispec,i,j,ii,&
+                       coord(1,indglob_DG),coord(2,indglob_DG),&
+                       tau_sigma(i, j, ispec),&
+                       tau_epsilon(i, j, ispec)
             write(*,*) "********************************"
             stop
           endif
@@ -1886,7 +2015,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       stop
     endif ! Endif on ispec_is_acoustic_DG.
     
-    if(.false.) then ! DEBUG
+    if(.true.) then ! DEBUG
       do j = 1, NGLLZ
         do i = 1, NGLLX
           if( &
@@ -1894,28 +2023,30 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
              !.and. &
                    abs(coord(1, ibool(i, j, ispec)))<=1e-2) then
             write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
-                      ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
-                      "rho", rhoext(i, j, ispec),&
-                      "vp", vpext(i, j, ispec),&
-                      "g", gravityext(i, j, ispec),&
-                      "vs", vsext(i, j, ispec),&
-                      "Qm", Qmu_attenuationext(i, j, ispec),&
-                      "Qk", QKappa_attenuationext(i, j, ispec),&
-                      "wx", windxext(i, j, ispec),&
-                      "wz", windzext(i, j, ispec),&
-                      "p", pext_DG(i, j, ispec),&
-                      "gamma", gammaext_DG(ibool_DG(i, j, ispec)),&
-                      !"Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
-                      "eta", etaext(i, j, ispec),&
-                      "mu", muext(i, j, ispec),&
-                      "kap", kappa_DG(i, j, ispec)
+    !                  ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
+    !                  "rho", rhoext(i, j, ispec),&
+    !                  "vp", vpext(i, j, ispec),&
+    !                  "g", gravityext(i, j, ispec),&
+    !                  "vs", vsext(i, j, ispec),&
+    !                  "Qm", Qmu_attenuationext(i, j, ispec),&
+    !                  "Qk", QKappa_attenuationext(i, j, ispec),&
+    !                  "wx", windxext(i, j, ispec),&
+    !                  "wz", windzext(i, j, ispec),&
+    !                  "p", pext_DG(i, j, ispec),&
+    !                  "gamma", gammaext_DG(ibool_DG(i, j, ispec)),&
+    !                  !"Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
+    !                  "eta", etaext(i, j, ispec),&
+    !                  "mu", muext(i, j, ispec),&
+    !                  "kap", kappa_DG(i, j, ispec),&
+                      "tau_sig", tau_sigma(i, j, ispec),&
+                      "tau_eps", tau_epsilon(i, j, ispec)
           endif
         enddo
       enddo
     endif
   enddo ! Enddo on ispec.
   
-  call external_DG_update_elastic_from_parfile() ! Update elastic regions.
+  call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile.
   
   if(myrank==0) then
     write(*,*) "********************************"

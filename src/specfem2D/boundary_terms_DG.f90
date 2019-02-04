@@ -246,6 +246,9 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       !c_V = 5/2
       !tau_epsilon(i, j, ispec) = 1.
       !tau_sigma(i, j, ispec) = 1.!0.4013
+      
+      ! N.B.: (tau_sigma, tau_epsilon) are supposed to already have a value. It happened at the beginning of the run, in 'define_external_model.f90'.
+      
       potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
     endif
