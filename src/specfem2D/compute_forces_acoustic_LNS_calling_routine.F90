@@ -57,7 +57,7 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! PMLs.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
-  logical, parameter :: DEBUG__DO_ITERATE_AUXVARS = .true. ! DEBUG. Activate/deactivate time evolution of auxiliary variables.
+  logical, parameter :: DEBUG__DO_ITERATE_AUXVARS = .false. ! DEBUG. Activate/deactivate time evolution of auxiliary variables.
     
   if(PML_BOUNDARY_CONDITIONS) then
     stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
@@ -125,12 +125,12 @@ subroutine compute_forces_acoustic_LNS_main()
   
     call LNS_prevent_nonsense() ! Check initial conditions.
     
-    do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); ! DEBUG
-      write(*,*) '     ', coord(:,ibool_before_perio(3,3,ispec)), ' is PML, ispec_PML=',ispec_PML,'.' ! DEBUG
-    endif; enddo ! DEBUG
-    write(*,*) 'nglob_PML', nglob_PML
-    write(*,*) LNS_PML_drho ! DEBUG
-    stop 'kek'; ! DEBUG
+    !do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); ! DEBUG
+    !  write(*,*) '     ', coord(:,ibool_before_perio(3,3,ispec)), ' is PML, ispec_PML=',ispec_PML,'.' ! DEBUG
+    !endif; enddo ! DEBUG
+    !write(*,*) 'nglob_PML', nglob_PML
+    !write(*,*) LNS_PML_drho ! DEBUG
+    !stop 'kek'; ! DEBUG
     
   endif ! Endif on (it == 1) and (i_stage == 1).
   
@@ -279,13 +279,14 @@ subroutine compute_forces_acoustic_LNS_main()
         !RHS_PML_drho=-RHS_PML_drho; RHS_PML_rho0dv=-RHS_PML_rho0dv; RHS_PML_dE=-RHS_PML_dE ! DEBUG: flip RHS to pinpoint sign errors??.
         
         ! Inverse mass matrix multiplication, in order to obtain actual RHS, for every auxiliary variable.
-        do i_ade=1,NDIM
-          RHS_PML_drho(i_ade,:)           = RHS_PML_drho(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-          RHS_PML_dE(i_ade,:)             = RHS_PML_dE(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-          do i_aux=1,NDIM ! Loop on momenta.
-            RHS_PML_rho0dv(i_ade,i_aux,:) = RHS_PML_rho0dv(i_ade,i_aux,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-          enddo
-        enddo
+        ! Mass matrix allocated and initialised in 'invert_mass_matrix.F90'.
+        !do i_ade=1,NDIM
+        !  RHS_PML_drho(i_ade,:)           = RHS_PML_drho(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+        !  RHS_PML_dE(i_ade,:)             = RHS_PML_dE(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+        !  do i_aux=1,NDIM ! Loop on momenta.
+        !    RHS_PML_rho0dv(i_ade,i_aux,:) = RHS_PML_rho0dv(i_ade,i_aux,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
+        !  enddo
+        !enddo
         
         ! Update PML ADE, vectorially.
         !aux_PML_drho(:,:,:,:) = LNS_scheme_A(i_stage)*aux_PML_drho(:,:,:,:) + deltat*RHS_PML_drho(:,:,:,:)
@@ -306,12 +307,12 @@ subroutine compute_forces_acoustic_LNS_main()
                                 + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,:,:)
         LNS_PML_dE(:,:)   = LNS_PML_dE(:,:)   + LNS_scheme_B(i_stage)*aux_PML_dE(:,:)
         
-        write(*,*) "minmax drho, LNS_PML_drho", minval(LNS_drho), maxval(LNS_drho), & ! DEBUG
-                                                minval(aux_PML_drho), maxval(aux_PML_drho) ! DEBUG
-        write(*,*) "minmax rho0dv, LNS_PML_rho0dv", minval(LNS_rho0dv), maxval(LNS_rho0dv), & ! DEBUG
-                                                    minval(LNS_PML_rho0dv), maxval(LNS_PML_rho0dv) ! DEBUG
-        write(*,*) "minmax dE, LNS_PML_dE", minval(LNS_dE), maxval(LNS_dE), & ! DEBUG
-                                                minval(LNS_PML_dE), maxval(LNS_PML_dE) ! DEBUG
+        !write(*,*) "minmax drho, LNS_PML_drho", minval(LNS_drho), maxval(LNS_drho), & ! DEBUG
+        !                                        minval(aux_PML_drho), maxval(aux_PML_drho) ! DEBUG
+        !write(*,*) "minmax rho0dv, LNS_PML_rho0dv", minval(LNS_rho0dv), maxval(LNS_rho0dv), & ! DEBUG
+        !                                            minval(LNS_PML_rho0dv), maxval(LNS_PML_rho0dv) ! DEBUG
+        !write(*,*) "minmax dE, LNS_PML_dE", minval(LNS_dE), maxval(LNS_dE), & ! DEBUG
+        !                                        minval(LNS_PML_dE), maxval(LNS_PML_dE) ! DEBUG
         !do i_aux=1,NDIM ! Loop on momenta.
         !  aux_PML_rho0dv(:,i_aux,:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:) &
         !                                  + deltat*RHS_PML_rho0dv(:,i_aux,:,:,:)
@@ -622,9 +623,9 @@ subroutine LNS_PML_init_coefs()
           !pmlk(2)=K_z_store(i,j,ispec_PML)
           pmlk=LNS_PML_kapp(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
           
-          !pmld(1)=d_x_store(i,j,ispec_PML)
-          !pmld(2)=d_z_store(i,j,ispec_PML)
-          pmld=0._CUSTOM_REAL ! test pure stretching
+          pmld(1)=d_x_store(i,j,ispec_PML)
+          pmld(2)=d_z_store(i,j,ispec_PML)
+          !pmld=0._CUSTOM_REAL ! test pure stretching
           
           pmla=LNS_PML_alpha(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
           !pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL
