@@ -53,7 +53,7 @@ git checkout <BRANCH> <FOLDER|FILE>
 *) Print a full diff of file(s) between two BRANCHes.
 
 git diff --color <BRANCH1>..<BRANCH2> <FOLDER|FILE>
-git diff --stat --color master..LNS .
+git diff --color master..LNS .
 
 *) Print a concise list of file differences between two BRANCHes.
 
