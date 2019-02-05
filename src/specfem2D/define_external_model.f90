@@ -2015,14 +2015,14 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       stop
     endif ! Endif on ispec_is_acoustic_DG.
     
-    if(.true.) then ! DEBUG
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          if( &
-             !      abs(coord(2, ibool(i, j, ispec)))<=20. &
-             !.and. &
-                   abs(coord(1, ibool(i, j, ispec)))<=1e-2) then
-            write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
+    !if(.true.) then ! DEBUG
+    !  do j = 1, NGLLZ
+    !    do i = 1, NGLLX
+    !      if( &
+    !         !      abs(coord(2, ibool(i, j, ispec)))<=20. &
+    !         !.and. &
+    !               abs(coord(1, ibool(i, j, ispec)))<=1e-2) then
+    !        write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
     !                  ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
     !                  "rho", rhoext(i, j, ispec),&
     !                  "vp", vpext(i, j, ispec),&
@@ -2038,12 +2038,12 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     !                  "eta", etaext(i, j, ispec),&
     !                  "mu", muext(i, j, ispec),&
     !                  "kap", kappa_DG(i, j, ispec),&
-                      "tau_sig", tau_sigma(i, j, ispec),&
-                      "tau_eps", tau_epsilon(i, j, ispec)
-          endif
-        enddo
-      enddo
-    endif
+    !                  "tau_sig", tau_sigma(i, j, ispec),&
+    !                  "tau_eps", tau_epsilon(i, j, ispec)
+    !      endif
+    !    enddo
+    !  enddo
+    !endif
   enddo ! Enddo on ispec.
   
   call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile.
