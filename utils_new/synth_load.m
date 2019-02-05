@@ -54,11 +54,11 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DAG
-fig_title = strcat('DAG');
+% fig_title = strcat('DAG');
 % rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
 % rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
 % rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
-rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');
+% rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');
 
 % TNTGlanes
 % fig_title = strcat('Validation LNS');
@@ -141,7 +141,9 @@ rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_ugly
 
 % Tests.
 fig_title = 'test';
-rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=0_kmax=2/');
+rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=d_kmax=2/');
+% rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
 %rootd=strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
@@ -407,6 +409,8 @@ for istat = 1:nstat
     end
     plot(Ztime(istat, :), Zamp(istat, :));
     set(gca, 'TickLabelInterpreter', 'latex');
+    grid on;
+    box on;
     % Cosmetics.
     if (istat == 1)
       title(fig_title)
