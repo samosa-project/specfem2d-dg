@@ -16,7 +16,9 @@
 clc
 format longG;
 
-[data, t, info]=load(); % Load data (see function below).
+[data, t, info, ~]=load_data(); % Load data (see function below).
+
+plot_rate = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
@@ -80,12 +82,86 @@ disp(strcat("[",mfilename,"]                                           ",realtim
 disp(" ");
 
 disp(['[',mfilename,', WARNING] Recall the method used for estimation is very rough and approximate. Do not take the estimation for granted.']);
+
+
+if(plot_rate)
+  set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
+  set(0, 'DefaultLineMarkerSize', 20); % Default at 6.
+  set(0, 'defaultTextFontSize', 24);
+  set(0, 'defaultAxesFontSize', 24); % Default at 10.
+  set(0, 'DefaultTextInterpreter', 'latex');
+  set(0, 'DefaultLegendInterpreter', 'latex');
+
+  [data, t, info, dataraw] = load_data(); % Load data (see function below).
+  
+  sel = (data(:,2)==1); % Select full DG only.
+%   sel = (data(:,end)==625); % test select
+
+  % Remove all LNS data.
+  for is=1:size(t); if(sel(is)); txt=info{is}(2); txt=txt{1};; if(not(isempty(regexp(txt,'LNS')))); sel(is)=0; end; end; end
+%   % Remove all FNS data (select only LNS).
+%   for is=1:size(t); if(sel(is)); txt=info{is}(2); txt=txt{1};; if(isempty(regexp(txt,'LNS'))); sel(is)=0; end; end; end
+  
+  figure();
+  
+  % STRONG RATE
+  x = dataraw(sel,5); xlab=['number of CPUs $n$ [1]']; % Get number of CPU.
+%   y = t(sel); ylab=['CPU time, per element, per iteration [s]']; 
+  y = t(sel)./dataraw(sel,5); ylab={'real time, per element,','per iteration [s]'}; % Get real time (CPU time p. el. p. it. / CPU).
+%   y = t(sel).*dataraw(sel,1).*dataraw(sel,5); % Get CPU time for each simulation (CPU time p. el. p. it. * n. el.).
+  c = log(data(sel,3)); clab=['snapshot frequency']; % Color code with snapshot frequency.
+  ux=sort(unique(x));
+  % build best wrt c;
+  ubesty=[];
+  for ix=1:size(ux)
+    sely=y(x==ux(ix)); selc=c(x==ux(ix)); ubesty(ix,1)=min(sely(selc==min(selc))); % cheated a little bit here, chosen best time among times that are at best c
+  end
+%   subplot(211);
+%   loglog(x,y,'.','markersize',20, 'displayname','all data');
+  scatter(x,y,50,c,'filled', 'displayname',['data, color $\Leftrightarrow$ log(',clab,')']); hold on;
+  beta=[ones(length(x),1) log(x)]\log(y);
+  loglog(ux,exp(beta(1))*ux.^beta(2), 'k-','displayname', ['linear fit all: $\propto n^{', sprintf('%.2g',beta(2)), '}$']);
+  scatter(ux,ubesty,'displayname',['best data for each abscissa w.r.t. color']);
+  beta=[ones(length(ux),1) log(ux)]\log(ubesty);
+  loglog(ux,exp(beta(1))*ux.^beta(2), 'k--','displayname', ['linear fit best: $\propto n^{', sprintf('%.2g',beta(2)), '}$']);
+  loglog(ux,ux.^(-1)*mean(y(ux==min(ux)))/min(ux)^(-1), 'k:','displayname', ['theoretical best: $\propto n^{-1}$']);
+  
+  set(gca,'xscale','log'); set(gca,'yscale','log'); xlim([0.9*min(ux), 1.1*max(ux)]); xlabel(xlab); ylabel(ylab); grid on; box on;
+  set(gca,'ticklabelinterpreter','latex'); h=colorbar; set(h,'ticklabelinterpreter','latex'); legend('location', 'best');
+  title(['Strong Paralellisation Rate']);
+  
+%   % WEAK RATE
+%   x = dataraw(sel,1); xlab=['number of elements $n$ [1]']; % Get nelems
+% %   y = t(sel); ylab=['CPU time, per element, per iteration [s]']; 
+%   y = t(sel).*dataraw(sel,1)./dataraw(sel,5); ylab=['real time, per element, per iteration [s]']; % Get real time (CPU time p. el. p. it. / CPU).
+% %   y = t(sel).*dataraw(sel,1).*dataraw(sel,5); % Get CPU time for each simulation (CPU time p. el. p. it. * n. el.).
+%   c = log(data(sel,3)); clab=['snapshot frequency']; % Color code with snapshot frequency.
+%   ux=sort(unique(x));
+%   % build best wrt c;
+%   ubesty=[];
+%   for ix=1:size(ux)
+%     sely=y(x==ux(ix)); selc=c(x==ux(ix)); ubesty(ix,1)=min(sely(selc==min(selc))); % cheated a little bit here, chosen best time among times that are at best c
+%   end
+%   subplot(212);
+% %   loglog(x,y,'.','markersize',20, 'displayname','all data');
+%   scatter(x,y,50,c,'filled', 'displayname',['data, color $\Leftrightarrow$ log(',clab,')']); hold on;
+%   beta=[ones(length(x),1) log(x)]\log(y);
+%   loglog(ux,exp(beta(1))*ux.^beta(2), 'k-','displayname', ['linear fit all: $\propto n^{', sprintf('%.2g',beta(2)), '}$']);
+%   scatter(ux,ubesty,'displayname',['best data for each abscissa w.r.t. color']);
+%   beta=[ones(length(ux),1) log(ux)]\log(ubesty);
+%   loglog(ux,exp(beta(1))*ux.^beta(2), 'k--','displayname', ['linear fit best: $\propto n^{', sprintf('%.2g',beta(2)), '}$']);
+% %   loglog(ux,ux.^(-1)*mean(y(ux==min(ux)))/min(ux)^(-1), 'k:','displayname', ['theoretical best: $\propto n^{-1}$']);
+%   
+%   set(gca,'xscale','log'); set(gca,'yscale','log'); xlim([0.9*min(ux), 1.1*max(ux)]); xlabel(xlab); ylabel(ylab);
+%   set(gca,'ticklabelinterpreter','latex'); h=colorbar; set(h,'ticklabelinterpreter','latex'); legend('location', 'best');
+%   title(['Weak Rate']);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function containing data.   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x,t,RUNINFO]=load()
+function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   col_nbelts=1;
   col_nbeltsdg=2;
   col_cfl=3;
@@ -146,7 +222,7 @@ function [x,t,RUNINFO]=load()
   RUN_RAWDATA(i,:)=[  17220   17220 0.570  21400   32  500  52 25   1083]; RUNINFO{i}={74710, 'mb gmsh'}; i=i+1;
   RUN_RAWDATA(i,:)=[  19425   13563 0.464  40000   16  250  29 25   6580]; RUNINFO{i}={75040, 'tir de mine light & full'}; i=i+1;
   RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1669]; RUNINFO{i}={830669,'FNS visc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1; % First LNS.
   RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25   1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
   RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1 25    809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
   RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500  87 25    351]; RUNINFO{i}={120363,'mb gmsh FNS'}; i=i+1;
