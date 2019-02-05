@@ -10,7 +10,7 @@
 %   TODO.
 
 function [TAUSIG, TAUEPS] = frsvib2tausigtaueps(FR, SVIB)
-  one_over_twopifr = 1./(2.*pi*FR);
-  TAUSIG = 0.5*one_over_twopifr*(-SVIB + sqrt(SVIB.^2. + 4.));
+  one_over_twopifr = 1./(2*pi*FR);
+  TAUSIG = 0.5*one_over_twopifr.*(-SVIB + sqrt(SVIB.^2. + 4.));
   TAUEPS = TAUSIG + SVIB.*one_over_twopifr;
 end
