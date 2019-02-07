@@ -1678,12 +1678,13 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
                             dummy4,dummy5,wx_model(i),&
                             cp_model(i),cv_model(i),gamma_model(i),&
                             fr_model(i), svib_model(i)
+      
+      ! Compute tau_*.
+      eta_model(i) = (FOUR_THIRDS) * mu_model(i)
+      ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
+      tau_sigma_model(i) = 0.5*ONE_over_twopifr*(-svib_model(i) + sqrt(svib_model(i)**2.+4.)) ! See 10.1007/s11214-016-0324-6, equation (11).
+      tau_epsilon_model(i) = tau_sigma_model(i) + svib_model(i)*ONE_over_twopifr ! See 10.1007/s11214-016-0324-6, equation (11).
     endif
-    
-    eta_model(i) = (FOUR_THIRDS) * mu_model(i)
-    ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
-    tau_sigma_model(i) = 0.5*ONE_over_twopifr*(-svib_model(i) + sqrt(svib_model(i)**2.+4.)) ! See 10.1007/s11214-016-0324-6, equation (11).
-    tau_epsilon_model(i) = tau_sigma_model(i) + svib_model(i)*ONE_over_twopifr ! See 10.1007/s11214-016-0324-6, equation (11).
     
     IF(io/=0) EXIT
     !if(.true.) then ! DEBUG
