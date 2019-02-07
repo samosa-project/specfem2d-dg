@@ -222,6 +222,17 @@ subroutine compute_forces_acoustic_DG_main()
     ! Use RK4.
     
     ! DEBUG.
+    !do ispec = 1,nspec; do j = 1,NGLLZ; do i = 1,NGLLX !DEBUG
+    !  if(      abs(coord(1, ibool_before_perio(i, j, ispec))-0.)<4. & !DEBUG
+    !     .and. abs(coord(2, ibool_before_perio(i, j, ispec))-0.)<4.) then !DEBUG
+    !    !write(*,*) rho_DG(ibool_DG(ispec, i, j)) !DEBUG
+    !    !write(*,*) ispec, i, j, ibool_DG(ispec, i, j) !DEBUG
+    !    !if(rho_DG(ibool_DG(i, j, ispec))==minval(rho_DG)) then !DEBUG
+    !      !WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *" !DEBUG
+    !    write(*, *) "xz", coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)), & !DEBUG
+    !                "dotrho",dot_rho(ibool_DG(i,j,ispec)),dot_rho(ibool_DG(i,j,ispec)) !DEBUG
+    !  endif !DEBUG
+    !enddo; enddo; enddo !DEBUG
     !save_pressure = (gammaext_DG - ONEl)*( E_DG &
     !    - (HALFl)*(ONEl/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     

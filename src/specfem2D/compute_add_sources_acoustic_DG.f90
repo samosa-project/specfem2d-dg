@@ -391,3 +391,69 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
     endif ! Endif on SIGMA_SSF.
   enddo ! Enddo on i_source.
 end subroutine compute_add_sources_acoustic_DG_spread
+
+! ------------------------------------------------------------ !
+! compute_add_sources_acoustic_DG_spread                       !
+! ------------------------------------------------------------ !
+! TODO.
+  
+subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, vx, vz, it, i_stage)
+
+  use constants,only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
+
+  use specfem_par, only: nglob_DG,ispec_is_acoustic_DG,&!ispec_is_acoustic
+                         NSOURCES,&
+                         !source_type,
+                         source_time_function,&
+                         !is_proc_source,ispec_selected_source,&
+                         ibool_DG, &
+                         jacobian, wxgll, wzgll, ibool_before_perio, &
+                         USE_SPREAD_SSF, nspec, source_spatial_function_DG!, &
+                         !ABC_STRETCH, stretching_ya
+  implicit none
+
+  ! Input/output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_rho
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_rhovx
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_rhovz
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: vx
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: vz
+  integer, intent(in) :: it, i_stage
+  
+  ! Local variables.
+  real(kind=CUSTOM_REAL) :: temp_source!,x, y
+  !real(kind=CUSTOM_REAL), dimension(2) :: X1, X2, X3, X4, X0
+  !real(kind=CUSTOM_REAL), dimension(4, 2) :: Xc
+  real(kind=CUSTOM_REAL) :: wxlwzljacobianl
+  integer :: i, j, i_source, ispec, iglob, iglob_unique
+  real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
+  
+  ! TODO: shouldn't the source term be added with a "-" sign since it should classically be on the RHS instead? It is a matter of conventions, which should not be considered very important.
+  
+  do i_source = 1, NSOURCES ! Loop on sources.
+    stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
+    
+    if(USE_SPREAD_SSF) then
+      ! Case in which a source spatially distributed over more than one element was initialised.
+      do ispec = 1, nspec
+        if(ispec_is_acoustic_DG(ispec)) then
+          do j = 1, NGLLZ
+            do i = 1, NGLLX
+              iglob_unique = ibool_before_perio(i, j, ispec)
+              iglob = ibool_DG(i, j, ispec)
+              temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_source_spatial_function.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+              wxlwzljacobianl = real(wxgll(i), kind=CUSTOM_REAL)*real(wzgll(j), kind=CUSTOM_REAL)*jacobian(i, j, ispec)
+              
+              d_rho(iglob) = d_rho(iglob) + temp_source * wxlwzljacobianl
+              !write(*,*) 'd_rho(iglob)',d_rho(iglob) ! DEBUG
+              d_rhovx(iglob) = d_rhovx(iglob) + vx(iglob) * temp_source * wxlwzljacobianl
+              d_rhovz(iglob) = d_rhovz(iglob) + vz(iglob) * temp_source * wxlwzljacobianl
+            enddo
+          enddo
+        endif
+      enddo
+    else
+      stop 'mass source not implemented with unspread SSF (compute_add_sources_acoustic_DG.f90).'
+    endif ! Endif on SIGMA_SSF.
+  enddo ! Enddo on i_source.
+end subroutine compute_add_sources_acoustic_DG_mass

@@ -329,6 +329,8 @@ subroutine prepare_source_time_function()
             else
               source_time_function(i_source, it, i_stage)=0.
             endif
+            ! Add factor from source_file.
+            source_time_function(i_source, it, i_stage) = factor(i_source) * source_time_function(i_source, it, i_stage)
               
           else
             call exit_MPI(myrank,'unknown source time function')

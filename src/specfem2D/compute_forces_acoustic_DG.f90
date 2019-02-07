@@ -153,7 +153,10 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   
   ! Start by adding source terms.
   if(TYPE_SOURCE_DG == 1) then
-    call compute_add_sources_acoustic_DG_spread(dot_rho, it, i_stage)   
+    call compute_add_sources_acoustic_DG_spread(dot_rho, it, i_stage)
+    !call compute_add_sources_acoustic_DG_mass(dot_rho, dot_rhovx, dot_rhovz, &
+    !                                          rhovx_DG_main/rho_DG_main, rhovz_DG_main/rho_DG_main, &
+    !                                          it, i_stage)
   elseif(TYPE_SOURCE_DG == 2) then
     call compute_add_sources_acoustic_DG_spread(dot_rhovx, it, i_stage)
     call compute_add_sources_acoustic_DG_spread(dot_rhovz, it, i_stage)
