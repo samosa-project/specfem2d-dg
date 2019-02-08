@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   TODO.
 % Last modified: See file metadata.
 % Usage:         Configure the 3 steps according to your needs.
@@ -443,7 +442,7 @@ end
 disp(['[',mfilename,'] Verifying zero-mean, zero-start, and zero-end.']);
 mmveloc=mean(mean(veloc));
 disp(['[',mfilename,'] Maximum of velocity forcing at t=0     and t=T_max: ',num2str(max(abs(veloc(:,[1,end])))),',']);
-disp([blanks(length(mfilename)+2),'                             at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
+disp([blanks(length(mfilename)+2),'                           at x=x_min and x=x_max: ',num2str(max(abs(veloc([1,end],:))')),'.']);
 disp(['[',mfilename,'] Mean of velocity: ',num2str(mmveloc),'.']);
 while(mmveloc>1e-18)
   disp(['[',mfilename,'] Tweaking again.']);
