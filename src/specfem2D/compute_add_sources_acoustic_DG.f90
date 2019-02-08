@@ -406,7 +406,8 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, vx, vz,
                          !source_type,
                          source_time_function,&
                          !is_proc_source,ispec_selected_source,&
-                         ibool_DG, &
+                         ibool_DG,&
+                         SPREAD_SSF_SIGMA,coord,&
                          jacobian, wxgll, wzgll, ibool_before_perio, &
                          USE_SPREAD_SSF, nspec, source_spatial_function_DG!, &
                          !ABC_STRETCH, stretching_ya
@@ -427,6 +428,7 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, vx, vz,
   real(kind=CUSTOM_REAL) :: wxlwzljacobianl
   integer :: i, j, i_source, ispec, iglob, iglob_unique
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
+  real(kind=CUSTOM_REAL) :: distsqrd
   
   ! TODO: shouldn't the source term be added with a "-" sign since it should classically be on the RHS instead? It is a matter of conventions, which should not be considered very important.
   
@@ -446,8 +448,16 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, vx, vz,
               
               d_rho(iglob) = d_rho(iglob) + temp_source * wxlwzljacobianl
               !write(*,*) 'd_rho(iglob)',d_rho(iglob) ! DEBUG
-              d_rhovx(iglob) = d_rhovx(iglob) + vx(iglob) * temp_source * wxlwzljacobianl
-              d_rhovz(iglob) = d_rhovz(iglob) + vz(iglob) * temp_source * wxlwzljacobianl
+              !d_rhovx(iglob) = d_rhovx(iglob) + vx(iglob) * temp_source * wxlwzljacobianl
+              !d_rhovz(iglob) = d_rhovz(iglob) + vz(iglob) * temp_source * wxlwzljacobianl
+              
+              
+              distsqrd =   (coord(1, iglob_unique) - 0.)**2. &
+                         + (coord(2, iglob_unique) - 0.)**2.
+              temp_source = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.)) * 2.*sqrt(distsqrd)/(SPREAD_SSF_SIGMA**2.)
+              
+              d_rhovx(iglob) = d_rhovx(iglob) + temp_source * wxlwzljacobianl
+              d_rhovz(iglob) = d_rhovz(iglob) + temp_source * wxlwzljacobianl
             enddo
           enddo
         endif

@@ -320,7 +320,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     rho0 = ONEl
     RR   = 1.!8.3145_CUSTOM_REAL
     gammaext_DG(ibool_DG(i, j, ispec)) = 1.4
-    gravityext(i, j, ispec) = 1
+    gravityext(i, j, ispec) = 1.
     !if(z <= 1._CUSTOM_REAL) &
     p_DG_P = p0*exp(-(z-ONEl/(TWOl))/(RR*Tl))
     if(z > ONEl/TWOl) &
