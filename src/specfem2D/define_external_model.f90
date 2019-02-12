@@ -1532,7 +1532,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
         EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
-        USE_DISCONTINUOUS_METHOD
+        USE_DISCONTINUOUS_METHOD,deltat
   
   implicit none
   
@@ -1543,6 +1543,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HUGEVAL = 9999._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: THRSHLD_CO2 = 10._CUSTOM_REAL ! Threshold for CO2 relaxation parameters.
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: z_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: density_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: vp_model
@@ -1684,6 +1685,69 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
       tau_sigma_model(i) = 0.5*ONE_over_twopifr*(-svib_model(i) + sqrt(svib_model(i)**2.+4.)) ! See 10.1007/s11214-016-0324-6, equation (11).
       tau_epsilon_model(i) = tau_sigma_model(i) + svib_model(i)*ONE_over_twopifr ! See 10.1007/s11214-016-0324-6, equation (11).
+      
+      if(fr_model(i) >= THRSHLD_CO2*0.5/deltat) then
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* In the model, there exists a *"
+        write(*,*) "* f_r > THRSHLD_CO2*f_max      *"
+        write(*,*) "*       = THRSHLD_CO2*0.5*/dt  *"
+        write(*,*) "* (this run's highest possible *"
+        write(*,*) "* frequency, with an empirical *"
+        write(*,*) "* threshold). Because of this, *"
+        write(*,*) "* we disable attenuation here: *"
+        write(*,*) "* \tau_{\epsilon,\sigma}=1.    *"
+        write(*,*) "********************************"
+        write(*,*) "* (z,THRSHLD_CO2) = ", z_model(i), THRSHLD_CO2
+        write(*,*) "********************************"
+        tau_sigma_model(i)   = ONE
+        tau_epsilon_model(i) = ONE
+      endif
+      
+      !if(.false.) then
+      !  !if(z_model(i)<=(mesh_zmax-coord_interface)) then ! Only check relaxation inside domain.
+      !    if(min(tau_sigma_model(i), tau_epsilon_model(i)) < deltat*THRSHLD_CO2) then
+      !      ! THRSHLD_CO2=21.4 was empirically found to work, on a case where (...)=2.
+      !      ! Trying to explain it:
+      !      ! if     f_r                       > 67*f_max
+      !      !    <=> f_r/f_max                 > 67
+      !      !    <=> (...)/(4*pi/tau) * (2*dt) > 67                 (formula above)
+      !      !    <=> tau                       < 67*(...)/(2*pi)*dt
+      !      !    <=> tau                       < 21.4 * dt          (if (...)\simeq2)
+      !      ! then there is a problem.
+      !      ! Maybe consider the substeps and not only the steps...
+      !      ! TODO: clarify all that.
+      !      write(*,*) "********************************"
+      !      write(*,*) "*           WARNING            *"
+      !      write(*,*) "********************************"
+      !      write(*,*) "* In the model, there exists a *"
+      !      write(*,*) "* tau < Dt*THRSHLD_CO2.      *"
+      !      !write(*,*) "* z =            ",z_model(i)
+      !      !write(*,*) "* \tau_\epsilon =",tau_epsilon_model(i)
+      !      !write(*,*) "* \tau_\sigma =  ",tau_sigma_model(i)
+      !      !write(*,*) "* Dt =           ",deltat
+      !      !write(*,*) "* THRSHLD_CO2 =",THRSHLD_CO2
+      !      write(*,*) "* z, \tau_{\epsilon,\sigma}, Dt, THRSHLD_CO2 = ",&
+      !                 z_model(i),tau_epsilon_model(i),tau_sigma_model(i),deltat,THRSHLD_CO2
+      !      !write(*,*) "* svib_factor(i) =",(-svib_model(i) + sqrt(svib_model(i)**2.+4.))
+      !      write(*,*) "* This has proven not to work  *"
+      !      write(*,*) "* well. We hereby force        *"
+      !      write(*,*) "* \tau_{\epsilon,\sigma}=1.    *"
+      !      write(*,*) "********************************"
+      !      write(*,*) "* To prevent this, either make *"
+      !      write(*,*) "* sure that                    *"
+      !      write(*,*) "* \tau_{\epsilon,\sigma} is    *"
+      !      write(*,*) "* high enough (> Dt*THRSHLD_CO2 = ",(deltat*THRSHLD_CO2),")"
+      !      write(*,*) "* or make sure Dt is small     *"
+      !      write(*,*) "* enough (< min(\tau_{\epsilon,\sigma})/THRSHLD_CO2 = ",&
+      !                 (min(tau_sigma_model(i), tau_epsilon_model(i))/THRSHLD_CO2),")."
+      !      write(*,*) "********************************"
+      !      tau_sigma_model(i)=ONE
+      !      tau_epsilon_model(i)=ONE
+      !    endif
+      !  !endif
+      !endif
     endif
     
     ! Compute eta, in all cases.
