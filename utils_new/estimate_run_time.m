@@ -18,21 +18,21 @@ format longG;
 
 [data, t, info, ~]=load_data(); % Load data (see function below).
 
-plot_rate = 1;
+plot_rate = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 20;
-nstepseismo = 25;
+nstations   = 131;
+nstepseismo = 50;
 
-neltot      = 137688;
-neldg       = neltot;
+neltot      = 1226000;
+neldg       = neltot-2000*21;
 
 nstepsnap   = 500;
-nsteptot    = 30000;
+nsteptot    = 113000;
 
-nproc       = 96;
+nproc       = 384;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,6 +231,8 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87 25    941]; RUNINFO{i}={120621,'mb gmsh LNS 400km (2)'}; i=i+1;
   RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500   4 25  41137]; RUNINFO{i}={130337,'test DAG FNS'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 195500  195500 0.490  24600  128  500  20 25   4080]; RUNINFO{i}={103088,'DAG FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500  87 25  12591]; RUNINFO{i}={144785,'mb gmsh LNS longestyet'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250  10 25    972]; RUNINFO{i}={144802,'tir de mine FNS'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;
