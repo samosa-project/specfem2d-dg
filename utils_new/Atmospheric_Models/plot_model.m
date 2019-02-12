@@ -1,9 +1,16 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
-% Description:   TODO.
-% Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         N/A.
+% Description:   Plots an atmospheric model main quantities.
+% Notes:         Needs:
+%                a) .m scripts and functions (if not alongside this
+%                   script, recover via Léo):
+%                  1) extract_atmos_model.m
+%
+% Usage:
+%   TODO.
+% with:
+%   TODO.
+% yields:
+%   TODO.
 
 function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
@@ -11,11 +18,11 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
   end
   
-  format compact;
-  set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
-  set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);
-  set(0, 'DefaultTextInterpreter', 'latex');
-  set(0, 'DefaultLegendInterpreter', 'latex');
+%   format compact;
+%   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
+%   set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);
+%   set(0, 'DefaultTextInterpreter', 'latex');
+%   set(0, 'DefaultLegendInterpreter', 'latex');
   
   [Z, RHO, T, C, ~, ~, ...
    ~, NSQ, ~, ~, ~, ~, ~, W, ~, ~, ~] = ...

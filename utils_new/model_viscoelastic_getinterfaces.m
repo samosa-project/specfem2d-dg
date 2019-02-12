@@ -91,19 +91,42 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
     thicks(i)=thick;
   end
   thicks=thicks';
-  disp(['[',mfilename,'] Chosen thicknesses: ']);
-  disp(thicks);
+%   disp(['[',mfilename,'] Chosen thicknesses: ']);
+%   disp(thicks);
 
   % Generate interfaces.
   interf_s=[0;0-cumsum(thicks)];
 
   % Generate optimal number of elements with formula f0*np*thickness/vp.
+  recompute_in=1;
   recompute=1;
   while(recompute)
-    nelts_s = ceil(recompute * f0 * np * thicks ./ models(:,3));
-    disp(['[',mfilename,'] Computed number of elements: ']);
-    disp(nelts_s);
-    recompute=input(['[',mfilename,'] Recompute (0 for no, mutiplying factor for yes)? > ']);
+    if(numel(recompute_in)==1 && recompute_in==0)
+%       disp(['[',mfilename,']   > ==0: ']);
+      recompute=recompute_in;
+      override=0;
+      break;
+    elseif(numel(recompute_in)==1 && recompute_in~=0)
+%       disp(['[',mfilename,']   > mult. factor: ']);
+      recompute=recompute_in;
+      override=0;
+    elseif(numel(recompute_in)==numel(nelts_s))
+%       disp(['[',mfilename,']   > override: ']);
+      recompute=1;
+      override=1;
+      nelts_s=recompute_in;
+    else
+      disp(['[',mfilename,'] > Wrong input, going back to default.']);
+      recompute=1;
+      override=0;
+    end
+    if(not(override))
+      nelts_s = ceil(recompute * f0 * np * thicks ./ models(:,3));
+    end
+    nelts_s=ceil(reshape(nelts_s,[numel(nelts_s),1]));
+    disp(['[',mfilename,'] Computed [thicks, nelts_s, dx]: ']);
+    disp([thicks, nelts_s, thicks./nelts_s]);
+    recompute_in=input(['[',mfilename,'] Recompute (0 for no, mutiplying factor for yes, or overriding new array for yes)? > ']);
   end
   
   % Make bottom-most one first.

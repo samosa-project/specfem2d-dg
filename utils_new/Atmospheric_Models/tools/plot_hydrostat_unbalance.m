@@ -1,3 +1,14 @@
+% Author:        Léo Martire.
+% Description:   TODO.
+% Notes:         TODO.
+%
+% Usage:
+%   TODO.
+% with:
+%   TODO.
+% yields:
+%   TODO.
+
 function plot_hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W, tit_plus, save_plots)
   figure();
   [term1, term2, term3]=hydrostat_unbalance(Z, RHO, TEMP, P, G, KAPPA, VISCMU, W);

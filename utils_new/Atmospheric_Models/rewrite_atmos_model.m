@@ -48,39 +48,39 @@ function [] = rewrite_atmos_model(output_file, header_file, Z, RHO, T, C, P, H, 
   % Check provided dimensions.
   dimensions=[size(Z);size(RHO);size(T);size(C);size(P);size(H);size(G);size(NBVSQ);size(KAP);size(MU);size(MUVOL);size(Wnorth);size(Weast);size(W);size(Cp);size(Cv);size(GAM)];
   if(any(dimensions(:,1)/dimensions(1,1)~=1) || any(dimensions(:,2)/dimensions(1,2)~=1))
-    disp(['  [',mfilename,', ERROR] Dimensions of inputs:']);
+    disp(['[',mfilename,', ERROR] Dimensions of inputs:']);
     dimensions
-    error(['  [',mfilename,', ERROR] Dimensions of all datasets must agree.']);
+    error(['[',mfilename,', ERROR] Dimensions of all datasets must agree.']);
   end
   
   % Treat eventual FR/SVIB presence in arguments' list.
   if(exist('FR') && exist('SVIB'))
-    disp(['  [',mfilename,'] FR and SVIB given. They will be added to atmospheric model file.']);
+    disp(['[',mfilename,'] FR and SVIB given. They will be added to atmospheric model file.']);
     frsvibgiven=1;
   else
     frsvibgiven=0;
   end
   if(exist('FR') && any(size(Z)~=size(FR)))
-    error(['  [',mfilename,', ERROR] Dimensions of FR must agree with other dimensions.']);
+    error(['[',mfilename,', ERROR] Dimensions of FR must agree with other dimensions.']);
   end
   if(exist('SVIB') && any(size(Z)~=size(SVIB)))
-    error(['  [',mfilename,', ERROR] Dimensions of SVIB must agree with other dimensions.']);
+    error(['[',mfilename,', ERROR] Dimensions of SVIB must agree with other dimensions.']);
   end
   if(xor(~exist('FR'), ~exist('SVIB')))
-    error(['  [',mfilename,', ERROR] FR and SVIB must be given together.']);
+    error(['[',mfilename,', ERROR] FR and SVIB must be given together.']);
   end
   
   % Informative print.
-  disp(['  [',mfilename,'] Maximum acceptable DX for CFD computation with this atmospheric model is ',num2str(min(C).*(1-max(W./C))),' / (max(f)*NPointsPerWavelength).']);
+  disp(['[',mfilename,'] Maximum acceptable DX for CFD computation with this atmospheric model is ',num2str(min(C).*(1-max(W./C))),' / (max(f)*NPointsPerWavelength).']);
   
   % Check if output file exists.
   if(exist(output_file,'file'))
     decision=-1;
     while(not(ismember(decision,[0,1])))
-      decision=input([char(strcat("  [",mfilename,"] File (", output_file,') exists.\n  [',mfilename,'] Overwrite? (0 for no, 1 for yes) >')),' ']);
+      decision=input([char(strcat("[",mfilename,"] File (", output_file,') exists.\n[',mfilename,'] Overwrite? (0 for no, 1 for yes) >')),' ']);
     end
     if(decision==0)
-      disp(['  [',mfilename,'] Overwrite cancelled, stopping script.']); return;
+      disp(['[',mfilename,'] Overwrite cancelled, stopping script.']); return;
     end
   end
   
@@ -94,14 +94,14 @@ function [] = rewrite_atmos_model(output_file, header_file, Z, RHO, T, C, P, H, 
     % Open "old" model to read its header.
     f_old = fopen(header_file, 'r');
     if(f_old==-1)
-      disp(strcat("  [",mfilename,", ERROR] Cannot open old data file ", header_file,').'))
+      disp(strcat("[",mfilename,", ERROR] Cannot open old data file ", header_file,').'))
     end
   end
   
   % Open "new" model to write in it.
   f_new = fopen(output_file, 'w');
   if(f_new==-1)
-    error(strcat("  [",mfilename,", ERROR] Cannot open new data file ", output_file,').'))
+    error(strcat("[",mfilename,", ERROR] Cannot open new data file ", output_file,').'))
   end
   
   % Write header.
@@ -135,7 +135,7 @@ function [] = rewrite_atmos_model(output_file, header_file, Z, RHO, T, C, P, H, 
   end
   
   fclose('all');
-  disp(strcat("  [",mfilename,"] Model output to file: '", output_file, "'."));
+  disp(strcat("[",mfilename,"] Model output to file: '", output_file, "'."));
 end
 
 function checknonsense(output_file, header_file, Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUVOL, Wnorth, Weast, W, Cp, Cv, GAM, FR, SVIB)

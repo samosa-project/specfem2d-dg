@@ -19,6 +19,7 @@ function [] = model_getdxdt(atmospheric_model_file)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file''.']);
   end
   
+  addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'); % for model_viscoelastic_getinterfaces.m
   format compact;
   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
   set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);

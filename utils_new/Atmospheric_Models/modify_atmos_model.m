@@ -28,6 +28,7 @@ end
 % Ref.: http://acoustique.ec-lyon.fr/publi/haniquecockenpot_thesis.pdf.
 if(strcmp(method, 'integrate'))
   D=differentiation_matrix(Z, 1);
+  nz=numel(Z);
   itermax = 1e5;
   err = ones(nz, 1);
   residual = zeros(nz, 1);
