@@ -8,32 +8,42 @@
 %                a) .m scripts and functions (if not alongside this script, recover via Léo):
 %                  1) bulkfilter.m
 
-function [] = plot_time_v_dist(Ztime,Zamp,distance)
-  format compact;
-  set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-  set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
-  set(0, 'DefaultTextInterpreter', 'latex');
-  set(0, 'DefaultLegendInterpreter', 'latex');
+function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
+  if(nargin<3)
+    error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''times,values,distances''.']);
+  end
+  if(not(exist('figtitle')))
+    % not found, make default
+    figtitle='';
+  end
+  if(not(exist('distname')))
+    distname=['distance $d$ '];
+  end
+%   format compact;
+%   set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+%   set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+%   set(0, 'DefaultTextInterpreter', 'latex');
+%   set(0, 'DefaultLegendInterpreter', 'latex');
   
   % Make sure data has right shape.
   % The following lines assume we have more time steps than stations to plot.
-  Ztime=reshape(Ztime,[min(size(Ztime)), max(size(Ztime))]);
-  Zamp=reshape(Zamp,[min(size(Zamp)), max(size(Zamp))]);
-  if(not(all(size(Ztime)==size(Zamp))))
+  times  = reshape(times, [min(size(times)), max(size(times))]);
+  values = reshape(values, [min(size(values)), max(size(values))]);
+  if(not(all(size(times)==size(values))))
     error(['[',mfilename,', ERROR] time data and amplitude should have the same size, but right now do not.']);
   end
-  nbstat=size(Ztime,1);
-  if(not(numel(distance)==nbstat))
+  nbstat = size(times, 1);
+  if(not(numel(distances)==nbstat))
     error(['[',mfilename,', ERROR] distance array should contain the same number of stations as the number of data series, but right now do not.']);
   end
-  distance=reshape(distance,[nbstat, 1]);
+  distances = reshape(distances, [nbstat, 1]);
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load.                       %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  data_t = Ztime;
-  data_v = Zamp;
-  unknown_name = 'v_z';
+  data_t = times;
+  data_v = values;
+  unknown_name = 'v';
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Ask for user input.         %
@@ -89,12 +99,12 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
 %     case 4
 %       distance = dist_to_sources; dist_symbol = "d"; dist_name = "distance";
 %   end
-  dist_symbol='d';
-  dist_name = 'distance';
-  distance = distance / dist_factor;
+%   dist_symbol='d';
+%   dist_name = 'distance';
+  distances = distances / dist_factor;
   % Sort according to chosen distance.
 %   [~, isort] = sort(distance(istattab(1:nstat)));
-  [~, isort] = sort(distance);
+  [~, isort] = sort(distances);
 
   % Remove mean value.
   for i = 1:nbstat
@@ -118,7 +128,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
     dist_over_ptp = 1;
   else
     %dist_over_ptp = max(diff(distance(istattab(isort)))) / max(peak2peak(data_v(isort, :), 2));
-    dist_over_ptp = max(diff(distance(isort))) / max(peak2peak(data_v(isort, :), 2));
+    dist_over_ptp = max(diff(distances(isort))) / max(peak2peak(data_v(isort, :), 2));
   end
   if (dist_over_ptp > 1e15)
     error(['[', mfilename, ', ERROR] Variable dist_over_ptp is > 1e15, probably coming from the signal being very small everywhere for one of the signals.']);
@@ -148,18 +158,19 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
       istat_glob = istat;
       %     vertical_shift{istat}=*distance(istat_glob);
       name{istat} = strcat('S', num2str(istat_glob));
-      yticklabel = [yticklabel, sprintf(" %.2f",distance(istat_glob))];
-      plot(data_t(istat, :), distance(istat_glob) + dist_over_ptp * data_v(istat, :), 'displayname', name{istat}, 'color', colour);
+      yticklabel = [yticklabel, sprintf(" %.2f",distances(istat_glob))];
+      plot(data_t(istat, :), distances(istat_glob) + dist_over_ptp * data_v(istat, :), 'displayname', name{istat}, 'color', colour);
       hold on;
     end
     xlim([min(data_t(:, 1)), max(data_t(:, end))]);
-    xlabel('time [s]');
-    ylabel(strcat("$", dist_symbol, " + \left(", coef_string, "\right)\times ", unknown_name,'$'));
+    xlabel('time $t$ [s]');
+    ylabel(['$d + \left(', coef_string, '\right)\times ', unknown_name,'$']);
     scalez = input(['[', mfilename, '] Rechoose coefficient (0 for no, new value for yes)? > ']);
   end
 
-  ylabel(strcat(dist_name, " $", dist_symbol, "$ ", dist_unit)); %, " $\longrightarrow$"));
+  ylabel(strcat(distname, dist_unit)); %, " $\longrightarrow$"));
   set(gca, 'TickLabelInterpreter', 'latex');
+  title(figtitle);
 
   % Time axis limits.
   tmin = input(['[', mfilename, '] t_min (', num2str(min(min(data_t))), ' now)? > ']);
@@ -179,7 +190,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
   end
   if (labeleach == 1)
     % YTicks.
-    yticks(distance(isort));
+    yticks(distances(isort));
 %     % Stations' names labels.
 %     for i = 1:size(isort, 1)
 %       text(1.01 * tmax, distance(istattab(isort(i))), name{isort(i)}, 'HorizontalAlignment', 'left');
@@ -207,7 +218,7 @@ function [] = plot_time_v_dist(Ztime,Zamp,distance)
       for i = 1:10
         absc = curxlim(1) + diff(curxlim) * i / 11;
 %         plot(absc * [1, 1], distance(isort(1)) * [1, 1] + dist_over_ptp * 0.5 * i * 10 ^ (min_amplitude_log10) * [- 1, 1], 'DisplayName', sprintf(" %.0e",i*10^(min_amplitude_log10)));
-        plot(absc * [1, 1], distance(isort(1)) * [1, 1] + dist_over_ptp * 0.5 * scaalz(i) * [- 1, 1], 'DisplayName', sprintf(" %.0e",scaalz(i)));
+        plot(absc * [1, 1], distances(isort(1)) * [1, 1] + dist_over_ptp * 0.5 * scaalz(i) * [- 1, 1], 'DisplayName', sprintf(" %.0e",scaalz(i)));
       end
     end
   end

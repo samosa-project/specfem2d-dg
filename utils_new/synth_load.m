@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   TODO.
 % Last modified: See file metadata.
 % Usage:         N/A.
@@ -55,14 +54,15 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-% fig_title = strcat('Mars Coupling');
+fig_title = strcat('Mars Coupling');
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479218_clean/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1484867/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1486113/');
 
 % TNTGlanes
-fig_title = strcat('Tirs de Mine Glanes');
-rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1508049_40hz/');
+% fig_title = strcat('Tirs de Mine Glanes');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1508049_40hz/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479543_clean/');
 % rootd = strcat(SPCFMEXloc,'tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1216334/');

@@ -107,12 +107,12 @@ end
 function [xminmax, zminmax, interface, Xsource, debfin, d, name]=mars_insight()
 %   Xsource=[0,40e3];
   Xsource=[0,500];
-  xminmax=[-100,100]*1e3;
+  xminmax=[-80,80]*1e3;
 %   zminmax=[-5,60]*1e3;
   zminmax=[-5,30]*1e3;
-  thickabstop=5e3;
+  thickabstop=0;
   spacingstations=4e3;
-  verticalaway_x=32e3;
+%   verticalaway_x=32e3;
   interface=[-1e9,1e9;0,0];
   ground_clearance=5; % altitude/depth of the ground stations.
   shift_for_tiltcomputation=5; % horizontal shift for stations used for tilt computation
@@ -127,7 +127,7 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name]=mars_insight()
   lid=lid+1;
   d(lid)=spacingstations;
   debfin(lid,1,:)=[Xsource(1),Xsource(1)]; % xdeb xfin
-  debfin(lid,2,:)=[Xsource(2)+d(lid),max(zminmax)-thickabstop]; % zdeb zfin
+  debfin(lid,2,:)=[Xsource(2)+d(lid),max(zminmax)-thickabstop-d(lid)]; % zdeb zfin
   name{lid} = ['above source'];
   
 %   lid=lid+1;

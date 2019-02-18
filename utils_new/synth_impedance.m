@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Computes ratio of pressure over vertical velocity, in
 %                order to estimate impedance.
 % Last modified: See file metadata.
@@ -79,9 +78,9 @@ xlim([min(t), max(t)]);% set(gca, 'TickLabelInterpreter', 'latex'); grid on;
 linkaxes(ax,'x');
 
 for i=1:3
-  setaxformats(ax(i))
+  setaxformats(ax(i));
 end
-xlim([12,18]);
+% xlim([12,18]);
 
 % other displays
 disp(['[', mfilename, '] Recall:     dp recorded ',recordpointdp,'.']);

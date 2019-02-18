@@ -23,14 +23,14 @@ plot_rate = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 204;
-nstepseismo = 50;
+nstations   = 164;
+nstepseismo = 100;
 
-neltot      = 2500*830;
-neldg       = neltot-2500*27;
+neltot      = 1600*830;
+neldg       = neltot-1600*27;
 
-nstepsnap   = 500;
-nsteptot    = 113000;
+nstepsnap   = 2000;
+nsteptot    = 460000;
 
 nproc       = 1008;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,6 +240,7 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500  15 50     41]; RUNINFO{i}={1486004,'mars insight FNS cut'}; i=i+1;
   RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   8 50     41]; RUNINFO{i}={1486113,'mars insight FNS cut'}; i=i+1;
   RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000  18 25    401]; RUNINFO{i}={1508049,'tir de mine FNS 40Hz'}; i=i+1;
+%   RUN_RAWDATA(i,:)=[2075000 2007500 1.075  12600 1008  500 204 50      0]; RUNINFO{i}={1529411,'mars insight FNS 3hz'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;
