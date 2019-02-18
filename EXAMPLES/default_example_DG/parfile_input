@@ -236,7 +236,9 @@ xdeb                            =   0.0d0
 zdeb                            =  10.0d0
 xfin                            =   0.0d0
 zfin                            =  40.0d0
-record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface.
+record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface. For DG, leave this to .false. or be sure of what you're doing.
+
+# N.B.: Due to the interpolation using the GLL points, placing a station in a DG fluid and very close to a solid/fluid boundary may lead to the station recording the quantity in the solid instead of the quantity in the fluid. Make sure S_z>0.05*dz (S_z the first fluid station's altitude, dz the first fluid element's thickness). E.g.: if your first layer has dz=100m, the lowest fluid station should be at least 5m above ground. 0.05 is an emprical value, higher values may be needed depending on the actual impedance ratio. Highest in the first element is always safest.
 
 #---------------------------------------------------------------------#
 #                                                                     #
