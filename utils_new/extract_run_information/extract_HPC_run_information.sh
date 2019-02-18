@@ -1,6 +1,5 @@
 #!/bin/bash
 # Author:        Léo Martire.
-# Mail:          leo.martire@outlook.com
 # Description:   Reads an output folder and extracts all available information.
 # Last modified: See file metadata.
 # Usage:         N/A.
@@ -59,7 +58,7 @@ echo "  Synthetics saving: $synthfreq timesteps."
 
 dateregexep="D a t e : [0-9][0-9] - [0-9][0-9] - [0-9][0-9][0-9][0-9]"
 timeregexp="T i m e : [0-9][0-9]:[0-9][0-9]:[0-9][0-9]"
-slurmregexp="[0-9]?[0-9][0-9][0-9][0-9][0-9]"
+slurmregexp="[0-9]?[0-9]?[0-9]?[0-9]?[0-9][0-9][0-9][0-9][0-9]"
 
 DATELINE1=$(grep -e "$dateregexep" $slurm | head -1)
 DATELINE2=$(grep -e "$dateregexep" $slurm | tail -1) # If job did not terminate completely, this is the same as DATELINE1.

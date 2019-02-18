@@ -12,10 +12,24 @@
 % yields:
 %   TODO.
 
-function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
-  
-  if(nargin~=4)
+function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW)
+
+  if(nargin<4)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
+  end
+  
+  if(not(exist('LRorDWUW')))
+    % not found, make default: LR
+    LRorDWUW='LR';
+  else
+    if(strcmp(LRorDWUW,'DWUW'))
+      % found alright
+    elseif(strcmp(LRorDWUW,'LR'))
+      % found alright
+    else
+      % found but not alright, make default: LR
+      LRorDWUW='LR';
+    end
   end
   
 %   format compact;
@@ -44,15 +58,24 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
   ax(1)=subplot(231);
   myplot(RHO, Z, marker, colour, datestr, 'sx');
-  xlabel('$\rho$ (kg/m$^3$)');
-  ylabel('$z$ (m)'); % xlim([0.1*min(RHO),10*max(RHO)]);
+  xlabel('$\rho$ [kg/m$^3$]');
+  ylabel('$z$ [m]'); % xlim([0.1*min(RHO),10*max(RHO)]);
   
   ax(2)=subplot(232);
-  myplot(C, Z, marker, colour, '$c$', 'p'); xlabel('$c$ (m/s)'); hold on
+  myplot(C, Z, marker, colour, '$c$', 'p'); xlabel('$c$ [m/s]'); hold on
   if(max(abs(W))>thresheqzero)
     % If wind==0, no need to plot effective sound speed.
-    myplot(min(C+W,C-W), Z, marker, 'b', 'upwind $c_e$', 'p');
-    myplot(max(C+W,C-W), Z, marker, 'r', 'downwind $c_e$', 'p');
+    if(strcmp(LRorDWUW,'DWUW'))
+      % plot downwind/upwind effective sound speed
+      myplot(min(C+W,C-W), Z, marker, 'b', 'upwind $c_e$', 'p');
+      myplot(max(C+W,C-W), Z, marker, 'r', 'downwind $c_e$', 'p');
+    elseif(strcmp(LRorDWUW,'LR'))
+      % plot left/right effective sound speed
+      myplot(C+W, Z, marker, [0.9290    0.6940    0.1250], 'rightward $c_e$', 'p');
+      myplot(C-W, Z, marker, [0.6350    0.0780    0.1840], 'leftward $c_e$', 'p');
+    else
+      error('kek');
+    end
     legend('Location', 'best');
   end
   yticklabels([]);
@@ -66,7 +89,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
   ax(3)=subplot(233);
   myplot(NSQ, Z, marker, colour, datestr, 'p');
-  xlabel('$N^2$ (rad$^2$/s$^2$)'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
+  xlabel('$N^2$ [rad$^2$/s$^2$]'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   yticklabels([]);
   if(max(abs(NSQ-mean(NSQ)))>thresheqzero)
     % If NSQ==cst, no need to adjust.
@@ -77,8 +100,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
   ax(4)=subplot(234);
   myplot(T, Z, marker, colour, datestr, 'p');
-  xlabel('$T$ ($^\circ$C)');
-  ylabel('$z$ (m)'); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
+  xlabel('$T$ [$^\circ$C]');
+  ylabel('$z$ [m]'); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   addatmosphericseparationlines(T, atmalts);
   if(max(abs(T-mean(T)))>thresheqzero)
     % If T==cst, no need to adjust.
@@ -87,7 +110,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
   ax(5)=subplot(235);
   myplot(W, Z, marker, colour, datestr, 'p');
-  xlabel('$w$ (m/s)');
+  xlabel('$w$ [m/s]');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   addatmosphericseparationlines(W, atmalts);
@@ -98,7 +121,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts)
   
   ax(6)=subplot(236);
   myplot(DZW, Z, marker, colour, datestr, 'p');
-  xlabel('$\partial_zw$ (1/s)');
+  xlabel('$\partial_zw$ [1/s]');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   if(max(abs(DZW))>thresheqzero)

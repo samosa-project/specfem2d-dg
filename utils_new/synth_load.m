@@ -19,7 +19,7 @@ addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospher
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Default parameters' values. %
+% Default parameters' values.  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Those can be re-set inline for each OUTPUT_FILES directory (see "OUTPUT_FILES location" section below).
 rescale_factor = 1; % Rescaling: by default, do no rescale.
@@ -53,12 +53,37 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% DAG
-% fig_title = strcat('DAG');
-% rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
-% rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
-% rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
-% rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');
+
+% Mars AGW.
+% fig_title = strcat('Mars Coupling');
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479218_clean/');
+% rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1484867/');
+% rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1486113/');
+
+% TNTGlanes
+fig_title = strcat('Tirs de Mine Glanes');
+rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1508049_40hz/');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479543_clean/');
+% rootd = strcat(SPCFMEXloc,'tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1216334/');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204916_spuriousreflexions/');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_75040/');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_74752/');
+% rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
+% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
+% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
+% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
+
+% Microbaroms ULDB.
+% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1206217/'); % Basically same as 1205575.
+% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
+% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');
+% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1203633_FNS/');
+% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
+% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
+% rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
+% rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % TNTGlanes
 % fig_title = strcat('Validation LNS');
@@ -116,33 +141,10 @@ unknown = 'BXZ'; % _z.
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf/'); % "bad" result, same as OUTPUT_FILES_M.3_dx.5gmshstruct_cfl.424_spreadssf
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
-% TNTGlanes
-% fig_title = strcat('Tirs de Mine Glanes');
-% rootd = strcat(SPCFMEXloc,'tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
-% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1216334/');
-% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204916_spuriousreflexions/');
-% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_75040/');
-% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_74752/');
-% rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
-% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
-% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
-
-% Microbaroms ULDB.
-% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1206217/'); % Basically same as 1205575.
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1203633_FNS/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
-% rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
-% rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
-
 % Tests.
-fig_title = 'test';
+% fig_title = 'test';
 % rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=0_kmax=2/');
-rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=d_kmax=2/');
+% rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=d_kmax=2/');
 % rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES/');
 
 %rootd=strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
@@ -305,6 +307,7 @@ if (convert_to_relative_coords == 1)
   xstattab = xstattab - pos_sources(1, 1);
   ystattab = ystattab - pos_interface;
 end
+ax=[];
 for istat = 1:nstat
   istat_glob = istattab(istat); % Recover global number of station.
 
@@ -694,3 +697,10 @@ end
 
 % Mars AGW.
 % rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
+
+% DAG
+% fig_title = strcat('DAG');
+% rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
+% rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
+% rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');

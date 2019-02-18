@@ -20,7 +20,7 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''f0, np''.']);
   end
 
-  parfile=input(['[',mfilename,'] path to parfile > '],'s');
+  parfile=input(['[',mfilename,'] Path to parfile > '],'s');
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Parsing parfile to find     %
@@ -34,6 +34,9 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
   grp_remove_commentlines=['grep -v "^#.*"'];
   grp_remove_tags=['grep -v "',tag_before,'" | grep -v "',tag_after,'"'];
   [stat,res]=system([grp_find_after,' | ',grp_find_before,' | ',grp_remove_commentlines,' | ',grp_remove_tags]);
+  if(isempty(res))
+    error(['[',mfilename,', ERROR] grep returned nothing. Make sure you gave a path to a valid parfile.']);
+  end
   returnsfoundIDs=regexp(res,'\n');
   models=[];
   strt=1;
@@ -71,8 +74,8 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
 
   % Ask user for which models to use.
   IDparf=[];
-  while (not(length(IDparf)>=1 && min(IDparf)>1 && max(IDparf)<=size(models,1)))
-    IDparf=input(['[',mfilename,'] Model numbers to consider as viscoelastic (Matlab format, between 1 and <= ',num2str(size(models,1)),')? > ']);
+  while (not(length(IDparf)>=1 && min(IDparf)>=1 && max(IDparf)<=size(models,1)))
+    IDparf=input(['[',mfilename,'] Model numbers to consider as viscoelastic (Matlab format, >=1 and <= ',num2str(size(models,1)),')? > ']);
   end
 
   % Crop unnecessary quantities.
@@ -124,7 +127,7 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
       nelts_s = ceil(recompute * f0 * np * thicks ./ models(:,3));
     end
     nelts_s=ceil(reshape(nelts_s,[numel(nelts_s),1]));
-    disp(['[',mfilename,'] Computed [thicks, nelts_s, dx]: ']);
+    disp(['[',mfilename,'] Computed [thicks, nelts_s, dz]: ']);
     disp([thicks, nelts_s, thicks./nelts_s]);
     recompute_in=input(['[',mfilename,'] Recompute (0 for no, mutiplying factor for yes, or overriding new array for yes)? > ']);
   end
