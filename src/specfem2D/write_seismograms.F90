@@ -257,7 +257,8 @@
                           seismo_offset,seismo_current, &
                           P_SV,SU_FORMAT,save_ASCII_seismograms, &
                           save_binary_seismograms_single,save_binary_seismograms_double, &
-                          x_source,z_source,any_acoustic_DG,ispec_is_acoustic_DG, ispec_selected_rec
+                          x_source,z_source!,any_acoustic_DG,ispec_is_acoustic_DG, ispec_selected_rec,&
+                          !coord, ibool ! DEBUG
   use specfem_par_lns
 
 ! uncomment this to save the ASCII *.sem* seismograms in binary instead, to save disk space and/or writing time
@@ -452,11 +453,15 @@
             !write(*,*) "irec", irec, "iorientation", iorientation, number_of_components ! DEBUG
             
             ! If DG parts exist, memory and disk space can be saved. If the station is in a DG element, we can skip all except one components. If not, we need not to do anything and save all components as default.
-            if(      any_acoustic_DG &
-               .and. iorientation/=2 &
-               .and. ispec_is_acoustic_DG(ispec_selected_rec(irec))) then
-              cycle
-            endif
+            !write(*,*) 'KEKEKEKEKKEKEKEKEKEKE', irec, &! DEBUG
+            !           ispec_selected_rec(irec),&! DEBUG
+            !           iorientation, ispec_is_acoustic_DG(ispec_selected_rec(irec)),&! DEBUG
+            !           coord(:, ibool(3, 3, ispec_selected_rec(irec)))! DEBUG
+            !if(      any_acoustic_DG &
+            !   .and. iorientation/=2 &
+            !   .and. ispec_is_acoustic_DG(ispec_selected_rec(irec))) then
+            !  cycle
+            !endif
 
             if (iorientation == 1) then
               channel = 'BXX'
