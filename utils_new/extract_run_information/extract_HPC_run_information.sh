@@ -26,7 +26,7 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
-parfile=$(ls $folder/* | grep -P --regexp=".*[Pp]ar[_]?file")
+parfile=$(ls $folder/* | grep -P --regexp=".*[Pp]ar[_]?file") # Attemps to locate a parfile.
 
 echo "  SLURM file: '$slurm'."
 echo "  Parfile:    '$parfile'."
@@ -86,7 +86,7 @@ then
   #echo "    End date:    $DATECANCELLED (timestamp $STAMPCANCEL, job cancelled)."
   #elapsed=$(($STAMPCANCEL-$STAMPSTART))
   #echo "  Elapsed:           $elapsed seconds."
-elif grep -q "CANCELLED" $slurm; # This tries to find the cancelling message in a CEA .output file.
+elif grep -q -E "CANCELLED|FAILED" $slurm; # This tries to find the cancelling/failing message in a CEA .output file.
 then
   LINEWITHDATES=$(grep -e "end =" $slurm)
   TIMEEND=$(echo $LINEWITHDATES | grep -o "[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" | tail -1)

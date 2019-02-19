@@ -79,7 +79,7 @@ function [data_v_filtered] = bulkfilter(data_t, data_v)
       end
     end
   else
-    data_v_filtered=data_v;
+    data_v_filtered = data_v;
     disp(['[', mfilename, '] Data was not filtered.']);
   end
 end

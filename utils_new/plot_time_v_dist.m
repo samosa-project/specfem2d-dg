@@ -44,7 +44,20 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
   data_t = times;
   data_v = values;
   unknown_name = 'v';
-
+  
+%   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   % Parse ignored data.         %
+%   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   notignored_IDs={};
+%   for i = 1:nbstat
+%     % ignore NANs.
+% %     notignored_IDs{i} = find( not(isnan(data_v(i, :))) );
+%     diftims=[Inf,diff(data_t(i,:))]; % store differential time, put Inf at the very beginning to always consider the very first one
+%     notignored_IDs{i}=find(diftims>0); % ignore where differential time is negative or 0
+%     % ie, if times=[-1,0,1,2,3,0,0,0], ignore the trailing [0,0,0] and only consider the [-1,0,1,2,3]
+%   end
+%   ttt=data_t(1,notignored_IDs{1}); [min(ttt), max(ttt)]
+  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Ask for user input.         %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,8 +69,8 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
 %     data_v = data_v * rescale;
 %     disp(['[', mfilename, ', WARNING] Data was rescaled by a factor ', num2str(rescale), '.']);
 %   end
-
-  data_v=bulkfilter(data_t,data_v);
+  
+  data_v = bulkfilter(data_t, data_v);
   
   fign = - 1;
   fign = input(['[', mfilename, '] Figure number? > ']);
@@ -108,18 +121,23 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
 
   % Remove mean value.
   for i = 1:nbstat
+%     sel=notignored_IDs{i};
     gap2detrend = abs(data_v(i, :)-detrend(data_v(i, :)));
-    maxpercentdetrend=100*[max(gap2detrend)]/(max(data_v(i, :)) - min(data_v(i, :)));
+    maxpercentdetrend=100*[max(gap2detrend)]/(max(data_v(i, :)) - min(data_v(i, :))); % finds maximum gap ignoring eventual NaNs.
+%     gap2detrend = abs(data_v(i, sel)-detrend(data_v(i, sel)));
+%     maxpercentdetrend=100*[max(gap2detrend)]/(max(data_v(i, sel)) - min(data_v(i, sel))); % finds maximum gap ignoring eventual NaNs.
     if(max(maxpercentdetrend)>5)
       disp(['[',mfilename,'] For dataset n°',num2str(i),', detrend would shift data values by a quantity which is ',sprintf('%.2g',maxpercentdetrend),' % of signal amplitude. Discarding detrend.'])
     else
       data_v(i, :) = detrend(data_v(i, :));
+%       data_v(i, sel) = detrend(data_v(i, sel)); % detrend only where data is not ignored
     end
 %     data_v(i, :) = data_v(i, :) - mean(data_v(i, :));
 
     % Eventually normalise.
     if (normalise == 1)
       data_v(i, :) = data_v(i, :) / (max(data_v(i, :)) - min(data_v(i, :))); % Transform into signal with 1 p2p amplitude (without any shift).
+%       data_v(i, sel) = data_v(i, sel) / (max(data_v(i, sel)) - min(data_v(i, sel))); % Transform into signal with 1 p2p amplitude (without any shift).
     end
   end
 
@@ -128,7 +146,7 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
     dist_over_ptp = 1;
   else
     %dist_over_ptp = max(diff(distance(istattab(isort)))) / max(peak2peak(data_v(isort, :), 2));
-    dist_over_ptp = max(diff(distances(isort))) / max(peak2peak(data_v(isort, :), 2));
+    dist_over_ptp = max(diff(distances(isort))) / max(peak2peak(data_v(isort, :), 2)); % peaktopeak ignores NaN
   end
   if (dist_over_ptp > 1e15)
     error(['[', mfilename, ', ERROR] Variable dist_over_ptp is > 1e15, probably coming from the signal being very small everywhere for one of the signals.']);
@@ -148,21 +166,29 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
       dist_over_ptp = scalez;
     end
     % Prepare a string to give information about what is plotted.
+%     dist_over_ptp
     coef_string = sprintf(" %.2e",dist_over_ptp);
     spls = split(coef_string, "e");
     coef_string = [char(spls(1)), '\cdot10^{', num2str(str2num(char(spls(2)))), '}'];
     clear('spls');
     for i = 1:nbstat
+%       sel = notignored_IDs{i};
       istat = isort(i);
 %       istat_glob = istattab(istat);
       istat_glob = istat;
       %     vertical_shift{istat}=*distance(istat_glob);
       name{istat} = strcat('S', num2str(istat_glob));
       yticklabel = [yticklabel, sprintf(" %.2f",distances(istat_glob))];
+      
+%       [i, dist_over_ptp, min(dist_over_ptp * data_v(istat, sel)), max(dist_over_ptp * data_v(istat, sel))]
+      
+%       plot(data_t(istat, sel), distances(istat_glob) + dist_over_ptp * data_v(istat, sel), 'displayname', name{istat}, 'color', colour);
       plot(data_t(istat, :), distances(istat_glob) + dist_over_ptp * data_v(istat, :), 'displayname', name{istat}, 'color', colour);
       hold on;
     end
-    xlim([min(data_t(:, 1)), max(data_t(:, end))]);
+%     xlim([min(data_t(:, 1)), max(data_t(:, end))]); % max ignores nan
+    xlim([min(min(data_t(:, :))), max(max(data_t(:, :)))]); % max ignores nan
+%     xlim([min(min(data_t(:, sel))), max(max(data_t(:, sel)))]); % max ignores nan
     xlabel('time $t$ [s]');
     ylabel(['$d + \left(', coef_string, '\right)\times ', unknown_name,'$']);
     scalez = input(['[', mfilename, '] Rechoose coefficient (0 for no, new value for yes)? > ']);

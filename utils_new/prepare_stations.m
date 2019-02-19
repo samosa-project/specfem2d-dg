@@ -107,7 +107,8 @@ end
 function [xminmax, zminmax, interface, Xsource, debfin, d, name]=mars_insight()
 %   Xsource=[0,40e3];
   Xsource=[0,500];
-  xminmax=[-80,80]*1e3;
+%   xminmax=[-80,80]*1e3;
+  xminmax=[-160,40]*1e3;
 %   zminmax=[-5,60]*1e3;
   zminmax=[-5,30]*1e3;
   thickabstop=0;
@@ -125,7 +126,8 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name]=mars_insight()
   debfin(lid,2,:)=[Xsource(2),Xsource(2)]; % zdeb zfin
   name{lid} = ['source'];
   lid=lid+1;
-  d(lid)=spacingstations;
+%   d(lid)=spacingstations;
+  d(lid)=2*spacingstations;
   debfin(lid,1,:)=[Xsource(1),Xsource(1)]; % xdeb xfin
   debfin(lid,2,:)=[Xsource(2)+d(lid),max(zminmax)-thickabstop-d(lid)]; % zdeb zfin
   name{lid} = ['above source'];
@@ -161,13 +163,13 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name]=mars_insight()
   lid=lid+1;
   d(lid)=d(idhoriz);
   debfin(lid,:,:)=debfin(idhorizvz,:,:); % all same as horizontal under ground
-  debfin(lid,1,:)=debfin(lid,1,:)+shift_for_tiltcomputation; % but shifted to the right
-  name{lid} = ['horizontal under ground shifted ',num2str(shift_for_tiltcomputation),'m for tilt computation'];
+  debfin(lid,1,:)=debfin(lid,1,:)-shift_for_tiltcomputation; % but shifted to the left
+  name{lid} = ['horizontal under ground shifted -',num2str(shift_for_tiltcomputation),'m for tilt computation'];
   lid=lid+1;
   d(lid)=d(idhoriz);
   debfin(lid,:,:)=debfin(idhorizvz,:,:); % all same as horizontal under ground
-  debfin(lid,1,:)=debfin(lid,1,:)-shift_for_tiltcomputation; % but shifted to the left
-  name{lid} = ['horizontal under ground shifted -',num2str(shift_for_tiltcomputation),'m for tilt computation'];
+  debfin(lid,1,:)=debfin(lid,1,:)+shift_for_tiltcomputation; % but shifted to the right
+  name{lid} = ['horizontal under ground shifted ',num2str(shift_for_tiltcomputation),'m for tilt computation'];
 end
 
 function [xminmax, zminmax, interface, Xsource, debfin, d, name]=tir_de_mine()

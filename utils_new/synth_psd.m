@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Computes PSDs and NPSDs of synthetics.
 % Last modified: See file metadata.
 % Usage:         N/A.
@@ -45,6 +44,20 @@ end
 
 nstat=min(size(Ztime));
 
+% Cut times/values array based on shortest relevant array.
+difftimes = raw_t(:,2:end)-raw_t(:,1:end-1);
+relevantdifftimes= (difftimes>0);
+minimum_last_relevant=+Inf;
+for i=1:size(raw_t,1)
+  locminim=find(relevantdifftimes(i,:)>0,1,'last');
+  if(locminim<minimum_last_relevant)
+    minimum_last_relevant=locminim;
+  end
+end
+minimum_last_relevant
+raw_t=raw_t(:,1:minimum_last_relevant);
+raw_s=raw_s(:,1:minimum_last_relevant);
+
 NWINDOWZZZZ=-1;
 while (not(length(NWINDOWZZZZ) == 1 && NWINDOWZZZZ>0))
   NWINDOWZZZZ = input(['[', mfilename, '] Number of windows for PSD (integer, >0, higher values <=> smoother curve & higher lowest frequency)? > ']);
@@ -52,7 +65,7 @@ end
 
 normalise_wpsd = - 1;
 while (not(length(normalise_wpsd) == 1 && ismember(normalise_wpsd, [0, 1])))
-  normalise_wpsd = input(['[', mfilename, '] Normalise Welch PSD (0 for no, 1 for yes)? > ']);
+  normalise_wpsd = input(['[', mfilename, '] Normalise PSD (0 for no, 1 for yes)? > ']);
 end
 if (normalise_wpsd)
   normalise_wpsd_txt = " (normalised)";
@@ -76,29 +89,29 @@ if (nstat > 1)
   end
   switch(avgwpsds)
     case 0
-      disp(['[', mfilename, '] Will compute Welch PSD of first data.']);
-      WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
+      disp(['[', mfilename, '] Will compute PSD of first data.']);
+      WPSD_txt = strcat("PSD of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1;
     case 1
-      disp(['[', mfilename, '] Averaging Welch PSDs. Be wary of the stations you use.']);
-      WPSD_txt = strcat("Average of Welch PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
+      disp(['[', mfilename, '] Averaging PSDs. Be wary of the stations you use.']);
+      WPSD_txt = strcat("Average of PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1:nstat;
     case 2
-      disp(['[', mfilename, '] Computing Welch PSD of average signal. Be wary of the stations you use.']);
-      WPSD_txt = strcat("Welch PSD of averaged ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
+      disp(['[', mfilename, '] Computing PSD of average signal. Be wary of the stations you use.']);
+      WPSD_txt = strcat("PSD of averaged ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1;
     case 3
       disp(['[', mfilename, '] Plotting every PSD on top of each other.']);
-      WPSD_txt = strcat("Welch PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
+      WPSD_txt = strcat("PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1:nstat;
     case 4
       disp(['[', mfilename, '] Plotting every PSD as surf.']);
-      WPSD_txt = strcat("Welch PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
+      WPSD_txt = strcat("PSDs of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
       IDs_to_process = 1:nstat;
   end
 else
   avgwpsds = 0;
-  WPSD_txt = strcat("Welch PSD of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
+  WPSD_txt = strcat("PSD of ", signal_name, " [", signal_unit, "/Hz$^{.5}$]", normalise_wpsd_txt);
   IDs_to_process = 1;
 end
 
@@ -157,7 +170,7 @@ if (ismember(avgwpsds, [0, 1, 2]))
   figure();
   loglog(PSD_f, WPSD_to_plot);
   xlim([PSD_f(1), PSD_f(end)]);
-  xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
+  xlabel("$f$ [Hz]"); ylabel(WPSD_txt);
   title(WPSD_txt);
   set(gca, 'TickLabelInterpreter', 'latex');
   grid;
@@ -179,10 +192,9 @@ elseif (avgwpsds == 3)
   end
   legend('location', 'best');
   xlim([PSD_f(1), PSD_f(end)]);
-  xlabel("$f$ (Hz)"); ylabel(WPSD_txt);
+  xlabel("$f$ [Hz]"); ylabel(WPSD_txt);
   title(WPSD_txt);
-  set(gca, 'TickLabelInterpreter', 'latex');
-  grid;
+  set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
 elseif (avgwpsds == 4)
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
@@ -215,7 +227,7 @@ elseif (avgwpsds == 4)
   ylim([min(SURFy), max(SURFy)]);
   set(gca, 'yscale', 'log');
   xlabel(['$', dist_symbol, '$ (', coord_units, ')']);
-  ylabel(['$f$ (Hz)']);
+  ylabel(['$f$ [Hz]']);
   %   title(strcat("$\log($",WPSD_txt,"$)$"));
   title(WPSD_txt);
   set(gca, 'TickLabelInterpreter', 'latex');
@@ -227,6 +239,22 @@ elseif (avgwpsds == 4)
 else
   error(['[', mfilename, ', ERROR] [', mfilename, ', ERROR] bad value for avgwpsds.']);
 end
+
+% Plot ratios.
+refID=1;
+% if(0)
+IDs_to_process_RATIO=IDs_to_process;
+IDs_to_process_RATIO(IDs_to_process_RATIO==refID)=[]; % remove ref.
+figure();
+for i=IDs_to_process_RATIO
+  loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z)=(', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ ', coord_units], 'color', colours(i, :));
+  hold on;
+end
+legend('location', 'best');
+xlim([PSD_f(1), PSD_f(end)]);
+xlabel("$f$ [Hz]"); ylabel('PSD Ratio [1]');
+title(['PSD Ratio [1] w.r.t. S', num2str(istattab(refID))]);
+set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clear variables.             %

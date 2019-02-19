@@ -8,7 +8,7 @@
 % with:
 %   TODO.
 % yields:
-%   TODO. 
+%   TODO.
 
 % clear all;
 % close all;
@@ -51,6 +51,20 @@ times=Ztime;
 values=Zamp;
 abscissas=xstattab(istattab);
 
+% Cut times/values array based on shortest relevant array.
+difftimes = times(:,2:end)-times(:,1:end-1);
+relevantdifftimes= (difftimes>0);
+minimum_last_relevant=+Inf;
+for i=1:size(times,1)
+  locminim=find(relevantdifftimes(i,:)>0,1,'last');
+  if(locminim<minimum_last_relevant)
+    minimum_last_relevant=locminim;
+  end
+end
+minimum_last_relevant
+times=times(:,1:minimum_last_relevant);
+values=values(:,1:minimum_last_relevant);
+
 idleft = - 1;
 while (not(min(idleft)>=1 & max(idleft)<=size(times,1)))
   idleft = input(['[', mfilename, '] Matlab ID for left stations? > ']);
@@ -81,6 +95,22 @@ for i=1:N
   displ_l(i,:) = cumtrapz(times_l(i, :), vals_l(i, :));
   displ_r(i,:) = cumtrapz(times_r(i, :), vals_r(i, :));
   tilt(i,:) = atan((displ_r(i, :)-displ_l(i, :))/(x_r(i)-x_l(i)));
+  
+%   trailZ_l=find(diff(times_l(i, :))==0); % find possible trailing zeros in the times array (happens if seismograms are not all exactly the same length
+%   if(numel(trailZ_l)>0); trailZ_l=[trailZ_l(1)-1,trailZ_l]; end; % add first one (line above only finds using diff and so the very first one is not detected).
+%   trailZ_r=find(diff(times_r(i, :))==0); if(numel(trailZ_r)>0); trailZ_r=[trailZ_r(1)-1,trailZ_r]; end;% idem with _r
+%   trailZs=sort(unique([trailZ_l,trailZ_r])); % combine both arrays
+%   tilt(i,trailZs)=NaN; % set tilt as nan for those
 end
 
-plot_time_v_dist(times_l, tilt*180/pi, 0.5*(x_l+x_r), 'Tilt [$^\circ$]', 'horizontal position $x$');
+disp(['[',mfilename,'] Tilt computed for all stations.']);
+
+disp(['[',mfilename,'] Plot one by one with:']);
+disp([blanks(length(mfilename)+2),'   i = 1; figure(); plot(times_l(i, :), tilt(i, :));']);
+disp([blanks(length(mfilename)+2),' With i in [1, ',num2str(N),'].']);
+
+dist = 0.5*(x_l+x_r);
+tilt2plot=tilt*180/pi;
+timssss=times_l;
+
+plot_time_v_dist(timssss, tilt2plot, dist, 'Tilt [$^\circ$]', 'horizontal position $x$');

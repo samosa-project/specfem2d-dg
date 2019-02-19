@@ -36,18 +36,19 @@ convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordin
 plot_amplitude = 0;
 
 subsample = 0; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that synthetics are nsublength (below) long.
-nsublength = 1000; % Length of sub-sampled synthetics.
+% nsublength = 1000; % Length of sub-sampled synthetics.
+wanted_dt = 1; % Subsampled dt [s] (make sure it is higher than actual dt).
 
 % Quantity to display (should be the same as the seismotype variable in parfile):
 %   1 = displacement for non-DG and velocity for DG,
-%   2 = velocity for non-DG and pressure perturbation (Pa) for DG.
+%   2 = velocity for non-DG and pressure perturbation [Pa] for DG.
 % type_display = 1;
 type_display = 2;
 
-% Unknown:
+% Unknown (for direct plots only):
 % unknown = 'BXX'; % _x.
 unknown = 'BXZ'; % _z.
-% For type_display==2 and stations in DG zones, pressure perturbation (Pa) is saved both in BXX and BXZ files.)
+% For type_display==2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
@@ -55,7 +56,8 @@ unknown = 'BXZ'; % _z.
 
 % Mars AGW.
 fig_title = strcat('Mars Coupling');
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_verylong_veryuseful/'); subsample=1; wanted_dt=0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479218_clean/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1484867/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1486113/');
@@ -191,65 +193,16 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_15
 % rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); type_display = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Stations' loading.           %
+% Loading.                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Test if OUTPUT_FILES directory exists.
-if (not(strcmp(OFd(end), '/')))
-  OFd = [OFd, '/'];
-end
-if (not(exist(OFd, 'dir')))
-  error(['[',mfilename,', ERROR] OUTPUT_FILES directory does not exist (', OFd, ').']);
-end
-
-% Load sources' positions.
-pos_sources = [inf, inf]; % Allocate a row for the first source's position.
-% fid = fopen([rootd, '/DATA/SOURCE']);
-fid = fopen([OFd, 'SOURCE']);
-if (fid == - 1)
-  fid = fopen([OFd, 'input_source']);
-  if (fid == - 1)
-    error(['[',mfilename,', ERROR] Cannot open SOURCE file (', OFd, 'SOURCE', ').']);
-  end
-end
-line = 0; xfound = 0; zfound = 0; stop = 0;
-while (stop == 0)
-  % TODO: Loop on source number.
-  line = fgetl(fid);
-  if length(line) > 0
-    if (line == - 1)
-      stop = 1;
-    end
-    line = regexprep(regexprep(line, ' +', ' '), '^ ', ''); % Remove multiple spaces, and then eventually remove space if it there is one as first character.
-    if strcmp(line(1:2), 'xs')
-      xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', '')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
-    end
-    if strcmp(line(1:2), 'zs')
-      zfound = 1; pos_sources(1, 2) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', ''));
-    end
-  end
-  if (xfound && zfound)
-    break
-  end
-end
-fclose('all');
-
-% Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
-try
-  A = importdata(strcat(OFd, 'STATIONS'));
-catch
-  disp(['[',mfilename,'] STATIONS file not found in OUTPUT_FILES directory.']);
-  try
-    A = importdata(strcat(rootd, '/DATA/STATIONS'));
-    disp(['[',mfilename,'] STATIONS file found in root directory (OUTPUT_FILES*/../DATA/ folder).']);
-  catch
-    error(['[',mfilename,', ERROR] Cannot find STATIONS file.']);
-  end
-end
-pos_stations = [A.data(:, 1) A.data(:, 2)]; xstattab = pos_stations(:, 1); ystattab = pos_stations(:, 2);
+OFd = checkOFd(OFd); % Test if OUTPUT_FILES directory exists.
+pos_sources = loadSources(OFd); % Load sources' positions.
+[xstattab, ystattab, stations_data] = loadStations(rootd, OFd); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
 % Compute distance to sources.
-dist_to_sources = zeros(size(pos_stations, 1), size(pos_sources, 1));
+dist_to_sources = zeros(size(xstattab, 1), size(pos_sources, 1));
 for n_source = 1:size(pos_sources, 1)
-  dist_to_sources(:, n_source) = sqrt((pos_stations(:, 1) - pos_sources(n_source, 1)) .^ 2 + (pos_stations(:, 2) - pos_sources(n_source, 2)) .^ 2);
+  %dist_to_sources(:, n_source) = sqrt((pos_stations(:, 1) - pos_sources(n_source, 1)) .^ 2 + (pos_stations(:, 2) - pos_sources(n_source, 2)) .^ 2);
+  dist_to_sources(:, n_source) = sqrt((xstattab-pos_sources(n_source, 1)) .^ 2 + (ystattab-pos_sources(n_source, 2)) .^ 2);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -258,23 +211,27 @@ end
 % Display stations' information.
 format shortG;
 if (convert_to_relative_coords == 1)
-  disp(['[',mfilename,'] [station_id; x; z; d] for all stations (x relative to source, z relative to ground, d relative to source):']); disp([(1:size(pos_stations, 1)); (pos_stations - [pos_sources(1, 1), pos_interface])';dist_to_sources']);
+  disp(['[',mfilename,'] [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] for all stations (x relative to source, z relative to ground, d relative to source):']);
+  %disp([(1:size(pos_stations, 1)); (pos_stations - [pos_sources(1, 1), pos_interface])'; dist_to_sources']);
+  disp([(1:size(xstattab, 1)); ([xstattab, ystattab] - [pos_sources(1, 1), pos_interface])'; dist_to_sources']);
 else
-  disp(['[',mfilename,'] [station_id; x; z; d] for all stations (absolute x and z, d relative to source):']); disp([(1:size(pos_stations, 1)); pos_stations';dist_to_sources']);
+  disp(['[',mfilename,'] [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] for all stations (absolute x and z, d relative to source):']);
+%   disp([(1:size(pos_stations, 1)); pos_stations'; dist_to_sources']);
+  disp([(1:size(xstattab, 1)); [xstattab, ystattab]'; dist_to_sources']);
 end
 format compact;
 
 % Ask for behaviour.
 display_or_load = - 1;
-while (not(length(display_or_load) == 1 && ismember(display_or_load, [0, 1, 2])))
-  display_or_load = input(['[',mfilename,'] Load and display (0), load only (1), or load and combine (2)? > ']);
+while (not(length(display_or_load) == 1 && ismember(display_or_load, [0, 1, 2, 3])))
+  display_or_load = input(['[',mfilename,'] Load and plot separately (0), load only (1), load plot time-distance (2), or load and plot polarisation (3)? > ']);
 end
 % Ask for stations.
-istattab = input(['[',mfilename,'] Stations (Matlab format, e.g. [1, 4, 7] or 1:20)? > ']);
-istattab = reshape(istattab,[1,numel(istattab)]);
-disp(['[',mfilename,'] Loading [station_id, x, z, d] (absolute x and z, d relative to source):']);
-disp([istattab', pos_stations(istattab,:),dist_to_sources(istattab)]);
-nstat = size(pos_stations(istattab, 1), 1);
+istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']); istattab = reshape(istattab,[1,numel(istattab)]);
+disp(['[',mfilename,'] Loading [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] (absolute x and z, d relative to source):']);
+disp([istattab', xstattab(istattab), ystattab(istattab) ,dist_to_sources(istattab)]);
+% nstat = size(pos_stations(istattab, 1), 1);
+nstat = numel(istattab);
 % Ask for geometric attenuation (relies on distance to source).
 geometric_attenuation = - 1;
 while (not(ismember(geometric_attenuation, [0, 1, 2, 3])))
@@ -295,155 +252,94 @@ end
 if (display_or_load == 0)
   figure(); hold on;
 end
-
-% Loop on synthetics.
 if (normalise_ylims)
   % Prepare updates of y-axis scale.
   max_ylim_plus = - Inf;
   min_ylim_minus = + Inf;
 end
-if (convert_to_relative_coords == 1)
-  % Eventually remove source components for display.
-  xstattab = xstattab - pos_sources(1, 1);
-  ystattab = ystattab - pos_interface;
+if (convert_to_relative_coords == 1) % Eventually remove source components for display.
+  xstattab = xstattab - pos_sources(1, 1); ystattab = ystattab - pos_interface;
 end
+
 ax=[];
+Ztime=[];
+Zamp=[];
+
+% Loop on synthetics.
 for istat = 1:nstat
   istat_glob = istattab(istat); % Recover global number of station.
+  
+  % Get scaling factors and rescale.
+  factor = getScalings(istat_glob, geometric_attenuation, xstattab, ystattab, dist_to_sources, rescale_factor);
+  
+  if(ismember(display_or_load,[0,1,2])) % If direct plots, get the one unknown and proceed.
+    [extension, unknown_name] = getUnknowns(type_display, unknown);
+    [data] = readAndSubsample(OFd, stations_data, istat_glob, unknown, extension, subsample, wanted_dt, istat);
+  
+    % Recover time/amplitude data.
+    Ztime(istat, :) = data(:, 1)'; Zamp(istat, :) = data(:, 2)';
+    Zamp(istat, :) = factor * Zamp(istat, :);
 
-  % Switch on type of display.
-  if (type_display == 1)
-    % Original SPECFEM2D's synthetic is displacement.
-    extension = "semd"; % Because original SPECFEM2D's synthetic is displacement.
-    % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
-    if (strcmp(unknown, 'BXZ'))
-      unknown_name = 'vertical {$u_z$ (m), $v_z$ (m/s)}';
-    elseif (strcmp(unknown, 'BXX'))
-      unknown_name = 'horizontal {$u_x$ (m), $v_x$ (m/s)}';
-    else
-      error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
+    % Eventually, display.
+    if (display_or_load == 0)
+      ax(istat) = subplot(nstat, 1, istat);
+      if (strcmp(coord_units, 'km'))
+        legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) ', coord_units);
+      elseif (strcmp(coord_units, 'm'))
+        legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ ', coord_units);
+      else
+        error(['coord_units = ', coord_units, 'not implemented.']);
+      end
+      plot(Ztime(istat, :), Zamp(istat, :));
+      set(gca, 'TickLabelInterpreter', 'latex');
+      grid on;
+      box on;
+      % Cosmetics.
+      if (istat == 1)
+        title(fig_title)
+      end
+      if (istat == nstat)
+        xlabel('time (s)')
+      end
+      if (istat ~= nstat)
+        set(gca, 'xticklabel', []);
+      end
+      if (istat == round(nstat / 2))
+        ylabel(unknown_name);
+      end
+      xlim([Ztime(1, 1), Ztime(1, end)]);
+      legend(legtext{istat}, 'Location', 'northeast');
+      hold on;
+      if (normalise_ylims)
+        % Update y-axis scale.
+        if (ax(istat).YLim(1) < min_ylim_minus)
+          min_ylim_minus = ax(istat).YLim(1);
+        end
+        if (ax(istat).YLim(2) > max_ylim_plus)
+          max_ylim_plus = ax(istat).YLim(2);
+        end
+      end
+      if (normalise_ylims)
+        linkaxes(ax);
+      else
+        linkaxes(ax, 'x');
+      end
     end
-  elseif (type_display == 2)
-    % Original SPECFEM2D's synthetic is velocity.
-    extension = "semv"; % Because original SPECFEM2D's synthetic is velocity.
-    if (strcmp(unknown, 'BXZ'))
-      unknown_name = '{$v_z$ (m/s), $\delta P$ (Pa)}';
-    elseif (strcmp(unknown, 'BXX'))
-      unknown_name = '{$v_x$ (m/s), $\delta P$ (Pa)}';
-    else
-      error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
+  
+  elseif(display_or_load==3) % If polarisation plot, get the two unknowns and proceed.
+    [extension_x, unknown_x] = getUnknowns(type_display, 'BXX');
+    [data_x] = readAndSubsample(OFd, stations_data, istat_glob, 'BXX', extension_x, subsample, wanted_dt, istat);
+    [extension_z, unknown_z] = getUnknowns(type_display, 'BXZ');
+    [data_z] = readAndSubsample(OFd, stations_data, istat_glob, 'BXZ', extension_z, subsample, wanted_dt, istat);
+%     sig_t_x=data_x(:, 1)'; sig_v_x=data_x(:, 2)';
+    Ztime(istat, :) = data_z(:, 1)'; Zamp(istat,:) = data_z(:, 2)'; % useful to still load Z
+    if(not(all(size(data_x(:, 2)')==size(Zamp(istat, :)))))
+      error(['size mismatch']);
     end
-  elseif (type_display == 4)
-    % Original SPECFEM2D's synthetic is pressure.
-    extension = "semp"; % Because original SPECFEM2D's synthetic is pressure.
-    if (strcmp(unknown, 'PRE'))
-      unknown_name = '$\delta P$ (Pa)';
-    else
-      error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
-    end
-  end
-
-  % Read the synthetic.
-  file = strcat(OFd, 'AA.', A.textdata(istat_glob, 1), '.', unknown, '.', extension);
-  data = load(file{1});
-  nt = max(size(data));
-  if (subsample == 1)
-    % Sub-sample of records.
-    nsub = ceil(nt / nsublength);
-    nd = max(size(data(1:nsub:nt, 1)));
+    plot_polarisation(data_x(:, 2)', Zamp(istat, :), ['S',num2str(istat_glob),' Polarisation']);
+  
   else
-    nsub = 1;
-    nd = nt;
-  end
-
-  % Recover time/amplitude data.
-  Ztime(istat, 1:nd) = data(1:nsub:nt, 1)';
-  % Ztime(istat, :) = Ztime(istat, :) - Ztime(istat, 1); % Make time values start at zero.
-  Zamp(istat, 1:nd) = data(1:nsub:nt, 2)';
-
-  % Renormalisation (global, and geometric).
-  factor = 1; % Reset to default value for each station.
-  if (geometric_attenuation ~= 0)
-    % If geometric_attenuation was asked by user.
-    switch geometric_attenuation
-      case 1
-        geom_att_fact = dist_to_sources(istat_glob) ^ 0.5; % Geometric attenuation respective to raw distance to source.
-      case 2
-        geom_att_fact = abs(xstattab(istat_glob)) ^ 0.5; % Geometric attenuation respective to horizontal distance to source.
-      case 3
-        geom_att_fact = abs(ystattab(istat_glob)) ^ 0.5; % Geometric attenuation respective to vertical distance to source.
-      otherwise
-        error(['[',mfilename,', ERROR] Geometric attenuation parameter not implemented.']);
-    end
-    if (geom_att_fact == 0)
-      % If exactly at zero distance, consider no geometric rescaling.
-      geom_att_fact = 1;
-    end
-    factor = factor / geom_att_fact;
-  end
-  renorm_statbystat = - 1;
-  if (rescale_factor ~= 1)
-    % Rescaling was asked. Check again with user.
-    renorm_statbystat = - 1;
-    disp(strcat("    Specified rescale factor is ", num2str(rescale_factor), "."));
-    inputtxt = char(strcat("    Rescale data for station ", num2str(istat_glob), "? (0 for no, 1 for yes) > "));
-    while (not(ismember(renorm_statbystat, [0, 1])))
-      renorm_statbystat = input(inputtxt);
-      if (isempty(renorm_statbystat))
-        renorm_statbystat = 1;
-      end
-    end
-  end
-  if (renorm_statbystat == 1)
-    % If rescaling is actually wanted by user, do it.
-    factor = factor * rescale_factor;
-  end
-  Zamp(istat, :) = factor * Zamp(istat, :); % Rescale.
-
-  % Eventually, display.
-  if (display_or_load == 0)
-    ax(istat) = subplot(nstat, 1, istat);
-    if (strcmp(coord_units, 'km'))
-      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) ', coord_units);
-    elseif (strcmp(coord_units, 'm'))
-      legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ ', coord_units);
-    else
-      error(['coord_units = ', coord_units, 'not implemented.']);
-    end
-    plot(Ztime(istat, :), Zamp(istat, :));
-    set(gca, 'TickLabelInterpreter', 'latex');
-    grid on;
-    box on;
-    % Cosmetics.
-    if (istat == 1)
-      title(fig_title)
-    end
-    if (istat == nstat)
-      xlabel('time (s)')
-    end
-    if (istat ~= nstat)
-      set(gca, 'xticklabel', []);
-    end
-    if (istat == round(nstat / 2))
-      ylabel(unknown_name);
-    end
-    xlim([Ztime(1, 1), Ztime(1, end)]);
-    legend(legtext{istat}, 'Location', 'northeast');
-    hold on;
-    if (normalise_ylims)
-      % Update y-axis scale.
-      if (ax(istat).YLim(1) < min_ylim_minus)
-        min_ylim_minus = ax(istat).YLim(1);
-      end
-      if (ax(istat).YLim(2) > max_ylim_plus)
-        max_ylim_plus = ax(istat).YLim(2);
-      end
-    end
-    if (normalise_ylims)
-      linkaxes(ax);
-    else
-      linkaxes(ax, 'x');
-    end
+    error(['[',mfilename,'] display_or_load choice not implemented.']);
   end
 end
 
@@ -459,8 +355,9 @@ end
 
 % Display information.
 disp([' ']);
-disp(['[',mfilename,'] Data loaded. [matlab_id, station_id, x, z, d]:']);
-disp([(1:length(istattab))',istattab', pos_stations(istattab,:),dist_to_sources(istattab)]);
+disp(['[',mfilename,'] Data loaded. [matlab_id, istattab, xstattab(istattab), ystattab(istattab), d]:']);
+% disp([(1:length(istattab))',istattab', pos_stations(istattab,:),dist_to_sources(istattab)]);
+disp([(1:length(istattab))', istattab', xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)]);
 disp(strcat("  Example: Data of station ", num2str(istattab(1)), " are in         Zamp(", num2str(1), ", :)."));
 disp(strcat("           Corresponding time values are in Ztime(", num2str(1), ", :)."));
 disp([' ']);
@@ -469,7 +366,7 @@ disp([' ']);
 % Clear variables.             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % clear('A', 'ans', 'ax', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'normalise_ylims', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
-clear('A', 'ans', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
+% clear('A', 'ans', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
 if (factor == 1)
   clear('factor');
 end
@@ -484,7 +381,6 @@ global synth_load_was_ran
 synth_load_was_ran = 1;
 
 if (display_or_load == 2)
-  
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
@@ -501,8 +397,6 @@ if (display_or_load == 2)
   end
   addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo');
   plot_time_v_dist(Ztime,Zamp,distance(istattab));
-  
-%   synth_plot;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -704,3 +598,166 @@ end
 % rootd = strcat(SPCFMEXloc,'DAG_testlocal/'); OFd = strcat(rootd, 'OUTPUT_FILES_testlocal/');
 % rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
 % rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');
+
+function dir=checkOFd(dir)
+  if (not(strcmp(dir(end), '/')))
+    dir = [dir, '/'];
+  end
+  if (not(exist(dir, 'dir')))
+    error(['[',mfilename,', ERROR] OUTPUT_FILES directory does not exist (', dir, ').']);
+  end
+end
+
+function pos_sources=loadSources(OFdir)
+  pos_sources = [inf, inf]; % Allocate a row for the first source's position.
+  % fid = fopen([rootd, '/DATA/SOURCE']);
+  fid = fopen([OFdir, 'SOURCE']);
+  if (fid == - 1)
+    fid = fopen([OFdir, 'input_source']);
+    if (fid == - 1)
+      error(['[',mfilename,', ERROR] Cannot open SOURCE file (', OFdir, 'SOURCE', ').']);
+    end
+  end
+  line = 0; xfound = 0; zfound = 0; stop = 0;
+  while (stop == 0)
+    % TODO: Loop on source number.
+    line = fgetl(fid);
+    if length(line) > 0
+      if (line == - 1)
+        stop = 1;
+      end
+      line = regexprep(regexprep(line, ' +', ' '), '^ ', ''); % Remove multiple spaces, and then eventually remove space if it there is one as first character.
+      if strcmp(line(1:2), 'xs')
+        xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', '')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
+      end
+      if strcmp(line(1:2), 'zs')
+        zfound = 1; pos_sources(1, 2) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', ''));
+      end
+    end
+    if (xfound && zfound)
+      break
+    end
+  end
+  fclose('all');
+end
+
+function [x_stat,z_stat,stat_file]=loadStations(rootDir, OFdir)
+  try
+    stat_file = importdata(strcat(OFdir, 'STATIONS'));
+  catch
+    disp(['[',mfilename,'] STATIONS file not found in OUTPUT_FILES directory.']);
+    try
+      stat_file = importdata(strcat(rootDir, '/DATA/STATIONS'));
+      disp(['[',mfilename,'] STATIONS file found in root directory (OUTPUT_FILES*/../DATA/ folder).']);
+    catch
+      error(['[',mfilename,', ERROR] Cannot find STATIONS file.']);
+    end
+  end
+  pos_stations = [stat_file.data(:, 1) stat_file.data(:, 2)];
+  x_stat = pos_stations(:, 1);
+  z_stat = pos_stations(:, 2);
+end
+
+function [ext, unknown] = getUnknowns(type_displ, unknown)
+  % Switch on type of display.
+  switch type_displ
+%   if (type_display == 1) % Original SPECFEM2D's synthetic is displacement.
+    case 1 % Original SPECFEM2D's synthetic is displacement.
+      ext = "semd"; % Because original SPECFEM2D's synthetic is displacement.
+      % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
+      if (strcmp(unknown, 'BXZ'))
+        unknown = 'vertical {$u_z$ (m), $v_z$ [m/s]}';
+      elseif (strcmp(unknown, 'BXX'))
+        unknown = 'horizontal {$u_x$ (m), $v_x$ [m/s]}';
+      else
+        error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
+      end
+%   elseif (type_display == 2) % Original SPECFEM2D's synthetic is velocity.
+    case 2 % Original SPECFEM2D's synthetic is velocity.
+      ext = "semv"; % Because original SPECFEM2D's synthetic is velocity.
+      if (strcmp(unknown, 'BXZ'))
+        unknown = '{$v_z$ [m/s], $\delta P$ [Pa]}';
+      elseif (strcmp(unknown, 'BXX'))
+        unknown = '{$v_x$ [m/s], $\delta P$ [Pa]}';
+      else
+        error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
+      end
+%   elseif (type_display == 4) % Original SPECFEM2D's synthetic is pressure.
+    case 4 % Original SPECFEM2D's synthetic is pressure.
+      ext = "semp"; % Because original SPECFEM2D's synthetic is pressure.
+      if (strcmp(unknown, 'PRE'))
+        unknown = '$\delta P$ [Pa]';
+      else
+        error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
+      end
+    otherwise
+      error(['[',mfilename,', ERROR] This type_display (',num2str(type_displ),') is not implemented for this script.']);
+  end
+end
+
+function [outputdata] = readAndSubsample(OFd, stations_data, istat_glob, unknown, extension, subsample, wanted_dt, istat)
+  % Read the synthetic.
+  file = strcat(OFd, 'AA.', stations_data.textdata(istat_glob, 1), '.', unknown, '.', extension);
+  data = load(file{1});
+  nt = max(size(data));
+  meanactualdt = mean(diff(data(:,1)));
+  if (subsample == 1 && wanted_dt>meanactualdt)
+    % Sub-sample of records.
+%     nsub = ceil(nt / nsublength);
+    nsub = floor(wanted_dt/meanactualdt);
+    nd = max(size(data(1:nsub:nt, 1)));
+    if(istat==1)
+      disp(['[',mfilename,'] Subsampled synthetics by a factor ',num2str(nsub),'.']);
+    end
+  elseif (subsample == 1 && wanted_dt<meanactualdt)
+    if(istat==1)
+      disp(['[',mfilename,'] Subsampled dt is smaller than actual dt, discarding subsampling.']);
+    end
+    nsub = 1;
+    nd = nt;
+  else
+    nsub = 1;
+    nd = nt;
+  end
+  outputdata(:,:) = data(1:nsub:nt, :);
+end
+
+function factor = getScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, rescale_fact)
+  % Renormalisation (global, and geometric).
+  factor = 1; % Reset to default value for each station.
+  if (geomAtt ~= 0)
+    % If geometric_attenuation was asked by user.
+    switch geomAtt
+      case 1
+        geom_att_fact = d_stat(stat_number) ^ 0.5; % Geometric attenuation respective to raw distance to source.
+      case 2
+        geom_att_fact = abs(x_stat(stat_number)) ^ 0.5; % Geometric attenuation respective to horizontal distance to source.
+      case 3
+        geom_att_fact = abs(z_stat(stat_number)) ^ 0.5; % Geometric attenuation respective to vertical distance to source.
+      otherwise
+        error(['[',mfilename,', ERROR] Geometric attenuation parameter not implemented.']);
+    end
+    if (geom_att_fact == 0)
+      % If exactly at zero distance, consider no geometric rescaling.
+      geom_att_fact = 1;
+    end
+    factor = factor / geom_att_fact;
+  end
+  renorm_statbystat = - 1;
+  if (rescale_fact ~= 1)
+    % Rescaling was asked. Check again with user.
+    renorm_statbystat = - 1;
+    disp(['[',mfilename,'] Specified rescale factor is ', num2str(rescale_fact), '.']);
+    inputtxt = ['[',mfilename,'] Rescale data for station ', num2str(stat_number), '? (0 for no, 1 for yes) > '];
+    while (not(ismember(renorm_statbystat, [0, 1])))
+      renorm_statbystat = input(inputtxt);
+      if (isempty(renorm_statbystat))
+        renorm_statbystat = 1;
+      end
+    end
+  end
+  if (renorm_statbystat == 1)
+    % If rescaling is actually wanted by user, do it.
+    factor = factor * rescale_fact;
+  end
+end

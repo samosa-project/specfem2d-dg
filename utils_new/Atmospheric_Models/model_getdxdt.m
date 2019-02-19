@@ -28,6 +28,7 @@ function [] = model_getdxdt()
   percentGLL=0.17267316464601141;
   f0 = [];
   IDregionDG=1; % ID of the DG material in parfile.
+  plot_fluidmodel_dz=1;
   
   fluid_model_type='"external-DG" fluid';
   solid_model_type='"parfile" viscoelastic';
@@ -72,20 +73,22 @@ function [] = model_getdxdt()
   
   % Figures.
   if(fluidmodel)
-  %   figure();
-  %   plot(dx_c_mach,Z);
-  %   xlabel('$\Delta x$ [m]');
-  %   ylabel('altitude $z$ [m]');
-  %   title({['maximum acceptable $\Delta x$, accounting for Mach'],['(',paramtxt,')']});
-  %   set(gca,'ticklabelinterpreter','latex');
-  %   grid on;
+    if(plot_fluidmodel_dz)
+      figure();
+      plot(dx_c_mach,Z);
+      xlabel('$\Delta x$ [m]');
+      ylabel('altitude $z$ [m]');
+      title({['maximum acceptable $\Delta x$, accounting for Mach'],['(',paramtxt,')']});
+      set(gca,'ticklabelinterpreter','latex');
+      grid on;
 
-  %   figure();
-  %   plot(dtaccountingformach,Z);
-  %   xlabel('maximum acceptable $\Delta t$, accounting for Mach number [s]');
-  %   ylabel('altitude $z$ [m]');
-  %   title(['$f_0=',sprintf('%.3e',f0),'$']);
-  %   set(gca,'ticklabelinterpreter','latex');
+    %   figure();
+    %   plot(dtaccountingformach,Z);
+    %   xlabel('maximum acceptable $\Delta t$, accounting for Mach number [s]');
+    %   ylabel('altitude $z$ [m]');
+    %   title(['$f_0=',sprintf('%.3e',f0),'$']);
+    %   set(gca,'ticklabelinterpreter','latex');
+    end
 
     % Displays.
     disp(['[',mfilename,'] Maximum acceptable DX with this atmospheric model is ',sprintf('%.3e',min(dx_c)),' [m] (c).']);
