@@ -1,8 +1,13 @@
 % Author:        Léo Martire.
-% Description:   TODO.
-% Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         N/A.
+% Description:   Loads SPECFEM2D OUTPUT_FILES synthetics, and does a bunch of thing with them.
+% Notes:         TODO.
+%
+% Usage:
+%   TODO.
+% with:
+%   TODO.
+% yields:
+%   TODO.
 
 clc;
 % clear all;
@@ -18,37 +23,17 @@ addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospher
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Default parameters' values.  %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Those can be re-set inline for each OUTPUT_FILES directory (see "OUTPUT_FILES location" section below).
-rescale_factor = 1; % Rescaling: by default, do no rescale.
-coord_units = 'km'; % Self-explanatory.
-convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordinates: x=0 above source, z=0 on surface (defined by pos_interface).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Plot amplitude?
-%   0 for no.
-%   1 for yes, sorted by x.
-%   2 for yes, sorted by z.
-%   3 for yes, sorted by d.
-plot_amplitude = 0;
-
-subsample = 0; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that synthetics are nsublength (below) long.
-% nsublength = 1000; % Length of sub-sampled synthetics.
-wanted_dt = 1; % Subsampled dt [s] (make sure it is higher than actual dt).
-
-% Quantity to display (should be the same as the seismotype variable in parfile):
-%   1 = displacement for non-DG and velocity for DG,
-%   2 = velocity for non-DG and pressure perturbation [Pa] for DG.
-% type_display = 1;
-type_display = 2;
-
-% Unknown (for direct plots only):
+% You can re-set those parameters inline for each OUTPUT_FILES directory (see "OUTPUT_FILES location" section below) individually.
+rescale_factor = 1; % Rescaling factor, applied on all stations (confirmation will be asked).
+convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordinates: x = 0 above source, z = 0 on surface (defined by pos_interface).
+plot_amplitude = 0; % Plot amplitude (0 for no, 1 for yes sorted by x, 2 for yes sorted by z, 3 for yes sorted by d)?
+subsample = 0; wanted_dt = 1; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that final time sampling is as parametrised by wanted_dt.
+type_display = 2; % Quantity to display (should be the same as the seismotype variable in parfile). 1 = {displacement for non-DG, velocity for DG}. 2 = {velocity for non-DG, pressure perturbation [Pa] for DG}.
+% Unknown (for direct plots only). Note that for type_display == 2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.
 % unknown = 'BXX'; % _x.
 unknown = 'BXZ'; % _z.
-% For type_display==2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
@@ -56,7 +41,7 @@ unknown = 'BXZ'; % _z.
 
 % Mars AGW.
 fig_title = strcat('Mars Coupling');
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_verylong_veryuseful/'); subsample=1; wanted_dt=0.01;
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_verylong_veryuseful/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479218_clean/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1484867/');
@@ -72,55 +57,55 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_15
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_75040/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_74752/');
 % rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_full/');
-% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
-% rootd=strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
+% rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long600hz/');
+% rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
 % fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1206217/'); % Basically same as 1205575.
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1203633_FNS/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
-% rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
-% rootd=strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1206217/'); % Basically same as 1205575.
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1203633_FNS/');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
+% rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
+% rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
-% TNTGlanes
+% Validation LNS.
 % fig_title = strcat('Validation LNS');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_FNS/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_FNS/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_0.5cfl/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_FNS_0.5cfl/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.15/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.15_FNS/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_refined/')
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_refined/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_gmsh/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_gmsh/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_gmsh_refined_121954/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_gmsh_refined_1217753/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_FNS/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_FNS/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_0.5cfl/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_FNS_0.5cfl/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.15/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.15_FNS/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_refined/')
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_refined/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_gmsh/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_gmsh/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_gmsh_refined_121954/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_gmsh_refined_1217753/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_corrected/'); % FIRST RUN AFTER PATCH
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_corrected/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_gmsh/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_gmsh/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M0_gmshrefined_1218660/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_gmshrefined_1218665/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_FNS_testlambda0.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_FNS_testlambda0.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_FNS_testlambda1.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_FNS_testlambda1.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_testlambda0.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_testlambda0.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_testlambda1.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_testlambda1.2/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_chglambda/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_chglambda/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0_chglambda2woperturb/');
-% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M=0.3_chglambda2woperturb/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_FNS_testlambda0.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_FNS_testlambda0.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_FNS_testlambda1.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_FNS_testlambda1.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_testlambda0.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_testlambda0.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_testlambda1.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_testlambda1.2/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_chglambda/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_chglambda/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_chglambda2woperturb/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3_chglambda2woperturb/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_1222576_M0_refined/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_1222565_M.3_refined/');
 
@@ -145,52 +130,6 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_15
 
 % Tests.
 % fig_title = 'test';
-% rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=0_kmax=2/');
-% rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d=d_kmax=2/');
-% rootd=strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-
-%rootd=strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-
-% rootd=strcat(SPCFMEXloc,'tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-
-% rootd=strcat(SPCFMEXloc,'demo_pot'); OFd = strcat(rootd, '/OUTPUT_FILES_826234/');
-% rootd=strcat(SPCFMEXloc,'demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_826226/');
-% rootd=strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_826213/');
-
-% rootd=strcat(SPCFMEXloc,'demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local/');
-% rootd=strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local/');
-% rootd=strcat(SPCFMEXloc,'demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local_butd7/');
-% rootd=strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local_butd7/');
-
-% rootd=strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns_t=105s/');
-% rootd=strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns_t=195s/');
-% rootd=strcat(SPCFMEXloc,'mb_gmsh'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt_BUTONCALMIP/');
-% rootd=strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt/');
-% rootd=strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fts_lns_19s/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fts_fns_26s/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_f_lns_44s/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_f_fns_62s/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_stf_lns_27s/');
-% rootd=strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_stf_fns_45s/');
-% rootd=strcat(SPCFMEXloc,'axisym_test'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_external_forcing'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
-% rootd=strcat(SPCFMEXloc,'test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES_observesignalinbuffer_cstrhdr/'); coord_units='m'; convert_to_relative_coords = 0; pos_interface=0;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf10_1hz/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2_1hz/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5_jpeguz/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo_otherstation/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4_homogenous/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_sharpstf3/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); type_display = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                     %
@@ -201,7 +140,6 @@ pos_sources = loadSources(OFd); % Load sources' positions.
 % Compute distance to sources.
 dist_to_sources = zeros(size(xstattab, 1), size(pos_sources, 1));
 for n_source = 1:size(pos_sources, 1)
-  %dist_to_sources(:, n_source) = sqrt((pos_stations(:, 1) - pos_sources(n_source, 1)) .^ 2 + (pos_stations(:, 2) - pos_sources(n_source, 2)) .^ 2);
   dist_to_sources(:, n_source) = sqrt((xstattab-pos_sources(n_source, 1)) .^ 2 + (ystattab-pos_sources(n_source, 2)) .^ 2);
 end
 
@@ -222,15 +160,14 @@ end
 format compact;
 
 % Ask for behaviour.
-display_or_load = - 1;
-while (not(length(display_or_load) == 1 && ismember(display_or_load, [0, 1, 2, 3])))
-  display_or_load = input(['[',mfilename,'] Load and plot separately (0), load only (1), load plot time-distance (2), or load and plot polarisation (3)? > ']);
+behaviour = - 1;
+while (not(length(behaviour) == 1 && ismember(behaviour, [0, 1, 2, 3])))
+  behaviour = input(['[',mfilename,'] Load and plot separately (0), load only (1), load plot time-distance (2), or load and plot polarisation (3)? > ']);
 end
 % Ask for stations.
 istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']); istattab = reshape(istattab,[1,numel(istattab)]);
 disp(['[',mfilename,'] Loading [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] (absolute x and z, d relative to source):']);
 disp([istattab', xstattab(istattab), ystattab(istattab) ,dist_to_sources(istattab)]);
-% nstat = size(pos_stations(istattab, 1), 1);
 nstat = numel(istattab);
 % Ask for geometric attenuation (relies on distance to source).
 geometric_attenuation = - 1;
@@ -239,7 +176,7 @@ while (not(ismember(geometric_attenuation, [0, 1, 2, 3])))
 end
 % Ask if plot y-axis should be normalised to same scale.
 normalise_ylims = 0; % Default value.
-if (display_or_load == 0 && nstat > 1)
+if (behaviour == 0 && nstat > 1)
   normalise_ylims = - 1;
   while (not(normalise_ylims == 0 || normalise_ylims == 1))
     normalise_ylims = input(['[',mfilename,'] Normalise y-scale? (0 for no, 1 for yes) > ']);
@@ -249,107 +186,89 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load and eventually plot.   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (display_or_load == 0)
-  figure(); hold on;
-end
-if (normalise_ylims)
-  % Prepare updates of y-axis scale.
-  max_ylim_plus = - Inf;
-  min_ylim_minus = + Inf;
+if (behaviour == 0)
+  % One only figure for this behaviour.
+  figure();
+  hold on;
+%   if (normalise_ylims)
+%     % Prepare updates of y-axis scale.
+%     max_ylim_plus = - Inf;
+%     min_ylim_minus = + Inf;
+%   end
 end
 if (convert_to_relative_coords == 1) % Eventually remove source components for display.
   xstattab = xstattab - pos_sources(1, 1); ystattab = ystattab - pos_interface;
 end
 
-ax=[];
-Ztime=[];
-Zamp=[];
-
-% Loop on synthetics.
+% Empty arrays.
+axes = []; Ztime = []; Zamp = [];
+% Loop on synthetics to be loaded.
 for istat = 1:nstat
   istat_glob = istattab(istat); % Recover global number of station.
+  factor = getScalings(istat_glob, geometric_attenuation, xstattab, ystattab, dist_to_sources, rescale_factor); % Get scaling factors.
   
-  % Get scaling factors and rescale.
-  factor = getScalings(istat_glob, geometric_attenuation, xstattab, ystattab, dist_to_sources, rescale_factor);
-  
-  if(ismember(display_or_load,[0,1,2])) % If direct plots, get the one unknown and proceed.
-    [extension, unknown_name] = getUnknowns(type_display, unknown);
+  if(ismember(behaviour, [0, 1, 2])) % If direct plots, get the one unknown and proceed.
+    [extension, ylabel_unknown] = getUnknowns(type_display, unknown);
     [data] = readAndSubsample(OFd, stations_data, istat_glob, unknown, extension, subsample, wanted_dt, istat);
-  
-    % Recover time/amplitude data.
-    Ztime(istat, :) = data(:, 1)'; Zamp(istat, :) = data(:, 2)';
-    Zamp(istat, :) = factor * Zamp(istat, :);
-
-    % Eventually, display.
-    if (display_or_load == 0)
-      ax(istat) = subplot(nstat, 1, istat);
-      if (strcmp(coord_units, 'km'))
-        legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob) / 1000), ',', num2str(ystattab(istat_glob) / 1000), '$) ', coord_units);
-      elseif (strcmp(coord_units, 'm'))
-        legtext{istat} = strcat('S', num2str(istat_glob), ', $(x,z)=(', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ ', coord_units);
-      else
-        error(['coord_units = ', coord_units, 'not implemented.']);
-      end
-      plot(Ztime(istat, :), Zamp(istat, :));
-      set(gca, 'TickLabelInterpreter', 'latex');
-      grid on;
-      box on;
+    Ztime(istat, :) = data(:, 1)'; Zamp(istat, :) = data(:, 2)'; % Recover time/amplitude data.
+    Zamp(istat, :) = factor * Zamp(istat, :); % Scale.
+    
+    if (behaviour == 0) % Eventually, plot.
+      subplot(nstat, 1, istat);
+      axes{istat} = gca;
+      legtext{istat} = ['S', num2str(istat_glob), ', $(x,z) = (', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ [m]'];
+      plot(Ztime(istat, :), Zamp(istat, :), 'displayname', legtext{istat}); hold on;
       % Cosmetics.
-      if (istat == 1)
-        title(fig_title)
-      end
-      if (istat == nstat)
-        xlabel('time (s)')
-      end
-      if (istat ~= nstat)
-        set(gca, 'xticklabel', []);
-      end
-      if (istat == round(nstat / 2))
-        ylabel(unknown_name);
-      end
+      if (istat == 1); title(fig_title); end; % Put title only on first subplot.
+      if (istat == nstat); xlabel('time (s)'); end; % Put xlabel only on last subplot.
+      if (istat ~= nstat); set(gca, 'xticklabel', []); end; % Remove xticks for all subplots except last one.
+      if (istat == round(nstat / 2)); ylabel(ylabel_unknown); end; % Put one ylabel at the middle subplot.
       xlim([Ztime(1, 1), Ztime(1, end)]);
-      legend(legtext{istat}, 'Location', 'northeast');
-      hold on;
-      if (normalise_ylims)
-        % Update y-axis scale.
-        if (ax(istat).YLim(1) < min_ylim_minus)
-          min_ylim_minus = ax(istat).YLim(1);
-        end
-        if (ax(istat).YLim(2) > max_ylim_plus)
-          max_ylim_plus = ax(istat).YLim(2);
-        end
-      end
-      if (normalise_ylims)
-        linkaxes(ax);
-      else
-        linkaxes(ax, 'x');
-      end
+      legend('Location', 'northeast');
+      set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+%       if (normalise_ylims) % Update y-axis scale.
+%         if (axes{istat}.YLim(1) < min_ylim_minus)
+%           min_ylim_minus = axes{istat}.YLim(1);
+%         end
+%         if (axes{istat}.YLim(2) > max_ylim_plus)
+%           max_ylim_plus = axes{istat}.YLim(2);
+%         end
+%       end
     end
-  
-  elseif(display_or_load==3) % If polarisation plot, get the two unknowns and proceed.
-    [extension_x, unknown_x] = getUnknowns(type_display, 'BXX');
+    
+  elseif (behaviour == 3) % If polarisation plot, get the two unknowns and proceed.
+    [extension_x, ~] = getUnknowns(type_display, 'BXX');
     [data_x] = readAndSubsample(OFd, stations_data, istat_glob, 'BXX', extension_x, subsample, wanted_dt, istat);
-    [extension_z, unknown_z] = getUnknowns(type_display, 'BXZ');
+    [extension_z, ~] = getUnknowns(type_display, 'BXZ');
     [data_z] = readAndSubsample(OFd, stations_data, istat_glob, 'BXZ', extension_z, subsample, wanted_dt, istat);
-%     sig_t_x=data_x(:, 1)'; sig_v_x=data_x(:, 2)';
+%     sig_t_x = data_x(:, 1)'; sig_v_x = data_x(:, 2)';
     Ztime(istat, :) = data_z(:, 1)'; Zamp(istat,:) = data_z(:, 2)'; % useful to still load Z
-    if(not(all(size(data_x(:, 2)')==size(Zamp(istat, :)))))
+    if(not(all(size(data_x(:, 2)') == size(Zamp(istat, :)))))
       error(['size mismatch']);
     end
     plot_polarisation(data_x(:, 2)', Zamp(istat, :), ['S',num2str(istat_glob),' Polarisation']);
   
   else
-    error(['[',mfilename,'] display_or_load choice not implemented.']);
+    error(['[',mfilename,'] behaviour choice not implemented.']);
   end
 end
 
-if (display_or_load == 0 && nstat > 1 && normalise_ylims == 1)
-  % Normalise plot y-axis to same scale.
-  f = gcf;
-  for i = 1:length(f.Children)
-    if (strcmp(f.Children(i).Type, 'axes'))
-      f.Children(i).YLim = [min_ylim_minus, max_ylim_plus];
-    end
+% if (behaviour == 0 && nstat > 1 && normalise_ylims == 1)
+%   % Normalise plot y-axis to same scale.
+%   f = gcf;
+%   for i = 1:length(f.Children)
+%     if (strcmp(f.Children(i).Type, 'axes'))
+%       f.Children(i).YLim = [min_ylim_minus, max_ylim_plus];
+%     end
+%   end
+% end
+if(behaviour == 0)
+  axess=[];
+  for i=1:numel(axes); axess(i)=axes{i}; end;
+  if (normalise_ylims)
+    linkaxes(axess); % Link both x and y.
+  else
+    linkaxes(axess, 'x'); % Link only x.
   end
 end
 
@@ -362,25 +281,10 @@ disp(strcat("  Example: Data of station ", num2str(istattab(1)), " are in       
 disp(strcat("           Corresponding time values are in Ztime(", num2str(1), ", :)."));
 disp([' ']);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Clear variables.             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% clear('A', 'ans', 'ax', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'normalise_ylims', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
-% clear('A', 'ans', 'data', 'extension', 'f', 'fid', 'file', 'i', 'inputtxt', 'istat', 'istat_glob', 'line', 'max_ylim_plus', 'min_ylim_minus', 'nd', 'nt', 'nsub', 'nsublength', 'pos_stations', 'rootd', 'SPCFMloc', 'stop', 'subsample', 'unknown', 'xfound', 'zfound');
-if (factor == 1)
-  clear('factor');
-end
-if (geometric_attenuation == 0)
-  clear('geometric_attenuation');
-end
-if (renorm_statbystat == 0)
-  clear('renorm_statbystat', 'rescale_factor');
-end
-
 global synth_load_was_ran
 synth_load_was_ran = 1;
 
-if (display_or_load == 2)
+if (behaviour == 2)
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
@@ -405,6 +309,7 @@ end
 
 if (ismember(plot_amplitude, [1, 2, 3]))
   % Plot amplitude.
+  amp = zeros(size(Zamp));
   for ii = 1:length(Zamp(:, 1))
     amp(ii) = max(Zamp(ii, :)) - min(Zamp(ii, :));
   end
@@ -424,173 +329,171 @@ end
 
 % StratoBaro, 66, June, 12:00
 % fig_title = strcat('Microbaroms, lat66, June, 12:00');
-% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656744_straight_1mps_isp6/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656505_straight_1e-2mps_isp6/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656465_straight_1mps_test/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655513_analytic/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655494_alright/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655487/');
-% rootd=strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655369_unstable/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_650851/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_644923_EBF_ispread3/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641616_EBF_ispread1.5/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641395_testEBF_stopped/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_639014_long_betterEBF_crash/');
-% rootd=strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES_test1/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_637450_long_EBF_crash/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_634307_testexternalforcing/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622147_final_test/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622125/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622037/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621952/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621860/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621802/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_599638_testmicrobarom/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7_isp6_full/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668482_disp7/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_patch'); OFd = strcat(rootd, '/OUTPUT_FILES_668446_disp7_wrongstations/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_668354_testlarger_str_1e-1mps_isp6/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656744_straight_1mps_isp6/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656505_straight_1e-2mps_isp6/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_656465_straight_1mps_test/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655513_analytic/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655494_alright/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655487/');
+% rootd = strcat(SPCFMEXloc,'microbaroms_periodic'); OFd = strcat(rootd, '/OUTPUT_FILES_655369_unstable/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_650851/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_644923_EBF_ispread3/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641616_EBF_ispread1.5/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_641395_testEBF_stopped/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_639014_long_betterEBF_crash/');
+% rootd = strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'stratobaro_test_EBF/'); OFd = strcat(rootd, '/OUTPUT_FILES_test1/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_637450_long_EBF_crash/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_634307_testexternalforcing/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624650_long/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624515_rpw_spatially_fixed_s0.2/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624478_apo+rpw0.2_10.5p/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_624436_apo+rpw0.15/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_623945_apodised/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622147_final_test/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622125/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_622037/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621952/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621860/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_621802/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_599638_testmicrobarom/');
 
 % StratoExplo, 66, June, 12:00
 % fig_title = strcat('Atmospheric Explosions, lat66, June, 12:00');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRdfsdfATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597316/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597250/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_597099/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_595500_crash40k1it/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRdfsdfATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594736_crash27kit/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_594361_dt1e-3_cancelled/');
 
 % Seismic Hammer, soft soil.
 % fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
-% rootd=strcat(SPCFMEXloc,'SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
-% rootd=strcat(SPCFMEXloc,'SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/'); % With additionnal stations for comparison with data.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/'); % Same as 593959 only with Qp converted to Qk and additionnal stations.
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=0_618645/');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f=f0_618882/');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
-% rootd=strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_669168_fullretweaked/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_668888_stopped_12kit/'); rescale_factor = 236; % Same as 593959 but test with first layers changed.
+% rootd = strcat(SPCFMEXloc,'SH_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_660223_full_dec1m/'); % Same as 593959 but axisymmetric.
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_627577_qk4sls_truefreesurf/');
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/OUTPUT_FILES_623195_qk_4sls_freesurf/');
+% rootd = strcat(SPCFMEXloc,'SH_final/SH_soft_final_redone'); OFd = strcat(rootd, '/OUTPUT_FILES_610770/'); % With additionnal stations for comparison with data.
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa_616368/'); % Same as 593959 only with Qp converted to Qk and additionnal stations.
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f = 0_618645/');
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_Qkappa+f = f0_618882/');
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_noatt_619264');
+% rootd = strcat(SPCFMEXloc,'SH_final'); OFd = strcat(rootd, '/SH_soft_final_redone_qk_att4sls_620294');
 % rootd = strcat(SPCFMEXloc,'SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/'); % Original (used in paper).
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_new_model'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1; pos_interface=308;
-% rootd=strcat(SPCFMEXloc,'SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/'); % Original (used in paper).
-% rootd=strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661601_full_dec1m/'); % Same as 593960 but axisymmetric.
-% rootd=strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display=4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units = 'm'; convert_to_relative_coords = 1; pos_interface = 308;
+% rootd = strcat(SPCFMEXloc,'SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/'); % Original (used in paper).
+% rootd = strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661601_full_dec1m/'); % Same as 593960 but axisymmetric.
+% rootd = strcat(SPCFMEXloc,'SH_hard_axisym'); OFd = strcat(rootd, '/OUTPUT_FILES_661609_full_onlypress/'); type_display = 4; unknown = 'PRE'; % Same as 661601 but only recording above ground.
 
 % Quake, 45.
 % fig_title = strcat('Quake Simulation (45$^\circ$ dip)');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221612_local');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221544_local');
-% rootd=strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_75118_isoth_d6_savedvdg');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71980_isothermal');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_pot');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71931_d9');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71920_force_instead_of_moment_d9');
-% rootd=strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71913');
-% rootd=strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); rescale_factor = 1e-3;
-% rootd=strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221612_local');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_1811221544_local');
+% rootd = strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_75118_isoth_d6_savedvdg');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71984_isoth_d6');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71980_isothermal');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_pot');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71931_d9');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71920_force_instead_of_moment_d9');
+% rootd = strcat(SPCFMEXloc,'OKQ_test_imp'); OFd = strcat(rootd, '/OUTPUT_FILES_71913');
+% rootd = strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668844_OKQ45_redone'); rescale_factor = 1e-3;
+% rootd = strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_583041_long');
 
 % Quake, 0.
 % fig_title = strcat('Quake Simulation (0$^\circ$ dip)');
-% rootd=strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
-% rootd=strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
+% rootd = strcat(SPCFMEXloc,'OKQ'); OFd = strcat(rootd, '/OUTPUT_FILES_668833_OKQ0_redone'); rescale_factor = 1e-3;
+% rootd = strcat(SPCFMEXloc,'OKQ/ON_EOS_quake_ok_0'); OFd = strcat(rootd, '/OUTPUT_FILES_586984_full');
 
 % Seismic Hammer, hard soil.
-% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units='m'; convert_to_relative_coords = 1;
-% rootd=strcat(SPCFMEXloc,'SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); rescale_factor=8.840811261618920e-04;
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580185/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580228/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580333/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
+% fig_title = strcat('Seismic Hammer Simulation (Hard Soil)'); coord_units = 'm'; convert_to_relative_coords = 1;
+% rootd = strcat(SPCFMEXloc,'SH_final/SH_hard_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593960/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580457_full/'); rescale_factor = 8.840811261618920e-04;
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580113/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580185/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580228/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580333/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS__seismic_hammer_hard_soil'); OFd = strcat(rootd, '/OUTPUT_FILES_580712/');
 
 % Seismic Hammer, soft soil.
-% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units='m'; convert_to_relative_coords = 1;
-% rootd=strcat(SPCFMEXloc,'SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9048100_seismic_DG/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9081476_seismic_potential/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
+% fig_title = strcat('Seismic Hammer Simulation (Soft Soil)'); coord_units = 'm'; convert_to_relative_coords = 1;
+% rootd = strcat(SPCFMEXloc,'SH_final/SH_soft_final'); OFd = strcat(rootd, '/OUTPUT_FILES_593959/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9113508_seismic_DG_with_memvars_solid/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9048100_seismic_DG/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9081476_seismic_potential/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9091088_seismic_DG_new_coupling/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_9102702_seismic_potential_rem_forcing/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Balloons/simulations'); OFd = strcat(rootd, '/OUTPUT_FILES_551980_seismic_potential_with_memvars_solid/');
 
 % Tests.
 % fig_title = 'test';
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf10_1hz/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2_1hz/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5_jpeguz/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo_otherstation/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4_homogenous/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_sharpstf3/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e0mu/');
-% rootd=strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e2mu/');
-% rootd=strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e4mu/');
-% rootd=strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e5mu/');
-% rootd=strcat(SPCFMEXloc,'full_DG_square'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES_long/');
-% rootd=strcat(SPCFMEXloc,'test_FTS'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_coupling'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'test_stretching_FFcounterpart'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_test_atmo'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_test_densitysource'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
-% rootd=strcat(SPCFMEXloc,'test_quake'); OFd = strcat(rootd, '/OUTPUT_FILES');
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES__long_working');
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma0'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
-% rootd=strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_dz'); type_display = 1;
-% rootd=strcat(SPCFMEXloc,'quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_narrow_okdx');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583123_100km_3sources_nospread');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583128_100km_3sources_nospread');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583138_100km_3sources_spread');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_test_scale_sources');
-% rootd=strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_591778_66j1200_regmukap0_softground_nocrash');
-% rootd=strcat(SPCFMEXloc,'seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_583180');
-% rootd=strcat(SPCFMEXloc,'seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_583194');
-% rootd=strcat(SPCFMEXloc,'seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); rescale_factor=8.840811261618920e-04;
-% rootd=strcat(SPCFMEXloc,'seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_591776_additional_stations');fig_title = 'test_soft';
-% rootd=strcat(SPCFMEXloc,'seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_591777_additional_stations');fig_title = 'test_hard';
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf10_1hz/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2_1hz/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5_jpeguz/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo_otherstation/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4_homogenous/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_sharpstf3/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e0mu/');
+% rootd = strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e2mu/');
+% rootd = strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e4mu/');
+% rootd = strcat(SPCFMEXloc,'test_external_modelDG_only'); OFd = strcat(rootd, '/OUTPUT_FILES_1e5mu/');
+% rootd = strcat(SPCFMEXloc,'full_DG_square'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES_long/');
+% rootd = strcat(SPCFMEXloc,'test_FTS'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_coupling'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_stretching'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_stretching_FFcounterpart'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_test_atmo'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_test_densitysource'); OFd = strcat(rootd, '/OUTPUT_FILES_TEST');
+% rootd = strcat(SPCFMEXloc,'test_quake'); OFd = strcat(rootd, '/OUTPUT_FILES');
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES__long_working');
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma0'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_vz');
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_test_dz'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_ok_45'); OFd = strcat(rootd, '/OUTPUT_FILES_narrow_okdx');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583123_100km_3sources_nospread');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583128_100km_3sources_nospread');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_583138_100km_3sources_spread');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_test_scale_sources');
+% rootd = strcat(SPCFMEXloc,'ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200'); OFd = strcat(rootd, '/OUTPUT_FILES_591778_66j1200_regmukap0_softground_nocrash');
+% rootd = strcat(SPCFMEXloc,'seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_583180');
+% rootd = strcat(SPCFMEXloc,'seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_583194');
+% rootd = strcat(SPCFMEXloc,'seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_586795_d4_source_flipped'); rescale_factor = 8.840811261618920e-04;
+% rootd = strcat(SPCFMEXloc,'seismic_hammer_zooms/soft/'); OFd = strcat(rootd, 'OUTPUT_FILES_591776_additional_stations');fig_title = 'test_soft';
+% rootd = strcat(SPCFMEXloc,'seismic_hammer_zooms/hard/'); OFd = strcat(rootd, 'OUTPUT_FILES_591777_additional_stations');fig_title = 'test_hard';
 
 % Mars Gravity Wave.
 % fig_title = strcat('Mars Gravity Wave Simulation');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_533937_vNEW_full/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_534758_long_instab/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_535011_with_FTS/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave/test_RAPHAEL'); OFd = strcat(rootd, '/OUTPUT_FILES/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9078210_spread_source/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9081352_spread_cut_source/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9091089_new_coupling/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_552471_atmo_only/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_552455_factor0p1/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_557219_long/');
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_558183_Gderiv/');
-
-% Mars AGW.
-% rootd=strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_533937_vNEW_full/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_534758_long_instab/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_535011_with_FTS/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_535489_removed_discontinuity_long/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave/test_RAPHAEL'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_540064_FTS_no_disc_long/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9078210_spread_source/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9081352_spread_cut_source/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9091089_new_coupling/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_9103256_same_as_previous_but_factor_1/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_552471_atmo_only/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_552455_factor0p1/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_557219_long/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/Mars_Gravity_Wave'); OFd = strcat(rootd, '/OUTPUT_FILES_558183_Gderiv/');
+% rootd = strcat(SPCFMloc, 'Ongoing_Work/SPECFEM-DG_Mars_AGW_runs/explo_mars_sub'); OFd = strcat(rootd, '/OUTPUT_FILES_KappaON/');
 
 % DAG
 % fig_title = strcat('DAG');
@@ -599,7 +502,51 @@ end
 % rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_1303372/');
 % rootd = strcat(SPCFMEXloc,'DAG/'); OFd = strcat(rootd, 'OUTPUT_FILES_103088_uglybutnicerefrac/');
 
-function dir=checkOFd(dir)
+% Tests
+% fig_title = strcat('test');
+% rootd = strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d = 0_kmax = 2/');
+% rootd = strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES_d = d_kmax = 2/');
+% rootd = strcat(SPCFMEXloc,'test_pml'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_plot_perio'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'tir_mars'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'demo_pot'); OFd = strcat(rootd, '/OUTPUT_FILES_826234/');
+% rootd = strcat(SPCFMEXloc,'demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_826226/');
+% rootd = strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_826213/');
+% rootd = strcat(SPCFMEXloc,'demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local/');
+% rootd = strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local/');
+% rootd = strcat(SPCFMEXloc,'demo_fns'); OFd = strcat(rootd, '/OUTPUT_FILES_fnsf2s_local_butd7/');
+% rootd = strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lnsf2s_local_butd7/');
+% rootd = strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_lns_t = 105s/');
+% rootd = strcat(SPCFMEXloc,'demo_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fns_t = 195s/');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt_BUTONCALMIP/');
+% rootd = strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_extatm+oksoil+lowdt/');
+% rootd = strcat(SPCFMEXloc,'test_impedance'); OFd = strcat(rootd, '/OUTPUT_FILES_lns/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fts_lns_19s/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_fts_fns_26s/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_f_lns_44s/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_f_fns_62s/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_stf_lns_27s/');
+% rootd = strcat(SPCFMEXloc,'test_lns'); OFd = strcat(rootd, '/OUTPUT_FILES_stf_fns_45s/');
+% rootd = strcat(SPCFMEXloc,'axisym_test'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_external_forcing'); OFd = strcat(rootd, '/OUTPUT_FILES/');
+% rootd = strcat(SPCFMEXloc,'test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES/'); coord_units = 'm'; convert_to_relative_coords = 0; pos_interface = 0;
+% rootd = strcat(SPCFMEXloc,'test_stretching_wind'); OFd = strcat(rootd, '/OUTPUT_FILES_observesignalinbuffer_cstrhdr/'); coord_units = 'm'; convert_to_relative_coords = 0; pos_interface = 0;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf10_1hz/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2_1hz/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5_jpeguz/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo_otherstation/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf31hz_homo/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf4_homogenous/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_sharpstf3/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf5/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf3/'); type_display = 1;
+% rootd = strcat(SPCFMEXloc,'quake_oklahoma45'); OFd = strcat(rootd, '/OUTPUT_FILES_stf2/'); type_display = 1;
+
+function dir = checkOFd(dir)
   if (not(strcmp(dir(end), '/')))
     dir = [dir, '/'];
   end
@@ -608,7 +555,7 @@ function dir=checkOFd(dir)
   end
 end
 
-function pos_sources=loadSources(OFdir)
+function pos_sources = loadSources(OFdir)
   pos_sources = [inf, inf]; % Allocate a row for the first source's position.
   % fid = fopen([rootd, '/DATA/SOURCE']);
   fid = fopen([OFdir, 'SOURCE']);
@@ -628,10 +575,10 @@ function pos_sources=loadSources(OFdir)
       end
       line = regexprep(regexprep(line, ' +', ' '), '^ ', ''); % Remove multiple spaces, and then eventually remove space if it there is one as first character.
       if strcmp(line(1:2), 'xs')
-        xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', '')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
+        xfound = 1; pos_sources(1, 1) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' * = * *', '')); % Remove comments (everything after a '#'), remove the equals sign and spaces around it, and cast it as source position.
       end
       if strcmp(line(1:2), 'zs')
-        zfound = 1; pos_sources(1, 2) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' *=* *', ''));
+        zfound = 1; pos_sources(1, 2) = str2num(regexprep(regexprep(line(3:end), ' *#.*', ''), ' * = * *', ''));
       end
     end
     if (xfound && zfound)
@@ -641,7 +588,7 @@ function pos_sources=loadSources(OFdir)
   fclose('all');
 end
 
-function [x_stat,z_stat,stat_file]=loadStations(rootDir, OFdir)
+function [x_stat,z_stat,stat_file] = loadStations(rootDir, OFdir)
   try
     stat_file = importdata(strcat(OFdir, 'STATIONS'));
   catch
@@ -706,11 +653,11 @@ function [outputdata] = readAndSubsample(OFd, stations_data, istat_glob, unknown
 %     nsub = ceil(nt / nsublength);
     nsub = floor(wanted_dt/meanactualdt);
     nd = max(size(data(1:nsub:nt, 1)));
-    if(istat==1)
+    if(istat == 1)
       disp(['[',mfilename,'] Subsampled synthetics by a factor ',num2str(nsub),'.']);
     end
   elseif (subsample == 1 && wanted_dt<meanactualdt)
-    if(istat==1)
+    if(istat == 1)
       disp(['[',mfilename,'] Subsampled dt is smaller than actual dt, discarding subsampling.']);
     end
     nsub = 1;

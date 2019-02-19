@@ -20,45 +20,45 @@ addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: ask for user input.
 raw_t = Ztime; raw_s = Zamp; cd(OFd);
-% raw_t=stf_from_run(:, 1)'; raw_s=stf_from_run(:, 2)';
-% raw_t=data_leo_t(1,:);raw_s=data_leo_v(1,:);
+% raw_t = stf_from_run(:, 1)'; raw_s = stf_from_run(:, 2)';
+% raw_t = data_leo_t(1,:);raw_s = data_leo_v(1,:);
 % OKQ0
-% raw_t=data_voon_t{1};raw_s=data_voon_v{1}'; fig_tit='Voon 53m'; nstat=1;
-% raw_t=data_voon_t{12};raw_s=data_voon_v{12}'; fig_tit='Voon 102m'; nstat=1;
-% raw_t=data_voon_t{14};raw_s=data_voon_v{14}'; fig_tit='Voon 151m'; nstat=1;
-% raw_t=data_voon_t{17};raw_s=data_voon_v{17}'; fig_tit='Voon 297m'; nstat=1;
-% raw_t=data_voon_t{4};raw_s=data_voon_v{4}'; fig_tit='Voon 15';
-% raw_t=data_voon_t{5};raw_s=data_voon_v{5}'; fig_tit='Voon 30';
-% raw_t=data_voon_t{6};raw_s=data_voon_v{6}'; fig_tit='Voon 45';
-% raw_t=Ztime(1,:); raw_s=Zamp(1,:); fig_tit=fig_title;
-% raw_t=Ztime(2,:); raw_s=Zamp(2,:); fig_tit=fig_title;
-% raw_t=Ztime(3,:); raw_s=Zamp(3,:); fig_tit=fig_title;
+% raw_t = data_voon_t{1};raw_s = data_voon_v{1}'; fig_tit = 'Voon 53m'; nstat = 1;
+% raw_t = data_voon_t{12};raw_s = data_voon_v{12}'; fig_tit = 'Voon 102m'; nstat = 1;
+% raw_t = data_voon_t{14};raw_s = data_voon_v{14}'; fig_tit = 'Voon 151m'; nstat = 1;
+% raw_t = data_voon_t{17};raw_s = data_voon_v{17}'; fig_tit = 'Voon 297m'; nstat = 1;
+% raw_t = data_voon_t{4};raw_s = data_voon_v{4}'; fig_tit = 'Voon 15';
+% raw_t = data_voon_t{5};raw_s = data_voon_v{5}'; fig_tit = 'Voon 30';
+% raw_t = data_voon_t{6};raw_s = data_voon_v{6}'; fig_tit = 'Voon 45';
+% raw_t = Ztime(1,:); raw_s = Zamp(1,:); fig_tit = fig_title;
+% raw_t = Ztime(2,:); raw_s = Zamp(2,:); fig_tit = fig_title;
+% raw_t = Ztime(3,:); raw_s = Zamp(3,:); fig_tit = fig_title;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters and              %
 % pre-treatment.              %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if(not(all(size(raw_t)==size(raw_s))))
+if(not(all(size(raw_t) == size(raw_s))))
   error(['[(',mfilename,', ERROR] time data and amplitude should have the same size, but right now do not.']);
 end
 
-nstat=min(size(Ztime));
+nstat = min(size(Ztime));
 
 % Cut times/values array based on shortest relevant array.
 difftimes = raw_t(:,2:end)-raw_t(:,1:end-1);
-relevantdifftimes= (difftimes>0);
-minimum_last_relevant=+Inf;
-for i=1:size(raw_t,1)
-  locminim=find(relevantdifftimes(i,:)>0,1,'last');
+relevantdifftimes =  (difftimes>0);
+minimum_last_relevant = +Inf;
+for i = 1:size(raw_t,1)
+  locminim = find(relevantdifftimes(i,:)>0,1,'last');
   if(locminim<minimum_last_relevant)
-    minimum_last_relevant=locminim;
+    minimum_last_relevant = locminim;
   end
 end
 minimum_last_relevant
-raw_t=raw_t(:,1:minimum_last_relevant);
-raw_s=raw_s(:,1:minimum_last_relevant);
+raw_t = raw_t(:,1:minimum_last_relevant);
+raw_s = raw_s(:,1:minimum_last_relevant);
 
-NWINDOWZZZZ=-1;
+NWINDOWZZZZ = -1;
 while (not(length(NWINDOWZZZZ) == 1 && NWINDOWZZZZ>0))
   NWINDOWZZZZ = input(['[', mfilename, '] Number of windows for PSD (integer, >0, higher values <=> smoother curve & higher lowest frequency)? > ']);
 end
@@ -75,11 +75,11 @@ end
 
 % Eventually, compute integral or derivative.
 % TODO: Ask for user input.
-% signal = raw_s; signal_name = "displacement"; unit="m";
-% signal = cumtrapz(raw_t, raw_s); signal_name = "displacement"; unit="m";
+% signal = raw_s; signal_name = "displacement"; unit = "m";
+% signal = cumtrapz(raw_t, raw_s); signal_name = "displacement"; unit = "m";
 
 % TODO: Ask for user input.
-signal_name = "SIGNAL"; signal_unit="UNIT";
+signal_name = "SIGNAL"; signal_unit = "UNIT";
 % signal_name = "$\delta P$"; signal_unit = "Pa";
 
 avgwpsds = - 1;
@@ -132,18 +132,18 @@ for i = IDs_to_process
   % Select time frame.
   % TODO: ask for user input.
   select_time_l = raw_t(i, 1); select_time_u = raw_t(i, end);
-  % select_time_l=raw_t(1); select_time_u=48;
-  % select_time_l=0; select_time_u=2.9;
+  % select_time_l = raw_t(1); select_time_u = 48;
+  % select_time_l = 0; select_time_u = 2.9;
 
   % Select.
-  % time=raw_t; time = time(select_time_l<=time); time=time(time<=select_time_u); signal = signal(time<=select_time_u); % Cut signal and time around selection window.
-  time = raw_t(i, :); signal(select_time_l >= time) = 0; signal(time >= select_time_u) = 0; % Zero signal value around selection window.
-  % signal=[signal, zeros(1,size(time,2))]; time=[time-time(1), time(end)-2*time(1)+time]; % Zero signal value around selection window and add zeros at the end.
+  % time = raw_t; time = time(select_time_l< = time); time = time(time< = select_time_u); signal = signal(time< = select_time_u); % Cut signal and time around selection window.
+  time = raw_t(i, :); signal(select_time_l > =  time) = 0; signal(time > =  select_time_u) = 0; % Zero signal value around selection window.
+  % signal = [signal, zeros(1,size(time,2))]; time = [time-time(1), time(end)-2*time(1)+time]; % Zero signal value around selection window and add zeros at the end.
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % PSD and plot.               %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  [~, ~, ~, ~, PSD,PSD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), NWINDOWZZZZ); % UNIT/HZ^.5
+  [~, ~, ~, ~, PSD, PSD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), NWINDOWZZZZ); % UNIT/HZ^.5
 %   [PSD, PSD_f] = custom_psd(time, signal); % UNIT^2/HZ
 
   WPSD_tab(i, :) = PSD;
@@ -181,9 +181,9 @@ elseif (avgwpsds == 3)
   colours = jet(numel(IDs_to_process));
   for i = IDs_to_process
     if (strcmp(coord_units, 'km'))
-      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z)=(', num2str(xstattab(istattab(i)) / 1000), ',', num2str(ystattab(istattab(i)) / 1000), "$) ", coord_units);
+      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z) = (', num2str(xstattab(istattab(i)) / 1000), ',', num2str(ystattab(istattab(i)) / 1000), "$) ", coord_units);
     elseif (strcmp(coord_units, 'm'))
-      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z)=(', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ")$ ", coord_units);
+      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ")$ ", coord_units);
     else
       error(['[', mfilename, ', ERROR] coord_units = ', coord_units, 'not implemented.']);
     end
@@ -241,13 +241,13 @@ else
 end
 
 % Plot ratios.
-refID=1;
+refID = 1;
 % if(0)
-IDs_to_process_RATIO=IDs_to_process;
-IDs_to_process_RATIO(IDs_to_process_RATIO==refID)=[]; % remove ref.
+IDs_to_process_RATIO = IDs_to_process;
+IDs_to_process_RATIO(IDs_to_process_RATIO == refID) = []; % remove ref.
 figure();
-for i=IDs_to_process_RATIO
-  loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z)=(', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ ', coord_units], 'color', colours(i, :));
+for i = IDs_to_process_RATIO
+  loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ ', coord_units], 'color', colours(i, :));
   hold on;
 end
 legend('location', 'best');

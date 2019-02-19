@@ -14,13 +14,8 @@
 % with:
 %   atmospheric_model_file the path to an atmospheric model file.
 
-function [] = model_getdxdt()
+function model_getdxdt()
   addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'); % for model_viscoelastic_getinterfaces.m
-  format compact;
-  set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
-  set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);
-  set(0, 'DefaultTextInterpreter', 'latex');
-  set(0, 'DefaultLegendInterpreter', 'latex');
   
   % Parameters.
   np=2;
