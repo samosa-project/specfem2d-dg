@@ -8,16 +8,20 @@
 %                a) .m scripts and functions (if not alongside this script, recover via Léo):
 %                  1) bulkfilter.m
 
-function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
+function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitle, distanceName)
   if(nargin<3)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''times,values,distances''.']);
   end
-  if(not(exist('figtitle')))
+  if(not(exist('reducedTime')))
     % not found, make default
-    figtitle='';
+    reducedTime=0;
   end
-  if(not(exist('distname')))
-    distname=['distance $d$ '];
+  if(not(exist('figureTitle')))
+    % not found, make default
+    figureTitle='';
+  end
+  if(not(exist('distanceName')))
+    distanceName=['distance $d$ '];
   end
 %   format compact;
 %   set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
@@ -44,6 +48,12 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
   data_t = times;
   data_v = values;
   unknown_name = 'v';
+  xlab = 'time $t$ [s]';
+  
+  if(reducedTime~=0)
+    data_t = data_t - distances/reducedTime;
+    xlab = ['reduced time $t_r = t-d/',num2str(reducedTime),'$ [s]'];
+  end
   
 %   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   % Parse ignored data.         %
@@ -189,14 +199,14 @@ function [] = plot_time_v_dist(times,values,distances,figtitle,distname)
 %     xlim([min(data_t(:, 1)), max(data_t(:, end))]); % max ignores nan
     xlim([min(min(data_t(:, :))), max(max(data_t(:, :)))]); % max ignores nan
 %     xlim([min(min(data_t(:, sel))), max(max(data_t(:, sel)))]); % max ignores nan
-    xlabel('time $t$ [s]');
+    xlabel(xlab);
     ylabel(['$d + \left(', coef_string, '\right)\times ', unknown_name,'$']);
     scalez = input(['[', mfilename, '] Rechoose coefficient (0 for no, new value for yes)? > ']);
   end
 
-  ylabel(strcat(distname, dist_unit)); %, " $\longrightarrow$"));
+  ylabel(strcat(distanceName, dist_unit)); %, " $\longrightarrow$"));
   set(gca, 'TickLabelInterpreter', 'latex');
-  title(figtitle);
+  title(figureTitle);
 
   % Time axis limits.
   tmin = input(['[', mfilename, '] t_min (', num2str(min(min(data_t))), ' now)? > ']);

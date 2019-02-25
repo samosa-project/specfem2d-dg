@@ -1,5 +1,4 @@
 % Author:        Alexandre Cadu.
-% Mail:          ??
 % Description:   Computes the power spectral density s_PSD of s and
 %                associated frequencies f_PSD over N_window with
 %                sampling frequency of fs. The overlapping is of 50 %.

@@ -43,7 +43,7 @@ function model_getdxdt()
   
   % Ask user for dominant frequency.
   while (not(length(f0) == 1))
-    f0 = input(['[',mfilename,'] Main temporal frequency [Hz]? > ']);
+    f0 = input(['[',mfilename,'] Main temporal frequency (or highest frequency at play) [Hz]? > ']);
   end
   paramtxt=['$f_0=',sprintf('%.3e',f0),'$, ',num2str(np),' elts./wavelength'];
   

@@ -25,22 +25,22 @@ plotrateversion='FNS';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 200;
-nstepseismo = 100;
+nstations   = 87;
+nstepseismo = 50;
 
-neltot      = 2000*830;
-neldg       = neltot-2000*27;
+neltot      = 80518;
+neldg       = neltot;
 
-nstepsnap   = 4000;
-nsteptot    = 600000;
+nstepsnap   = 5000;
+nsteptot    = 300000;
 
-nproc       = 1680;
+nproc       = 288;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Computation of estimate.    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-weigth=[1,100,5,1,50]; % Importance of each parameter.
+weigth=[1,100,25,1,50]; % Importance of each parameter.
 meandata=mean(data,1);
 % for i=numel(t)-3:numel(t)
 for i=1:numel(t)
@@ -243,7 +243,7 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87  25    941]; RUNINFO{i}={120621,'mb gmsh LNS 400km (2)'}; i=i+1;
   RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500   4  25  41137]; RUNINFO{i}={130337,'test DAG FNS'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 195500  195500 0.490  24600  128  500  20  25   4080]; RUNINFO{i}={103088,'DAG FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500  87  25  12591]; RUNINFO{i}={144785,'mb gmsh LNS longestyet'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500  87  25  12591]; RUNINFO{i}={1447857,'mb gmsh LNS longestyet'}; i=i+1;
   RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250  10  25    972]; RUNINFO{i}={144802,'tir de mine FNS'}; i=i+1;
   RUN_RAWDATA(i,:)=[  12944    6597 0.385 160000   96  250  18  25   1136]; RUNINFO{i}={147954,'tir de mine FNS 400Hz'}; i=i+1;
   RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500 131  50  32583]; RUNINFO{i}={147921,'mars insight FNS'}; i=i+1;
@@ -253,7 +253,8 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   8  50     41]; RUNINFO{i}={1486113,'mars insight FNS cut'}; i=i+1;
   RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000  18  25    401]; RUNINFO{i}={1508049,'tir de mine FNS 40Hz'}; i=i+1;
 %   RUN_RAWDATA(i,:)=[2075000 2007500 1.075  12600 1008  500 204 50      0]; RUNINFO{i}={1529411,'mars insight FNS 3hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000 164 100   74988]; RUNINFO{i}={1529789,'mars insight FNS 3hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000 164 100   74988]; RUNINFO{i}={1529789,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000 200 100   51256]; RUNINFO{i}={1538139,'mars insight FNS 22h 3hz w/o perioBC'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

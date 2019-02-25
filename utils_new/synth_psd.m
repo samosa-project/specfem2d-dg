@@ -45,18 +45,18 @@ end
 nstat = min(size(Ztime));
 
 % Cut times/values array based on shortest relevant array.
-difftimes = raw_t(:,2:end)-raw_t(:,1:end-1);
-relevantdifftimes =  (difftimes>0);
-minimum_last_relevant = +Inf;
-for i = 1:size(raw_t,1)
-  locminim = find(relevantdifftimes(i,:)>0,1,'last');
-  if(locminim<minimum_last_relevant)
-    minimum_last_relevant = locminim;
-  end
-end
-minimum_last_relevant
-raw_t = raw_t(:,1:minimum_last_relevant);
-raw_s = raw_s(:,1:minimum_last_relevant);
+% difftimes = raw_t(:,2:end)-raw_t(:,1:end-1);
+% relevantdifftimes =  (difftimes>0);
+% minimum_last_relevant = +Inf;
+% for i = 1:size(raw_t,1)
+%   locminim = find(relevantdifftimes(i,:)>0,1,'last');
+%   if(locminim<minimum_last_relevant)
+%     minimum_last_relevant = locminim;
+%   end
+% end
+% minimum_last_relevant
+% raw_t = raw_t(:,1:minimum_last_relevant);
+% raw_s = raw_s(:,1:minimum_last_relevant);
 
 NWINDOWZZZZ = -1;
 while (not(length(NWINDOWZZZZ) == 1 && NWINDOWZZZZ>0))
@@ -136,8 +136,8 @@ for i = IDs_to_process
   % select_time_l = 0; select_time_u = 2.9;
 
   % Select.
-  % time = raw_t; time = time(select_time_l< = time); time = time(time< = select_time_u); signal = signal(time< = select_time_u); % Cut signal and time around selection window.
-  time = raw_t(i, :); signal(select_time_l > =  time) = 0; signal(time > =  select_time_u) = 0; % Zero signal value around selection window.
+  % time = raw_t; time = time(select_time_l<= time); time = time(time<= select_time_u); signal = signal(time<= select_time_u); % Cut signal and time around selection window.
+  time = raw_t(i, :); signal(select_time_l >=  time) = 0; signal(time >=  select_time_u) = 0; % Zero signal value around selection window.
   % signal = [signal, zeros(1,size(time,2))]; time = [time-time(1), time(end)-2*time(1)+time]; % Zero signal value around selection window and add zeros at the end.
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,13 +180,13 @@ elseif (avgwpsds == 3)
   figure();
   colours = jet(numel(IDs_to_process));
   for i = IDs_to_process
-    if (strcmp(coord_units, 'km'))
-      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z) = (', num2str(xstattab(istattab(i)) / 1000), ',', num2str(ystattab(istattab(i)) / 1000), "$) ", coord_units);
-    elseif (strcmp(coord_units, 'm'))
-      PSDName = strcat('S', num2str(istattab(i)), ', $(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ")$ ", coord_units);
-    else
-      error(['[', mfilename, ', ERROR] coord_units = ', coord_units, 'not implemented.']);
-    end
+%     if (strcmp(coord_units, 'km'))
+%       PSDName = strcat('S', num2str(istattab(i)), ', $(x,z) = (', num2str(xstattab(istattab(i)) / 1000), ',', num2str(ystattab(istattab(i)) / 1000), "$) ", coord_units);
+%     elseif (strcmp(coord_units, 'm'))
+    PSDName = ['S', num2str(istattab(i)), ', $(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ [m]'];
+%     else
+%       error(['[', mfilename, ', ERROR] coord_units = ', coord_units, 'not implemented.']);
+%     end
     loglog(PSD_f, WPSD_tab(i, :), 'displayname', PSDName, 'color', colours(i, :));
     hold on;
   end
@@ -194,21 +194,22 @@ elseif (avgwpsds == 3)
   xlim([PSD_f(1), PSD_f(end)]);
   xlabel("$f$ [Hz]"); ylabel(WPSD_txt);
   title(WPSD_txt);
-  set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+%   set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+  prettyAxes(gcf);
 elseif (avgwpsds == 4)
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
   end
   figure();
-  renorm_for_unit = - 1;
-  if (strcmp(coord_units, 'km'))
-    renorm_for_unit = 1000;
-  elseif (strcmp(coord_units, 'm'))
-    renorm_for_unit = 1;
-  else
-    error(['[', mfilename, ', ERROR] coord_units = ', coord_units, 'not implemented.']);
-  end
+%   renorm_for_unit = - 1;
+%   if (strcmp(coord_units, 'km'))
+%     renorm_for_unit = 1000;
+%   elseif (strcmp(coord_units, 'm'))
+  renorm_for_unit = 1;
+%   else
+%     error(['[', mfilename, ', ERROR] coord_units = ', coord_units, 'not implemented.']);
+%   end
   switch distancechoice
     case 1
       SURFx = xstattab(istattab(IDs_to_process)) / renorm_for_unit; dist_symbol = 'x';
@@ -226,7 +227,7 @@ elseif (avgwpsds == 4)
   xlim([min(SURFx), max(SURFx)]);
   ylim([min(SURFy), max(SURFy)]);
   set(gca, 'yscale', 'log');
-  xlabel(['$', dist_symbol, '$ (', coord_units, ')']);
+  xlabel(['$', dist_symbol, '$ [m]']);
   ylabel(['$f$ [Hz]']);
   %   title(strcat("$\log($",WPSD_txt,"$)$"));
   title(WPSD_txt);
@@ -247,16 +248,39 @@ IDs_to_process_RATIO = IDs_to_process;
 IDs_to_process_RATIO(IDs_to_process_RATIO == refID) = []; % remove ref.
 figure();
 for i = IDs_to_process_RATIO
-  loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ ', coord_units], 'color', colours(i, :));
+  loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ [m]'], 'color', colours(i, :));
   hold on;
 end
 legend('location', 'best');
 xlim([PSD_f(1), PSD_f(end)]);
 xlabel("$f$ [Hz]"); ylabel('PSD Ratio [1]');
 title(['PSD Ratio [1] w.r.t. S', num2str(istattab(refID))]);
-set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+% set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+prettyAxes(gcf);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clear variables.             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear('select_time_l', 'select_time_u', 'signal_name', 'unit');
+
+
+function prettyAxes(f)
+  children=f.Children;
+  for i=1:numel(children)
+    child=children(i);
+    if(strcmp(child.Type,'axes'))
+      axes(child);
+      set(gca, 'Color','k');
+      set(gca, 'GridColor','white');
+      set(gca, 'TickLabelInterpreter', 'latex');
+      set(gca, 'TickDir','both');
+      set(gca, 'TickLabelInterpreter', 'latex');
+      grid on;
+      box on;
+    elseif(strcmp(children(i).Type,'legend'))
+      set(child,'fontsize', 25);
+      set(child, 'Color',[1,1,1]*0.25);
+      set(child, 'textColor','w');
+    end
+  end
+end

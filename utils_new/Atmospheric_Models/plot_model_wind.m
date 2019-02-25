@@ -12,7 +12,7 @@
 % yields:
 %   TODO.
 
-function [] = plot_wind(Z,WN,WE)
+function [] = plot_model_wind(Z,WN,WE)
   [WTH,W]=cart2pol(WE,WN);
   WTH=WTH-pi/2; % Northward <-> theta=0. Eastward <-> theta=-pi/2. Southward <-> theta=pi. Westward <-> theta=pi/2.
   
@@ -30,6 +30,7 @@ function [] = plot_wind(Z,WN,WE)
   subplot(121);
   plot(WTHplot,Z,'.');
   xlim(rad2deg*[0,2*pi]);
+  ylim([min(Z), max(Z)]);
   ylabel(['$z$ [m]']);
   xlabel({['wind angle (from North, counter-clockwise) ',unit],['(',num2str(0*rad2deg),'=N, ',num2str(0.5*pi*rad2deg),'=W, ',num2str(1*pi*rad2deg),'=S, ',num2str(1.5*pi*rad2deg),'=E)']});
   xticks(rad2deg*2*pi*linspace(0,1,9));

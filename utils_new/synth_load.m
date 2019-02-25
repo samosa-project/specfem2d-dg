@@ -20,6 +20,7 @@ set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,8 +41,9 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-fig_title = strcat('Mars Coupling');
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_verylong_veryuseful/'); subsample = 1; wanted_dt = 0.01;
+% fig_title = strcat('Mars Coupling');
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479218_clean/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1484867/');
@@ -62,7 +64,8 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_15
 % rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
-% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1447857_longestyet/'); % Basically same as 1205575.
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1206217/'); % Basically same as 1205575.
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');
@@ -186,22 +189,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load and eventually plot.   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (behaviour == 0)
-  % One only figure for this behaviour.
-  figure();
-  hold on;
-%   if (normalise_ylims)
-%     % Prepare updates of y-axis scale.
-%     max_ylim_plus = - Inf;
-%     min_ylim_minus = + Inf;
-%   end
-end
 if (convert_to_relative_coords == 1) % Eventually remove source components for display.
   xstattab = xstattab - pos_sources(1, 1); ystattab = ystattab - pos_interface;
 end
 
 % Empty arrays.
-axes = []; Ztime = []; Zamp = [];
+Ztime = []; Zamp = [];
 % Loop on synthetics to be loaded.
 for istat = 1:nstat
   istat_glob = istattab(istat); % Recover global number of station.
@@ -209,69 +202,28 @@ for istat = 1:nstat
   
   if(ismember(behaviour, [0, 1, 2])) % If direct plots, get the one unknown and proceed.
     [extension, ylabel_unknown] = getUnknowns(type_display, unknown);
-    [data] = readAndSubsample(OFd, stations_data, istat_glob, unknown, extension, subsample, wanted_dt, istat);
-    Ztime(istat, :) = data(:, 1)'; Zamp(istat, :) = data(:, 2)'; % Recover time/amplitude data.
+    [data, nsamples] = readAndSubsampleSynth(OFd, istat_glob, unknown, extension, subsample, wanted_dt, istat);
+    Ztime(istat, 1:nsamples) = data(:, 1)'; Zamp(istat, 1:nsamples) = data(:, 2)'; % Recover time/amplitude data.
     Zamp(istat, :) = factor * Zamp(istat, :); % Scale.
-    
-    if (behaviour == 0) % Eventually, plot.
-      subplot(nstat, 1, istat);
-      axes{istat} = gca;
-      legtext{istat} = ['S', num2str(istat_glob), ', $(x,z) = (', num2str(xstattab(istat_glob)), ',', num2str(ystattab(istat_glob)), ')$ [m]'];
-      plot(Ztime(istat, :), Zamp(istat, :), 'displayname', legtext{istat}); hold on;
-      % Cosmetics.
-      if (istat == 1); title(fig_title); end; % Put title only on first subplot.
-      if (istat == nstat); xlabel('time (s)'); end; % Put xlabel only on last subplot.
-      if (istat ~= nstat); set(gca, 'xticklabel', []); end; % Remove xticks for all subplots except last one.
-      if (istat == round(nstat / 2)); ylabel(ylabel_unknown); end; % Put one ylabel at the middle subplot.
-      xlim([Ztime(1, 1), Ztime(1, end)]);
-      legend('Location', 'northeast');
-      set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
-%       if (normalise_ylims) % Update y-axis scale.
-%         if (axes{istat}.YLim(1) < min_ylim_minus)
-%           min_ylim_minus = axes{istat}.YLim(1);
-%         end
-%         if (axes{istat}.YLim(2) > max_ylim_plus)
-%           max_ylim_plus = axes{istat}.YLim(2);
-%         end
-%       end
-    end
     
   elseif (behaviour == 3) % If polarisation plot, get the two unknowns and proceed.
     [extension_x, ~] = getUnknowns(type_display, 'BXX');
-    [data_x] = readAndSubsample(OFd, stations_data, istat_glob, 'BXX', extension_x, subsample, wanted_dt, istat);
+    [data_x] = readAndSubsampleSynth(OFd, istat_glob, 'BXX', extension_x, subsample, wanted_dt, istat);
     [extension_z, ~] = getUnknowns(type_display, 'BXZ');
-    [data_z] = readAndSubsample(OFd, stations_data, istat_glob, 'BXZ', extension_z, subsample, wanted_dt, istat);
+    [data_z] = readAndSubsampleSynth(OFd, istat_glob, 'BXZ', extension_z, subsample, wanted_dt, istat);
 %     sig_t_x = data_x(:, 1)'; sig_v_x = data_x(:, 2)';
-    Ztime(istat, :) = data_z(:, 1)'; Zamp(istat,:) = data_z(:, 2)'; % useful to still load Z
+    Ztime(istat, :) = data_z(:, 1)'; Zamp(istat,:) = data_z(:, 2)'; % useful to still load and save Z
     if(not(all(size(data_x(:, 2)') == size(Zamp(istat, :)))))
       error(['size mismatch']);
     end
-    plot_polarisation(data_x(:, 2)', Zamp(istat, :), ['S',num2str(istat_glob),' Polarisation']);
+    data_x(:, 2) = factor * data_x(:, 2); Zamp(istat, :) = factor * Zamp(istat, :); % Scale.
+    plot_polarisation(Ztime(istat, :), data_x(:, 2)', Zamp(istat, :), ['S',num2str(istat_glob),' Polarisation']);
   
   else
     error(['[',mfilename,'] behaviour choice not implemented.']);
   end
 end
-
-% if (behaviour == 0 && nstat > 1 && normalise_ylims == 1)
-%   % Normalise plot y-axis to same scale.
-%   f = gcf;
-%   for i = 1:length(f.Children)
-%     if (strcmp(f.Children(i).Type, 'axes'))
-%       f.Children(i).YLim = [min_ylim_minus, max_ylim_plus];
-%     end
-%   end
-% end
-if(behaviour == 0)
-  axess=[];
-  for i=1:numel(axes); axess(i)=axes{i}; end;
-  if (normalise_ylims)
-    linkaxes(axess); % Link both x and y.
-  else
-    linkaxes(axess, 'x'); % Link only x.
-  end
-end
-
+[Ztime, Zamp] = truncToShortest(Ztime, Zamp); % If sythetics don't have the same length, truncate them to shortest.
 % Display information.
 disp([' ']);
 disp(['[',mfilename,'] Data loaded. [matlab_id, istattab, xstattab(istattab), ystattab(istattab), d]:']);
@@ -284,7 +236,10 @@ disp([' ']);
 global synth_load_was_ran
 synth_load_was_ran = 1;
 
-if (behaviour == 2)
+if (behaviour == 0) % Eventually, plot one by one in subplots.
+  plotOneByOne(Ztime, Zamp, istattab, xstattab(istattab), ystattab(istattab), normalise_ylims, fig_title, ylabel_unknown);
+  
+elseif (behaviour == 2) % Eventually, plot as time-distance.
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
@@ -300,14 +255,16 @@ if (behaviour == 2)
       distance = dist_to_sources; dist_symbol = "d"; dist_name = "distance";
   end
   addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo');
-  plot_time_v_dist(Ztime,Zamp,distance(istattab));
+  reducedtime = - 1;
+  while (not(numel(reducedtime)==1 && reducedtime>=0))
+    reducedtime = input(['[', mfilename, '] Reduced time? (0 for no, any other value for speed) > ']);
+  end
+  
+  plot_time_v_dist(Ztime, Zamp, distance(istattab), reducedtime, fig_title, dist_name);
+  
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Old things.                  %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if (ismember(plot_amplitude, [1, 2, 3]))
+if (ismember(plot_amplitude, [1, 2, 3])) % Eventually, plot amplitude as function of distance.
   % Plot amplitude.
   amp = zeros(size(Zamp));
   for ii = 1:length(Zamp(:, 1))
@@ -588,29 +545,12 @@ function pos_sources = loadSources(OFdir)
   fclose('all');
 end
 
-function [x_stat,z_stat,stat_file] = loadStations(rootDir, OFdir)
-  try
-    stat_file = importdata(strcat(OFdir, 'STATIONS'));
-  catch
-    disp(['[',mfilename,'] STATIONS file not found in OUTPUT_FILES directory.']);
-    try
-      stat_file = importdata(strcat(rootDir, '/DATA/STATIONS'));
-      disp(['[',mfilename,'] STATIONS file found in root directory (OUTPUT_FILES*/../DATA/ folder).']);
-    catch
-      error(['[',mfilename,', ERROR] Cannot find STATIONS file.']);
-    end
-  end
-  pos_stations = [stat_file.data(:, 1) stat_file.data(:, 2)];
-  x_stat = pos_stations(:, 1);
-  z_stat = pos_stations(:, 2);
-end
-
 function [ext, unknown] = getUnknowns(type_displ, unknown)
   % Switch on type of display.
   switch type_displ
 %   if (type_display == 1) % Original SPECFEM2D's synthetic is displacement.
     case 1 % Original SPECFEM2D's synthetic is displacement.
-      ext = "semd"; % Because original SPECFEM2D's synthetic is displacement.
+      ext = 'semd'; % Because original SPECFEM2D's synthetic is displacement.
       % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
       if (strcmp(unknown, 'BXZ'))
         unknown = 'vertical {$u_z$ (m), $v_z$ [m/s]}';
@@ -621,7 +561,7 @@ function [ext, unknown] = getUnknowns(type_displ, unknown)
       end
 %   elseif (type_display == 2) % Original SPECFEM2D's synthetic is velocity.
     case 2 % Original SPECFEM2D's synthetic is velocity.
-      ext = "semv"; % Because original SPECFEM2D's synthetic is velocity.
+      ext = 'semv'; % Because original SPECFEM2D's synthetic is velocity.
       if (strcmp(unknown, 'BXZ'))
         unknown = '{$v_z$ [m/s], $\delta P$ [Pa]}';
       elseif (strcmp(unknown, 'BXX'))
@@ -631,7 +571,7 @@ function [ext, unknown] = getUnknowns(type_displ, unknown)
       end
 %   elseif (type_display == 4) % Original SPECFEM2D's synthetic is pressure.
     case 4 % Original SPECFEM2D's synthetic is pressure.
-      ext = "semp"; % Because original SPECFEM2D's synthetic is pressure.
+      ext = 'semp'; % Because original SPECFEM2D's synthetic is pressure.
       if (strcmp(unknown, 'PRE'))
         unknown = '$\delta P$ [Pa]';
       else
@@ -640,33 +580,6 @@ function [ext, unknown] = getUnknowns(type_displ, unknown)
     otherwise
       error(['[',mfilename,', ERROR] This type_display (',num2str(type_displ),') is not implemented for this script.']);
   end
-end
-
-function [outputdata] = readAndSubsample(OFd, stations_data, istat_glob, unknown, extension, subsample, wanted_dt, istat)
-  % Read the synthetic.
-  file = strcat(OFd, 'AA.', stations_data.textdata(istat_glob, 1), '.', unknown, '.', extension);
-  data = load(file{1});
-  nt = max(size(data));
-  meanactualdt = mean(diff(data(:,1)));
-  if (subsample == 1 && wanted_dt>meanactualdt)
-    % Sub-sample of records.
-%     nsub = ceil(nt / nsublength);
-    nsub = floor(wanted_dt/meanactualdt);
-    nd = max(size(data(1:nsub:nt, 1)));
-    if(istat == 1)
-      disp(['[',mfilename,'] Subsampled synthetics by a factor ',num2str(nsub),'.']);
-    end
-  elseif (subsample == 1 && wanted_dt<meanactualdt)
-    if(istat == 1)
-      disp(['[',mfilename,'] Subsampled dt is smaller than actual dt, discarding subsampling.']);
-    end
-    nsub = 1;
-    nd = nt;
-  else
-    nsub = 1;
-    nd = nt;
-  end
-  outputdata(:,:) = data(1:nsub:nt, :);
 end
 
 function factor = getScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, rescale_fact)
@@ -706,5 +619,43 @@ function factor = getScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, resc
   if (renorm_statbystat == 1)
     % If rescaling is actually wanted by user, do it.
     factor = factor * rescale_fact;
+  end
+end
+
+function plotOneByOne(Ztime, Zamp, istattab, xstat, zstat, norm_ylims, figtitle, ylab)
+  if(not(all(size(Ztime)==size(Zamp))))
+    error('must have same sizes');
+  end
+  if(not(exist('figtitle')))
+    figtitle='';
+  end
+  if(not(exist('ylab')))
+    ylab='SIGNAL';
+  end
+  nstat = size(Ztime, 1);
+  figure();
+  hold on;
+  axes = {};
+  for istat = 1:nstat
+    istat_glob = istattab(istat); % Recover global number of station.
+    subplot(nstat, 1, istat);
+    axes{istat} = gca;
+    legtext{istat} = ['S', num2str(istat_glob), ', $(x,z) = (', num2str(xstat(istat)), ',', num2str(zstat(istat)), ')$ [m]'];
+    plot(Ztime(istat, :), Zamp(istat, :), 'displayname', legtext{istat}); hold on;
+    % Cosmetics.
+    if (istat == 1); title(figtitle); end; % Put title only on first subplot.
+    if (istat == nstat); xlabel('time [s]'); end; % Put xlabel only on last subplot.
+    if (istat ~= nstat); set(gca, 'xticklabel', []); end; % Remove xticks for all subplots except last one.
+    if (istat == round(nstat / 2)); ylabel(ylab); end; % Put one ylabel at the middle subplot.
+    xlim([min(min(Ztime)), max(max(Ztime))]);
+    legend('Location', 'northeast');
+    set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+  end
+  axess=[];
+  for i=1:numel(axes); axess(i)=axes{i}; end;
+  if (norm_ylims)
+    linkaxes(axess); % Link both x and y.
+  else
+    linkaxes(axess, 'x'); % Link only x.
   end
 end

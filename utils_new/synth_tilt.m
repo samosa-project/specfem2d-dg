@@ -39,8 +39,8 @@ format compact;
 % Zamp=[v_g_true;v_d_true;v_g_true+noise_g;v_d_true+noise_d];
 % xstattab=[-delta,delta,10-delta,10+delta];
 % synth_load_was_ran=1;
-% idleft=1:2:3;
-% idright=2:2:4;
+% ID_l=1:2:3;
+% ID_r=2:2:4;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (not(exist('synth_load_was_ran') && synth_load_was_ran == 1))
@@ -65,43 +65,24 @@ minimum_last_relevant
 times=times(:,1:minimum_last_relevant);
 values=values(:,1:minimum_last_relevant);
 
-idleft = - 1;
-while (not(min(idleft)>=1 & max(idleft)<=size(times,1)))
-  idleft = input(['[', mfilename, '] Matlab ID for left stations? > ']);
+ID_l = - 1;
+while (not(min(ID_l)>=1 & max(ID_l)<=size(times,1)))
+  ID_l = input(['[', mfilename, '] Matlab ID for left stations? > ']);
 end
-idright = - 1;
-while (not(min(idright)>=1 & max(idright)<=size(times,1)))
-  idright = input(['[', mfilename, '] Matlab ID for right stations? > ']);
+ID_r = - 1;
+while (not(min(ID_r)>=1 & max(ID_r)<=size(times,1)))
+  ID_r = input(['[', mfilename, '] Matlab ID for right stations? > ']);
 end
 
-times_l = times(idleft,:);
-times_r = times(idright,:);
-Nt = size(times_l,2);
-vals_l = values(idleft,:);
-vals_r = values(idright,:);
-x_l = abscissas(idleft);
-x_r = abscissas(idright);
-N=size(vals_l,1);
-Nd=size(vals_r,1);
-if(N~=Nd)
-  error('must provide same number of left stations as right stations');
-end
-clear('Nd');
-
-displ_l = zeros([N, Nt]);
-displ_r = zeros([N, Nt]);
-tilt = zeros([N, Nt]);
-for i=1:N
-  displ_l(i,:) = cumtrapz(times_l(i, :), vals_l(i, :));
-  displ_r(i,:) = cumtrapz(times_r(i, :), vals_r(i, :));
-  tilt(i,:) = atan((displ_r(i, :)-displ_l(i, :))/(x_r(i)-x_l(i)));
-  
-%   trailZ_l=find(diff(times_l(i, :))==0); % find possible trailing zeros in the times array (happens if seismograms are not all exactly the same length
-%   if(numel(trailZ_l)>0); trailZ_l=[trailZ_l(1)-1,trailZ_l]; end; % add first one (line above only finds using diff and so the very first one is not detected).
-%   trailZ_r=find(diff(times_r(i, :))==0); if(numel(trailZ_r)>0); trailZ_r=[trailZ_r(1)-1,trailZ_r]; end;% idem with _r
-%   trailZs=sort(unique([trailZ_l,trailZ_r])); % combine both arrays
-%   tilt(i,trailZs)=NaN; % set tilt as nan for those
-end
+% times_l = times(ID_l,:);
+% times_r = times(ID_r,:);
+% Nt = size(times_l,2);
+% vals_l = values(ID_l,:);
+% vals_r = values(ID_r,:);
+% x_l = abscissas(ID_l);
+% x_r = abscissas(ID_r);
+% tilt = computeTilt(x_l, x_r, times_l, times_r, vals_l, vals_r);
+tilt = computeTilt(abscissas(ID_l), abscissas(ID_r), times(ID_l,:), times(ID_r,:), values(ID_l,:), values(ID_r,:));
 
 disp(['[',mfilename,'] Tilt computed for all stations.']);
 
