@@ -1,0 +1,5 @@
+rng(x,y)=sqrt(x**2+y**2)
+set pm3d map
+set palette defined (0 "white", 1 "blue", 2 "green", 3 "yellow", 4 "red")
+set cbrange[-140:-40]
+splot 'AMGeoAc_raypaths.dat' u (rng($1,$2)):3:($4 +$5 > -140 ? $4 + $5 : 1/0) w lines lw 1 palette

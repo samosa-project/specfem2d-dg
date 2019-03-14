@@ -1,0 +1,9 @@
+rng(x,y)=sqrt(x**2+y**2)
+set pm3d map
+set palette defined (0 "white", 1 "blue", 2 "green", 3 "yellow", 4 "red")
+set cbrange[-100:-50]
+splot 'AMGeoAc_results.dat' u 3:4:($5+$6) with points palette
+splot 'AMGeoAc_results.dat' u ($7-rng($3,$4)/0.350):(rng($3,$4)):($5+$6) w points palette
+set palette defined (0 "red", 12 "red", 15 "green", 70 "green", 80 "blue", 140 "blue")
+set cbrange[0:140]
+splot 'AMGeoAc_results.dat' u 3:4:8 with points palette
