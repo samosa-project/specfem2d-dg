@@ -31,7 +31,6 @@ clc;
 
 tmp=evalc('which extract_atmos_model');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp'); % Addpath for the 'extract_atmos_model' function.
 tmp=evalc('which dynamicViscosity');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp');
-tmp=evalc('which dynamicViscosity');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp');
 % addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,20 +40,15 @@ tmp=evalc('which dynamicViscosity');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/')
 ECMWF_DATAFILE = input(['[',mfilename,'] Input ERA5 file to use > '],'s');
 threshold_ok_latlon = 0.5; % If point is < 0.5 ° away, consider it ok.
 threshold_ok_time = 10; % If time is < 10 minutes away, consider it ok.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Constants.                  %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-R = 8.3144598;
-M_dryair = 2.89645e-2;
+[R, ~, ~, M_dryair] = thermodynamicalConstants();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Begin treatment,            %
 % extraction, and output.     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load ERA5.
-disp(['[',mfilename,'] Selected ERA5 file is: ',ECMWF_DATAFILE]);
-[pts,z_ecmwf,T_ecmwf,p_half,p_full_ecmwf,g_ecmwf,w_M_ecmwf,w_Z_ecmwf]=retrieve_ECMWF(ECMWF_DATAFILE);
+disp(['[',mfilename,'] Selected ERA5 file is: ', ECMWF_DATAFILE]);
+[pts, z_ecmwf, T_ecmwf, p_half, p_full_ecmwf, g_ecmwf, w_M_ecmwf, w_Z_ecmwf]=retrieve_ECMWF(ECMWF_DATAFILE);
 ecmwf_lon=pts{1};
 ecmwf_lat=pts{2};
 ecmwf_time=pts{4};

@@ -3,11 +3,10 @@
 % Notes:         TODO.
 %
 % Usage:
-%   TODO.
-% with:
-%   TODO.
-% yields:
-%   TODO.
+%  1) Specify script parameters in the 'Parameters' section.
+%  2) Configure fig_title, rootd, and OFd in the 'OUTPUT_FILES' section.
+%     Eventually re-specify the script's parameters for each run.
+%  3) Answer input prompts as they go.
 
 clc;
 % clear all;
@@ -41,7 +40,8 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-% fig_title = strcat('Mars Coupling');
+fig_title = strcat('Mars Coupling');
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
@@ -64,8 +64,10 @@ unknown = 'BXZ'; % _z.
 % rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
-fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1447857_longestyet/'); % Basically same as 1205575.
+% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560541_crashfns/'); % same as 1560350 but fns
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash/'); % same as 1560541 but lns
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1447857_longestyet/');
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1206217/'); % Basically same as 1205575.
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1205575/');
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1204148_LNS/');

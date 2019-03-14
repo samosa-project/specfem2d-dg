@@ -14,14 +14,15 @@
 % yields:
 %   TODO.
 
-function [] = plot_model_alpha(freq, Z, RHO, C, MUvol, FR, SVIB, zminmax, Nsel)
+function [fh] = plot_model_alpha(freq, Z, RHO, C, MUvol, FR, SVIB, zminmax, Nsel)
+  addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/tools');
   zminmax = sort(zminmax);
   [TAU_SIG, TAU_EPS] = frsvib2tausigtaueps(FR, SVIB);
   ALPHAVIB = relax_alphavib(freq, C, TAU_EPS, TAU_SIG);
   ALPHAVOL = relax_alphavol(freq, RHO, C, MUvol);
   selalt = ceil(linspace(find(Z >= zminmax(1), 1, 'first'),find(Z <= zminmax(end), 1, 'last'), Nsel));
   colours = winter(numel(selalt));
-  figure('units','normalized','outerposition',[0 0 0.5 1]);
+  fh=figure('units','normalized','outerposition',[0 0 0.5 1]);
   for i=1:Nsel
     ialt = selalt(i);
     loglog(freq,ALPHAVIB(ialt,:),'color',colours(i,:),'displayname',['$\alpha_{vib}\left(z=',num2str(Z(ialt)),'\right)$']); hold on;

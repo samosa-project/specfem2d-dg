@@ -1,11 +1,10 @@
 % Author:        Léo Martire.
-% Description:   Plots an atmospheric model absorption coefficients.
+% Description:   Plots an atmospheric model absorption parameters.
 % Notes:         Needs:
 %                a) .m scripts and functions (if not alongside this
 %                   script, recover via Léo):
 %                  1) frsvib2tausigtaueps.m
-%                  2) relax_alphavib.m
-%                  3) relax_alphavol.m
+%                  2) extract_atmos_model.m
 %
 % Usage:
 %   TODO.
@@ -14,31 +13,37 @@
 % yields:
 %   TODO.
 
-function [] = plot_model_alpha(freq, Z, RHO, C, MUvol, FR, SVIB, zminmax, Nsel)
-  zminmax = sort(zminmax);
-  [TAU_SIG, TAU_EPS] = frsvib2tausigtaueps(FR, SVIB);
-  ALPHAVIB = relax_alphavib(freq, C, TAU_EPS, TAU_SIG);
-  ALPHAVOL = relax_alphavol(freq, RHO, C, MUvol);
-  selalt = ceil(linspace(find(Z >= zminmax(1), 1, 'first'),find(Z <= zminmax(end), 1, 'last'), Nsel));
-  colours = winter(numel(selalt));
-  figure('units','normalized','outerposition',[0 0 0.5 1]);
-  for i=1:Nsel
-    ialt = selalt(i);
-    loglog(freq,ALPHAVIB(ialt,:),'color',colours(i,:),'displayname',['$\alpha_{vib}\left(z=',num2str(Z(ialt)),'\right)$']); hold on;
-  end
-  for i=1:Nsel
-    ialt = selalt(i);
-    loglog(freq,ALPHAVOL(ialt,:),':','color',colours(i,:),'displayname',['$\alpha_{vol}\left(z=',num2str(Z(ialt)),'\right)$']); hold on;
-  end
-%   legend('location', 'best');
-  legend('location', 'southeast');
-  miny=min(min(min(ALPHAVIB)),min(min(ALPHAVOL)));
-  miny=10^floor(log10(miny));
-  xlim([min(freq),max(freq)]); ylim([miny,1]);
-  xlabel('$f$ [Hz]'); ylabel('$\alpha$ [Np/m]');
-  set(gca,'ticklabelinterpreter','latex');
-  grid on;
-  box on;
-  title(['Absorption Coefficient']);
+function [fh] = plot_model_frsvib(modelfile, zmax_interest)
+  addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/tools');
+  
+  [Z, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, FR, SVIB] = extract_atmos_model(modelfile, 3, 0, 0);
+  
+  [TSIG, TEPS] = frsvib2tausigtaueps(FR, SVIB);
+  sel = find(Z <= zmax_interest);
+
+  axx = [];
+  fh = figure('units','normalized','outerposition',[0 0 1 1]);
+  subplot(131); axx = [axx, gca()];
+  semilogx(FR(sel),Z(sel),'.');
+%     xlim(rad2deg*[0,2*pi]);
+  ylabel(['$z$ [m]']);
+  xlabel(['$f_{r}$ [Hz]']);
+%     xticks(rad2deg*2*pi*linspace(0,1,9));
+  grid on; box on; set(gca,'ticklabelinterpreter','latex'); set(gca,'tickdir','both');
+
+  subplot(132); axx = [axx, gca()];
+  plot(SVIB(sel),Z(sel),'.');
+  xlabel(['$S_{vib}$ [m/s]']);
+  yticklabels([]);
+  grid on; box on; set(gca,'ticklabelinterpreter','latex'); set(gca,'tickdir','both');
+
+  subplot(133); axx = [axx, gca()];
+  semilogx(TSIG(sel),Z(sel),'.','displayname','$\tau_\sigma$'); hold on;
+  semilogx(TEPS(sel),Z(sel),'.','displayname','$\tau_\epsilon$'); hold on;
+  xlabel(['$\tau_{\sigma,\epsilon}$ [s]']);
+  yticklabels([]);
+  legend('location','best');
+  grid on; box on; set(gca,'ticklabelinterpreter','latex'); set(gca,'tickdir','both');
+  linkaxes(axx,'y');
 end
 

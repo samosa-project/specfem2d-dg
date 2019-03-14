@@ -16,7 +16,8 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run-specific.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight();
+% [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight([0,500]);
+[xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight([0,12e3]);
 % [xminmax, zminmax, interface, Xsource, debfin, d, name] = tir_de_mine();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,9 +98,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run configurations.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight()
+function [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight(Xsource)
 %   Xsource = [0, 40e3];
-  Xsource = [0, 500];
+%   Xsource = [0, 500];
 %   xminmax = [-80, 80]*1e3;
   xminmax = [-160, 40]*1e3;
 %   zminmax = [-5, 60]*1e3;
@@ -146,6 +147,7 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight(
   lid = lid+1; idhoriz = lid;
   d(lid) = spacingstations;
   debfin(lid, 1, :) = [xminmax(1)+d(lid), xminmax(2)-d(lid)]; % xdeb xfin
+%   debfin(lid, 1, :) = [xminmax(1)+d(lid), xminmax(2)]; % xdeb xfin
   debfin(lid, 2, :) = [1, 1]*ground_clearance; % zdeb zfin
   name{lid} = ['horizontal over ground'];
   lid = lid+1; idhorizvz = lid;
@@ -163,6 +165,14 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight(
   debfin(lid, :, :) = debfin(idhorizvz, :, :); % all same as horizontal under ground
   debfin(lid, 1, :) = debfin(lid, 1, :)+shift_for_tiltcomputation; % but shifted to the right
   name{lid} = ['horizontal under ground shifted ', num2str(shift_for_tiltcomputation), 'm for tilt computation'];
+  
+  % on periodic boundary condition
+  lid = lid+1; d(lid) = 2*ground_clearance;
+  debfin(lid, 1, :) = [xminmax(2), xminmax(2)]; debfin(lid, 2, :) = [1, -1]*ground_clearance;
+  name{lid} = ['over & under ground @ right boundary'];
+  lid = lid+1; d(lid) = diff(xminmax)-2*shift_for_tiltcomputation;
+  debfin(lid, 1, :) = [xminmax(1)+shift_for_tiltcomputation,xminmax(2)-shift_for_tiltcomputation]; debfin(lid, 2, :) = -1*[1, 1]*ground_clearance;
+  name{lid} = ['left&right of right boundary for tilt computation'];
 end
 
 function [xminmax, zminmax, interface, Xsource, debfin, d, name] = tir_de_mine()

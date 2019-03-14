@@ -255,6 +255,8 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
 %   RUN_RAWDATA(i,:)=[2075000 2007500 1.075  12600 1008  500 204 50      0]; RUNINFO{i}={1529411,'mars insight FNS 3hz'}; i=i+1;
   RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000 164 100   74988]; RUNINFO{i}={1529789,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
   RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000 200 100   51256]; RUNINFO{i}={1538139,'mars insight FNS 22h 3hz w/o perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000  87  50   86388]; RUNINFO{i}={1560350,'mb gmsh LNS 400km (3) refined and atmmodel reg'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  80518   80518 0.254  37200 1152 5000  87  50   86386]; RUNINFO{i}={1560541,'mb gmsh FNS 400km (3) refined and atmmodel reg'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

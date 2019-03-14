@@ -69,20 +69,26 @@ function model_getdxdt()
   % Figures.
   if(fluidmodel)
     if(plot_fluidmodel_dz)
-      figure();
-      plot(dx_c_mach,Z);
+      ax=[];
+      figure('units','normalized','outerposition',[0 0 1 1]);
+      subplot(121);
+      ax=[ax,gca];
+      plot(dx_c,Z,'displayname','based on p. per wavelength'); hold on;
+      plot(dx_c_mach,Z,'displayname','$\Delta x^{Mach}$, accounting for Mach'); hold on;
       xlabel('$\Delta x$ [m]');
       ylabel('altitude $z$ [m]');
-      title({['maximum acceptable $\Delta x$, accounting for Mach'],['(',paramtxt,')']});
-      set(gca,'ticklabelinterpreter','latex');
-      grid on;
-
-    %   figure();
-    %   plot(dtaccountingformach,Z);
-    %   xlabel('maximum acceptable $\Delta t$, accounting for Mach number [s]');
-    %   ylabel('altitude $z$ [m]');
-    %   title(['$f_0=',sprintf('%.3e',f0),'$']);
-    %   set(gca,'ticklabelinterpreter','latex');
+      title({['maximum acceptable $\Delta x$'],['(',paramtxt,')']});
+      legend('location', 'best');
+      subplot(122);
+      ax=[ax,gca];
+      plot(dt_c_cfl,Z,'displayname','based on $\Delta x^{Mach}$ and CFL'); hold on;
+      plot(dt_c_mach,Z,'displayname','based on Mach'); hold on;
+      xlabel('$\Delta t$ [s]');
+%       ylabel('altitude $z$ [m]');
+      title({['maximum acceptable $\Delta t$'],['(',paramtxt,')']});
+      legend('location', 'best');
+      linkaxes(ax,'y'); ylim([min(Z),max(Z)]);
+      prettyAxes(gcf);
     end
 
     % Displays.
@@ -251,6 +257,27 @@ function model_getdxdt()
     if(fluidmodel)
       disp(' ');
       disp(['[',mfilename,'] For fluid, dt_max = CFL * min(dx) * pGLL / max(c). Here, safest is to choose dt = ',sprintf('%.3e',0.49*min(bestdx_fluid)*percentGLL/max(C)),'.']);
+    end
+  end
+end
+
+function prettyAxes(f)
+  children=f.Children;
+  for i=1:numel(children)
+    child=children(i);
+    if(strcmp(child.Type,'axes'))
+      axes(child);
+      set(gca, 'Color','w');
+%       set(gca, 'GridColor','white');
+      set(gca, 'TickLabelInterpreter', 'latex');
+      set(gca, 'TickDir','both');
+      set(gca, 'TickLabelInterpreter', 'latex');
+      grid on;
+      box on;
+    elseif(strcmp(children(i).Type,'legend'))
+      set(child,'fontsize', 18);
+%       set(child, 'Color',[1,1,1]*0.25);
+%       set(child, 'textColor','w');
     end
   end
 end

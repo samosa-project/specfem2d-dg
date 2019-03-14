@@ -5,11 +5,25 @@
 % Usage:         N/A.
 % Notes:         N/A.
 
-function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
+function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load and store data.        %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   DATA = importdata(DATAFILE, ' ', headerlines);
+  frsvibfound=0;
+  if(size(DATA.data,2)<17)
+    error('not enough columns (must be either 17 or 19)');
+  elseif(size(DATA.data,2)==17)
+    % ok
+    frsvibfound=0;
+  elseif(size(DATA.data,2)>17)
+    if(size(DATA.data,2)==19)
+      % ok
+      frsvibfound=1;
+    else
+      error('wrong number of columns (must be either 17 or 19)');
+    end
+  end
   ALTITUDE = DATA.data(:, 1); %                                     (z)
   DENSITY = DATA.data(:, 2); %                                      (rhoat)
   TEMPERATURE = DATA.data(:, 3); %                                  (T)
@@ -35,6 +49,10 @@ function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCA
   % CP = DATA.data(:, 18); % Unused.                                (Cp)
   % CV = DATA.data(:, 19); % Unused.                                (Cv)
   % GAMMA = DATA.data(:, 20); % Unused.                             (gammatab)
+  if(frsvibfound)
+    FR = DATA.data(:, 18); %                                        (f_r)
+    SVIB = DATA.data(:, 19); %                                      (s_vib)
+  end
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

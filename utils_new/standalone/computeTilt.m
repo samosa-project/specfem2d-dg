@@ -4,7 +4,7 @@
 % Notes:         TODO.
 %
 % Usage:
-%   TODO.
+%   tilt = computeTilt(x_l, x_r, t_l, t_r, vz_l, vz_r)
 % with:
 %   TODO.
 % yields:
