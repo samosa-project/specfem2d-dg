@@ -94,11 +94,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   ! Start by adding source terms.
   select case (TYPE_SOURCE_DG)
     case (1)
-      call compute_add_sources_acoustic_DG_spread(outrhs_drho, it, i_stage)
-    case (2)
-      do SPCDM=1,NDIM
-        call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
-      enddo
+      call LNS_mass_source(outrhs_drho, outrhs_rho0dv, outrhs_dE, it, i_stage)
+    !case (2)
+    !  do SPCDM=1,NDIM
+    !    call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
+    !  enddo
     case (3)
       call compute_add_sources_acoustic_DG_spread(outrhs_dE, it, i_stage)
     case default
@@ -1326,6 +1326,82 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
   transf_matrix = transf_matrix/(normal(1)*tangential(NDIM) - tangential(1)*normal(NDIM))
 end subroutine 
 
+
+
+
+
+! ------------------------------------------------------------ !
+! LNS_mass_source                                              !
+! ------------------------------------------------------------ !
+! Implements a source on the mass conservation equation:
+! 1) Add said source on the mass equation.
+! 2) Ensure compatibility by adding it also to the other equations.
+! Based off the compute_add_sources_acoustic_DG_mass routine in compute_add_sources_acoustic_DG.f90. If you make changes here, make sure to have them also there.
+
+subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
+
+  use constants,only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL,NDIM
+  use specfem_par, only: nglob_DG,ispec_is_acoustic_DG,&
+                         NSOURCES,myrank,&
+                         source_time_function,&
+                         ibool_DG,gammaext_DG,&
+                         jacobian, wxgll, wzgll, ibool_before_perio, &
+                         USE_SPREAD_SSF, nspec, source_spatial_function_DG
+  use specfem_par_LNS ! TODO: select variables to use.
+  implicit none
+
+  ! Input/output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_drho
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(inout) :: d_rho0dv
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_dE
+  integer, intent(in) :: it, i_stage
+  
+  ! Local variables.
+  real(kind=CUSTOM_REAL) :: temp_sourcewxlwzljacobianl
+  integer :: i, j, i_source, ispec, iglob, iglob_unique, SPCDM
+  real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
+  do i_source = 1, NSOURCES ! Loop on sources.
+    stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
+    if(USE_SPREAD_SSF) then
+      do ispec = 1, nspec
+        if(ispec_is_acoustic_DG(ispec)) then
+          do j = 1, NGLLZ
+            do i = 1, NGLLX
+              iglob_unique = ibool_before_perio(i, j, ispec)
+              iglob = ibool_DG(i, j, ispec)
+              ! See "prepare_source_spatial_function.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+              temp_sourcewxlwzljacobianl =   stf &
+                                           * source_spatial_function_DG(i_source, iglob_unique) &
+                                           * real(wxgll(i), kind=CUSTOM_REAL) &
+                                           * real(wzgll(j), kind=CUSTOM_REAL) &
+                                           * jacobian(i, j, ispec)
+              d_drho(iglob) = d_drho(iglob) + temp_sourcewxlwzljacobianl
+              do SPCDM=1,NDIM
+                d_rho0dv(SPCDM, iglob) = d_rho0dv(SPCDM, iglob) + LNS_v0(SPCDM, iglob) * temp_sourcewxlwzljacobianl
+              enddo
+              d_dE(iglob) =   d_dE(iglob) &
+                           + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1.) &
+                               + 0.5*norm2r1(LNS_v0(:, iglob)) &
+                             ) * temp_sourcewxlwzljacobianl
+            enddo
+          enddo
+        endif
+      enddo
+    else
+      if(myrank==0) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* Mass source is not yet       *"
+        write(*,*) "* implemented with             *"
+        write(*,*) "* USE_SPREAD_SSF=.false.. See  *"
+        write(*,*) "* compute_forces_acoustic_LNS.f90."
+        write(*,*) "********************************"
+        stop
+      endif
+    endif ! Endif on SIGMA_SSF.
+  enddo ! Enddo on i_source.
+end subroutine LNS_mass_source
 
 
 
