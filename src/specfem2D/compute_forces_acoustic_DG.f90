@@ -143,6 +143,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   veloc_z_DG = rhovz_DG/rho_DG
   p_DG       = (gammaext_DG - ONE)*( E_DG &
                - (HALF)*rho_DG*( veloc_x_DG**2 + veloc_z_DG**2 ) )
+  !p_DG = (rho_DG*8.314*2.8e-2/c_V)*(E_DG/rho_DG - 0.5*( veloc_x_DG**2 + veloc_z_DG**2 )) ! p=rho*R*T
   
   ! Initialisation of the RHS.
   dot_rho   = ZERO
@@ -153,10 +154,10 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   
   ! Start by adding source terms.
   if(TYPE_SOURCE_DG == 1) then
-    call compute_add_sources_acoustic_DG_spread(dot_rho, it, i_stage)
-    !call compute_add_sources_acoustic_DG_mass(dot_rho, dot_rhovx, dot_rhovz, &
-    !                                          rhovx_DG_main/rho_DG_main, rhovz_DG_main/rho_DG_main, &
-    !                                          it, i_stage)
+    !call compute_add_sources_acoustic_DG_spread(dot_rho, it, i_stage)
+    call compute_add_sources_acoustic_DG_mass(dot_rho, dot_rhovx, dot_rhovz, dot_E, &
+                                              rho_DG, rhovx_DG/rho_DG, rhovz_DG/rho_DG, E_DG, &
+                                              it, i_stage)
   elseif(TYPE_SOURCE_DG == 2) then
     call compute_add_sources_acoustic_DG_spread(dot_rhovx, it, i_stage)
     call compute_add_sources_acoustic_DG_spread(dot_rhovz, it, i_stage)

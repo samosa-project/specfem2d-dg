@@ -48,7 +48,7 @@
                         displ_elastic,veloc_elastic,accel_elastic, &
                         displs_poroelastic,velocs_poroelastic,accels_poroelastic,&! density_p, &
                         E_DG,rhovz_DG,rhovx_DG,rho_DG, nglob_DG, gamma_euler, &
-                        rho_DG, rhovz_DG, E_DG, rhovx_DG, c_V, T_init,p_DG_init,gammaext_DG, T_init, E_init, &
+                        rho_DG, rhovz_DG, E_DG, rhovx_DG, c_V, T_init,p_DG_init,gammaext_DG, T_init, E_init, rho_init, &
                         ispec_is_acoustic_DG, nglob, any_acoustic_DG!, USE_DISCONTINUOUS_METHOD!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
   use specfem_par_lns ! TODO: select variables to use.
 
@@ -163,7 +163,7 @@
       if(.not. USE_LNS) then
         ! FNS.
         if(imagetype_JPEG == 7) then
-          vector_DG_temp = rho_DG
+          vector_DG_temp = rho_DG - rho_init
         endif
         if(imagetype_JPEG == 8) then
           vector_DG_temp = rhovx_DG/sqrt(rho_DG)
