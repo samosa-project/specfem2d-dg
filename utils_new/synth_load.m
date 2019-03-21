@@ -19,7 +19,7 @@ set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,8 +40,8 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-fig_title = strcat('Mars Coupling');
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
+% fig_title = strcat('Mars Coupling');
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
@@ -78,7 +78,13 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_16
 % rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % Validation LNS.
-% fig_title = strcat('Validation LNS');
+fig_title = strcat('Validation LNS');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh_wow/'); % without wind in the source term
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M.3_dx1gmsh_wow/'); % without wind in the source term
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh/'); % bad
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M.3_dx1gmsh/'); % bad
+rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_E_M0_dx1/');
+
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0_FNS/');
