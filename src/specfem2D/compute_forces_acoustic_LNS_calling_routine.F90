@@ -47,21 +47,17 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
-  !real(kind=CUSTOM_REAL), dimension(stage_time_scheme) :: scheme_A, scheme_B, scheme_C
-  !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: LNS_dv
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
-  !real(kind=CUSTOM_REAL), dimension(3,nglob_DG) :: sigma_dv
-  !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: nabla_dT
-  integer :: ier, i_aux,i,j,ispec,iglob,ispec_PML,iglobPML!,i_ade
-  logical check_linearHypothesis!, check_linearHypothesis_ON_ALL_PROCS, check_linearHypothesis_FIND_POINT
+  integer :: ier, i_aux
+  logical check_linearHypothesis
   
-  ! PMLs.
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
-  logical, parameter :: DEBUG__DO_ITERATE_AUXVARS = .false. ! DEBUG. Activate/deactivate time evolution of auxiliary variables.
+  !! Needed for INLINE PREPARATION OF RHS FOR PMLs.
+  !real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
+  !integer :: i,j,ispec,iglob,ispec_PML,iglobPML
     
-  !if(PML_BOUNDARY_CONDITIONS) then
-  !  stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
-  !endif
+  if(PML_BOUNDARY_CONDITIONS) then
+    stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
+  endif
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -238,109 +234,9 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! PML, iterate ADEs.
   if(PML_BOUNDARY_CONDITIONS) then
-      if(DEBUG__DO_ITERATE_AUXVARS) then
-        ! Prepare PML ADE RHS, vectorially. TODO: a dedicated routine, or include it in some other loop (typically, using the compute_forces_acoustic_LNS call would be a good idea).
-        do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); do j=1,NGLLZ; do i=1,NGLLX
-          iglob=ibool_DG(i, j, ispec)
-          pml_alpha = LNS_PML_alpha(:,i,j,ispec_PML)
-          iglobPML = ibool_LNS_PML(i, j, ispec_PML)
-          ! pattern for R^beta_q: rhs = beta*R^beta_q - q
-          ! YU*q (:,1:2,:)
-          !   rho' (1,:,:)
-          !LNS_PML_RHS(1,1:2,iglobPML) = pml_alpha(:) * LNS_PML(1,1:2,iglobPML) - LNS_drho(iglob)
-          call LNS_PML_buildRHS(LNS_PML_RHS(1,1,iglobPML), pml_alpha(1), LNS_drho(iglob))
-          call LNS_PML_buildRHS(LNS_PML_RHS(1,2,iglobPML), pml_alpha(2), LNS_drho(iglob))
-          !   rho0v' (2:3,:,:)
-          do i_aux=1,NDIM
-            !LNS_PML_RHS(1+i_aux,1:2,iglobPML) = pml_alpha(:) * LNS_PML(1+i_aux,1:2,iglobPML) - LNS_rho0dv(i_aux, iglob)
-            call LNS_PML_buildRHS(LNS_PML_RHS(1+i_aux,1,iglobPML), pml_alpha(1), LNS_rho0dv(i_aux, iglob))
-            call LNS_PML_buildRHS(LNS_PML_RHS(1+i_aux,2,iglobPML), pml_alpha(2), LNS_rho0dv(i_aux, iglob))
-          enddo
-          !   E' (2+NDIM,:,:)
-          !LNS_PML_RHS(2+NDIM,1:2,iglobPML) = pml_alpha(:) * LNS_PML(2+NDIM,1:2,iglobPML) - LNS_dE(iglob)
-          call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,1,iglobPML), pml_alpha(1), LNS_dE(iglob))
-          call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,2,iglobPML), pml_alpha(2), LNS_dE(iglob))
-          ! Sigma (:,3:4,:) : care for indices flipping (alpha2 with sigma1 and alpha1 with sigma2)
-          ! TODO: TAKE CARE OF VISCOUS TENSOR
-          !   rho' (1,:,:)
-          call LNS_PML_buildRHS(LNS_PML_RHS(1,3,iglobPML), pml_alpha(2), LNS_dm(1,iglob))
-          call LNS_PML_buildRHS(LNS_PML_RHS(1,4,iglobPML), pml_alpha(1), LNS_dm(2,iglob))
-          !   rho0v' (2:3,:,:)
-          call LNS_PML_buildRHS(LNS_PML_RHS(2,3,iglobPML), pml_alpha(2), LNS_rho0dv(1,iglob)*LNS_v0(1,iglob)+LNS_dp(iglob)) ! vx sig1
-          call LNS_PML_buildRHS(LNS_PML_RHS(2,4,iglobPML), pml_alpha(1), LNS_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
-          call LNS_PML_buildRHS(LNS_PML_RHS(3,3,iglobPML), pml_alpha(2), LNS_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)) ! vz sig1
-          call LNS_PML_buildRHS(LNS_PML_RHS(3,4,iglobPML), pml_alpha(1), LNS_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+LNS_dp(iglob)) ! vz sig2
-          !   E' (2+NDIM,:,:)
-          call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,3,iglobPML), pml_alpha(2), &
-                                   LNS_dv(1,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
-                                 + LNS_v0(1,iglob)*(LNS_dE(iglob)+LNS_dp(iglob))) ! E sig1
-          call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,4,iglobPML), pml_alpha(1), &
-                                   LNS_dv(2,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
-                                 + LNS_v0(2,iglob)*(LNS_dE(iglob)+LNS_dp(iglob))) ! E sig2
-          ! G (:,5:6,:) : zeroth degree contribution
-          !   rho' (1,:,:): G=0
-          !call LNS_PML_buildRHS(LNS_PML_RHS(1,5,iglobPML), pml_alpha(1), ZEROcr) ! rho a1G, do nothing
-          !call LNS_PML_buildRHS(LNS_PML_RHS(1,6,iglobPML), pml_alpha(2), ZEROcr) ! rho a2G, do nothing
-          LNS_PML_RHS(1,5:6,iglobPML) = ZEROcr ! froce to zero
-          !   rho0v' (2:3,:,:): G=...
-          call LNS_PML_buildRHS(LNS_PML_RHS(2,5,iglobPML), pml_alpha(1), LNS_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
-          call LNS_PML_buildRHS(LNS_PML_RHS(2,6,iglobPML), pml_alpha(2), LNS_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
-          call LNS_PML_buildRHS(LNS_PML_RHS(3,5,iglobPML), pml_alpha(1), LNS_drho(iglob)*LNS_g(iglob)) ! vz a1G
-          call LNS_PML_buildRHS(LNS_PML_RHS(3,6,iglobPML), pml_alpha(2), LNS_drho(iglob)*LNS_g(iglob)) ! vz a2G
-          !   E' (2+NDIM,:,:): G=g*dm_z
-          call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,5,iglobPML), pml_alpha(1), LNS_g(iglob)*LNS_dm(NDIM,iglob)) ! vx a1G
-          call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,6,iglobPML), pml_alpha(2), LNS_g(iglob)*LNS_dm(NDIM,iglob)) ! vx a2G
-          
-        enddo; enddo; endif; enddo
-        !RHS_PML_drho=-RHS_PML_drho; RHS_PML_rho0dv=-RHS_PML_rho0dv; RHS_PML_dE=-RHS_PML_dE ! DEBUG: flip RHS to pinpoint sign errors??.
-        
-        ! Inverse mass matrix multiplication, in order to obtain actual RHS, for every auxiliary variable.
-        ! Mass matrix allocated and initialised in 'invert_mass_matrix.F90'.
-        !do i_ade=1,NDIM
-        !  RHS_PML_drho(i_ade,:)           = RHS_PML_drho(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-        !  RHS_PML_dE(i_ade,:)             = RHS_PML_dE(i_ade,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-        !  do i_aux=1,NDIM ! Loop on momenta.
-        !    RHS_PML_rho0dv(i_ade,i_aux,:) = RHS_PML_rho0dv(i_ade,i_aux,:)*rmass_inverse_acoustic_LNS_PML ! RHS = A^{-1}*b
-        !  enddo
-        !enddo
-        
-        ! Update PML ADE, vectorially.
-        !aux_PML_drho(:,:,:,:) = LNS_scheme_A(i_stage)*aux_PML_drho(:,:,:,:) + deltat*RHS_PML_drho(:,:,:,:)
-        !aux_PML_dE(:,:,:,:)   = LNS_scheme_A(i_stage)*aux_PML_dE(:,:,:,:)   + deltat*RHS_PML_dE(:,:,:,:)
-        !LNS_PML_drho(:,:,:,:) = LNS_PML_drho(:,:,:,:) + LNS_scheme_B(i_stage)*aux_PML_drho(:,:,:,:)
-        !LNS_PML_dE(:,:,:,:)   = LNS_PML_dE(:,:,:,:)   + LNS_scheme_B(i_stage)*aux_PML_dE(:,:,:,:)
-        !aux_PML_rho0dv(:,:,:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,:,:,:,:) &
-        !                            + deltat*RHS_PML_rho0dv(:,:,:,:,:)
-        !LNS_PML_rho0dv(:,:,:,:,:) =   LNS_PML_rho0dv(:,:,:,:,:) &
-        !                            + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,:,:,:,:)
-        ! 1st dim = ADE number. 2nd dim = point number. 3rd dim (momentum) = spatial dimension number.
-        !aux_PML_drho(:,:) = LNS_scheme_A(i_stage)*aux_PML_drho(:,:) + deltat*RHS_PML_drho(:,:)
-        !aux_PML_dE(:,:)   = LNS_scheme_A(i_stage)*aux_PML_dE(:,:)   + deltat*RHS_PML_dE(:,:)
-        !aux_PML_rho0dv(:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,:,:) &
-        !                        + deltat*RHS_PML_rho0dv(:,:,:)
-        !LNS_PML_drho(:,:) = LNS_PML_drho(:,:) + LNS_scheme_B(i_stage)*aux_PML_drho(:,:)
-        !LNS_PML_rho0dv(:,:,:) =   LNS_PML_rho0dv(:,:,:) &
-        !                        + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,:,:)
-        !LNS_PML_dE(:,:)   = LNS_PML_dE(:,:)   + LNS_scheme_B(i_stage)*aux_PML_dE(:,:)
-        
-        
-        LNS_PML_aux(:,:,:) = LNS_scheme_A(i_stage)*LNS_PML_aux(:,:,:) + deltat*LNS_PML_RHS(:,:,:)
-        LNS_PML(:,:,:)     = LNS_PML(:,:,:) + LNS_scheme_B(i_stage)*LNS_PML_aux(:,:,:)
-        LNS_PML(1,5:6,:) = ZEROcr ! for q=rho', G=0, thus no convolution, thus no need for aux vars. hack, TODO something better
-        
-        !write(*,*) "minmax drho, LNS_PML_drho", minval(LNS_drho), maxval(LNS_drho), & ! DEBUG
-        !                                        minval(aux_PML_drho), maxval(aux_PML_drho) ! DEBUG
-        !write(*,*) "minmax rho0dv, LNS_PML_rho0dv", minval(LNS_rho0dv), maxval(LNS_rho0dv), & ! DEBUG
-        !                                            minval(LNS_PML_rho0dv), maxval(LNS_PML_rho0dv) ! DEBUG
-        !write(*,*) "minmax dE, LNS_PML_dE", minval(LNS_dE), maxval(LNS_dE), & ! DEBUG
-        !                                        minval(LNS_PML_dE), maxval(LNS_PML_dE) ! DEBUG
-        !do i_aux=1,NDIM ! Loop on momenta.
-        !  aux_PML_rho0dv(:,i_aux,:,:,:) =   LNS_scheme_A(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:) &
-        !                                  + deltat*RHS_PML_rho0dv(:,i_aux,:,:,:)
-        !  LNS_PML_rho0dv(:,i_aux,:,:,:) =   LNS_PML_rho0dv(:,i_aux,:,:,:) &
-        !                                  + LNS_scheme_B(i_stage)*aux_PML_rho0dv(:,i_aux,:,:,:)
-        !enddo
-      endif ! Endif on DEBUG__DO_ITERATE_AUXVARS.
+    LNS_PML_aux(:,:,:) = LNS_scheme_A(i_stage)*LNS_PML_aux(:,:,:) + deltat*LNS_PML_RHS(:,:,:)
+    LNS_PML(:,:,:)     = LNS_PML(:,:,:) + LNS_scheme_B(i_stage)*LNS_PML_aux(:,:,:)
+    LNS_PML(1,5:6,:)   = ZEROcr ! for q=rho', G=0, thus no convolution, thus no need for aux vars. hack, TODO something better
   endif
   
   ! test
@@ -486,8 +382,8 @@ subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, jacloc, iglobPML)
   if(idQ==1) then
     ! Nothing to add on G for rho' (idQ==1)
     d0cntrb = d0cntrb - (   a0*q &
-                          + b(1)  *LNS_PML_RHS(idQ,1,iglobPML) & ! YU1
-                          + b(2)  *LNS_PML_RHS(idQ,2,iglobPML) & ! YU2
+                          + b(1)  *LNS_PML_RHS(1,1,iglobPML) & ! YU1
+                          + b(2)  *LNS_PML_RHS(1,2,iglobPML) & ! YU2
                         )*jacloc
   else
     d0cntrb = d0cntrb - (   a0*q &
@@ -691,8 +587,6 @@ subroutine LNS_PML_init_coefs()
           !                     * (ONEcr - (ONEcr - (LNS_PML_kapp(:,i,j,ispec_PML)-ONEcr))**3.25_CUSTOM_REAL)**6._CUSTOM_REAL ! Arina's stretching
           !LNS_PML_kapp(:,i,j,ispec_PML) = ONEcr/LNS_PML_kapp(:,i,j,ispec_PML)
           
-          !pmlk(1)=K_x_store(i,j,ispec_PML) ! Decrease performance, but increases readability. Since this routine only runs once, we decide it's okay.
-          !pmlk(2)=K_z_store(i,j,ispec_PML)
           pmlk=LNS_PML_kapp(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
           
           LNS_PML_d(1,i,j,ispec_PML)=d_x_store(i,j,ispec_PML)
@@ -701,8 +595,6 @@ subroutine LNS_PML_init_coefs()
           !pmld=0._CUSTOM_REAL ! test pure stretching
           
           pmla=LNS_PML_alpha(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
-          !pmla(1)=alpha_x_store(i,j,ispec_PML) + 0.001_CUSTOM_REAL
-          !pmla(2)=alpha_z_store(i,j,ispec_PML) + 0.002_CUSTOM_REAL
           
           LNS_PML_a0(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
           

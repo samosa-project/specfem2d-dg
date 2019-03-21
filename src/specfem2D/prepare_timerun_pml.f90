@@ -377,6 +377,7 @@
         !allocate(RHS_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML), &
         !         aux_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML))
         ! 
+        ! nglob_PML was computed in pml_init(), routine which was called above
         allocate(LNS_PML(2+2*NDIM, LNS_PML_NAUX, nglob_PML), stat=ier) ! Auxiliary evolution variable for all constitutive variables (dimension 1), all auxiliary variables (dimension 2), and all PML mesh points (dimension 3).
         if (ier /= 0) stop 'Error: could not allocate array LNS_PML (see prepare_timerun_pml.f90).'
         !allocate(LNS_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (mass conservation).

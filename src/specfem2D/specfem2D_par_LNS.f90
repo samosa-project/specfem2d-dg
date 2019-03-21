@@ -47,7 +47,7 @@ module specfem_par_LNS
   
   ! PMLs.
   ! Pretty much all these arrays are allocated in 'prepare_timerun_pml.f90'.
-  integer :: nglob_PML ! Number of PML points (spatial duplicates included).
+  integer :: nglob_PML ! Number of PML points (spatial duplicates included). Computed in 'pml_init.f90'.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_LNS_PML ! Inverse mass matrix. Size allocated should be (nglob_PML).
   integer, dimension(:,:,:), allocatable :: ibool_LNS_PML ! Same as ibool_DG (see 'specfem2D_par'), but for PML only.
   

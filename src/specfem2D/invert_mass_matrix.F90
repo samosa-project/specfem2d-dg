@@ -38,7 +38,7 @@
 
   use constants,only: IMAIN,CUSTOM_REAL,NGLLX,NGLLZ,ONE,TWO,FOUR_THIRDS, &
     CPML_X_ONLY,CPML_Z_ONLY,CPML_XZ_ONLY, &
-    IEDGE1,IEDGE2,IEDGE3,IEDGE4
+    IEDGE1,IEDGE2,IEDGE3,IEDGE4,NDIM
 
   use specfem_par, only: myrank,any_elastic,any_acoustic,any_gravitoacoustic,any_poroelastic, &
                                 rmass_inverse_elastic_one, &
@@ -434,12 +434,14 @@
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  !* (K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML))
                                                  !* (-LNS_PML_kapp(1,i,j,ispec_PML)*LNS_PML_kapp(2,i,j,ispec_PML))
-                                                 * LNS_PML_kapp(1,i,j,ispec_PML)*LNS_PML_kapp(2,i,j,ispec_PML)
+                                                 !* LNS_PML_kapp(1,i,j,ispec_PML)*LNS_PML_kapp(2,i,j,ispec_PML)
+                                                 * product(LNS_PML_kapp(:,i,j,ispec_PML))
             else if (region_CPML(ispec) == CPML_Z_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  !* (K_z_store(i,j,ispec_PML))
                                                  !* (-LNS_PML_kapp(2,i,j,ispec_PML))
-                                                 * LNS_PML_kapp(2,i,j,ispec_PML)
+                                                 !* LNS_PML_kapp(2,i,j,ispec_PML)
+                                                 * LNS_PML_kapp(NDIM,i,j,ispec_PML)
             endif
           endif ! Endif on LNS_PML_activated.
           
