@@ -1375,14 +1375,29 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
                                            * real(wxgll(i), kind=CUSTOM_REAL) &
                                            * real(wzgll(j), kind=CUSTOM_REAL) &
                                            * jacobian(i, j, ispec)
+              
               d_drho(iglob) = d_drho(iglob) + temp_sourcewxlwzljacobianl
+              
               do SPCDM=1,NDIM
-                d_rho0dv(SPCDM, iglob) = d_rho0dv(SPCDM, iglob) + LNS_v0(SPCDM, iglob) * temp_sourcewxlwzljacobianl
+                d_rho0dv(SPCDM, iglob) = d_rho0dv(SPCDM, iglob) + LNS_dv(SPCDM, iglob) * temp_sourcewxlwzljacobianl
               enddo
+              
+              ! Approx. c^2=c_0^2 & v=v_0. Lowest CPU use, 18% error at Mach .3, 7% error at Mach .3.
               d_dE(iglob) =   d_dE(iglob) &
                            + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1.) &
                                + 0.5*norm2r1(LNS_v0(:, iglob)) &
                              ) * temp_sourcewxlwzljacobianl
+              ! Approx. c^2=c_0^2. TBTested.
+              !d_dE(iglob) =   d_dE(iglob) &
+              !             + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1.) &
+              !                 + 0.5*norm2r1(LNS_v0(:, iglob)+LNS_dv(:, iglob)) &
+              !               ) * temp_sourcewxlwzljacobianl
+              ! Full. Highest CPU use, but technically exactly what the equations are, same results as "Approx. c^2=c_0^2 & v=v_0".
+              !d_dE(iglob) =   d_dE(iglob) &
+              !             + (   gammaext_DG(iglob) * (LNS_p0(iglob)+LNS_dp(iglob)) &
+              !                   / ((LNS_rho0(iglob)+LNS_drho(iglob))*(gammaext_DG(iglob)-1.)) &
+              !                 + 0.5*norm2r1(LNS_v0(:, iglob)+LNS_dv(:, iglob)) &
+              !               ) * temp_sourcewxlwzljacobianl
             enddo
           enddo
         endif

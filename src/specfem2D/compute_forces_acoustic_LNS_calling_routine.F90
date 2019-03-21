@@ -143,7 +143,7 @@ subroutine compute_forces_acoustic_LNS_main()
   LNS_dv=ZEROcr
   do i_aux=1,NDIM
     LNS_dm(i_aux,:) = LNS_rho0dv(i_aux,:)+LNS_drho*LNS_v0(i_aux,:)
-    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux,:)=LNS_rho0dv(i_aux,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
+    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux,:) = LNS_rho0dv(i_aux,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
   
   ! Recompute temperature and pressure perturbation.
@@ -198,6 +198,8 @@ subroutine compute_forces_acoustic_LNS_main()
   !enddo
   !enddo
   !if(it==6 .and. i_stage==1) stop 'kekest'
+  
+  !write(*,*) "minval(LNS_dv), maxval(LNS_dv)", minval(LNS_dv), maxval(LNS_dv)! DEBUG
   
   ! Compute RHS.
   ! Note: if there is PML BCs, additionnal terms will be queried directly inside the call to compute_forces_acoustic_LNS, since auxiliary variables and coefficients are global variables.
@@ -793,12 +795,10 @@ gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_cond
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
     LNS_g(iglob) = gravityext(i, j, ispec)
-    ! gammaext_DG unchanged, since already defined.
+    ! gammaext_DG unchanged, since already defined (read from atmospheric_model.dat file).
     LNS_mu(iglob) = muext(i, j, ispec)
     LNS_eta(iglob) = etaext(i, j, ispec)
     LNS_kappa(iglob) = kappa_DG(i, j, ispec)
-    !LNS_v0(1, iglob) = windxext(i, j, ispec)
-    ! One might want to initialise vertical wind here, too.
   else ! Else on assign_external_model.
     ! If no external model data file is given (no initial conditions were specified), build model.
     if(USE_ISOTHERMAL_MODEL) then
@@ -812,8 +812,6 @@ gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_cond
     LNS_mu(iglob) = dynamic_viscosity_cte_DG
     LNS_eta(iglob) = FOUR_THIRDS*dynamic_viscosity_cte_DG
     LNS_kappa(iglob) = thermal_conductivity_cte_DG
-    !LNS_v0(1, iglob) = wind ! Read horizontal wind from the scalar value read from parfile.
-    ! One might want to initialise vertical wind here, too.
   endif ! Endif on assign_external_model.
 end subroutine set_fluid_properties
 
