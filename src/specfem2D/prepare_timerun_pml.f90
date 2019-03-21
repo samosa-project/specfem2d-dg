@@ -377,43 +377,54 @@
         !allocate(RHS_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML), &
         !         aux_PML_rho0dv(NDIM,NDIM,NGLLX,NGLLZ,nspec_PML))
         ! 
-        allocate(LNS_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (mass conservation).
-        allocate(LNS_PML_rho0dv(NDIM,NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (momenta).
-        allocate(LNS_PML_dE(NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (energy).
+        allocate(LNS_PML(2+2*NDIM, LNS_PML_NAUX, nglob_PML), stat=ier) ! Auxiliary evolution variable for all constitutive variables (dimension 1), all auxiliary variables (dimension 2), and all PML mesh points (dimension 3).
+        if (ier /= 0) stop 'Error: could not allocate array LNS_PML (see prepare_timerun_pml.f90).'
+        !allocate(LNS_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (mass conservation).
+        !allocate(LNS_PML_rho0dv(NDIM,NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (momenta).
+        !allocate(LNS_PML_dE(NDIM,NGLLX*NGLLZ*nspec_PML)) ! Auxiliary evolution variable for constitutive variable 1 (energy).
         
-        allocate(RHS_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML), &
-                 aux_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML), &
-                 RHS_PML_rho0dv(NDIM,NDIM,NGLLX*NGLLZ*nspec_PML), &
-                 aux_PML_rho0dv(NDIM,NDIM,NGLLX*NGLLZ*nspec_PML), &
-                 RHS_PML_dE(NDIM,NGLLX*NGLLZ*nspec_PML), &
-                 aux_PML_dE(NDIM,NGLLX*NGLLZ*nspec_PML),stat=ier)
-        if (ier /= 0) stop 'Error: could not allocate arrays RHS_PML_* or aux_PML_* (see prepare_timerun_pml.f90).'
+        ! Same as LNS_PML, but arrays for RK iteration.
+        allocate(LNS_PML_RHS(2+2*NDIM, LNS_PML_NAUX, nglob_PML), &
+                 LNS_PML_aux(2+2*NDIM, LNS_PML_NAUX, nglob_PML), stat=ier)
+        if (ier /= 0) stop 'Error: could not allocate arrays LNS_PML_RHS or LNS_PML_aux (see prepare_timerun_pml.f90).'
+        !allocate(RHS_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML), &
+        !         aux_PML_drho(NDIM,NGLLX*NGLLZ*nspec_PML), &
+        !         RHS_PML_rho0dv(NDIM,NDIM,NGLLX*NGLLZ*nspec_PML), &
+        !         aux_PML_rho0dv(NDIM,NDIM,NGLLX*NGLLZ*nspec_PML), &
+        !         RHS_PML_dE(NDIM,NGLLX*NGLLZ*nspec_PML), &
+        !         aux_PML_dE(NDIM,NGLLX*NGLLZ*nspec_PML), stat=ier)
+        !if (ier /= 0) stop 'Error: could not allocate arrays RHS_PML_* or aux_PML_* (see prepare_timerun_pml.f90).'
         
         allocate(LNS_PML_kapp(NDIM,NGLLX,NGLLZ,nspec_PML), &
                  LNS_PML_alpha(NDIM,NGLLX,NGLLZ,nspec_PML), &
                  LNS_PML_a0(NGLLX,NGLLZ,nspec_PML), &
-                 LNS_PML_b(NDIM,NGLLX,NGLLZ,nspec_PML),stat=ier) ! With the formulation of [Xie et al., 2014], we'll need 2 auxiliary ADEs, for each constitutive variable. It is conjectured we'll need 3 for 3D. Thus, allocate the first dimension to NDIM.
-        if (ier /= 0) stop 'Error: could not allocate arrays LNS_PML_alpha, LNS_PML_a0, or LNS_PML_b (see prepare_timerun_pml.f90).'
+                 LNS_PML_b(NDIM,NGLLX,NGLLZ,nspec_PML), &
+                 LNS_PML_d(NDIM,NGLLX,NGLLZ,nspec_PML),stat=ier) ! With the formulation of [Xie et al., 2014], we'll need 2 auxiliary ADEs, for each constitutive variable. It is conjectured we'll need 3 for 3D. Thus, allocate the first dimension to NDIM.
+        if (ier /= 0) stop 'Error: could not allocate arrays LNS_PML_{alpha, a0, b, or d} (see prepare_timerun_pml.f90).'
         
-        allocate(rmass_inverse_acoustic_LNS_PML(nglob_PML),stat=ier)
-        if (ier /= 0) stop 'Error: could not allocate rmass_inverse_acoustic_LNS_PML (see prepare_timerun_pml.f90).'
+        !allocate(rmass_inverse_acoustic_LNS_PML(nglob_PML),stat=ier)
+        !if (ier /= 0) stop 'Error: could not allocate rmass_inverse_acoustic_LNS_PML (see prepare_timerun_pml.f90).'
         
-        LNS_PML_drho = ZERO
-        LNS_PML_rho0dv = ZERO
-        LNS_PML_dE = ZERO
-        RHS_PML_drho = ZERO
-        aux_PML_drho = ZERO
-        RHS_PML_rho0dv = ZERO
-        aux_PML_rho0dv = ZERO
-        RHS_PML_dE = ZERO
-        aux_PML_dE = ZERO
+        LNS_PML = ZERO
+        LNS_PML_RHS = ZERO
+        LNS_PML_aux = ZERO
+        !LNS_PML_drho = ZERO
+        !LNS_PML_rho0dv = ZERO
+        !LNS_PML_dE = ZERO
+        !RHS_PML_drho = ZERO
+        !aux_PML_drho = ZERO
+        !RHS_PML_rho0dv = ZERO
+        !aux_PML_rho0dv = ZERO
+        !RHS_PML_dE = ZERO
+        !aux_PML_dE = ZERO
         
-        LNS_PML_kapp = ZERO
+        LNS_PML_kapp  = ZERO
         LNS_PML_alpha = ZERO
-        LNS_PML_a0 = ZERO
-        LNS_PML_b  = ZERO
+        LNS_PML_a0    = ZERO
+        LNS_PML_b     = ZERO
+        LNS_PML_d     = ZERO
         
-        rmass_inverse_acoustic_LNS_PML = ZERO
+        !rmass_inverse_acoustic_LNS_PML = ZERO
         
         ! Savage memory free. Not really optimal, but less invasive.
         deallocate(rmemory_potential_acoustic,rmemory_acoustic_dux_dx,rmemory_acoustic_dux_dz, &

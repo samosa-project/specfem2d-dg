@@ -70,7 +70,7 @@
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,region_CPML,spec_to_PML, &
                          K_x_store,K_z_store,d_x_store,d_z_store
-  use specfem_par_lns, only: USE_LNS, ibool_LNS_PML, rmass_inverse_acoustic_LNS_PML,LNS_PML_kapp
+  use specfem_par_lns, only: USE_LNS,LNS_PML_kapp!, ibool_LNS_PML, rmass_inverse_acoustic_LNS_PML
 
   implicit none
 
@@ -105,21 +105,21 @@
       stop
     endif
     
-    ! For rmass_inverse_acoustic_LNS_PML below.
-    if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
-      LNS_PML_activated = .true.
-      if(.not. allocated(rmass_inverse_acoustic_LNS_PML)) then
-        write(*,*) "********************************"
-        write(*,*) "*            ERROR             *"
-        write(*,*) "********************************"
-        write(*,*) "* PML inverse mass matrix is   *"
-        write(*,*) "* not allocated but should be. *"
-        write(*,*) "********************************"
-        stop
-      endif
-    else
-      LNS_PML_activated = .false.
-    endif
+    !! For rmass_inverse_acoustic_LNS_PML below.
+    !if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
+    !  LNS_PML_activated = .true.
+    !  if(.not. allocated(rmass_inverse_acoustic_LNS_PML)) then
+    !    write(*,*) "********************************"
+    !    write(*,*) "*            ERROR             *"
+    !    write(*,*) "********************************"
+    !    write(*,*) "* PML inverse mass matrix is   *"
+    !    write(*,*) "* not allocated but should be. *"
+    !    write(*,*) "********************************"
+    !    stop
+    !  endif
+    !else
+    !  LNS_PML_activated = .false.
+    !endif
   endif
   
   ! initialize mass matrix
@@ -420,22 +420,25 @@
             ! This ispec is a PML element, we need to update the mass matrix in order to take the stretching into account.
             ispec_PML = spec_to_PML(ispec)
             
-            ! Inverse mass matrix for auxiliary variables evolution equations.
-            ! No coefficient appear in front of \partial_t in the auxiliary variables evolution equations, thus it is simply the full DG mass matrix.
-            rmass_inverse_acoustic_LNS_PML(ibool_LNS_PML(i,j,ispec_PML)) = rmass_inverse_acoustic_DG(iglob)
+            !! Inverse mass matrix for auxiliary variables evolution equations.
+            !! No coefficient appear in front of \partial_t in the auxiliary variables evolution equations, thus it is simply the full DG mass matrix.
+            !rmass_inverse_acoustic_LNS_PML(ibool_LNS_PML(i,j,ispec_PML)) = rmass_inverse_acoustic_DG(iglob)
             
             ! Update classical mass matrix to account for factor in front of \partial_t.
             if (region_CPML(ispec) == CPML_X_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  !* (K_x_store(i,j,ispec_PML))
+                                                 !* (-LNS_PML_kapp(1,i,j,ispec_PML))
                                                  * LNS_PML_kapp(1,i,j,ispec_PML)
             else if (region_CPML(ispec) == CPML_XZ_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  !* (K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML))
+                                                 !* (-LNS_PML_kapp(1,i,j,ispec_PML)*LNS_PML_kapp(2,i,j,ispec_PML))
                                                  * LNS_PML_kapp(1,i,j,ispec_PML)*LNS_PML_kapp(2,i,j,ispec_PML)
             else if (region_CPML(ispec) == CPML_Z_ONLY) then
               rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob)  &
                                                  !* (K_z_store(i,j,ispec_PML))
+                                                 !* (-LNS_PML_kapp(2,i,j,ispec_PML))
                                                  * LNS_PML_kapp(2,i,j,ispec_PML)
             endif
           endif ! Endif on LNS_PML_activated.
@@ -837,9 +840,9 @@
                                 rmass_w_inverse_poroelastic, &
                                 rmass_inverse_acoustic_DG, &
                                 rmass_inverse_acoustic_DG_b, &
-                                USE_DISCONTINUOUS_METHOD, &
-                                PML_BOUNDARY_CONDITIONS, anyabs ! LNS PML additions.
-  use specfem_par_lns, only: USE_LNS,rmass_inverse_acoustic_LNS_PML ! LNS PML additions.
+                                USE_DISCONTINUOUS_METHOD!, &
+                                !PML_BOUNDARY_CONDITIONS!, anyabs ! LNS PML additions.
+  !use specfem_par_lns, only: USE_LNS,rmass_inverse_acoustic_LNS_PML ! LNS PML additions.
   
   implicit none
   include 'constants.h'
@@ -865,10 +868,10 @@
       where(rmass_inverse_acoustic_DG <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG = 1._CUSTOM_REAL
       where(rmass_inverse_acoustic_DG_b <= 0._CUSTOM_REAL) rmass_inverse_acoustic_DG_b = 1._CUSTOM_REAL
       
-      ! LNS PML additions.
-      if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
-        where(rmass_inverse_acoustic_LNS_PML <= 0._CUSTOM_REAL) rmass_inverse_acoustic_LNS_PML = 1._CUSTOM_REAL
-      endif
+      !! LNS PML additions.
+      !if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
+      !  where(rmass_inverse_acoustic_LNS_PML <= 0._CUSTOM_REAL) rmass_inverse_acoustic_LNS_PML = 1._CUSTOM_REAL
+      !endif
     endif
   endif
   if (any_gravitoacoustic) then
@@ -904,9 +907,9 @@
     rmass_inverse_acoustic_DG = 1._CUSTOM_REAL / rmass_inverse_acoustic_DG
       
     ! LNS PML additions.
-    if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
-      rmass_inverse_acoustic_LNS_PML = 1._CUSTOM_REAL / rmass_inverse_acoustic_LNS_PML
-    endif
+    !if(USE_LNS .and. PML_BOUNDARY_CONDITIONS .and. anyabs) then
+    !  rmass_inverse_acoustic_LNS_PML = 1._CUSTOM_REAL / rmass_inverse_acoustic_LNS_PML
+    !endif
   endif
   !WRITE(*,*) "after inversion" ! DEBUG
   !WRITE(*,*) "minval", minval(rmass_inverse_acoustic_DG), & ! DEBUG

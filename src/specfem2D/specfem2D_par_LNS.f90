@@ -50,20 +50,23 @@ module specfem_par_LNS
   integer :: nglob_PML ! Number of PML points (spatial duplicates included).
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_LNS_PML ! Inverse mass matrix. Size allocated should be (nglob_PML).
   integer, dimension(:,:,:), allocatable :: ibool_LNS_PML ! Same as ibool_DG (see 'specfem2D_par'), but for PML only.
+  
   !real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Size allocated should be (NADE, NGLLX, NGLLZ, nspec_PML).
   !real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: LNS_PML_rho0dv ! Size allocated should be (NADE, NDIM, NGLLX, NGLLZ, nspec_PML).
   !real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
   !real(kind=CUSTOM_REAL), dimension(:,:,:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Size allocated should be (NADE, NGLLX*NGLLZ*nspec_PML).
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_rho0dv ! Size allocated should be (NADE, NDIM, NGLLX*NGLLZ*nspec_PML).
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
+  !real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_PML_drho, LNS_PML_dE ! Size allocated should be (NADE, NGLLX*NGLLZ*nspec_PML).
+  !real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_rho0dv ! Size allocated should be (NADE, NDIM, NGLLX*NGLLZ*nspec_PML).
+  !real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: RHS_PML_drho,aux_PML_drho, RHS_PML_dE,aux_PML_dE
+  !real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: RHS_PML_rho0dv, aux_PML_rho0dv
   
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML, LNS_PML_RHS, LNS_PML_aux ! Dimensions: 1<-> # constitutive variables, 2<-> # auxiliary variables, 3<-> #PML mesh points.
+  integer, parameter :: LNS_PML_NAUX=6 ! Number of auxiliary variables per constitutive variable for PMLs.
 
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_kapp ! Constant coefficient in the stretching s. Size allocated should be (NDIM, NGLLX, NGLLZ, nspec_PML).
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_alpha ! Coefficient in front of the auxiliary variables. For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: LNS_PML_a0 ! Coefficient in front of the \delta, that is in front of the q in the updated strong form. Size allocated should be (NGLLX,NGLLZ,nspec_PML) in order to save memory.
-  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_b ! Coefficient in front of each auxiliary variable (ADEs). For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
+  real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_b, LNS_PML_d ! Coefficient in front of each auxiliary variable (ADEs). For classical formulation, only 2=NDIM ADE are to be solved for each variable, hence the first dimension.
   
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99 ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
   ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every LNS_MODPRINT iterations

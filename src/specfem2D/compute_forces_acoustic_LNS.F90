@@ -72,8 +72,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   ! Variables specifically for PML.
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
   integer :: ispec_PML, iglobPML
-  real(kind=CUSTOM_REAL) :: pml_a0,pml_kapp_prod
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
+  real(kind=CUSTOM_REAL) :: pml_a0,pml_a1
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P
@@ -143,18 +143,18 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !xil(NDIM)    = xiz(i,j,ispec)
           !gammal(1)    = gammax(i,j,ispec)
           !gammal(NDIM) = gammaz(i,j,ispec)
-          xigammal(1,1)       = xix(i,j,ispec) ! = \partial_x\xi from report
-          xigammal(1,NDIM)    = xiz(i,j,ispec) ! = \partial_z\xi from report
-          xigammal(NDIM,1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
-          xigammal(NDIM,NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
+          xigammal(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
+          xigammal(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
+          xigammal(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
+          xigammal(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
           
           if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
             ! Need to include stretching on base stress tensor.
             ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
             ! \Sigma_x needs to become \kappa_2\Sigma_x, and \Sigma_z needs to become \kappa_1\Sigma_z.
             ! Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include kappa_i in those directly.
-            xigammal(:,1) = LNS_PML_kapp(2,i,j,ispec_PML)*xigammal(:,1) ! Multiply x component by kappa_2.
-            xigammal(:,NDIM) = LNS_PML_kapp(1,i,j,ispec_PML)*xigammal(:,NDIM) ! Multiply z component by kappa_1.
+            xigammal(:, 1)    = LNS_PML_kapp(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by kappa_2.
+            xigammal(:, NDIM) = LNS_PML_kapp(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by kappa_1.
           endif
           
           !wzl = wzgll(j)
@@ -188,7 +188,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !cntrb_drho(i,j,1) = wzljacLoc*DOT_PRODUCT(xil, in_dm(:,iglob)) ! Contribution along xi.
           !cntrb_drho(i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, in_dm(:,iglob)) ! Contribution along gamma.
           !do SPCDM=1,NDIM
-          !  cntrb_drho(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob)) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+          !  cntrb_drho(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob)) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
           !enddo
           !   x-Momentum.
           !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob)
@@ -200,12 +200,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !cntrb_rho0dv(1,i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
           !cntrb_rho0dv(1,i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           !do SPCDM=1,NDIM
-          !  cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+          !  cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
           !enddo
           !   Group mass conservation and x-Momentum for efficiency.
           do SPCDM=1,NDIM
-            cntrb_drho(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob)) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
-            cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+            cntrb_drho(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob)) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+            cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
           enddo
           !   z-Momentum.
           !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)
@@ -218,7 +218,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !cntrb_rho0dv(NDIM,i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           do SPCDM=1,NDIM
             cntrb_rho0dv(NDIM,i,j,SPCDM) =   wzlwxljacLoc(SPCDM)&
-                                           * DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+                                           * DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
           enddo
           
           ! Add viscous stress tensor's contributions.
@@ -235,7 +235,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             !cntrb_rho0dv(1,i,j,NDIM) = cntrb_rho0dv(1,i,j,2) + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
             do SPCDM=1,NDIM
               cntrb_rho0dv(1,i,j,SPCDM) =   cntrb_rho0dv(1,i,j,SPCDM) &
-                                          + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+                                          + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
             enddo
             !   z-Momentum.
             !tmp_unknown_x = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
@@ -252,7 +252,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             !                               + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
             do SPCDM=1,NDIM
               cntrb_rho0dv(NDIM,i,j,SPCDM) =   cntrb_rho0dv(NDIM,i,j,SPCDM) &
-                                             + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+                                             + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
             enddo
           endif ! Endif on viscousComputation.
           
@@ -300,7 +300,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !cntrb_dE(i,j,1)    = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
           !cntrb_dE(i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
           do SPCDM=1,NDIM
-            cntrb_dE(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Contribution along xi.! Add consecutively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+            cntrb_dE(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Contribution along xi.! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
           enddo
           
           ! Zero-th degree contributions.
@@ -323,13 +323,13 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !d0cntrb_rho0dv(1,i,j) = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
           !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
           !   Version 4: under HV0 (v_{0,z}=0), SM (d_xv_0=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          d0cntrb_rho0dv(1,i,j) = cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
-          d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
+          d0cntrb_rho0dv(1,i,j) = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc !  \rho_0v'_z\partial_zv_{0,x}
+          d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * jacLoc ! -\rho'g_z, but LNS_g=9.81=-g_z
           ! > Energy.
           !d0cntrb_dE(i,j)       = - (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
           !                           + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(NDIM,iglob)) * jacLoc
           !   Under potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          d0cntrb_dE(i,j)       =  - LNS_g(iglob)*in_dm(NDIM,iglob) * jacLoc
+          d0cntrb_dE(i,j)       = - LNS_g(iglob)*in_dm(NDIM,iglob) * jacLoc
           
           ! PML
           ! PML
@@ -344,32 +344,51 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !    !write(*,*) ispec, "(",coord(:,ibool_before_perio(i,j,ispec)),") is PML."
           !    !write(*,*) allocated(K_x_store)
             
-            pml_kapp_prod = product(LNS_PML_kapp(:,i,j,ispec_PML))
-            
+            ! Update degree 0 contributions (set G=a1*G ***FIRST***), add a_0q, add G auxiliary variables, and add YU's auxiliary variables.
+            pml_a1 = product(LNS_PML_kapp(:,i,j,ispec_PML))
             pml_a0 = LNS_PML_a0(i,j,ispec_PML) ! LNS_PML_a0 initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-            
-            ! Update \bar{G} and add a_0q.
-            d0cntrb_drho(i,j) = pml_a0*cv_drho(iglob) ! d0cntrb_drho is zero outside of PMLs.
-            d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j)*pml_kapp_prod + pml_a0*cv_rho0dv(:,iglob)
-            do SPCDM=1,NDIM
-              d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j)*pml_kapp_prod + pml_a0*cv_rho0dv(SPCDM,iglob)
-            enddo
-            d0cntrb_dE(i,j) = d0cntrb_dE(i,j)*pml_kapp_prod + pml_a0*cv_dE(iglob)
-            
-            ! Add auxiliary variables.
             pml_b = LNS_PML_b(:,i,j,ispec_PML) ! LNS_PML_b initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-            !pml_ade_rho0dv = LNS_PML_rho0dv(k,:,i,j,ispec_PML)
-            do k = 1, NDIM ! Loop on ADEs.
-              !d0cntrb_drho(i,j) = d0cntrb_drho(i,j) + pml_b(k)*LNS_PML_drho(k,i,j,ispec_PML)
-              !d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_b(k)*LNS_PML_rho0dv(k,:,i,j,ispec_PML)
-              !do SPCDM=1,NDIM
-              !  d0cntrb_rho0dv(SPCDM,i,j) = d0cntrb_rho0dv(SPCDM,i,j) + pml_b(k)*
-              !enddo
-              !d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_b(k)*LNS_PML_dE(k,i,j,ispec_PML)
-              d0cntrb_drho(i,j) = d0cntrb_drho(i,j) + pml_b(k)*LNS_PML_drho(k,iglobPML)
-              d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) + pml_b(k)*LNS_PML_rho0dv(k,:,iglobPML)
-              d0cntrb_dE(i,j) = d0cntrb_dE(i,j) + pml_b(k)*LNS_PML_dE(k,iglobPML)
+            !write(*,*) 'pml_b, LNS_PML_alpha(:,i,j,ispec_PML)', pml_b, LNS_PML_alpha(:,i,j,ispec_PML) ! DEBUG
+            pml_boa = ZEROcr
+            where(pml_b/=ZEROcr) pml_boa = pml_b / LNS_PML_alpha(:,i,j,ispec_PML) ! b_i/alpha_i, only where b_i!=0
+            call LNS_PML_updateD0(d0cntrb_drho(i,j), cv_drho(iglob), 1, &
+                                  pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
+            do k = 1, NDIM
+              call LNS_PML_updateD0(d0cntrb_rho0dv(k,i,j), cv_rho0dv(k,iglob), 1+k, &
+                                    pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
             enddo
+            call LNS_PML_updateD0(d0cntrb_dE(i,j), cv_dE(iglob), 2+NDIM, &
+                                  pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
+            
+            ! Update degree 1 contributions.
+            ! First, reset xigammal.
+            xigammal(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
+            xigammal(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
+            xigammal(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
+            xigammal(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
+            ! Need to include d_i on auxiliary stress tensor \Sigma=(R^{alpha_2}_{\sigma_1}, R^{alpha_1}_{\sigma_2}). We do it as follows. While not very readable, it gets the job done in a somewhat efficient way. \Sigma_1 needs to become d_2\Sigma_1, and \Sigma_2 needs to become d_1\Sigma_2. Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include d_i in those directly.
+            xigammal(:, 1)    = LNS_PML_d(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by d_2.
+            xigammal(:, NDIM) = LNS_PML_d(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by d_1.
+            
+            ! rho'
+            !if(.false.) then ! DEBUG
+            do SPCDM=1,NDIM
+              cntrb_drho(i,j,SPCDM) =   cntrb_drho(i,j,SPCDM) &
+                                      + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML_RHS(1,3:4,iglobPML))
+            enddo
+            ! rho0v'
+            do k = 1, NDIM
+              do SPCDM=1,NDIM
+                cntrb_rho0dv(k,i,j,SPCDM) =   cntrb_rho0dv(k,i,j,SPCDM) &
+                                            + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML_RHS(1+k,3:4,iglobPML))
+              enddo
+            enddo
+            ! E'
+            do SPCDM=1,NDIM
+              cntrb_dE(i,j,SPCDM) =   cntrb_dE(i,j,SPCDM) &
+                                    + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML_RHS(2+NDIM,3:4,iglobPML))
+            enddo
+            !endif
           else
             d0cntrb_drho = ZEROcr ! Make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
           endif ! Endif on PML_BOUNDARY_CONDITIONS.
