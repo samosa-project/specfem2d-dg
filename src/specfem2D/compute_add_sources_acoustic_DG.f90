@@ -421,8 +421,7 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, d_E, rh
   integer, intent(in) :: it, i_stage
   
   ! Local variables.
-  real(kind=CUSTOM_REAL) :: temp_source!,x, y
-  real(kind=CUSTOM_REAL) :: wxlwzljacobianl
+  real(kind=CUSTOM_REAL) :: temp_sourcewxlwzljacobianl
   integer :: i, j, i_source, ispec, iglob, iglob_unique
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   do i_source = 1, NSOURCES ! Loop on sources.
@@ -436,18 +435,22 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, d_E, rh
             do i = 1, NGLLX
               iglob_unique = ibool_before_perio(i, j, ispec)
               iglob = ibool_DG(i, j, ispec)
-              temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_source_spatial_function.f90" for the subroutine initialising the vector "source_spatial_function_DG".
-              wxlwzljacobianl = real(wxgll(i), kind=CUSTOM_REAL)*real(wzgll(j), kind=CUSTOM_REAL)*jacobian(i, j, ispec)
+              ! See "prepare_source_spatial_function.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+              temp_sourcewxlwzljacobianl =   stf &
+                                           * source_spatial_function_DG(i_source, iglob_unique) &
+                                           * real(wxgll(i), kind=CUSTOM_REAL) &
+                                           * real(wzgll(j), kind=CUSTOM_REAL) &
+                                           * jacobian(i, j, ispec)
               
-              d_rho(iglob) = d_rho(iglob) + temp_source*wxlwzljacobianl
+              d_rho(iglob) = d_rho(iglob) + temp_sourcewxlwzljacobianl
               
-              d_rhovx(iglob) = d_rhovx(iglob) + vx(iglob) * temp_source*wxlwzljacobianl
-              d_rhovz(iglob) = d_rhovz(iglob) + vz(iglob) * temp_source*wxlwzljacobianl
+              d_rhovx(iglob) = d_rhovx(iglob) + vx(iglob) * temp_sourcewxlwzljacobianl
+              d_rhovz(iglob) = d_rhovz(iglob) + vz(iglob) * temp_sourcewxlwzljacobianl
               
               d_E(iglob) =   d_E(iglob) &
                            + (   gammaext_DG(iglob)*E(iglob)/rho(iglob) &
                                - 0.5*(gammaext_DG(iglob)-1.)*(vx(iglob)**2+vz(iglob)**2) &
-                             ) * temp_source*wxlwzljacobianl
+                             ) * temp_sourcewxlwzljacobianl
             enddo
           enddo
         endif
