@@ -82,10 +82,6 @@ subroutine compute_forces_acoustic_LNS_main()
     LNS_rho0dv = ZEROcr
     LNS_dE     = ZEROcr
     ! Initialise state auxiliary quantities.
-    !LNS_T0     = ZEROcr
-    !LNS_p0     = ZEROcr
-    !nabla_v0   = ZEROcr
-    !sigma_v_0  = ZEROcr
     LNS_dT     = ZEROcr
     LNS_dp     = ZEROcr
     LNS_dv     = ZEROcr
@@ -272,35 +268,6 @@ subroutine compute_forces_acoustic_LNS_main()
   
   if(check_linearHypothesis) then
     call LNS_warn_nonsense()
-    !if(     check_linearHypothesis_ON_ALL_PROCS &
-    !   .or. ((.not. check_linearHypothesis_ON_ALL_PROCS) .and. myrank==0) &
-    !  ) then
-    !  ! If:    we check on all procs,
-    !  !     or we check only on proc 0 and we are on proc 0.
-    !  if(minval(LNS_drho) < 10d-14) then
-    !    WRITE(*,*) "***************************************************************"
-    !    WRITE(*,*) "* CAREFUL, VERY SMALL DENSITY: ", minval(LNS_drho), "    *"
-    !    if(check_linearHypothesis_FIND_POINT) then
-    !      ! Find where density is low.
-    !      do ispec = 1,nspec
-    !        do j = 1,NGLLZ
-    !          do i = 1,NGLLX
-    !            !write(*,*) LNS_drho(ibool_DG(ispec, i, j))
-    !            !write(*,*) ispec, i, j, ibool_DG(ispec, i, j)
-    !            if(LNS_drho(ibool_DG(i, j, ispec))==minval(LNS_drho)) then
-    !              WRITE(*, *) "* Element", ispec, ", GLL", i, j, ".         *"
-    !              write(*, *) "* Coords", coord(1, ibool_before_perio(i, j, ispec)), &
-    !                          coord(NDIM, ibool_before_perio(i, j, ispec)), ".*"
-    !              !call virtual_stretch_prime(i, j, ispec, coef_stretch_x_ij_prime, coef_stretch_z_ij_prime)
-    !              !write(*, *) coef_stretch_x_ij_prime, coef_stretch_z_ij_prime
-    !            endif
-    !          enddo
-    !        enddo
-    !      enddo
-    !    endif ! Endif on check_linearHypothesis_FIND_POINT.
-    !    WRITE(*,*) "***************************************************************"
-    !  endif ! Endif on minval(LNS_drho).
-    !endif ! Endif on check_linearHypothesis_ON_ALL_PROCS.
   endif ! Endif on check_linearHypothesis.
   
   ! --------------------------- !
@@ -350,19 +317,20 @@ end subroutine compute_forces_acoustic_LNS_main
 
 
 
-subroutine LNS_PML_buildRHS(auxvar, beta, q)
+subroutine LNS_PML_buildRHS(idQ, idR, iglobPML, beta, q)
   ! TODO: select variables to use.
   use constants
   use specfem_par
   use specfem_par_LNS
   implicit none  
   ! Input/Output.
-  real(kind=CUSTOM_REAL), intent(inout) :: auxvar
+  integer, intent(in) :: idQ, idR, iglobPML
   real(kind=CUSTOM_REAL), intent(in) :: beta
   real(kind=CUSTOM_REAL), intent(in) :: q
   ! Local.
   ! N./A.
-  auxvar = beta * auxvar - q
+  !dt(auxvar) = beta * auxvar - q
+  LNS_PML_RHS(idQ, idR, iglobPML) = beta*LNS_PML(idQ, idR, iglobPML) - q
 end subroutine LNS_PML_buildRHS
 
 subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, jacloc, iglobPML)

@@ -393,45 +393,45 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             !if(.false.) then
             ! 2.1) YU*q (:,1:2,:)
             ! 2.1.1) rho' (1,:,:)
-            call LNS_PML_buildRHS(LNS_PML_RHS(1,1,iglobPML), pml_alp(1), cv_drho(iglob))
-            call LNS_PML_buildRHS(LNS_PML_RHS(1,2,iglobPML), pml_alp(2), cv_drho(iglob))
+            call LNS_PML_buildRHS(1, 1, iglobPML, pml_alp(1), cv_drho(iglob))
+            call LNS_PML_buildRHS(1, 2, iglobPML, pml_alp(2), cv_drho(iglob))
             ! 2.1.2) rho0v' (2:3,:,:)
             do k=1,NDIM
-              call LNS_PML_buildRHS(LNS_PML_RHS(1+k,1,iglobPML), pml_alp(1), cv_rho0dv(k, iglob))
-              call LNS_PML_buildRHS(LNS_PML_RHS(1+k,2,iglobPML), pml_alp(2), cv_rho0dv(k, iglob))
+              call LNS_PML_buildRHS(1+k, 1, iglobPML, pml_alp(1), cv_rho0dv(k, iglob))
+              call LNS_PML_buildRHS(1+k, 2, iglobPML, pml_alp(2), cv_rho0dv(k, iglob))
             enddo
             ! 2.1.3) E' (2+NDIM,:,:)
-            call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,1,iglobPML), pml_alp(1), cv_dE(iglob))
-            call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,2,iglobPML), pml_alp(2), cv_dE(iglob))
+            call LNS_PML_buildRHS(2+NDIM, 1, iglobPML, pml_alp(1), cv_dE(iglob))
+            call LNS_PML_buildRHS(2+NDIM, 2, iglobPML, pml_alp(2), cv_dE(iglob))
             ! 2.2) Sigma (:,3:4,:) : care for indices flipping (alpha2 with sigma1 and alpha1 with sigma2) ! TODO: TAKE CARE OF VISCOUS TENSOR
             ! 2.2.1) rho' (1,:,:)
-            call LNS_PML_buildRHS(LNS_PML_RHS(1,3,iglobPML), pml_alp(2), in_dm(1,iglob))
-            call LNS_PML_buildRHS(LNS_PML_RHS(1,4,iglobPML), pml_alp(1), in_dm(2,iglob))
+            call LNS_PML_buildRHS(1, 3, iglobPML, pml_alp(2), in_dm(1,iglob))
+            call LNS_PML_buildRHS(1, 4, iglobPML, pml_alp(1), in_dm(2,iglob))
             ! 2.2.2) rho0v' (2:3,:,:)
-            call LNS_PML_buildRHS(LNS_PML_RHS(2,3,iglobPML), pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(1,iglob)   +in_dp(iglob)) ! vx sig1
-            call LNS_PML_buildRHS(LNS_PML_RHS(2,4,iglobPML), pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
-            call LNS_PML_buildRHS(LNS_PML_RHS(3,3,iglobPML), pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(NDIM,iglob)) ! vz sig1
-            call LNS_PML_buildRHS(LNS_PML_RHS(3,4,iglobPML), pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+in_dp(iglob)) ! vz sig2
+            call LNS_PML_buildRHS(2, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(1,iglob)   +in_dp(iglob)) ! vx sig1
+            call LNS_PML_buildRHS(2, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
+            call LNS_PML_buildRHS(3, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(NDIM,iglob)) ! vz sig1
+            call LNS_PML_buildRHS(3, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+in_dp(iglob)) ! vz sig2
             ! 2.2.3) E' (2+NDIM,:,:)
-            call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,3,iglobPML), pml_alp(2), &
+            call LNS_PML_buildRHS(2+NDIM, 3, iglobPML, pml_alp(2), &
                                      LNS_dv(1,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
                                    + LNS_v0(1,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig1
-            call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,4,iglobPML), pml_alp(1), &
+            call LNS_PML_buildRHS(2+NDIM, 4, iglobPML, pml_alp(1), &
                                      LNS_dv(2,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
                                    + LNS_v0(2,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig2
             ! 2.3) G (:,5:6,:) : zeroth degree contribution
             ! 2.3.1) rho' (1,:,:): G=0
-            !call LNS_PML_buildRHS(LNS_PML_RHS(1,5,iglobPML), pml_alp(1), ZEROcr) ! rho a1G, do nothing
-            !call LNS_PML_buildRHS(LNS_PML_RHS(1,6,iglobPML), pml_alp(2), ZEROcr) ! rho a2G, do nothing
+            !call LNS_PML_buildRHS(1, 5, iglobPML, pml_alp(1), ZEROcr) ! rho a1G, do nothing
+            !call LNS_PML_buildRHS(1, 6, iglobPML, pml_alp(2), ZEROcr) ! rho a2G, do nothing
             LNS_PML_RHS(1,5:6,iglobPML) = ZEROcr ! force to zero
             ! 2.3.2) rho0v' (2:3,:,:): G=...
-            call LNS_PML_buildRHS(LNS_PML_RHS(2,5,iglobPML), pml_alp(1), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
-            call LNS_PML_buildRHS(LNS_PML_RHS(2,6,iglobPML), pml_alp(2), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
-            call LNS_PML_buildRHS(LNS_PML_RHS(3,5,iglobPML), pml_alp(1), cv_drho(iglob)*LNS_g(iglob)) ! vz a1G
-            call LNS_PML_buildRHS(LNS_PML_RHS(3,6,iglobPML), pml_alp(2), cv_drho(iglob)*LNS_g(iglob)) ! vz a2G
+            call LNS_PML_buildRHS(2, 5, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
+            call LNS_PML_buildRHS(2, 6, iglobPML, pml_alp(2), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
+            call LNS_PML_buildRHS(3, 5, iglobPML, pml_alp(1), - cv_drho(iglob)*LNS_g(iglob)) ! vz a1G
+            call LNS_PML_buildRHS(3, 6, iglobPML, pml_alp(2), - cv_drho(iglob)*LNS_g(iglob)) ! vz a2G
             ! 2.3.3) E' (2+NDIM,:,:): G=g*dm_z
-            call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,5,iglobPML), pml_alp(1), LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a1G
-            call LNS_PML_buildRHS(LNS_PML_RHS(2+NDIM,6,iglobPML), pml_alp(2), LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
+            call LNS_PML_buildRHS(2+NDIM, 5, iglobPML, pml_alp(1), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a1G
+            call LNS_PML_buildRHS(2+NDIM, 6, iglobPML, pml_alp(2), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
             !endif
           else
             d0cntrb_drho = ZEROcr ! Make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
