@@ -59,9 +59,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   
   
   real(kind=CUSTOM_REAL) :: jacLoc ! Jacobian matrix determinant.
-  real(kind=CUSTOM_REAL) :: lambda, halfWeight, flux_n, jump
+  real(kind=CUSTOM_REAL) :: lambda, halfWeight, jump!, flux_n
   
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: tmp_unknown!, xil, gammal
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: locSigma!, locG ! Local tensor, local gravity.
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM) :: xigammal
   real(kind=CUSTOM_REAL), dimension(NDIM) :: wzlwxljacLoc
   real(kind=CUSTOM_REAL), dimension(NDIM) :: n_out
@@ -88,6 +88,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   outrhs_drho    = ZEROcr
   outrhs_rho0dv  = ZEROcr
   outrhs_dE      = ZEROcr
+  d0cntrb_drho   = ZEROcr
   d0cntrb_rho0dv = ZEROcr
   d0cntrb_dE     = ZEROcr
   
@@ -96,7 +97,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     case (1)
       call LNS_mass_source(outrhs_drho, outrhs_rho0dv, outrhs_dE, it, i_stage)
     !case (2)
-    !  do SPCDM=1,NDIM
+    !  do SPCDM = 1, NDIM
     !    call compute_add_sources_acoustic_DG_spread(outrhs_rho0dv(SPCDM,:), it, i_stage)
     !  enddo
     case (3)
@@ -109,7 +110,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
     write(*,"(a)")                   " quantity [                 max    ,                  min    ]"
     WRITE(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
-    do SPCDM=1,NDIM
+    do SPCDM = 1, NDIM
       WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(SPCDM,:)), ", ", minval(cv_rho0dv(SPCDM,:)), "], i=",SPCDM
     enddo
     WRITE(*,"(a,e24.16,a,e24.16,a)") " dE       [", maxval(cv_dE), ", ", minval(cv_dE), "]"
@@ -135,14 +136,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             iglobPML = ibool_LNS_PML(i, j, ispec_PML)
           endif
           jacLoc = jacobian(i,j,ispec)
-          !xixl = xix(i,j,ispec)
-          !xizl = xiz(i,j,ispec)
-          !gammaxl = gammax(i,j,ispec)
-          !gammazl = gammaz(i,j,ispec)
-          !xil(1)       = xix(i,j,ispec)
-          !xil(NDIM)    = xiz(i,j,ispec)
-          !gammal(1)    = gammax(i,j,ispec)
-          !gammal(NDIM) = gammaz(i,j,ispec)
           xigammal(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
           xigammal(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
           xigammal(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
@@ -157,13 +150,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             xigammal(:, NDIM) = LNS_PML_kapp(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by kappa_1.
           endif
           
-          !wzl = wzgll(j)
-          !wxl = wxgll(i)
-          !wzljacLoc = wzgll(j)*jacLoc
-          !wxljacLoc = wxgll(i)*jacLoc
-          wzlwxljacLoc(1) = wzgll(j)*jacLoc ! Notice how 1 is z and 2 is x.
+          wzlwxljacLoc(1)    = wzgll(j)*jacLoc ! Notice how 1 is z and 2 is x.
           wzlwxljacLoc(NDIM) = wxgll(i)*jacLoc
-          !write(*,*) wzljacLoc, wxljacLoc, "kek", wzlwxljacLoc, NDIM
           
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
             ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
@@ -178,168 +166,106 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             viscousComputation=.false. ! If viscosity is globally disabled, deactivate it for this element.
           endif
           
-          ! Inviscid stress tensor's contributions.
-          !   Mass conservation.
-          !tmp_unknown_x = in_dm(1,iglob)
-          !tmp_unknown_z = in_dm(NDIM,iglob)
-          !tmp_unknown=in_dm(:,iglob)
-          !cntrb_drho(i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-          !cntrb_drho(i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-          !cntrb_drho(i,j,1) = wzljacLoc*DOT_PRODUCT(xil, in_dm(:,iglob)) ! Contribution along xi.
-          !cntrb_drho(i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, in_dm(:,iglob)) ! Contribution along gamma.
-          !do SPCDM=1,NDIM
-          !  cntrb_drho(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob)) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
-          !enddo
-          !   x-Momentum.
-          !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob)
-          !tmp_unknown_z = cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)
-          !cntrb_rho0dv(1,i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-          !cntrb_rho0dv(1,i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-          tmp_unknown(1) = cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob)
-          tmp_unknown(NDIM) = cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)
-          !cntrb_rho0dv(1,i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-          !cntrb_rho0dv(1,i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
-          !do SPCDM=1,NDIM
-          !  cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
-          !enddo
-          !   Group mass conservation and x-Momentum for efficiency.
-          do SPCDM=1,NDIM
-            cntrb_drho(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob)) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
-            cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+          ! Note:
+          ! All contributions to dimension 'SPCDM' are built using the pattern:
+          !   wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), locSigma)
+          ! in order to store successively contributions to xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and to gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z).
+          
+          ! 1) Inviscid stress tensor's contributions.
+          ! 1.1-2) Group mass conservation and x-Momentum in loop for efficiency.
+          locSigma(1)    = cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob) ! x-Momentum \Sigma_1.
+          locSigma(NDIM) = cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob) ! x-Momentum \Sigma_2.
+          do SPCDM = 1, NDIM
+            cntrb_drho(i,j,SPCDM)     = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), in_dm(:,iglob))
+            cntrb_rho0dv(1,i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), locSigma)
           enddo
-          !   z-Momentum.
-          !tmp_unknown_x = cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)
-          !tmp_unknown_z = cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob)
-          !cntrb_rho0dv(NDIM,i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-          !cntrb_rho0dv(NDIM,i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-          tmp_unknown(1) = cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)
-          tmp_unknown(NDIM) = cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob)
-          !cntrb_rho0dv(NDIM,i,j,1) = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-          !cntrb_rho0dv(NDIM,i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
-          do SPCDM=1,NDIM
+          ! 1.2) z-Momentum.
+          locSigma(1)    = cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob)
+          locSigma(NDIM) = cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob)
+          do SPCDM = 1, NDIM
             cntrb_rho0dv(NDIM,i,j,SPCDM) =   wzlwxljacLoc(SPCDM)&
-                                           * DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+                                           * DOT_PRODUCT(xigammal(SPCDM,:), locSigma)
           enddo
           
-          ! Add viscous stress tensor's contributions.
+          ! 2) Add viscous stress tensor's contributions.
           if(viscousComputation) then
-            !   Mass conservation: no viscous contribution.
-            !   x-Momentum.
-            !tmp_unknown_x = -in_sigma_dv(1,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
-            !tmp_unknown_z = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
-            !cntrb_rho0dv(1,i,j,1) = cntrb_rho0dv(1,i,j,1) + wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-            !cntrb_rho0dv(1,i,j,2) = cntrb_rho0dv(1,i,j,2) + wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-            tmp_unknown(1) = -in_sigma_dv(1,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
-            tmp_unknown(NDIM) = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
-            !cntrb_rho0dv(1,i,j,1) = cntrb_rho0dv(1,i,j,1) + wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-            !cntrb_rho0dv(1,i,j,NDIM) = cntrb_rho0dv(1,i,j,2) + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
-            do SPCDM=1,NDIM
+            ! 2.1) Mass conservation: no viscous contribution.
+            ! 2.2) x-Momentum.
+            locSigma(1)    = -in_sigma_dv(1,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
+            locSigma(NDIM) = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
+            do SPCDM = 1, NDIM
               cntrb_rho0dv(1,i,j,SPCDM) =   cntrb_rho0dv(1,i,j,SPCDM) &
-                                          + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+                                          + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), locSigma)
             enddo
-            !   z-Momentum.
-            !tmp_unknown_x = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            !tmp_unknown_z = -in_sigma_dv(3,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            !cntrb_rho0dv(NDIM,i,j,1) =   cntrb_rho0dv(NDIM,i,j,1) &
-            !                               + wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-            !cntrb_rho0dv(NDIM,i,j,2) =   cntrb_rho0dv(NDIM,i,j,2) &
-            !                               + wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
-            tmp_unknown(1) = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            tmp_unknown(NDIM) = -in_sigma_dv(3,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            !cntrb_rho0dv(NDIM,i,j,1) =   cntrb_rho0dv(NDIM,i,j,1) &
-            !                               + wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-            !cntrb_rho0dv(NDIM,i,j,NDIM) =   cntrb_rho0dv(NDIM,i,j,2) &
-            !                               + wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
-            do SPCDM=1,NDIM
+            ! 2.2) z-Momentum.
+            locSigma(1)    = -in_sigma_dv(2,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
+            locSigma(NDIM) = -in_sigma_dv(3,iglob) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
+            do SPCDM = 1, NDIM
               cntrb_rho0dv(NDIM,i,j,SPCDM) =   cntrb_rho0dv(NDIM,i,j,SPCDM) &
-                                             + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+                                             + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), locSigma)
             enddo
           endif ! Endif on viscousComputation.
           
-          ! Special case: energy. Indeed, if they exist, viscous contributions can be grouped to inviscid ones.
-          !if(viscousComputation) then
-          !  tmp_unknown_x =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(1,iglob)) &
-          !                  + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
-          !                  - LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) &
-          !                  - LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) &
-          !                  + LNS_kappa(iglob)*in_nabla_dT(1,iglob)
-          !  tmp_unknown_z =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
-          !                  + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
-          !                  - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
-          !                  - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
-          !                  + LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
-          !else ! Else on viscousComputation.
-          !  tmp_unknown_x =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-          !                  + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob))
-          !  tmp_unknown_z =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-          !                  + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
-          !endif ! Endif on viscousComputation.
-          !cntrb_dE(i,j,1) = wzl * jacLoc * (xixl * tmp_unknown_x + xizl * tmp_unknown_z) ! Contribution along xi.
-          !cntrb_dE(i,j,2) = wxl * jacLoc * (gammaxl * tmp_unknown_x + gammazl * tmp_unknown_z) ! Contribution along gamma.
+          ! 3) Special case: energy.
+          ! Indeed, if they exist, viscous contributions can be grouped to inviscid ones.
           if(viscousComputation) then
-            tmp_unknown(1) =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(1,iglob)) &
-                             + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
-                             - LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) &
-                             - LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) &
-                             - LNS_kappa(iglob)*in_nabla_dT(1,iglob)
-            tmp_unknown(NDIM) =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
-                                + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
-                                - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
-                                - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
-                                - LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
+            locSigma(1) =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(1,iglob)) &
+                          + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(1,iglob)) &
+                          - LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) &
+                          - LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) &
+                          - LNS_kappa(iglob)*in_nabla_dT(1,iglob)
+            locSigma(NDIM) =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob) - sigma_v_0(3,iglob)) &
+                             + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob) - in_sigma_dv(3,iglob)) &
+                             - LNS_dv(1,iglob)*sigma_v_0(2,iglob) &
+                             - LNS_v0(1,iglob)*in_sigma_dv(2,iglob) &
+                             - LNS_kappa(iglob)*in_nabla_dT(NDIM,iglob)
           else ! Else on viscousComputation.
-            !tmp_unknown(1) =   LNS_dv(1,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-            !                 + LNS_v0(1,iglob)*(cv_dE(iglob) + in_dp(iglob))
-            !tmp_unknown(NDIM) =   LNS_dv(NDIM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-            !                    + LNS_v0(NDIM,iglob)*(cv_dE(iglob) + in_dp(iglob))
-            do SPCDM=1,NDIM
-              tmp_unknown(SPCDM) =   LNS_dv(SPCDM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-                                   + LNS_v0(SPCDM,iglob)*(cv_dE(iglob) + in_dp(iglob))
+            do SPCDM = 1, NDIM
+              locSigma(SPCDM) =   LNS_dv(SPCDM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
+                                + LNS_v0(SPCDM,iglob)*(cv_dE(iglob) + in_dp(iglob))
             enddo
           endif ! Endif on viscousComputation.
-          !cntrb_dE(i,j,1)    = wzljacLoc*DOT_PRODUCT(xil, tmp_unknown) ! Contribution along xi.
-          !cntrb_dE(i,j,NDIM) = wxljacLoc*DOT_PRODUCT(gammal, tmp_unknown) ! Contribution along gamma.
-          do SPCDM=1,NDIM
-            cntrb_dE(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), tmp_unknown) ! Contribution along xi.! Store successively xi (\partial_x\xi * \Sigma_x + \partial_z\xi * \Sigma_z) and gamma (\partial_x\gamma * \Sigma_x + \partial_z\gamma * \Sigma_z) contributions.
+          do SPCDM = 1, NDIM
+            cntrb_dE(i,j,SPCDM) = wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), locSigma)
           enddo
           
-          ! Zero-th degree contributions.
+          ! 4) Zero-th degree contributions.
+          !locG(1) = potential_dphi_dx_DG(ibool(i,j,ispec)); ! TODO: something more general than this hack
+          !locG(1) = ZEROcr; ! TODO: something more general than this hack
+          !locG(NDIM) = - LNS_g(iglob)
           ! Notice the "-" sign, needed to make sure these terms are added on the right "side" of the RHS.
-          ! > Mass conservation: none.
+          ! 4.1) Mass conservation: none.
           !d0cntrb_drho(i,j)     = ZERO
-          ! > Momenta.
-          !   Version 1: most general.
-          !d0cntrb_rho0dv(1,i,j) = - (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
-          !                           + in_dm(1,iglob)*nabla_v0(1,1,iglob) & ! {\delta_m}_x\partial_xv_{0,x}
-          !                           + in_dm(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,x}
-          !d0cntrb_rho0dv(NDIM,i,j) = - (  cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) & ! \rho'g_z
-          !                              + in_dm(1,iglob)*nabla_v0(NDIM,1,iglob) & ! {\delta_m}_x\partial_xv_{0,z}
-          !                              + in_dm(NDIM,iglob)*nabla_v0(NDIM,NDIM,iglob)) * jacLoc ! {\delta_m}_z\partial_zv_{0,z}
-          !   Version 2: under HV0 (v_{0,z}=0), and SM (d_xv_0=0), dm part of the zero-th degree RHS is simplified.
+          ! 4.2) Momenta.
+          ! 4.2.1) Version 1: most general.
+          !do SPCDM = 1, NDIM
+          !  d0cntrb_rho0dv(SPCDM,i,j) = - (   cv_drho(iglob)*locG(SPCDM) & ! \rho'g_i
+          !                                  - DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob))) ! {\delta_m}\cdot\nabla v_{0,i}
+          !enddo
+          ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
+          !do SPCDM = 1, NDIM
+          d0cntrb_rho0dv(1,i,j) = DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
+          d0cntrb_rho0dv(NDIM,i,j) =   cv_drho(iglob)*LNS_g(iglob) & ! \rho'g_i
+                                     + DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
+          !enddo
+          ! OLD4.2.2) Version 2: under HV0 (v_{0,z}=0), and SM (d_xv_0=0), dm part of the zero-th degree RHS is simplified.
           !d0cntrb_rho0dv(1,i,j) = - (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
           !                           + cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
           !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * jacLoc ! \rho'g_z
-          !   Version 3: under HV0 (v_{0,z}=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
+          ! OLD4.2.3) Version 3: under HV0 (v_{0,z}=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
           !d0cntrb_rho0dv(1,i,j) = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc ! \rho_0v'_z\partial_zv_{0,x}
           !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * jacLoc ! \rho'g_z
-          !   Version 4: under HV0 (v_{0,z}=0), SM (d_xv_0=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          d0cntrb_rho0dv(1,i,j) = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc !  \rho_0v'_z\partial_zv_{0,x}
-          d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * jacLoc ! -\rho'g_z, but LNS_g=9.81=-g_z
-          ! > Energy.
-          !d0cntrb_dE(i,j)       = - (  potential_dphi_dx_DG(ibool(i,j,ispec))*in_dm(1,iglob) &
-          !                           + potential_dphi_dz_DG(ibool(i,j,ispec))*in_dm(NDIM,iglob)) * jacLoc
-          !   Under potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          d0cntrb_dE(i,j)       = - LNS_g(iglob)*in_dm(NDIM,iglob) * jacLoc
+          ! OLD4.2.4) Version 4: under HV0 (v_{0,z}=0), SM (d_xv_0=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
+          !d0cntrb_rho0dv(1,i,j)    = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * jacLoc !  \rho_0v'_z\partial_zv_{0,x}
+          !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * jacLoc ! -\rho'g_z, but LNS_g=9.81=-g_z
+          d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) * jacLoc ! small optimisation
+          ! 4.3) Energy.
+          ! 4.2.1) Version 1: most general.
+          !d0cntrb_dE(i,j) = - DOT_PRODUCT(locG, in_dm(:,iglob)) * jacLoc
+          ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
+          d0cntrb_dE(i,j) = LNS_g(iglob)*in_dm(NDIM,iglob) * jacLoc
           
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
+          ! 5) Eventually, PML.
           if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
             ! Do two things here:
             ! 1) Add auxiliary variables to main RHS.
@@ -374,17 +300,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             xigammal(:, 1)    = LNS_PML_d(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by d_2.
             xigammal(:, NDIM) = LNS_PML_d(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by d_1.
             ! 1.2.3)
-            do SPCDM=1,NDIM ! rho'
+            do SPCDM = 1, NDIM ! rho'
               cntrb_drho(i,j,SPCDM) =   cntrb_drho(i,j,SPCDM) &
                                       + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(1,3:4,iglobPML))
             enddo
             do k = 1, NDIM ! rho0v'
-              do SPCDM=1,NDIM
+              do SPCDM = 1, NDIM
                 cntrb_rho0dv(k,i,j,SPCDM) =   cntrb_rho0dv(k,i,j,SPCDM) &
                                             + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(1+k,3:4,iglobPML))
               enddo
             enddo
-            do SPCDM=1,NDIM ! E'
+            do SPCDM = 1, NDIM ! E'
               cntrb_dE(i,j,SPCDM) =   cntrb_dE(i,j,SPCDM) &
                                     + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(2+NDIM,3:4,iglobPML))
             enddo
@@ -434,21 +360,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             call LNS_PML_buildRHS(2+NDIM, 6, iglobPML, pml_alp(2), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
             !endif
           else
-            d0cntrb_drho = ZEROcr ! Make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
+            d0cntrb_drho = ZEROcr ! Safeguard: make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
           endif ! Endif on PML_BOUNDARY_CONDITIONS.
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-          ! PML
-        enddo
-      enddo
+        enddo ! Enddo on i.
+      enddo ! Enddo on j.
       
       ! Assemble the contributions previously computed, and add gravity's contribution.
       ! The integration by quadrature on the GLL points leads to three sums. See in particular Komatitsch (Méthodes spectrales et éléments spectraux pour l'équation de l'élastodynamique 2D et 3D en milieu hétérogène), Annexe 3.A.
@@ -459,28 +374,23 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             outrhs_drho(iglob) =   outrhs_drho(iglob) &
                                 + (  cntrb_drho(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                    + cntrb_drho(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-            do SPCDM=1,NDIM
+            do SPCDM = 1, NDIM
               outrhs_rho0dv(SPCDM,iglob) =   outrhs_rho0dv(SPCDM,iglob) &
                                           + (  cntrb_rho0dv(SPCDM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                              + cntrb_rho0dv(SPCDM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             enddo
-            !outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
-            !                      + (  cntrb_rho0dv(NDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
-            !                         + cntrb_rho0dv(NDIM,i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
             outrhs_dE(iglob) =   outrhs_dE(iglob) &
                               + (  cntrb_dE(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) &
                                  + cntrb_dE(i,k,2) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
           enddo ! Enddo on k.
           
-          !wzl = real(wzgll(j), kind=CUSTOM_REAL)
-          !wxl = real(wxgll(i), kind=CUSTOM_REAL)
-          wxlwzl= real(wxgll(i)*wzgll(j), kind=CUSTOM_REAL)
+          wxlwzl = real(wxgll(i)*wzgll(j), kind=CUSTOM_REAL)
           
           ! Add zero-th order terms.
-          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! TODO: a better condition.
+          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! Degree 0 contribution to rho' only exists if there are PMLs. TODO: a better condition.
             outrhs_drho(iglob) = outrhs_drho(iglob) + d0cntrb_drho(i,j) * wxlwzl
           endif
-          do SPCDM=1,NDIM
+          do SPCDM = 1, NDIM
             outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxlwzl
           enddo
           outrhs_dE(iglob) = outrhs_dE(iglob) + d0cntrb_dE(i,j) * wxlwzl
@@ -498,13 +408,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
       !else
       do  iface = 1, 4
        do  iface1 = 1, NGLLX
-          i = link_iface_ijispec(iface1,iface,ispec,1)
-          j = link_iface_ijispec(iface1,iface,ispec,2)
-          
-          ! Step 1: prepare the normals' parameters (n_out(1), n_out(NDIM), weight, etc.).
-          ! Interior point
-          iglobM = ibool_DG(i,j,ispec)
-          
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
             ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
             if(     LNS_mu(iglob) > TINYVAL &
@@ -518,49 +421,30 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             viscousComputation=.false. ! If viscosity is globally disabled, deactivate it for this element.
           endif
           
-          ! TEST WITH IFACE FORMULATION
+          i = link_iface_ijispec(iface1,iface,ispec,1)
+          j = link_iface_ijispec(iface1,iface,ispec,2)
+          
+          ! Step 1: prepare the normals' parameters (n_out(1), n_out(NDIM), weight, etc.).
+          ! Interior point
+          iglobM = ibool_DG(i,j,ispec)
           n_out(1)    = nx_iface(iface, ispec)
           n_out(NDIM) = nz_iface(iface, ispec)
-          !weight = weight_iface(iface1,iface, ispec)
           halfWeight = weight_iface(iface1,iface, ispec)*HALFcr
           neighbor = -1
           if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
             iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
             iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
             ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
-            !neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
-            !neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
             neighbor(1:2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1:2)
             neighbor(3) = ispec_neighbor
           endif
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes.
-          !drho_P     = ZERO
-          !rho0dv_P   = ZERO
-          !dE_P       = ZERO
-          !veloc_x_DG_P = ZERO
-          !veloc_z_DG_P = ZERO
-          !in_dp_P       = ZERO
-          
           iglobP = 1
           if(neighbor(1) > -1) then
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           endif
-          
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
-          !call compute_interface_unknowns(i,j,ispec, drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, veloc_x_DG_P, veloc_z_DG_P, in_dp_P, T_P, &
-          !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
-          !        neighbor, &
-          !        exact_interface_flux, &
-          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(NDIM,iglobM), &
-          !        V_DG(:,:,iglobM), T_DG(:,iglobM), &
-          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(NDIM,iglobP), &
-          !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
-          !        nx, nz, weight, currentTime, iface1, iface)
-          !        !TEST STRETCH
-          !        !nx_unit, nz_unit, weight, currentTime, iface1, iface)
-          
           call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, currentTime, & ! Point identifier (input).
                   cv_drho(iglobM), cv_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
                   cv_drho(iglobP), cv_rho0dv(:,iglobP), cv_dE(iglobP), & ! Input constitutive variables, "P" side. Note they make no sense if neighbor(1)<=-1.
@@ -575,159 +459,84 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                   viscousComputation, nabla_dT_P, sigma_dv_P, & ! Output other variables: viscous.
                   .false., LNS_dummy_1d(1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
           
+          jump   = ZERO ! Safeguard.
+          
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
-          jump   = ZERO
-          ! Save some allocations.
-          !lambda = max(  abs(  dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM)) & ! v_-\cdot n
-          !                   + sqrt(abs(  gammaext_DG(iglobM) &
-          !                              * (LNS_p0(iglobM)+in_dp(iglobM)) &
-          !                              / (LNS_rho0(iglobM)+cv_drho(iglobM)))) & ! Local sound speed.
-          !                  ) & ! Local sound speed, side "M".
-          !             , abs(  dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP)) & ! v_+\cdot n
-          !                   + sqrt(abs(  gammaext_DG(iglobP) &
-          !                              * (LNS_p0(iglobP)+dp_P) &
-          !                              / (LNS_rho0(iglobP)+drho_P))) & ! Local sound speed.
-          !                  ) & ! Local sound speed, side "P".
-          !             )
-          ! REMOVE ABS INSIDE SQRT AND MOVE ABS TO V.N ONLY
-          !lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))) & ! v_-\cdot n
-          !             + sqrt(  gammaext_DG(iglobM) &
-          !                    * (LNS_p0(iglobM)+in_dp(iglobM)) &
-          !                    / (LNS_rho0(iglobM)+cv_drho(iglobM))) & ! Local sound speed, side "M".
-          !             , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) & ! v_+\cdot n
-          !             + sqrt(  gammaext_DG(iglobP) &
-          !                    * (LNS_p0(iglobP)+dp_P) &
-          !                    / (LNS_rho0(iglobP)+drho_P)) & ! Local sound speed, side "P".
-          !             )
-          ! REMOVE CONTRIBUTIONS FROM PERTURBATIONS.
-          !lambda = max(  abs(  dot_product(n_out, LNS_v0(:,iglobM)) & ! v_-\cdot n
-          !                   + sqrt(  gammaext_DG(iglobM) &
-          !                          * LNS_p0(iglobM) &
-          !                          / LNS_rho0(iglobM)) & ! Local sound speed.
-          !                  ) & ! Local sound speed, side "M".
-          !             , abs(  dot_product(n_out, LNS_v0(:,iglobP)) & ! v_-\cdot n
-          !                   + sqrt(  gammaext_DG(iglobP) &
-          !                          * LNS_p0(iglobP) &
-          !                          / LNS_rho0(iglobP)) & ! Local sound speed.
-          !                  ) & ! Local sound speed, side "P".
-          !             )
-          ! REMOVE ABS INSIDE SQRT AND MOVE ABS TO V.N ONLY AND REMOVE CONTRIBUTIONS FROM PERTURBATIONS.
-          !lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
-          !             + sqrt(  gammaext_DG(iglobM) &
-          !                    * LNS_p0(iglobM) &
-          !                    / LNS_rho0(iglobM)) & ! Local sound speed, side "M".
-          !             , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
-          !             + sqrt(  gammaext_DG(iglobP) &
-          !                    * LNS_p0(iglobP) &
-          !                    / LNS_rho0(iglobP)) & ! Local sound speed, side "P".
-          !             )
-          ! TEST GLOBALISED C0
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
                        + LNS_c0(iglobM) & ! Local sound speed, side "M".
                        , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
                        + LNS_c0(iglobP) & ! Local sound speed, side "P".
                        )
-          !lambda=.0*lambda ! TEEEEEEEEEEEEEEEEEEST
-          !if(lambda>400.) then
-          !  !       abs(coord(2,ibool_before_perio(i,j,ispec)))<=2. & ! DEBUG
-          !  ! .and. abs(coord(1,ibool_before_perio(i,j,ispec))-25.)<=3.) then ! DEBUG
-          !  write(*,*) coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
-          !             'l', lambda, & ! DEBUG
-          !             'n', n_out
-          !             !'v+.n', dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP)), &
-          !             !'v-.n', dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-          !             !sqrt(abs(  gammaext_DG(iglobM) &
-          !             !         * (LNS_p0(iglobM)+in_dp(iglobM)) &
-          !             !         / (LNS_rho0(iglobM)+cv_drho(iglobM)))), & ! DEBUG
-          !             !sqrt(abs(  gammaext_DG(iglobP) &
-          !             !         * (LNS_p0(iglobP)+dp_P) &
-          !             !         / (LNS_rho0(iglobP)+drho_P)))
-          !endif ! DEBUG
-          !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
-          !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
-          !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
-          !  write(*,*) currentTime, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
-          !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
-          !             !out_rho0dv_P ! DEBUG
-          !             !out_dv_P ! DEBUG
-          !             !trans_boundary ! DEBUG
-          !             lambda
-          !endif ! DEBUG
           
-          ! Mass conservation (fully inviscid).
-          !flux_n = (in_dm(1,iglobM)+dm_P(1))*n_out(1) + (in_dm(NDIM,iglobM)+dm_P(NDIM))*n_out(NDIM)
-          flux_n = DOT_PRODUCT(n_out, in_dm(:,iglobM)+dm_P)
+          ! 1) Inviscid contributions.
+          ! 1.1) Mass conservation (fully inviscid).
+          !flux_n = DOT_PRODUCT(n_out, in_dm(:,iglobM)+dm_P)
           if(exact_interface_flux) then
             jump = ZERO
           else
             jump = cv_drho(iglobM) - drho_P
           endif
-          outrhs_drho(iglobM) = outrhs_drho(iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          ! x-Momentum inviscid contributions.
-          tmp_unknown(1) =   cv_rho0dv(1,iglobM)*LNS_v0(1,iglobM) + in_dp(iglobM) & ! "M" side.
+          !outrhs_drho(iglobM) = outrhs_drho(iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_drho(iglobM) =   outrhs_drho(iglobM) &
+                                - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglobM)+dm_P) + lambda*jump)
+          ! 1.2) x-Momentum inviscid contributions.
+          locSigma(1)    =   cv_rho0dv(1,iglobM)*LNS_v0(1,iglobM) + in_dp(iglobM) & ! "M" side.
                            + rho0dv_P(1)*LNS_v0(1,iglobP) + dp_P ! "P" side.
-          tmp_unknown(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(1,iglobM) & ! "M" side.
-                              + rho0dv_P(NDIM)*LNS_v0(1,iglobP) ! "P" side.
-          flux_n = DOT_PRODUCT(n_out, tmp_unknown)
+          locSigma(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(1,iglobM) & ! "M" side.
+                           + rho0dv_P(NDIM)*LNS_v0(1,iglobP) ! "P" side.
+          !flux_n = DOT_PRODUCT(n_out, locSigma)
           if(exact_interface_flux) then
             jump = ZERO
           else
             jump = cv_rho0dv(1,iglobM) - rho0dv_P(1)
           endif
-          outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          ! z-Momentum inviscid contributions.
-          tmp_unknown(1) =   cv_rho0dv(1,iglobM)*LNS_v0(NDIM,iglobM) & ! "M" side.
+          !outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_rho0dv(1,iglobM) =   outrhs_rho0dv(1,iglobM) &
+                                    - halfWeight*(DOT_PRODUCT(n_out, locSigma) + lambda*jump)
+          ! 1.2) z-Momentum inviscid contributions.
+          locSigma(1)    =   cv_rho0dv(1,iglobM)*LNS_v0(NDIM,iglobM) & ! "M" side.
                            + rho0dv_P(1)*LNS_v0(NDIM,iglobP) ! "P" side.
-          tmp_unknown(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(NDIM,iglobM) + in_dp(iglobM) & ! "M" side.
-                              + rho0dv_P(NDIM)*LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
-          flux_n = DOT_PRODUCT(n_out, tmp_unknown)
+          locSigma(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(NDIM,iglobM) + in_dp(iglobM) & ! "M" side.
+                           + rho0dv_P(NDIM)*LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
+          !flux_n = DOT_PRODUCT(n_out, locSigma)
           if(exact_interface_flux) then
             jump = ZERO
           else
             jump = cv_rho0dv(NDIM,iglobM) - rho0dv_P(NDIM)
           endif
-          outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          ! Energy inviscid contributions.
-          !tmp_unknown(1) =   LNS_dv(1,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
-          !                 + LNS_v0(1,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
-          !                 + dv_P(1)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
-          !                 + LNS_v0(1,iglobP)*(dE_P + dp_P) ! "P" side, part.
-          !tmp_unknown(NDIM) =   LNS_dv(NDIM,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
-          !                    + LNS_v0(NDIM,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
-          !                    + dv_P(NDIM)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
-          !                    + LNS_v0(NDIM,iglobP)*(dE_P + dp_P) ! "P" side, part.
-          !do SPCDM=1,NDIM
-          !  tmp_unknown(SPCDM) =   LNS_dv(SPCDM,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
-          !                       + LNS_v0(SPCDM,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
-          !                       + dv_P(SPCDM)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
-          !                       + LNS_v0(SPCDM,iglobP)*(dE_P + dp_P) ! "P" side, part.
-          !enddo
-          tmp_unknown =   LNS_dv(:,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
-                        + LNS_v0(:,iglobM)*(cv_dE(iglobM) + in_dp(iglobM)) & ! "M" side, part.
-                        + dv_P(:)*(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
-                        + LNS_v0(:,iglobP)*(dE_P + dp_P) ! "P" side, part.
-          flux_n = DOT_PRODUCT(n_out, tmp_unknown)
+          !outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_rho0dv(NDIM,iglobM) =   outrhs_rho0dv(NDIM,iglobM) &
+                                       - halfWeight*(DOT_PRODUCT(n_out, locSigma) + lambda*jump)
+          ! 1.3) Energy inviscid contributions.
+          locSigma =   LNS_dv(:,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
+                     + LNS_v0(:,iglobM)*(cv_dE(iglobM)  + in_dp(iglobM)) & ! "M" side, part.
+                     + dv_P(:)         *(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
+                     + LNS_v0(:,iglobP)*(dE_P           + dp_P) ! "P" side, part.
+          !flux_n = DOT_PRODUCT(n_out, locSigma)
           if(exact_interface_flux) then
             jump = ZERO
           else
             jump = cv_dE(iglobM) - dE_P
           endif
-          outrhs_dE(iglobM) = outrhs_dE(iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          !outrhs_dE(iglobM) = outrhs_dE(iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_dE(iglobM) =   outrhs_dE(iglobM) &
+                              - halfWeight*(DOT_PRODUCT(n_out, locSigma) + lambda*jump)
           
-          ! Viscous stress tensor's contributions.
+          ! 2) Viscous contributions.
           if(viscousComputation) then
             ! Note: since we consider here viscous terms, that is purely diffusive phenomena, the acoustic wave speed makes no sense, and thus the jump in the Lax-Friedrich approximation does not appear in the formulations.
-            ! x-Momentum viscous contributions. The vector [tmp_unknown_x, tmp_unknown_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
-            tmp_unknown(1)    = -in_sigma_dv(1,iglob) -sigma_dv_P(1) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
-            tmp_unknown(NDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
-            outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*DOT_PRODUCT(n_out, tmp_unknown) ! Add flux' contribution, with dot product \Sigma\cdot n.
-            ! z-Momentum viscous contributions. The vector [tmp_unknown_x, tmp_unknown_z] represents the mean average flux at the boundary of the z-momentum (based on the 2nd line of \Sigma_v).
-            tmp_unknown(1)    = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            tmp_unknown(NDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*DOT_PRODUCT(n_out, tmp_unknown) ! Add flux' contribution, with dot product \Sigma\cdot n.
-            ! Energy viscous contributions.
-            tmp_unknown(1) = - (  LNS_dv(1,iglobM)*sigma_v_0(1,iglobM) & ! "M" side, part.
+            ! 2.1) Mass conservation: nothing.
+            ! 2.2) x-Momentum viscous contributions. The vector [locSigma_x, locSigma_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
+            locSigma(1)    = -in_sigma_dv(1,iglob) -sigma_dv_P(1) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
+            locSigma(NDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
+            outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*DOT_PRODUCT(n_out, locSigma) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            ! 2.2) z-Momentum viscous contributions. The vector [locSigma_x, locSigma_z] represents the mean average flux at the boundary of the z-momentum (based on the 2nd line of \Sigma_v).
+            locSigma(1)    = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
+            locSigma(NDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
+            outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*DOT_PRODUCT(n_out, locSigma) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            ! 2.3) Energy viscous contributions.
+            locSigma(1)    = - (  LNS_dv(1,iglobM)*sigma_v_0(1,iglobM) & ! "M" side, part.
                                 + LNS_v0(1,iglobM)*in_sigma_dv(1,iglobM) & ! "M" side, part.
                                 + LNS_dv(NDIM,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
                                 + LNS_v0(NDIM,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
@@ -737,21 +546,20 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                 + dv_P(NDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
                                 + LNS_v0(NDIM,iglobP)*sigma_dv_P(2) & ! "P" side, part.
                                 + LNS_kappa(iglobP)*nabla_dT_P(1)) ! "P" side, part.
-            tmp_unknown(NDIM) = - (  LNS_dv(NDIM,iglobM)*sigma_v_0(3,iglobM) & ! "M" side, part.
-                                   + LNS_v0(NDIM,iglobM)*in_sigma_dv(3,iglobM) & ! "M" side, part.
-                                   + LNS_dv(1,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
-                                   + LNS_v0(1,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
-                                   + LNS_kappa(iglobM)*in_nabla_dT(2,iglobM)) & ! "M" side, part.
-                                - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
-                                   + LNS_v0(NDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
-                                   + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
-                                   + LNS_v0(1,iglobP)*sigma_dv_P(2) & ! "P" side, part.
-                                   + LNS_kappa(iglobP)*nabla_dT_P(NDIM)) ! "P" side, part.
-            outrhs_dE(iglobM) = outrhs_dE(iglobM) + halfWeight*DOT_PRODUCT(n_out, tmp_unknown)
+            locSigma(NDIM) = - (  LNS_dv(NDIM,iglobM)*sigma_v_0(3,iglobM) & ! "M" side, part.
+                                + LNS_v0(NDIM,iglobM)*in_sigma_dv(3,iglobM) & ! "M" side, part.
+                                + LNS_dv(1,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
+                                + LNS_v0(1,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
+                                + LNS_kappa(iglobM)*in_nabla_dT(2,iglobM)) & ! "M" side, part.
+                             - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
+                                + LNS_v0(NDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
+                                + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
+                                + LNS_v0(1,iglobP)*sigma_dv_P(2) & ! "P" side, part.
+                                + LNS_kappa(iglobP)*nabla_dT_P(NDIM)) ! "P" side, part.
+            outrhs_dE(iglobM) = outrhs_dE(iglobM) + halfWeight*DOT_PRODUCT(n_out, locSigma)
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
-      !endif
     endif ! End of test if acoustic element
   enddo ! End of loop on elements.
   
@@ -972,7 +780,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         normal_v     = DOT_PRODUCT(n_out, veloc_P)
         tangential_v = DOT_PRODUCT(tang, veloc_P)
         
-        do SPCDM=1,NDIM
+        do SPCDM = 1, NDIM
           velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
           !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
           !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
@@ -985,7 +793,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
         !out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 )
         ! Set out_rho0dv_P.
-        do SPCDM=1,NDIM
+        do SPCDM = 1, NDIM
           out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
         enddo
         !out_rho0dv_P=out_drho_P*out_dv_P
@@ -1091,7 +899,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       normal_v     = DOT_PRODUCT(n_out, veloc_elastic(:,ibool(i_el, j_el, ispec_el)))
       !tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(NDIM)
       tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-      do SPCDM=1,NDIM
+      do SPCDM = 1, NDIM
         velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
       enddo
       
@@ -1105,7 +913,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
 
       ! Set out_rho0dv_P.
-      !do SPCDM=1,NDIM
+      !do SPCDM = 1, NDIM
       !  out_rho0dv_P(SPCDM) = LNS_rho0(iglobM)*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
       !enddo
       out_rho0dv_P(:)=LNS_rho0(iglobM)*out_dv_P(:)
@@ -1187,7 +995,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
         !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
         ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
-        do SPCDM=1,NDIM
+        do SPCDM = 1, NDIM
           velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
         enddo
         ! Set out_dv_P.
@@ -1195,7 +1003,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Set out_dE_P.
         call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
         ! Set out_rho0dv_P.
-        do SPCDM=1,NDIM
+        do SPCDM = 1, NDIM
           out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
         enddo
         ! Set out_dm_P: see bottom of routine.
@@ -1277,7 +1085,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     !trans_boundary(2, 2) =  n_out(1) ! Recall: n_out(1)=n_x.
     !trans_boundary = trans_boundary/(n_out(1) * tang(NDIM) - tang(1) * n_out(NDIM))
     ! Set velocity_P: free slip and normal velocity continuity.
-    do SPCDM=1,NDIM
+    do SPCDM = 1, NDIM
       velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
       !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
       !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
@@ -1290,7 +1098,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
     !out_dE_P = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) ! Warning, expression of out_dp_P might not be exact.
     ! Set out_rho0dv_P.
-    do SPCDM=1,NDIM
+    do SPCDM = 1, NDIM
       out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
     enddo
     !out_rho0dv_P=out_drho_P*out_dv_P
@@ -1441,7 +1249,7 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
               
               d_drho(iglob) = d_drho(iglob) + temp_sourcewxlwzljacobianl
               
-              do SPCDM=1,NDIM
+              do SPCDM = 1, NDIM
                 d_rho0dv(SPCDM, iglob) = d_rho0dv(SPCDM, iglob) + LNS_dv(SPCDM, iglob) * temp_sourcewxlwzljacobianl
               enddo
               

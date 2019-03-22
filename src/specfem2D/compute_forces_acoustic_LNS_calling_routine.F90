@@ -132,29 +132,21 @@ subroutine compute_forces_acoustic_LNS_main()
   endif
   
   ! Precompute momentum perturbation and velocity perturbation.
-  LNS_dv=ZEROcr
-  do i_aux=1,NDIM
-    LNS_dm(i_aux,:) = LNS_rho0dv(i_aux,:)+LNS_drho*LNS_v0(i_aux,:)
+  LNS_dv = ZEROcr
+  do i_aux = 1, NDIM
+    LNS_dm(i_aux,:) = LNS_rho0dv(i_aux,:) + LNS_drho*LNS_v0(i_aux,:)
     where(LNS_rho0/=ZEROcr) LNS_dv(i_aux,:) = LNS_rho0dv(i_aux,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
   
   ! Recompute temperature and pressure perturbation.
   call compute_dp(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dp)
-  !call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
   call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
   
-  !write(*,*)it, i_stage, "rho0", LNS_rho0(1), "E0", LNS_E0(1), "T0", LNS_T0(1), "p0", LNS_p0(1), &
-  !             "gamma", gammaext_DG(1), "c_V", c_V, &
-  !             "dp", LNS_dp(1)! DEBUG
-  !stop
-  
-  ! Precompute gradients.
-  if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+  ! Precompute gradients, only if viscosity exists whatsoever.
+  if(LNS_viscous) then
     call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal) ! Note: we compute nabla_dv only if viscosity is activated.
-    ! Precompute \Sigma_v'.
-    !write(*,*) "computing sigma_dv"
+    ! Precompute \Sigma_v' from \nabla(v').
     call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
-    !write(*,*) "computing sigma_dv", maxval(sigma_dv), maxval(nabla_dv)
   endif
 
 #ifdef USE_MPI
@@ -448,10 +440,8 @@ subroutine initial_state_LNS()
      .OR. maxval(LNS_eta) > TINYVAL &
      .OR. maxval(LNS_kappa) > TINYVAL) then
     LNS_viscous=.true.
-    !write(*,*) "LNS: min(mu,eta,kappa)>0, computation will be viscous."
   else
     LNS_viscous=.false.
-    !write(*,*) "LNS: max(mu,eta,kappa)=0, computation will be inviscid."
     deallocate(LNS_mu, LNS_eta, LNS_kappa) ! Ambitious deallocate to free memory in the inviscid case.
 #ifdef USE_MPI
     if(NPROC > 1) then

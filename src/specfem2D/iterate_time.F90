@@ -94,9 +94,9 @@ subroutine iterate_time()
         if(USE_LNS) then
           write(IMAIN,*) "     |-> using LNS."
           if(LNS_viscous) then
-            write(*,*) "         |-> LNS: min(mu,eta,kappa)>0, computation will be viscous."
+            write(*,*) "         |-> LNS: min(mu,eta,kappa)>0, computation will be viscous (solving Linearised Navier-Stokes)."
           else
-            write(*,*) "         |-> LNS: max(mu,eta,kappa)=0, computation will be inviscid."
+            write(*,*) "         |-> LNS: max(mu,eta,kappa)=0, computation will be inviscid (solving Linearised Euler)."
           endif
           if(PML_BOUNDARY_CONDITIONS) then
             write(*,*) "         |-> LNS: using PML boundary conditions."
