@@ -3,19 +3,19 @@
 % Notes:         TODO.
 %
 % Usage:
-%   TODO.
+%   [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, unknown, extension, subsample, wanted_dt, stationLocalNumber)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
-function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationNumber, unknown, extension, subsample, wanted_dt, istat)
+function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, unknown, extension, subsample, wanted_dt, stationLocalNumber)
   if(not(exist('subsample'))); subsample=0; end;
   if(not(exist('wanted_dt'))); wanted_dt=-1; end;
-  if(not(exist('istat'))); istat=1; end;
+  if(not(exist('istat'))); stationLocalNumber=1; end;
   % Read the synthetic.
 %   stattag = stations_data.textdata(istat_glob, 1);
-  stattag = sprintf('S%04d', stationNumber);
+  stattag = sprintf('S%04d', stationGlobalNumber);
   OFd = char(OFd); unknown = char(unknown); extension = char(extension); % safety.
   file = [OFd, 'AA.', stattag, '.', unknown, '.', extension];
 %   data = load(file{1});
@@ -26,11 +26,11 @@ function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationNumber, unknown
     % Sub-sample of records.
     nsub = floor(wanted_dt/meanactualdt);
     nd = max(size(data(1:nsub:nt, 1)));
-    if(istat == 1)
+    if(stationLocalNumber == 1)
       disp(['[',mfilename,'] Subsampled synthetics by a factor ',num2str(nsub),'.']);
     end
   elseif (subsample == 1 && wanted_dt<meanactualdt)
-    if(istat == 1)
+    if(stationLocalNumber == 1)
       disp(['[',mfilename,'] Subsampled dt is smaller than actual dt, discarding subsampling.']);
     end
     nsub = 1;

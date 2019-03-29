@@ -12,12 +12,16 @@
 clear all;
 close all;
 clc;
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run-specific.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+simulationfolder = input(['[',mfilename,'] Path to simulation folder > '],'s');
+if(not(simulationfolder(end)==filesep)); simulationfolder=[simulationfolder,filesep]; end;
+
 % [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight([0,500]);
-[xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight([0,12e3]);
+[xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt(simulationfolder);
 % [xminmax, zminmax, interface, Xsource, debfin, d, name] = tir_de_mine();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,56 +102,40 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run configurations.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight(Xsource)
-%   Xsource = [0, 40e3];
-%   Xsource = [0, 500];
-%   xminmax = [-80, 80]*1e3;
-  xminmax = [-160, 40]*1e3;
-%   zminmax = [-5, 60]*1e3;
-  zminmax = [-5, 30]*1e3;
-  thickabstop = 0;
-  spacingstations = 4e3;
-%   verticalaway_x = 32e3;
+function [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt(simulationfolder)
+  parfile        = [simulationfolder, 'parfile_input'];
+  sourcefile     = [simulationfolder, 'source_input'];
+  interfacesfile = [simulationfolder, 'interfaces_input'];
+  xminmax = [extractParamFromInputFile(parfile, 'xmin', 'float'), extractParamFromInputFile(parfile, 'xmax', 'float')];
+  Xsource = [extractParamFromInputFile(sourcefile, 'xs', 'float'), extractParamFromInputFile(sourcefile, 'zs', 'float')];
+  [zmin, zmax] = extractZminZmaxFromInterfacesFile(interfacesfile);
+  zminmax = [zmin,zmax];
+  spacingstations = 150;
+  spacingstationsok=-1;
+  while(not(ismember(spacingstationsok,[0,1])))
+    spacingstationsok=input(['[', mfilename, '] Stations planned to be spaced by ',num2str(spacingstations),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  end
+  if(spacingstationsok==0)
+    error(['[',mfilename,', ERROR] Stations'' spacing was not ok, re-chose parametrisation in script.']);
+  end
+  
   interface = [-1e9, 1e9;0, 0];
-  ground_clearance = 5; % altitude/depth of the ground stations.
+  ground_clearance = 35; % altitude/depth of the ground stations.
+  disp(['[', mfilename, '] Ground clearance (above and below) planned to be ',num2str(spacingstations),' [m].']);
   shift_for_tiltcomputation = 5; % horizontal shift for stations used for tilt computation
+  disp(['[', mfilename, '] Horizontal shift for tilt computation planned to be ',num2str(shift_for_tiltcomputation),' [m].']);
 
   lid = 0;
   
-  lid = lid+1;
+  lid = lid+1; idhoriz = lid;
   d(lid) = 0;
-  debfin(lid, 1, :) = [Xsource(1), Xsource(1)]; % xdeb xfin
-  debfin(lid, 2, :) = [Xsource(2), Xsource(2)]; % zdeb zfin
+  debfin(lid, 1, :) = Xsource(1)*[1, 1]; % xdeb xfin
+  debfin(lid, 2, :) = Xsource(2)*[1, 1]; % zdeb zfin
   name{lid} = ['source'];
-  lid = lid+1;
-%   d(lid) = spacingstations;
-  d(lid) = 2*spacingstations;
-  debfin(lid, 1, :) = [Xsource(1), Xsource(1)]; % xdeb xfin
-  debfin(lid, 2, :) = [Xsource(2)+d(lid), max(zminmax)-thickabstop-d(lid)]; % zdeb zfin
-  name{lid} = ['above source'];
   
-%   lid = lid+1;
-%   d(lid) = spacingstations;
-%   debfin(lid, 1, :) = [Xsource(1), Xsource(1)]; % xdeb xfin
-%   debfin(lid, 2, :) = [d(lid), Xsource(2)]; % zdeb zfin
-%   name{lid} = ['vertical under source'];
-% 
-%   lid = lid+1;
-%   d(lid) = spacingstations;
-%   debfin(lid, 1, :) = [Xsource(1)-verticalaway_x, Xsource(1)-verticalaway_x]; % xdeb xfin
-%   debfin(lid, 2, :) = [d(lid), Xsource(2)]; % zdeb zfin
-%   name{lid} = ['vertical ', num2str(-verticalaway_x), ' m away from source'];
-% 
-%   lid = lid+1;
-%   d(lid) = spacingstations;
-%   debfin(lid, 1, :) = [Xsource(1)+verticalaway_x, Xsource(1)+verticalaway_x]; % xdeb xfin
-%   debfin(lid, 2, :) = [d(lid), Xsource(2)]; % zdeb zfin
-%   name{lid} = ['vertical ', num2str(verticalaway_x), ' m away from source'];
-
   lid = lid+1; idhoriz = lid;
   d(lid) = spacingstations;
   debfin(lid, 1, :) = [xminmax(1)+d(lid), xminmax(2)-d(lid)]; % xdeb xfin
-%   debfin(lid, 1, :) = [xminmax(1)+d(lid), xminmax(2)]; % xdeb xfin
   debfin(lid, 2, :) = [1, 1]*ground_clearance; % zdeb zfin
   name{lid} = ['horizontal over ground'];
   lid = lid+1; idhorizvz = lid;

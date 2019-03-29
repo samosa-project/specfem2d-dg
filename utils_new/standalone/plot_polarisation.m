@@ -35,6 +35,8 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   sig_x = reshape(sig_x,numel(sig_x),1);
   sig_y = reshape(sig_y,numel(sig_y),1);
   
+  overdrawcolor='k';
+  
   % Parameters for plotting and displaying.
   lw=1;
   format_eigenaxes_angle_console = '%5.1f';
@@ -47,8 +49,8 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   [th_eig,~] = cart2pol(eigvec(1,:),eigvec(2,:));
 %   line(1e9*[-evec1(1),evec1(1)],1e9*[-evec1(2),evec1(2)])
   factor=2*max(max(abs(sig_x)),max(abs(sig_y)));
-  i=1; eigVec1LineP=factor*eigvec(:,i)*[-1,1]; line(eigVec1LineP(1,:),eigVec1LineP(2,:),'color','w','linewidth',0.1*lw, 'linestyle', '-'); hold on;
-  i=2; eigVec2LineP=factor*eigvec(:,i)*[-1,1]; line(eigVec2LineP(1,:),eigVec2LineP(2,:),'color','w','linewidth',0.1*lw, 'linestyle', '-'); hold on;
+  i=1; eigVec1LineP=factor*eigvec(:,i)*[-1,1]; line(eigVec1LineP(1,:),eigVec1LineP(2,:),'color',overdrawcolor,'linewidth',0.1*lw, 'linestyle', '-'); hold on;
+  i=2; eigVec2LineP=factor*eigvec(:,i)*[-1,1]; line(eigVec2LineP(1,:),eigVec2LineP(2,:),'color',overdrawcolor,'linewidth',0.1*lw, 'linestyle', '-'); hold on;
   disp(['[',mfilename,'] Eigenaxes found to be ',sprintf(format_eigenaxes_angle_console,th_eig(1)*180/pi),'° and ',sprintf(format_eigenaxes_angle_console,th_eig(2)*180/pi),'° counterclockwise from positive-pointing abscissas.']);
   
   
@@ -80,8 +82,10 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   minmaxrenormed_roundedup(selnotenoughmargin) = minmaxrenormed_roundedup(selnotenoughmargin)+1; % up again if change was not enough
   minmax_nextint=sign(minmax).*minmaxrenormed_roundedup.*tenPow_x;
   axis(minmax_nextint);
-  set(gca,'Color','k');
-  set(gca,'GridColor','white');
+  if(overdrawcolor=='w')
+    set(gca,'Color','k');
+    set(gca,'GridColor','white');
+  end
   set(gca, 'TickLabelInterpreter', 'latex');
   set(gca,'TickDir','both');
   grid on;
@@ -107,10 +111,10 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   xl = ax.XLim;
   d = 0.9*min(diff(xl),diff(yl));
   hold on;
-  rectangle('Position',[mean(xl)-d/2, mean(yl)-d/2, d, d],'Curvature',[1,1],'edgecolor','w','linewidth',lw, 'linestyle', '--');
+  rectangle('Position',[mean(xl)-d/2, mean(yl)-d/2, d, d],'Curvature',[1,1],'edgecolor',overdrawcolor,'linewidth',lw, 'linestyle', '--');
   l = 0.075*diff(yl);
-  quiver(mean(xl)+d/2, mean(yl)-sign(gradtheta)*l/2, 0, sign(gradtheta)*l, 0,'color','w','linewidth',2*lw,'maxheadsize',50);
-  quiver(mean(xl)-d/2, mean(yl)+sign(gradtheta)*l/2, 0, -sign(gradtheta)*l, 0,'color','w','linewidth',2*lw,'maxheadsize',50);
+  quiver(mean(xl)+d/2, mean(yl)-sign(gradtheta)*l/2, 0, sign(gradtheta)*l, 0,'color',overdrawcolor,'linewidth',2*lw,'maxheadsize',50);
+  quiver(mean(xl)-d/2, mean(yl)+sign(gradtheta)*l/2, 0, -sign(gradtheta)*l, 0,'color',overdrawcolor,'linewidth',2*lw,'maxheadsize',50);
 
   % Add eigvector angles.
   ax=gca();
@@ -119,7 +123,7 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   shift=0.02*min(diff(xl),diff(yl));
   fs=ax.FontSize;
   txteigvec=['EigVecAng: (',sprintf(format_eigenaxes_angle_plot,th_eig(1)*180/pi),', ',sprintf(format_eigenaxes_angle_plot,th_eig(2)*180/pi),')$^\circ$'];
-  text(min(xl)+shift, min(yl)+shift, txteigvec, 'color', 'w', 'fontsize', 0.4*fs, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom');
+  text(min(xl)+shift, min(yl)+shift, txteigvec, 'color', overdrawcolor, 'fontsize', 0.4*fs, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom');
   
   % Eventually plot propagation direction arrow.
   if(not(strcmp(wavepropdirection,'none')))
@@ -136,8 +140,8 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
     end
     dp=P(:,2)-P(:,1);
     hold on;
-    quiver(P(1,1),P(2,1),dp(1),dp(2),0,'color','w','linewidth',2*lw,'maxheadsize',0.5);
+    quiver(P(1,1),P(2,1),dp(1),dp(2),0,'color',overdrawcolor,'linewidth',2*lw,'maxheadsize',0.5);
     fs=ax.FontSize;
-    text(mean(xl), P(2,1) + per*0.6, 'wave propagation direction', 'color', 'w', 'fontsize', 0.9*fs, 'HorizontalAlignment', 'center');
+    text(mean(xl), P(2,1) + per*0.6, 'wave propagation direction', 'color', overdrawcolor, 'fontsize', 0.9*fs, 'HorizontalAlignment', 'center');
   end
 end

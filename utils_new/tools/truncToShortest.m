@@ -3,7 +3,7 @@
 % Notes:         TODO.
 %
 % Usage:
-%   TODO.
+%   [Ztime, Zamp] = truncToShortest(raw_t, raw_s)
 % with:
 %   TODO.
 % yields:

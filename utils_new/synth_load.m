@@ -20,6 +20,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,15 +33,16 @@ plot_amplitude = 0; % Plot amplitude (0 for no, 1 for yes sorted by x, 2 for yes
 subsample = 0; wanted_dt = 1; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that final time sampling is as parametrised by wanted_dt.
 type_display = 2; % Quantity to display (should be the same as the seismotype variable in parfile). 1 = {displacement for non-DG, velocity for DG}. 2 = {velocity for non-DG, pressure perturbation [Pa] for DG}.
 % Unknown (for direct plots only). Note that for type_display == 2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.
-% unknown = 'BXX'; % _x.
-unknown = 'BXZ'; % _z.
+unknown = 'BXX'; % _x.
+% unknown = 'BXZ'; % _z.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-% fig_title = strcat('Mars Coupling');
+fig_title = strcat('Mars Coupling');
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
@@ -77,13 +79,17 @@ unknown = 'BXZ'; % _z.
 % rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
 % rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
+% PML.
+% fig_title = strcat('LNS PML');
+% rootd = strcat(SPCFMEXloc,'test_pml/'); OFd = strcat(rootd, 'OUTPUT_FILES_alright/');
+
 % Validation LNS.
-fig_title = strcat('Validation LNS');
+% fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh_wow/'); % without wind in the source term
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M.3_dx1gmsh_wow/'); % without wind in the source term
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh/'); % bad
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M.3_dx1gmsh/'); % bad
-rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_E_M0_dx1/');
+% rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_E_M0_dx1/');
 
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M = 0.3/');
@@ -147,7 +153,7 @@ rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 OFd = checkOFd(OFd); % Test if OUTPUT_FILES directory exists.
 pos_sources = loadSources(OFd); % Load sources' positions.
-[xstattab, ystattab, stations_data] = loadStations(rootd, OFd); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
+[xstattab, ystattab, stations_data] = loadStations(OFd); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
 % Compute distance to sources.
 dist_to_sources = zeros(size(xstattab, 1), size(pos_sources, 1));
 for n_source = 1:size(pos_sources, 1)
@@ -158,7 +164,7 @@ end
 % Ask for user input.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display stations' information.
-format shortG;
+format longg;
 if (convert_to_relative_coords == 1)
   disp(['[',mfilename,'] [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] for all stations (x relative to source, z relative to ground, d relative to source):']);
   %disp([(1:size(pos_stations, 1)); (pos_stations - [pos_sources(1, 1), pos_interface])'; dist_to_sources']);
@@ -166,7 +172,7 @@ if (convert_to_relative_coords == 1)
 else
   disp(['[',mfilename,'] [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] for all stations (absolute x and z, d relative to source):']);
 %   disp([(1:size(pos_stations, 1)); pos_stations'; dist_to_sources']);
-  disp([(1:size(xstattab, 1)); [xstattab, ystattab]'; dist_to_sources']);
+  disp([(1:size(xstattab, 1))', [xstattab, ystattab], dist_to_sources]);
 end
 format compact;
 
@@ -178,7 +184,7 @@ end
 % Ask for stations.
 istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']); istattab = reshape(istattab,[1,numel(istattab)]);
 disp(['[',mfilename,'] Loading [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] (absolute x and z, d relative to source):']);
-disp([istattab', xstattab(istattab), ystattab(istattab) ,dist_to_sources(istattab)]);
+disp([istattab', xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)]);
 nstat = numel(istattab);
 % Ask for geometric attenuation (relies on distance to source).
 geometric_attenuation = - 1;
@@ -221,11 +227,19 @@ for istat = 1:nstat
     [data_z] = readAndSubsampleSynth(OFd, istat_glob, 'BXZ', extension_z, subsample, wanted_dt, istat);
 %     sig_t_x = data_x(:, 1)'; sig_v_x = data_x(:, 2)';
     Ztime(istat, :) = data_z(:, 1)'; Zamp(istat,:) = data_z(:, 2)'; % useful to still load and save Z
+    Xtime(istat, :) = data_x(:, 1)'; Xamp(istat,:) = data_x(:, 2)'; % useful to still load and save X
     if(not(all(size(data_x(:, 2)') == size(Zamp(istat, :)))))
       error(['size mismatch']);
     end
     data_x(:, 2) = factor * data_x(:, 2); Zamp(istat, :) = factor * Zamp(istat, :); % Scale.
-    plot_polarisation(Ztime(istat, :), data_x(:, 2)', Zamp(istat, :), ['S',num2str(istat_glob),' Polarisation']);
+    Xlab='$v_x$';
+    Zlab='$v_z$';
+    plot_polarisation(Ztime(istat, :), Xamp(istat, :)', Zamp(istat, :), Xlab, Zlab, ['S',num2str(istat_glob),' Polarisation']);
+    
+    figure(); axx=[];
+    subplot(2,1,1); axx=[axx, gca()]; plot(Ztime(istat, :),Zamp(istat,:)); title(['S',num2str(istat_glob),' Time Series']); ylabel(Zlab);
+    subplot(2,1,2); axx=[axx, gca()];  plot(Xtime(istat, :),Xamp(istat,:)); ylabel(Xlab);
+    linkaxes(axx,'x'); xlabel('time [s]');
   
   else
     error(['[',mfilename,'] behaviour choice not implemented.']);
@@ -262,7 +276,7 @@ elseif (behaviour == 2) % Eventually, plot as time-distance.
     case 4
       distance = dist_to_sources; dist_symbol = "d"; dist_name = "distance";
   end
-  addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo');
+%   addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo'); % wtff?
   reducedtime = - 1;
   while (not(numel(reducedtime)==1 && reducedtime>=0))
     reducedtime = input(['[', mfilename, '] Reduced time? (0 for no, any other value for speed) > ']);

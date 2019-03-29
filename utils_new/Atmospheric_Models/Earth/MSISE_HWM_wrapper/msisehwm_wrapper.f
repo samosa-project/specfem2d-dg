@@ -75,9 +75,16 @@ C     ****************************************************************
       numargs = command_argument_count()
       if(numargs>0) then
         if(.not. numargs==13) then
+          write(*,*) ' '
           write(*,*) '13 and only 13 arguments should be given ',
-     &         '(ALTMIN ALTMAX NSAMPLES latmod lonmod year day SEC ',
+     &         '(ALTMIN ALTMAX NSAMPLES latitude longitude ',
+     &         'nYearsSince2000 nDaysSince1StOfJanuary ',
+     &         'nSecondsSinceMidnightUTC ',
      1         'F107A F107 AP filename wind_projection).'
+          write(*,*) ' '
+          write(*,*) 'F107A F107 AP may be left at their default',
+     &         ' values: 106.7161 131 37.'
+          write(*,*) ' '
           stop
         endif
         allocate(args(numargs))

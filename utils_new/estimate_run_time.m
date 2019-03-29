@@ -25,16 +25,34 @@ plotrateversion='FNS';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nstations   = 87;
-nstepseismo = 50;
 
-neltot      = 80518;
-neldg       = neltot;
-
-nstepsnap   = 5000;
-nsteptot    = 300000;
-
-nproc       = 1152;
+% Choices. %%%%%%%%%%%%%%%%%%%%
+nbeltsElastic = 6600;
+nproc         = 8*48;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Auto-read from parfile. %%%%%
+parfile = input(['[',mfilename,'] Path to simulation parfile > '],'s');
+nstations = sum(extractParamFromInputFile(parfile, 'nrec', 'float'));
+nstepseismo = extractParamFromInputFile(parfile, 'NSTEP_BETWEEN_OUTPUT_SEISMOS', 'float');
+extmesh=extractParamFromInputFile(parfile, 'read_external_mesh', 'bool');
+if(not(extmesh))
+  command = ['cat ',parfile,' | grep -oP " *1 +[0-9]+ +[0-9]+ +[0-9]+ | tail -1"'];
+  [~, r]=system(command);
+  r = str2num(r);
+  neltot    = r(end,end-2)*r(end,end);
+else
+  error('ENTER THE NUMBER OF POINTS OMEGALUL');
+  neltot    = 204980;
+end
+neldg       = neltot-nbeltsElastic;
+nstepsnap   = extractParamFromInputFile(parfile, 'NSTEP_BETWEEN_OUTPUT_IMAGES', 'float');
+nsteptot    = extractParamFromInputFile(parfile, 'NSTEP', 'float');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define by hand. %%%%%%%%%%%%%
+% nstations   = 857;
+% nstepseismo = 100;
+% nstepsnap   = 5000;
+% nsteptot    = 70000;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,79 +202,82 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   col_synthfreq=8;
   col_realtime=9;
   i=1;
-  RUN_RAWDATA(i,:)=[   2500    2500 0.404   2000    4   50   0   0     82]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   2500    2500 0.404   2000   16   50   0   0     24]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   2500    2500 0.404   2000  256   50   0   0     11]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404   4000    4   50   0   0    920]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404   4000   16   50   0   0    257]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404   4000  256   50   0   0     28]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000    4   50   0   0   8287]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000   16   50   0   0   2326]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000  256   50   0   0    157]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000  512   50   0   0    126]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000 1024   50   0   0    123]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 160000  160000 0.404  16000  256   50   0   0   1361]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 160000  160000 0.404  16000  512   50   0   0    828]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 160000  160000 0.404  16000 1024   50   0   0    576]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 640000  640000 0.404  32000  256   50   0   0  11963]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 640000  640000 0.404  32000  512   50   0   0   6945]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 640000  640000 0.404  32000 1024   50   0   0   4728]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2560000 2560000 0.404  64000  256    0   0   0  85460]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2560000 2560000 0.404  64000  512    0   0   0  41534]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2560000 2560000 0.404  64000 1024    0   0   0  18854]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2016000 1830000 0.471 120000  256  200 116  50 124902]; RUNINFO{i}={583041,'OKQ45 FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2016000 1830000 0.471 120000  256  200 116  50 123034]; RUNINFO{i}={586984,'OKQ0 FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  30000  256  500   0   0   2920]; RUNINFO{i}={593959,'SH soft final FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  30000  256  500   0   0   2980]; RUNINFO{i}={593960,'SH hard final FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2892000 2832000 0.376  27000  512  200   0   0  23240]; RUNINFO{i}={594536,'StratoExplo66June1200 - not finished FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  13060   13060 0.156  29400   16  200   0   0   5025]; RUNINFO{i}={595104,'StratoExplo66June1200 - test FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[2892000 2832000 0.376  40150  512  300   0   0  34470]; RUNINFO{i}={595500,'StratoExplo66June1200 - not finished FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[3142000 3082000 0.376 140100  560  300   0   0 110028]; RUNINFO{i}={597316,'StratoExplo66June1200 - til n=140100 FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  15750  256  500   2  50   1542]; RUNINFO{i}={610736,'SH soft final redone for data comparison FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  30000  256  500 102  50   3097]; RUNINFO{i}={616368,'SH soft final redone for data comparison FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  78000       0 0.443  30000  256  500 102  50    795]; RUNINFO{i}={623195,'SH soft final redone w/o fluid FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 748360  748360 0.345   8000   32  250 114  50  27994]; RUNINFO{i}={624650,'StratoBaro full with IBF FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 748360  748360 0.345   5750   64  250 114  50   9225]; RUNINFO{i}={637450,'StratoBaro re-run with EBF FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 748360  748360 0.345  16000   96  250 114  50  17354]; RUNINFO{i}={641616,'StratoBaro full with EBF FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 266162  266162 0.345  16000  128  250 114  50   5904]; RUNINFO{i}={656505,'microbaroms periodic with EBF FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 266162  266162 0.345  16000  256  250 114  50   4076]; RUNINFO{i}={655513,'microbaroms periodic with EBF FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500  80  50    757]; RUNINFO{i}={660223,'SH soft axisym FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500  80  50    744]; RUNINFO{i}={661601,'SH hard axisym FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 225000  150000 0.443  12250   32  500  82  50  10802]; RUNINFO{i}={668888,'SH soft first layer tweaked stopped 12kit FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 224000  150000 0.443  20000   64  500  82  50   7802]; RUNINFO{i}={668888,'SH soft first layer retweaked FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1866000 1680000 0.471 110000  256 5000 116  50 102012]; RUNINFO{i}={668833,'OKQ0 redone FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1866000 1680000 0.471 110000  256 5000 116  50 101666]; RUNINFO{i}={668844,'OKQ45 redone FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[3546400 3546400 0.441  15500  480  500 452  25 250007]; RUNINFO{i}={642746,'MB Huge 642746 FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[3627000 3627000 0.441  76500  480  500 452  25 250010]; RUNINFO{i}={672048,'MB Huge 672048 FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  29100   10500 0.471   2500   64  100   2  50     85]; RUNINFO{i}={71913, 'OKQ45 small for test impedance FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  29100       0 0.471   2500   64  100   2  50     47]; RUNINFO{i}={71936, 'OKQ45 small for test impedance but potential FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  57887   39553 0.441  28000   16  250  29  25  18010]; RUNINFO{i}={74752, 'tir de mine heavy & incomplete FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  17220   17220 0.570  21400   32  500  52  25   1083]; RUNINFO{i}={74710, 'mb gmsh FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  19425   13563 0.464  40000   16  250  29  25   6580]; RUNINFO{i}={75040, 'tir de mine light & full FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1  25   1669]; RUNINFO{i}={830669,'FNS visc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1  25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1; % First LNS.
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1  25   1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50   1  25    809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500  87  25    351]; RUNINFO{i}={120363,'mb gmsh FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500  87  25    325]; RUNINFO{i}={120414,'mb gmsh LNS 200km'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87  25    931]; RUNINFO{i}={120557,'mb gmsh LNS 400km (1)'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500  87  25    941]; RUNINFO{i}={120621,'mb gmsh LNS 400km (2)'}; i=i+1;
-  RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500   4  25  41137]; RUNINFO{i}={130337,'test DAG FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 195500  195500 0.490  24600  128  500  20  25   4080]; RUNINFO{i}={103088,'DAG FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500  87  25  12591]; RUNINFO{i}={1447857,'mb gmsh LNS longestyet'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250  10  25    972]; RUNINFO{i}={144802,'tir de mine FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  12944    6597 0.385 160000   96  250  18  25   1136]; RUNINFO{i}={147954,'tir de mine FNS 400Hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500 131  50  32583]; RUNINFO{i}={147921,'mars insight FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428 113000   48  500  11  50    575]; RUNINFO{i}={1484867,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500  11  50     41]; RUNINFO{i}={1485893,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500  15  50     41]; RUNINFO{i}={1486004,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   8  50     41]; RUNINFO{i}={1486113,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000  18  25    401]; RUNINFO{i}={1508049,'tir de mine FNS 40Hz'}; i=i+1;
-%   RUN_RAWDATA(i,:)=[2075000 2007500 1.075  12600 1008  500 204 50      0]; RUNINFO{i}={1529411,'mars insight FNS 3hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000 164 100   74988]; RUNINFO{i}={1529789,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000 200 100   51256]; RUNINFO{i}={1538139,'mars insight FNS 22h 3hz w/o perioBC'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000  87  50   86388]; RUNINFO{i}={1560350,'mb gmsh LNS 400km (3) refined and atmmodel reg'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  80518   80518 0.254  37200 1152 5000  87  50   86386]; RUNINFO{i}={1560541,'mb gmsh FNS 400km (3) refined and atmmodel reg'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   2500    2500 0.404   2000    4   50    0   0     82]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   2500    2500 0.404   2000   16   50    0   0     24]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   2500    2500 0.404   2000  256   50    0   0     11]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404   4000    4   50    0   0    920]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404   4000   16   50    0   0    257]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404   4000  256   50    0   0     28]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000    4   50    0   0   8287]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000   16   50    0   0   2326]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000  256   50    0   0    157]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000  512   50    0   0    126]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  40000   40000 0.404   8000 1024   50    0   0    123]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 160000  160000 0.404  16000  256   50    0   0   1361]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 160000  160000 0.404  16000  512   50    0   0    828]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 160000  160000 0.404  16000 1024   50    0   0    576]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 640000  640000 0.404  32000  256   50    0   0  11963]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 640000  640000 0.404  32000  512   50    0   0   6945]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 640000  640000 0.404  32000 1024   50    0   0   4728]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2560000 2560000 0.404  64000  256    0    0   0  85460]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2560000 2560000 0.404  64000  512    0    0   0  41534]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2560000 2560000 0.404  64000 1024    0    0   0  18854]; RUNINFO{i}={-1,'FNS test on Curie'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2016000 1830000 0.471 120000  256  200  116  50 124902]; RUNINFO{i}={583041,'OKQ45 FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2016000 1830000 0.471 120000  256  200  116  50 123034]; RUNINFO{i}={586984,'OKQ0 FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  30000  256  500    0   0   2920]; RUNINFO{i}={593959,'SH soft final FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  30000  256  500    0   0   2980]; RUNINFO{i}={593960,'SH hard final FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2892000 2832000 0.376  27000  512  200    0   0  23240]; RUNINFO{i}={594536,'StratoExplo66June1200 - not finished FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  13060   13060 0.156  29400   16  200    0   0   5025]; RUNINFO{i}={595104,'StratoExplo66June1200 - test FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[2892000 2832000 0.376  40150  512  300    0   0  34470]; RUNINFO{i}={595500,'StratoExplo66June1200 - not finished FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[3142000 3082000 0.376 140100  560  300    0   0 110028]; RUNINFO{i}={597316,'StratoExplo66June1200 - til n=140100 FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  15750  256  500    2  50   1542]; RUNINFO{i}={610736,'SH soft final redone for data comparison FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 227000  150000 0.443  30000  256  500  102  50   3097]; RUNINFO{i}={616368,'SH soft final redone for data comparison FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  78000       0 0.443  30000  256  500  102  50    795]; RUNINFO{i}={623195,'SH soft final redone w/o fluid FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 748360  748360 0.345   8000   32  250  114  50  27994]; RUNINFO{i}={624650,'StratoBaro full with IBF FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 748360  748360 0.345   5750   64  250  114  50   9225]; RUNINFO{i}={637450,'StratoBaro re-run with EBF FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 748360  748360 0.345  16000   96  250  114  50  17354]; RUNINFO{i}={641616,'StratoBaro full with EBF FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 266162  266162 0.345  16000  128  250  114  50   5904]; RUNINFO{i}={656505,'microbaroms periodic with EBF FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 266162  266162 0.345  16000  256  250  114  50   4076]; RUNINFO{i}={655513,'microbaroms periodic with EBF FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500   80  50    757]; RUNINFO{i}={660223,'SH soft axisym FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500   80  50    744]; RUNINFO{i}={661601,'SH hard axisym FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 225000  150000 0.443  12250   32  500   82  50  10802]; RUNINFO{i}={668888,'SH soft first layer tweaked stopped 12kit FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 224000  150000 0.443  20000   64  500   82  50   7802]; RUNINFO{i}={668888,'SH soft first layer retweaked FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1866000 1680000 0.471 110000  256 5000  116  50 102012]; RUNINFO{i}={668833,'OKQ0 redone FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1866000 1680000 0.471 110000  256 5000  116  50 101666]; RUNINFO{i}={668844,'OKQ45 redone FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[3546400 3546400 0.441  15500  480  500  452  25 250007]; RUNINFO{i}={642746,'MB Huge 642746 FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[3627000 3627000 0.441  76500  480  500  452  25 250010]; RUNINFO{i}={672048,'MB Huge 672048 FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29100   10500 0.471   2500   64  100    2  50     85]; RUNINFO{i}={71913, 'OKQ45 small for test impedance FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29100       0 0.471   2500   64  100    2  50     47]; RUNINFO{i}={71936, 'OKQ45 small for test impedance but potential FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  57887   39553 0.441  28000   16  250   29  25  18010]; RUNINFO{i}={74752, 'tir de mine heavy & incomplete FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  17220   17220 0.570  21400   32  500   52  25   1083]; RUNINFO{i}={74710, 'mb gmsh FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  19425   13563 0.464  40000   16  250   29  25   6580]; RUNINFO{i}={75040, 'tir de mine light & full FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25   1669]; RUNINFO{i}={830669,'FNS visc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1; % First LNS.
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25   1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25    809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500   87  25    351]; RUNINFO{i}={120363,'mb gmsh FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500   87  25    325]; RUNINFO{i}={120414,'mb gmsh LNS 200km'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500   87  25    931]; RUNINFO{i}={120557,'mb gmsh LNS 400km (1)'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500   87  25    941]; RUNINFO{i}={120621,'mb gmsh LNS 400km (2)'}; i=i+1;
+  RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500    4  25  41137]; RUNINFO{i}={130337,'test DAG FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 195500  195500 0.490  24600  128  500   20  25   4080]; RUNINFO{i}={103088,'DAG FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500   87  25  12591]; RUNINFO{i}={1447857,'mb gmsh LNS longestyet'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250   10  25    972]; RUNINFO{i}={144802,'tir de mine FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  12944    6597 0.385 160000   96  250   18  25   1136]; RUNINFO{i}={147954,'tir de mine FNS 400Hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500  131  50  32583]; RUNINFO{i}={147921,'mars insight FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428 113000   48  500   11  50    575]; RUNINFO{i}={1484867,'mars insight FNS cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   11  50     41]; RUNINFO{i}={1485893,'mars insight FNS cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   15  50     41]; RUNINFO{i}={1486004,'mars insight FNS cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500    8  50     41]; RUNINFO{i}={1486113,'mars insight FNS cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000   18  25    401]; RUNINFO{i}={1508049,'tir de mine FNS 40Hz'}; i=i+1;
+%   RUN_RAWDATA(i,:)=[2075000 2007500 1.075  12600 1008  500  204 50      0]; RUNINFO{i}={1529411,'mars insight FNS 3hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000  164 100   74988]; RUNINFO{i}={1529789,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000  200 100   51256]; RUNINFO{i}={1538139,'mars insight FNS 22h 3hz w/o perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000   87  50   86388]; RUNINFO{i}={1560350,'mb gmsh LNS 400km (3) refined and atmmodel reg'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  80518   80518 0.254  37200 1152 5000   87  50   86386]; RUNINFO{i}={1560541,'mb gmsh FNS 400km (3) refined and atmmodel reg'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83018]; RUNINFO{i}={1633618,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  23520   20160 0.039  46200  240  100  400 100     598]; RUNINFO{i}={150400,'mars insight FNS 20h 0.1hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 204980  198320 0.044  70000  384 5000  857 100    8541]; RUNINFO{i}={150395,'mars insight incidence FNS 20h 3hz'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

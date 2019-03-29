@@ -7,7 +7,7 @@
 %                  2) extract_atmos_model.m
 %
 % Usage:
-%   TODO.
+%   [fh] = plot_model_frsvib(modelfile, zmax_interest)
 % with:
 %   TODO.
 % yields:

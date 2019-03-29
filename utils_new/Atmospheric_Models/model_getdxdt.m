@@ -31,11 +31,11 @@ function model_getdxdt()
   % Ask user.
   fluidmodel = [];
   while (not(length(fluidmodel) == 1 && ismember(fluidmodel,[0,1])))
-    fluidmodel = input(['[',mfilename,'] ', fluid_model_type, '    model to be loaded (0 for no, 1 for yes)? > ']);
+    fluidmodel = input(['[',mfilename,'] Load an ', fluid_model_type, '    model (0 for no, 1 for yes)?                        > ']);
   end
   solidmodel = [];
   while (not(length(solidmodel) == 1 && ismember(solidmodel,[0,1])))
-    solidmodel = input(['[',mfilename,'] ', solid_model_type, ' model to be loaded (0 for no, 1 for yes)? > ']);
+    solidmodel = input(['[',mfilename,'] Load a  ', solid_model_type, ' model (works for fluids too) (0 for no, 1 for yes)? > ']);
   end
   if(not(any([fluidmodel, solidmodel])))
     error(['[',mfilename,', ERROR] Neither external-DG atmospheric model nor parfile viscoelastic model. Nothing can be done here.']);
@@ -50,7 +50,7 @@ function model_getdxdt()
   % Load
   if(fluidmodel)
     % Ask for file.
-    atmospheric_model_file=input(['[',mfilename,'] Path to ',fluid_model_type,' model file (atmospheric_model.dat)? > '],'s');
+    atmospheric_model_file=input(['[',mfilename,'] Path to the ',fluid_model_type,' model file (atmospheric_model.dat)? > '],'s');
     % Extract atmospheric model.
     [Z, ~, ~, C, ~, ~, ~, ~, ~, ~, ~, ~, ~, W, ~, ~, ~] = extract_atmos_model(atmospheric_model_file, 3, 0, 0);
     % Compute atmospheric model Mach.

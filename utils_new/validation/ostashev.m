@@ -1,21 +1,30 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
-% Description:   TODO.
-% Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         N/A.
+% Description:   Validates 2 simulations against [Ostashev et al., 2005].
+% Notes:         [Ostashev et al., 2005] Ostashev, V. E., Wilson, D. K.,
+%                  Liu, L., Aldridge, D. F., Symons, N. P., and Marlin, D.
+%                  (2005).  Equations for finite-difference, time-domain
+%                  simulation of sound propagation in moving inhomogeneous
+%                  media and numerical implementation. The Journal of the
+%                  Acoustical Society of America, 117(2):503–517.
+%
+% Usage:
+%   TODO.
+% with:
+%   TODO.
+% yields:
+%   TODO.
 
 clear all;
 % close all;
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 18); set(0, 'defaultAxesFontSize', 18);
+set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
-rootd = strcat(SPCFMEXloc,'validation_lns/');
+rootd = strcat(SPCFMEXloc,'validation_lns_ostashev/');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % params %%%%%%%%%%%%%%
@@ -29,10 +38,12 @@ NSTATIONS=15;
 
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1_FNS/'; ofdwneq0=ofdweq0; wind=0; simullab='FNS $\rho$'; % pas ouf
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1_FNS/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1_FNS/'; wind=102; simullab='FNS $\rho$'; % pas ouf
+% ofdweq0='OUTPUT_FILES_E_M0_dx1_FNS/'; ofdwneq0=ofdweq0; wind=0; simullab='FNS $E$';
+% ofdweq0='OUTPUT_FILES_E_M0_dx1_FNS/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1_FNS/'; wind=102; simullab='FNS $E$';
 
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1/'; ofdwneq0=ofdweq0; wind=0; simullab='LNS $\rho$'; % pas ouf
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1/'; ofdwneq0='OUTPUT_FILES_rho_M.15_dx1/'; wind=51; simullab='LNS $\rho$'; % pas ouf
-ofdweq0='OUTPUT_FILES_rho_M0_dx1/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1/'; wind=102; simullab='LNS $\rho$'; % pas ouf
+% ofdweq0='OUTPUT_FILES_rho_M0_dx1/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1/'; wind=102; simullab='LNS $\rho$'; % pas ouf
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1_testformulaE/'; wind=102; simullab='LNS $\rho$ test $E$'; % pas ouf
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1_testformulaM/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1_testformulaM/'; wind=102; simullab='LNS $\rho$ test $\rho v$'; % pas ouf
 % ofdweq0='OUTPUT_FILES_rho_M0_dx.5/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx.5/'; wind=102; simullab='LNS $\rho$ $\Delta x=.5$'; % pas ouf
@@ -45,8 +56,9 @@ ofdweq0='OUTPUT_FILES_rho_M0_dx1/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1/'; wind=1
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1_fullE/'; ofdwneq0=ofdweq0; wind=0; simullab='LNS $\rho$ fullE'; % pas ouf
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1_fullE/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1_fullE/'; wind=102; simullab='LNS $\rho$ fullE'; % pas ouf
 
-% ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0=ofdweq0; wind=0; simullab='LNS E';
-% ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1/'; wind=102; simullab='LNS E';
+% ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0=ofdweq0; wind=0; simullab='LNS $E$';
+% ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1/'; wind=102; simullab='LNS $E$';
+ofdweq0='OUTPUT_FILES_E_M0_dx1_reredone/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1_reredone/'; wind=102; simullab='LNS $E$ reredone'; % did not change anything
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % treatment %%%%%%%%%%%%%%
