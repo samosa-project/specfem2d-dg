@@ -37,7 +37,7 @@ nelemacous=$(grep "Total number of acoustic elements:" $slurm | grep -o "[0-9]*"
 echo "  Total elements:    $nelemtot."
 echo "  Acoustic elements: $nelemacous (included above)."
 
-cfl=$(grep "Max CFL stability condition" $slurm -A2 | grep -o "[0-9]\.[0-9]*" | head -2 | tail -1)
+cfl=$(grep "Max CFL stability condition" $slurm -A2 | grep -oP "[0-9]\.[0-9]*[E|e|D|d]?\-?\+?[0-9]*" | head -2 | tail -1)
 
 echo "  CFL:               $cfl."
 
@@ -47,7 +47,7 @@ echo "  Last time step:    $lasttimestep."
 NPROC=$(grep -e "NPROC *= *[0-9]*" $parfile | grep -oe "[0-9]*")
 echo "  CPUs:              $NPROC."
 
-snapfreq=$(grep -e "NSTEP_BETWEEN_OUTPUT_IMAGES *= *[0-9]*" $parfile | grep -oe "[0-9]*")
+snapfreq=$(grep -e "NSTEP_BETWEEN_OUTPUT_IMAGES *= *[0-9]*" $parfile | grep -oe "[0-9]*" | head -1)
 echo "  Snapshots saving:  $snapfreq timesteps."
 
 nbstations=$(grep "Station" $slurm | tail -1 | grep -P -o "[0-9]?[0-9]?[0-9]" | head -1)

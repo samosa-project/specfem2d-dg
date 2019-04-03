@@ -9,13 +9,17 @@
 % yields:
 %   TODO.
 
-function [var] = extractParamFromInputFile(path2parfile, varName, varType)
+function [var] = extractParamFromInputFile(path2file, varName, varType)
 
 %   path2parfile='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_gravito/OUTPUT_FILES/input_parfile';
 %   varName='NPROC';
 %   varType='int';
-
-  command=['grep -r "^ *',varName,' *=" ',path2parfile];
+  
+  if(not(exist(path2file,'file')))
+    error(['[',mfilename,', ERROR] File does not exist. Run ''help ',mfilename,'''.']);
+  end
+  
+  command=['grep -r "^ *',varName,' *=" ',path2file];
   [~,res] = system(command);
   if(isempty(res))
     error('found nothing');

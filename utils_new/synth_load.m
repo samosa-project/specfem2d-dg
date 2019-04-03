@@ -33,8 +33,8 @@ plot_amplitude = 0; % Plot amplitude (0 for no, 1 for yes sorted by x, 2 for yes
 subsample = 0; wanted_dt = 1; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that final time sampling is as parametrised by wanted_dt.
 type_display = 2; % Quantity to display (should be the same as the seismotype variable in parfile). 1 = {displacement for non-DG, velocity for DG}. 2 = {velocity for non-DG, pressure perturbation [Pa] for DG}.
 % Unknown (for direct plots only). Note that for type_display == 2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.
-unknown = 'BXX'; % _x.
-% unknown = 'BXZ'; % _z.
+% unknown = 'BXX'; % _x.
+unknown = 'BXZ'; % _z.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
@@ -42,6 +42,8 @@ unknown = 'BXX'; % _x.
 
 % Mars AGW.
 fig_title = strcat('Mars Coupling');
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
 rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
@@ -183,6 +185,9 @@ while (not(length(behaviour) == 1 && ismember(behaviour, [0, 1, 2, 3])))
 end
 % Ask for stations.
 istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']); istattab = reshape(istattab,[1,numel(istattab)]);
+if(isempty(istattab))
+  error(['[',mfilename,', ERROR] Empty vector of stations, retry.']);
+end
 disp(['[',mfilename,'] Loading [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] (absolute x and z, d relative to source):']);
 disp([istattab', xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)]);
 nstat = numel(istattab);

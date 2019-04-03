@@ -18,8 +18,8 @@ format longG;
 [data, t, info, ~]=load_data(); % Load data (see function below).
 
 plot_rate = 0;
-plotrate_selfulldgonly=1;
-plotrateversion='FNS';
+plotrate_selfulldgonly = 1;
+plotrateversion = 'FNS';
 % plotrateversion='LNS';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,8 +27,9 @@ plotrateversion='FNS';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Choices. %%%%%%%%%%%%%%%%%%%%
-nbeltsElastic = 6600;
-nproc         = 8*48;
+% nproc         = 8*48;
+% nbeltsElastic = 6600;
+nbeltsElastic = input(['[',mfilename,'] Number of viscoelastic elements? > ']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Auto-read from parfile. %%%%%
 parfile = input(['[',mfilename,'] Path to simulation parfile > '],'s');
@@ -56,10 +57,8 @@ nsteptot    = extractParamFromInputFile(parfile, 'NSTEP', 'float');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Computation of estimate.    %
+% Display data.               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-weigth=[1,100,25,1,50]; % Importance of each parameter.
-meandata=mean(data,1);
 % for i=numel(t)-3:numel(t)
 for i=1:numel(t)
   ID=info{i}(1); ID=ID{1};
@@ -67,42 +66,57 @@ for i=1:numel(t)
 end
 disp(' ');
 
-point=[nstations,neldg/neltot,nstepsnap/nsteptot,nstepseismo/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
-
-disp(['[',mfilename,'] ',num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
-disp(" ");
-disp(['[',mfilename,']                     [        n_stations       percent_DG     percent_snap    percent_synth n_elems_per_proc]']);
-disp(strcat("[",mfilename,"] Current point:      [ ", sprintf("%17.3e", point), "]."));
-% idp=dsearchn(data,point);
-idp=dsearchn((data-meandata)./weigth,(point-meandata)./weigth); % Optimised search.
-disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.3e", data(idp,:)), "] (",info{idp}{2},")."));
-disp(strcat("[",mfilename,"] Weights:            [ ", sprintf("%17.f", weigth), "]."));
-time=t(idp);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+% Computation of estimate.    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Display.                    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(" ");
+weigth=[1,100,25,1,50]; % Importance of each parameter.
+meandata=mean(data,1);
 
-cputime=time*neltot*nsteptot;
-% hms=fix(mod(cputime,[0,3600,60])./[3600,60,1]);
-% cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
-cputimestr=formatSecondsToHHMMSS(cputime);
+nproc = -1;
+while(nproc~=0)
+  nproc = -1;
+  while(not(numel(nproc)==1 & nproc>=0))
+    nproc = input(['[',mfilename,'] Number of procs (>=0, 0 to stop script)? > ']);
+  end
+  if(nproc==0)
+    continue
+  end
+  point=[nstations,neldg/neltot,nstepsnap/nsteptot,nstepseismo/nsteptot,neltot/nproc]; % Format point as data format. Currently [% elements as DG, % timesteps as snapshots, elements per proc].
 
-realtime=time*neltot*nsteptot/nproc;
-% hms=fix(mod(realtime,[0,3600,60])./[3600,60,1]);
-% realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
-realtimestr=formatSecondsToHHMMSS(realtime);
+  disp(['[',mfilename,'] ',num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
+  disp(" ");
+  disp(['[',mfilename,']                     [        n_stations       percent_DG     percent_snap    percent_synth n_elems_per_proc]']);
+  disp(strcat("[",mfilename,"] Current point:      [ ", sprintf("%17.3e", point), "]."));
+  % idp=dsearchn(data,point);
+  idp=dsearchn((data-meandata)./weigth,(point-meandata)./weigth); % Optimised search.
+  disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.3e", data(idp,:)), "] (",info{idp}{2},")."));
+  disp(strcat("[",mfilename,"] Weights:            [ ", sprintf("%17.f", weigth), "]."));
+  time=t(idp);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(strcat("[",mfilename,"] Expected time per element, per iteration:          ",sprintf("%.3e", time), " s."));
-disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU), i.e.  ",sprintf('%15.0f',cputime)," s."));
-disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real), i.e. ",sprintf('%15.0f',realtime)," s."));
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Display.                    %
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  disp(" ");
 
-disp(" ");
+  cputime=time*neltot*nsteptot;
+  % hms=fix(mod(cputime,[0,3600,60])./[3600,60,1]);
+  % cputimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+  cputimestr=formatSecondsToHHMMSS(cputime);
 
-disp(['[',mfilename,', WARNING] Recall the method used for estimation is very rough and approximate. Do not take the estimation for granted.']);
+  realtime=time*neltot*nsteptot/nproc;
+  % hms=fix(mod(realtime,[0,3600,60])./[3600,60,1]);
+  % realtimestr=strcat(sprintf('%5.f',hms(1)),"h ",sprintf('%2.f',hms(2)),"m ",sprintf('%2.f',hms(3)),'s');
+  realtimestr=formatSecondsToHHMMSS(realtime);
 
+  disp(strcat("[",mfilename,"] Expected time per element, per iteration:          ",sprintf("%.3e", time), " s."));
+  disp(strcat("[",mfilename,"] Expected run time:                        ",cputimestr, " (CPU), i.e.  ",sprintf('%15.0f',cputime)," s."));
+  disp(strcat("[",mfilename,"]                                           ",realtimestr, " (real), i.e. ",sprintf('%15.0f',realtime)," s."));
+  if(realtime>86400)
+    disp(['[',mfilename,', WARNING] Expected run time is over one (1) day. Most HPC centres do not allow runs this long. To drop below 1 day, try out ',num2str(ceil(ceil(nproc*realtime/86400)/16)*16),' CPUs.']);
+  end
+  disp(['[',mfilename,', WARNING] Recall the method used for estimation is very rough and approximate. Do not take the estimation for granted.']);
+end
 
 if(plot_rate)
   set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
@@ -278,6 +292,7 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83018]; RUNINFO{i}={1633618,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
   RUN_RAWDATA(i,:)=[  23520   20160 0.039  46200  240  100  400 100     598]; RUNINFO{i}={150400,'mars insight FNS 20h 0.1hz'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 204980  198320 0.044  70000  384 5000  857 100    8541]; RUNINFO{i}={150395,'mars insight incidence FNS 20h 3hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  23520   20160 0.039 236600  240  100  400 100    3036]; RUNINFO{i}={151120,'mars insight f=0.1Hz but crashed'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

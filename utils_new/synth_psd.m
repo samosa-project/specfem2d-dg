@@ -42,21 +42,17 @@ if(not(all(size(raw_t) == size(raw_s))))
   error(['[(',mfilename,', ERROR] time data and amplitude should have the same size, but right now do not.']);
 end
 
-nstat = min(size(Ztime));
+doWindowSignal = -1;
+while (not((numel(doWindowSignal)==1 && doWindowSignal==0) || (numel(doWindowSignal)==2)))
+  doWindowSignal = input(['[', mfilename, '] Window signal ([t1 t2] vector for yes, 0 for no)? > ']);
+end
+if(any(doWindowSignal))
+  sel = (raw_t(1,:)>=min(doWindowSignal) & raw_t(1,:)<=max(doWindowSignal));
+  raw_t = raw_t(:,sel);
+  raw_s = raw_s(:,sel);
+end
 
-% Cut times/values array based on shortest relevant array.
-% difftimes = raw_t(:,2:end)-raw_t(:,1:end-1);
-% relevantdifftimes =  (difftimes>0);
-% minimum_last_relevant = +Inf;
-% for i = 1:size(raw_t,1)
-%   locminim = find(relevantdifftimes(i,:)>0,1,'last');
-%   if(locminim<minimum_last_relevant)
-%     minimum_last_relevant = locminim;
-%   end
-% end
-% minimum_last_relevant
-% raw_t = raw_t(:,1:minimum_last_relevant);
-% raw_s = raw_s(:,1:minimum_last_relevant);
+nstat = min(size(Ztime));
 
 NWINDOWZZZZ = -1;
 while (not(length(NWINDOWZZZZ) == 1 && NWINDOWZZZZ>0))
@@ -242,21 +238,23 @@ else
 end
 
 % Plot ratios.
-refID = 1;
-% if(0)
-IDs_to_process_RATIO = IDs_to_process;
-IDs_to_process_RATIO(IDs_to_process_RATIO == refID) = []; % remove ref.
-figure();
-for i = IDs_to_process_RATIO
-  loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ [m]'], 'color', colours(i, :));
-  hold on;
+if(nstat > 1)
+  refID = 1;
+  % if(0)
+  IDs_to_process_RATIO = IDs_to_process;
+  IDs_to_process_RATIO(IDs_to_process_RATIO == refID) = []; % remove ref.
+  figure();
+  for i = IDs_to_process_RATIO
+    loglog(PSD_f, WPSD_tab(i, :)./WPSD_tab(refID, :), 'displayname', ['S', num2str(istattab(i)),'/S', num2str(istattab(refID)), '@$(x,z) = (', num2str(xstattab(istattab(i))), ',', num2str(ystattab(istattab(i))), ')$ [m]'], 'color', colours(i, :));
+    hold on;
+  end
+  legend('location', 'best');
+  xlim([PSD_f(1), PSD_f(end)]);
+  xlabel("$f$ [Hz]"); ylabel('PSD Ratio [1]');
+  title(['PSD Ratio [1] w.r.t. S', num2str(istattab(refID))]);
+  % set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
+  prettyAxes(gcf);
 end
-legend('location', 'best');
-xlim([PSD_f(1), PSD_f(end)]);
-xlabel("$f$ [Hz]"); ylabel('PSD Ratio [1]');
-title(['PSD Ratio [1] w.r.t. S', num2str(istattab(refID))]);
-% set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
-prettyAxes(gcf);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clear variables.             %

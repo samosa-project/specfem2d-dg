@@ -110,18 +110,24 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelow
   Xsource = [extractParamFromInputFile(sourcefile, 'xs', 'float'), extractParamFromInputFile(sourcefile, 'zs', 'float')];
   [zmin, zmax] = extractZminZmaxFromInterfacesFile(interfacesfile);
   zminmax = [zmin,zmax];
-  spacingstations = 150;
-  spacingstationsok=-1;
-  while(not(ismember(spacingstationsok,[0,1])))
-    spacingstationsok=input(['[', mfilename, '] Stations planned to be spaced by ',num2str(spacingstations),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  spacingstations = 300;
+  isitok=-1;
+  while(not(ismember(isitok,[0,1])))
+    isitok=input(['[', mfilename, '] Stations planned to be spaced by ',num2str(spacingstations),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
   end
-  if(spacingstationsok==0)
-    error(['[',mfilename,', ERROR] Stations'' spacing was not ok, re-chose parametrisation in script.']);
+  if(isitok==0)
+    error(['[',mfilename,', ERROR] Parameter was not ok, re-choose parametrisation in script.']);
   end
   
   interface = [-1e9, 1e9;0, 0];
-  ground_clearance = 35; % altitude/depth of the ground stations.
-  disp(['[', mfilename, '] Ground clearance (above and below) planned to be ',num2str(spacingstations),' [m].']);
+  ground_clearance = 5; % altitude/depth of the ground stations.
+  isitok=-1;
+  while(not(ismember(isitok,[0,1])))
+    isitok=input(['[', mfilename, '] Ground clearance (above and below) planned to be ',num2str(ground_clearance),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  end
+  if(isitok==0)
+    error(['[',mfilename,', ERROR] Parameter was not ok, re-choose parametrisation in script.']);
+  end
   shift_for_tiltcomputation = 5; % horizontal shift for stations used for tilt computation
   disp(['[', mfilename, '] Horizontal shift for tilt computation planned to be ',num2str(shift_for_tiltcomputation),' [m].']);
 

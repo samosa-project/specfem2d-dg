@@ -32,8 +32,12 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   if(not(strcmp(wavepropdirection,'none') || strcmp(wavepropdirection,'left') || strcmp(wavepropdirection,'right')))
     error('kek');
   end
-  sig_x = reshape(sig_x,numel(sig_x),1);
-  sig_y = reshape(sig_y,numel(sig_y),1);
+  time  = reshape(time,  numel(time),  1);
+  sig_x = reshape(sig_x, numel(sig_x), 1);
+  sig_y = reshape(sig_y, numel(sig_y), 1);
+  if(not(numel(time)==numel(sig_x) & numel(sig_x)==numel(sig_y)))
+    error(['[',mfilename,', ERROR] (time, sig_x, sig_y) must be the same length. Run ''help ',mfilename,'''.']);
+  end
   
   overdrawcolor='k';
   
