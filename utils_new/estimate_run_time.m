@@ -15,6 +15,7 @@
 clc
 format longG;
 
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/');
 [data, t, info, ~]=load_data(); % Load data (see function below).
 
 plot_rate = 0;
@@ -278,21 +279,21 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500   87  25  12591]; RUNINFO{i}={1447857,'mb gmsh LNS longestyet'}; i=i+1;
   RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250   10  25    972]; RUNINFO{i}={144802,'tir de mine FNS'}; i=i+1;
   RUN_RAWDATA(i,:)=[  12944    6597 0.385 160000   96  250   18  25   1136]; RUNINFO{i}={147954,'tir de mine FNS 400Hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500  131  50  32583]; RUNINFO{i}={147921,'mars insight FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428 113000   48  500   11  50    575]; RUNINFO{i}={1484867,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   11  50     41]; RUNINFO{i}={1485893,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   15  50     41]; RUNINFO{i}={1486004,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500    8  50     41]; RUNINFO{i}={1486113,'mars insight FNS cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000   18  25    401]; RUNINFO{i}={1508049,'tir de mine FNS 40Hz'}; i=i+1;
-%   RUN_RAWDATA(i,:)=[2075000 2007500 1.075  12600 1008  500  204 50      0]; RUNINFO{i}={1529411,'mars insight FNS 3hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000  164 100   74988]; RUNINFO{i}={1529789,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000  200 100   51256]; RUNINFO{i}={1538139,'mars insight FNS 22h 3hz w/o perioBC'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000   87  50   86388]; RUNINFO{i}={1560350,'mb gmsh LNS 400km (3) refined and atmmodel reg'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  80518   80518 0.254  37200 1152 5000   87  50   86386]; RUNINFO{i}={1560541,'mb gmsh FNS 400km (3) refined and atmmodel reg'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83018]; RUNINFO{i}={1633618,'mars insight FNS 20h 3hz w/  perioBC'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  23520   20160 0.039  46200  240  100  400 100     598]; RUNINFO{i}={150400,'mars insight FNS 20h 0.1hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 204980  198320 0.044  70000  384 5000  857 100    8541]; RUNINFO{i}={150395,'mars insight incidence FNS 20h 3hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  23520   20160 0.039 236600  240  100  400 100    3036]; RUNINFO{i}={151120,'mars insight f=0.1Hz but crashed'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500  131  50  32583]; RUNINFO{i}={147921,'FNS mars insight'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428 113000   48  500   11  50    575]; RUNINFO{i}={1484867,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   11  50     41]; RUNINFO{i}={1485893,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   15  50     41]; RUNINFO{i}={1486004,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500    8  50     41]; RUNINFO{i}={1486113,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000   18  25    401]; RUNINFO{i}={1508049,'FNS tir de mine 40Hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000  164 100   74988]; RUNINFO{i}={1529789,'FNS mars insight 20h 3hz w/  perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000  200 100   51256]; RUNINFO{i}={1538139,'FNS mars insight 22h 3hz w/o perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000   87  50   86388]; RUNINFO{i}={1560350,'LNS mb gmsh 400km (3) refined and atmmodel reg'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  80518   80518 0.254  37200 1152 5000   87  50   86386]; RUNINFO{i}={1560541,'FNS mb gmsh 400km (3) refined and atmmodel reg'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83018]; RUNINFO{i}={1633618,'FNS mars insight 20h 3hz w/  perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  23520   20160 0.039  46200  240  100  400 100     598]; RUNINFO{i}={150400,'FNS mars insight 20h 0.1hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 204980  198320 0.044  70000  384 5000  857 100    8541]; RUNINFO{i}={150395,'FNS mars insight incidence 20h 3hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  23520   20160 0.039 236600  240  100  400 100    3036]; RUNINFO{i}={151120,'FNS mars insight f=0.1Hz but crashed'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 415000  401500 0.469 490000  640 5000  669 100   81734]; RUNINFO{i}={151319,'FNS mars insight incidence 20h 3hz larger'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

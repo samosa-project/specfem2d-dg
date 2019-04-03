@@ -43,19 +43,27 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   
   % Parameters for plotting and displaying.
   lw=1;
-  format_eigenaxes_angle_console = '%5.1f';
-  format_eigenaxes_angle_plot = '%.1f';
+  frmt_eigang_cnsl = '%6.1f';
+  frmt_eigang_plot = '%.1f';
+  frmt_eigval_cnsl = '%6.1e';
+  frmt_eigval_plot = '%.1e';
   
   figure('units','normalized','outerposition',[0 0 0.5 1]);
   
   % Get and plot major/minor axes (under everything else).
-  [~, eigvec] = simple2DPCA([sig_x,sig_y]);
-  [th_eig,~] = cart2pol(eigvec(1,:),eigvec(2,:));
+  [eigval, eigvec] = simple2DPCA([sig_x,sig_y]);
+  [th_eig,~] = cart2pol(eigvec(1,:),eigvec(2,:)); % send x-values and y-values, this is why it's eigvec(1,:) and not actually the first eigenvector eigvec(:,1) etc.
+  
+  [~,idsorted]=sort(eigval);
+  ilmax=idsorted(end);
+  ilmin=idsorted(1);
+  
 %   line(1e9*[-evec1(1),evec1(1)],1e9*[-evec1(2),evec1(2)])
   factor=2*max(max(abs(sig_x)),max(abs(sig_y)));
   i=1; eigVec1LineP=factor*eigvec(:,i)*[-1,1]; line(eigVec1LineP(1,:),eigVec1LineP(2,:),'color',overdrawcolor,'linewidth',0.1*lw, 'linestyle', '-'); hold on;
   i=2; eigVec2LineP=factor*eigvec(:,i)*[-1,1]; line(eigVec2LineP(1,:),eigVec2LineP(2,:),'color',overdrawcolor,'linewidth',0.1*lw, 'linestyle', '-'); hold on;
-  disp(['[',mfilename,'] Eigenaxes found to be ',sprintf(format_eigenaxes_angle_console,th_eig(1)*180/pi),'° and ',sprintf(format_eigenaxes_angle_console,th_eig(2)*180/pi),'° counterclockwise from positive-pointing abscissas.']);
+               disp(['[',mfilename,'] Ellipticity: great axis (l =',sprintf(frmt_eigval_cnsl,eigval(ilmax)),') is ',sprintf(frmt_eigang_cnsl,th_eig(ilmax)*180/pi),'° and']);
+  disp([blanks(length(mfilename)+2),'              small axis (l =',sprintf(frmt_eigval_cnsl,eigval(ilmin)),') is ',sprintf(frmt_eigang_cnsl,th_eig(ilmin)*180/pi),'° counterclockwise from positive-pointing abscissas.']);
   
   
   % Actual plot of polarisation.
@@ -126,8 +134,9 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   xl = ax.XLim;
   shift=0.02*min(diff(xl),diff(yl));
   fs=ax.FontSize;
-  txteigvec=['EigVecAng: (',sprintf(format_eigenaxes_angle_plot,th_eig(1)*180/pi),', ',sprintf(format_eigenaxes_angle_plot,th_eig(2)*180/pi),')$^\circ$'];
-  text(min(xl)+shift, min(yl)+shift, txteigvec, 'color', overdrawcolor, 'fontsize', 0.4*fs, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom');
+  txteigvec=['EigAng (',sprintf(frmt_eigang_plot,th_eig(ilmax)*180/pi),', ',sprintf(frmt_eigang_plot,th_eig(ilmin)*180/pi),')$^\circ$'];
+  txteigval=['EigVal (',sprintf(frmt_eigval_plot,eigval(ilmax)),', ',sprintf(frmt_eigval_plot,eigval(ilmin)),')'];
+  text(min(xl)+shift, min(yl)+shift, [txteigvec, ', ', txteigval], 'color', overdrawcolor, 'fontsize', 0.5*fs, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom');
   
   % Eventually plot propagation direction arrow.
   if(not(strcmp(wavepropdirection,'none')))

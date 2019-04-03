@@ -6,17 +6,17 @@
 %                  1) extract_atmos_model.m
 %
 % Usage:
-%   TODO.
+%   plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
 function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW)
-
   if(nargin<4)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
   end
+  addpath('/home/l.martire/Documents/work/mars/mars_is'); % customSaveFig
   
   if(not(exist('LRorDWUW')))
     % not found, make default: LR
@@ -54,7 +54,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
   DZW=gradient(W,Z);
   DZW(1:2)=DZW(3); % Correction hack.
   
-  figure('units','normalized','outerposition',[0 0 1 1]);
+  f=figure('units','normalized','outerposition',[0 0 1 1]);
   
   ax(1)=subplot(231);
   myplot(RHO, Z, marker, colour, datestr, 'sx');
@@ -131,11 +131,13 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
   
   linkaxes(ax,'y');
   
-  spl=split(atmospheric_model_file,'.');
-  spl{length(spl)+1}='jpg';
-  spl=join(spl,'.');
-  saveas(gcf,spl{1}, 'jpg');
-  disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
+%   spl=split(atmospheric_model_file,'.');
+%   spl{length(spl)+1}='jpg';
+%   spl=join(spl,'.');
+%   saveas(gcf,spl{1}, 'jpg');
+%   disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
+  figure(f.Number);
+  customSaveFig(atmospheric_model_file);
 end
 
 function myplot(XDATA, YDATA, MARKER, COLOUR, DISPLAYNAME, TYPE)
