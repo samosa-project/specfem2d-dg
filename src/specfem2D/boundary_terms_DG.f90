@@ -301,12 +301,12 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     veloc_z_DG_P = ZEROl ! Impose vertical wind to zero.
   endif ! Endif on assign_external_model.
   
-  ! TEST VISCOSITY in top buffer
-  if(.false.) then
-    call change_visco(i, j, ispec,&
-                      real(coord(1, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL),&
-                      real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
-  endif
+  !! TEST VISCOSITY in top buffer
+  !if(.false.) then
+  !  call change_visco(i, j, ispec,&
+  !                    real(coord(1, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL),&
+  !                    real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL)) ! See 'prepare_stretching.f90'.
+  !endif
   
   ! --------------------------- !
   ! Rayleigh-Taylor instability !

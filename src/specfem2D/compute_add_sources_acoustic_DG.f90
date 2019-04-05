@@ -328,6 +328,7 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
                 ! Add jacobian of stretching into the integrand (artifically).
                 ! TODO: Do that more clearly.
                 jacobianl = stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*jacobianl
+                ! Though, this should NOT have any importance, since NOONE should have sources in or near the buffers.
               endif
               
               wzl = real(wzgll(j), kind=CUSTOM_REAL)
