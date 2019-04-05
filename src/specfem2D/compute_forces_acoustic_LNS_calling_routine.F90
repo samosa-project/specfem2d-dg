@@ -54,10 +54,6 @@ subroutine compute_forces_acoustic_LNS_main()
   !! Needed for INLINE PREPARATION OF RHS FOR PMLs.
   !real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
   !integer :: i,j,ispec,iglob,ispec_PML,iglobPML
-    
-  if(PML_BOUNDARY_CONDITIONS) then
-    stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
-  endif
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -827,11 +823,30 @@ end subroutine LNS_compute_viscous_stress_tensor
 !   See doi:10.1016/j.jcp.2007.12.009, section 4.3.2 for the "desintegration method".
    
 subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_SF, timelocal)
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL, NDIM
-  use specfem_par, only: gammax, gammaz, hprime_xx, hprime_zz, hprimewgll_xx, hprimewgll_zz,&
-ibool_DG, ispec_is_acoustic_DG, jacobian, link_iface_ijispec, neighbor_dg_iface, nglob_DG, nspec, nx_iface,&
-nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
-  use specfem_par_LNS, only: LNS_dE, LNS_drho, LNS_dummy_1d, LNS_dummy_2d, LNS_rho0dv, LNS_v0
+!  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL, NDIM
+!  use specfem_par, only: gammax, gammaz, hprime_xx, hprime_zz, hprimewgll_xx, hprimewgll_zz,&
+!ibool_DG, ispec_is_acoustic_DG, jacobian, link_iface_ijispec, neighbor_dg_iface, nglob_DG, nspec, nx_iface,&
+!nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
+!  use specfem_par_LNS, only: LNS_dE, LNS_drho, LNS_dummy_1d, LNS_dummy_2d, LNS_rho0dv, LNS_v0
+  ! TODO: select variables to use.
+  use constants!, only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM
+  use specfem_par!, only: nglob_DG,nspec, ispec_is_acoustic_DG,&
+                         !xix,xiz,gammax,gammaz,jacobian, &
+                         !hprimewgll_xx, &
+                         !hprimewgll_zz,wxgll,wzgll, &
+                         !ibool_DG, &
+                         !it,potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
+                         !DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
+                         !myrank, &
+                         !i_stage, p_DG_init, gammaext_DG, muext, etaext, kappa_DG,tau_epsilon, tau_sigma, &
+                         !!rhovx_init, rhovz_init, E_init, &
+                         !rho_init, &
+                         !CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
+                         !link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
+                         !!mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
+                         !!coord, &
+                         !ibool_before_perio,stretching_buffer!,c_V
+  use specfem_par_LNS
   
   implicit none
   
@@ -848,7 +863,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: SF_P ! When swMETHOD==.true., this variable is used to store the value of the scalar field SF across the element's boundary, in order to compute the flux.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
-  integer :: ispec,i,j,k,iglob, iglobM, iglobP!, iglob_unique
+  integer :: ispec,i,j,k,iglob, iglobM, iglobP, iglob_unique
   real(kind=CUSTOM_REAL) :: weight!, flux_n, flux_x, flux_z,  !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         !E_DG_P&!, p_DG_P, &
         !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
@@ -876,6 +891,7 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
         temp_TFxz_1, temp_TFxz_2, temp_TFzx_1, temp_TFzx_2, temp_TFzz_1, temp_TFzz_2
   !real(kind=CUSTOM_REAL) :: vx_init, vz_init
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
+  real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
   if(.not. (swSF .or. swTF)) then
     write(*,*) "********************************"
@@ -920,6 +936,18 @@ nz_iface, rmass_inverse_acoustic_DG, weight_iface, wxgll, wzgll, xix, xiz
           xizl = xiz(i,j,ispec)
           gammaxl = gammax(i,j,ispec)
           gammazl = gammaz(i,j,ispec)
+          
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+            ! See beginning of subroutine compute_forces_acoustic_LNS for detailed explanations.
+            iglob_unique=ibool_before_perio(i,j,ispec)
+            ya_x_l=stretching_ya(1, iglob_unique)
+            ya_z_l=stretching_ya(2, iglob_unique)
+            xixl = ya_x_l * xixl          ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            xizl = ya_z_l * xizl          ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            gammaxl = ya_x_l * gammaxl    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            gammazl = ya_z_l * gammazl    ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            !jacLoc = ya_x_l*ya_z_l*jacLoc ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+          endif
           
           wzl = wzgll(j)
           wxl = wxgll(i)

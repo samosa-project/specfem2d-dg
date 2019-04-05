@@ -47,7 +47,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
   !real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
   !real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
-  integer :: ispec, i,j, k,iglob,SPCDM!, iglob_unique
+  integer :: ispec, i,j, k,iglob,SPCDM, iglob_unique
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, NDIM) :: cntrb_drho, cntrb_dE
   real(kind=CUSTOM_REAL), dimension(NDIM, NGLLX, NGLLZ, NDIM) :: cntrb_rho0dv
   ! Variables "cntrb_*" are aimed at assembling the different contributions to constitutive variables.
@@ -83,6 +83,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL) :: wxlwzl!,wxljacLoc, wzljacLoc ! Integration weigths.
   logical :: exact_interface_flux
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
+  real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
   ! Initialisation of the RHS.
   outrhs_drho    = ZEROcr
@@ -141,6 +142,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           xigammal(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
           xigammal(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
           
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+            ! Here are updated the operator \nabla and the jacobian, but only if stretching is activated and we are in a buffer.
+            ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
+            ! The jacobian of the stretching transformation is updated following the same rationale.
+            iglob_unique      = ibool_before_perio(i,j,ispec)
+            ya_x_l            = stretching_ya(1, iglob_unique)
+            ya_z_l            = stretching_ya(2, iglob_unique)
+            xigammal(:, 1)    = ya_x_l*xigammal(:, 1)    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+            xigammal(:, NDIM) = ya_z_l*xigammal(:, NDIM) ! Multiply x component by ya_z. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+            !jacLoc            = ya_x_l*ya_z_l*jacLoc     ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+          endif
           if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
             ! Need to include stretching on base stress tensor.
             ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
@@ -785,6 +797,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
           !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
           !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
         enddo
+        
+        ! TODO: ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES. See boundary_terms_DG.f90.
+        
         ! Set out_dv_P.
         out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
         ! Set out_dp_P: traction continuity.

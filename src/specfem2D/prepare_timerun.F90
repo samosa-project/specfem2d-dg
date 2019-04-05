@@ -57,7 +57,7 @@
   
   ! If LNS, initialise initial fields and physical parameters, and time integration coefficients.
   if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
-    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+    !call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90. ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put below.
     
     allocate(LNS_scheme_A(stage_time_scheme), &
              LNS_scheme_B(stage_time_scheme), &
@@ -140,17 +140,19 @@
               if(.false. .and. ABC_STRETCH_RIGHT .and. coord(1, iglob_unique) > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) then ! right stretching and in right buffer zone
                 write(*,*) "R", stretching_buffer(ibool_before_perio(i, j, ispec))
               endif
-              if(ABC_STRETCH_BOTTOM .and. coord(2, iglob_unique) < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) then ! bottom stretching and in bottom buffer zone
+              if(.false. .and. ABC_STRETCH_BOTTOM .and. coord(2, iglob_unique) < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) then ! bottom stretching and in bottom buffer zone
                 write(*,*) "B", stretching_buffer(ibool_before_perio(i, j, ispec))
                 !counter=counter+1
               endif
-              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then ! bottom stretching and in bottom buffer zone
+              if(.false. .and. ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then ! bottom stretching and in bottom buffer zone
                 write(*,*) "B_", stretching_buffer(ibool_before_perio(i, j, ispec))
                 !counter=counter-1
               endif
-              if(.false. .and. ABC_STRETCH_TOP .and. coord(2, iglob_unique) > mesh_zmax - ABC_STRETCH_TOP_LBUF) then ! top stretching and in top buffer zone
+              !if(.false. .and. ABC_STRETCH_TOP .and. coord(2, iglob_unique) > mesh_zmax - ABC_STRETCH_TOP_LBUF) then ! top stretching and in top buffer zone
+              if(.false. .and. ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1) then ! top stretching and in top buffer zone
                 write(*,*) "T", stretching_buffer(ibool_before_perio(i, j, ispec))
               endif
+              
             endif
           enddo
         enddo
@@ -165,6 +167,11 @@
     endif
     call flush_IMAIN()
   endif ! Endif on ABC_STRETCH.
+  
+  if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
+    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+  endif
   
   ! Prepare bottom forcing read from external file.
   if(USE_DISCONTINUOUS_METHOD .and. TYPE_FORCING==10) then

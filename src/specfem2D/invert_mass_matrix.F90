@@ -417,7 +417,7 @@
           
           ! LNS PML additions.
           if (LNS_PML_activated .and. ispec_is_PML(ispec)) then
-            ! This ispec is a PML element, we need to update the mass matrix in order to take the stretching into account.
+            ! This ispec is a PML element, we need to update the mass matrix in order to take the PML change of variable into account.
             ispec_PML = spec_to_PML(ispec)
             
             !! Inverse mass matrix for auxiliary variables evolution equations.
