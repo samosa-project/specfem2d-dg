@@ -184,13 +184,14 @@ subroutine prepare_stretching()
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
           !write(*,*) x, z
-          if(x > 59. .and. x <= 60. .and. z > 59.5) then ! DEBUG
-            write(*,*) coord(1, iglob_unique), coord(2, iglob_unique), &
-                       stretching_buffer(iglob_unique), stretching_ya(1, iglob_unique)
+          if(abs(x)< 0.1 .and. z > 8.) then ! DEBUG
+            write(*,*) x, z, &
+                       stretching_buffer(iglob_unique), stretching_ya(:, iglob_unique)
           endif
         enddo
       enddo
     enddo
+    stop "kekkekekkekekekkekekkekekekkekekkekekekkekekkekekekkekekkeke"
   endif
 end subroutine prepare_stretching
 
@@ -217,7 +218,7 @@ subroutine stretching_function(r_l, ya)
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  eps_l = 0.2 ! Ending value of stretching. 1.d-4 in Arina's paper.
+  eps_l = 1e-4 ! Ending value of stretching. 1.d-4 in Arina's paper.
   p = 3.25
   q = 6.
   
