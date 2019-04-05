@@ -516,23 +516,25 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           !endif ! DEBUG
           if(.false.) write(*,*) coord ! UGLY
           
-          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-            ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
-            ! TODO: Do it more clearly.
-            iglob_unique=ibool_before_perio(i,j,ispec)
-            !weight=weight*(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
-            
-            !nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
-            !nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
-            
-            !lambda = max(abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz) &
-            !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
-            !             + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
-            !             abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
-            !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
-            !             + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))!&
-            !            *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
-          endif
+          ! 05 Apr 2019: commented out this section, since it did nothing special.
+          !              Ultimately, either we should keep both, or remove both.
+          !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+          !  ! Update flux with stretching components. It is quite ugly to implement stretching like this (since stretching has nothing to do with the normals), but at least it is quick and does the job. I am sorry.
+          !  ! TTODO: Do it more clearly.
+          !  iglob_unique=ibool_before_perio(i,j,ispec)
+          !  !weight=weight*(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
+          !  
+          !  !nx=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nx
+          !  !nz=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*nz
+          !  
+          !  !lambda = max(abs(veloc_x_DG(iglobM)*nx + veloc_z_DG(iglobM)*nz) &
+          !  !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
+          !  !             + sqrt(abs(gammaext_DG(iglobM)*p_DG(iglobM)/rho_DG(iglobM))), &
+          !  !             abs(veloc_x_DG_P*nx + veloc_z_DG_P*nz) &
+          !  !             *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)) &
+          !  !             + sqrt(abs(gamma_P*p_DG_P/rho_DG_P)))!&
+          !  !            *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
+          !endif
           
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).
           dux_dx = ZERO
@@ -991,12 +993,14 @@ subroutine compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG,
               neighbor(3) = ispec_neighbor
             endif
           
-            if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-              ! Update flux with stretching components. See explanation in the surface terms part in the subroutine above.
-              ! TODO: Do that more clearly.
-              iglob_unique=ibool_before_perio(i,j,ispec)
-              weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
-            endif
+            ! 05 Apr 2019: Commented out this section, since counterpart above was doing nothing.
+            !              Ultimately, either we should keep both, or remove both.
+            !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+            !  ! Update flux with stretching components. See explanation in the surface terms part in the subroutine above.
+            !  ! TODO: Do that more clearly.
+            !  iglob_unique=ibool_before_perio(i,j,ispec)
+            !  weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
+            !endif
             
             iglobP = 1
             if(neighbor(1) > -1) then

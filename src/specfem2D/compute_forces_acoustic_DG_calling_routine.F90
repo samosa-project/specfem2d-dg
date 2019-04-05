@@ -347,19 +347,19 @@ subroutine compute_forces_acoustic_DG_main()
   endif
   
   ! TEST POSTERIORI DAMPING
-  if(.false.) then
-    if(it==1 .and. i_stage==1 .and. myrank==0) then
-        write(*,*) "********************************"
-        write(*,*) "*           WARNING            *"
-        write(*,*) "********************************"
-        write(*,*) "* A posteriori damping of the  *"
-        write(*,*) "* solution activated. Solution *"
-        write(*,*) "* is being damped in the       *"
-        write(*,*) "* absorbing buffers.           *"
-        write(*,*) "********************************"
-    endif
-    call damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See 'prepare_stretching.f90'.
-  endif
+  !if(.false.) then
+  !  if(it==1 .and. i_stage==1 .and. myrank==0) then
+  !      write(*,*) "********************************"
+  !      write(*,*) "*           WARNING            *"
+  !      write(*,*) "********************************"
+  !      write(*,*) "* A posteriori damping of the  *"
+  !      write(*,*) "* solution activated. Solution *"
+  !      write(*,*) "* is being damped in the       *"
+  !      write(*,*) "* absorbing buffers.           *"
+  !      write(*,*) "********************************"
+  !  endif
+  !  call damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal) ! See 'prepare_stretching.f90'.
+  !endif
   
 end subroutine compute_forces_acoustic_DG_main
 
