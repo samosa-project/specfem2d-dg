@@ -36,9 +36,11 @@ function [var] = extractParamFromInputFile(path2file, varName, varType)
       [~, resl] = system(command);
       command=['echo "',resl,'" | grep -oP "[^=]"'];
       [~, resl] = system(command);
+      
       switch(varType)
         case{'int', 'float'}
           var(l) = str2num(regexprep(resl,'[\n\r]+','')); % remove endline
+          
         case{'bool', 'boolean'}
           resl=regexprep(resl,'[\n\r]+',''); % remove endlines
           resl=regexprep(resl,' +',''); % remove spaces
@@ -48,9 +50,16 @@ function [var] = extractParamFromInputFile(path2file, varName, varType)
           else
             var=0;
           end
+        
+        case{'string'}
+          resl=regexprep(resl,'[\n\r]+',''); % remove endlines
+          resl=regexprep(resl,' +',''); % remove spaces
+          var = resl;
+        
         otherwise
           error('kek');
       end
+      
     end
   end
 end

@@ -6,7 +6,7 @@
 %                  1) extract_atmos_model.m
 %
 % Usage:
-%   TODO.
+%   [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl)
 % with:
 %   TODO.
 % yields:

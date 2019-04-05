@@ -26,18 +26,23 @@
 %                https://v2.overleaf.com/project/5c4827468093415759c04743.
 
 clear all;
-close all;
+% close all;
 clc;
 
 tmp=evalc('which extract_atmos_model');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp'); % Addpath for the 'extract_atmos_model' function.
 tmp=evalc('which dynamicViscosity');tmp=split(tmp);tmp=tmp{1};tmp=split(tmp,'/');tmp{end}='';tmp=join(tmp,'/');tmp=tmp{1};addpath(tmp); clear('tmp');
 % addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone'); % thermodynamicalConstants
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models'); % extract_atmos_model
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parametrisation.            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ECMWF_DATAFILE='/home/l.martire/Downloads/Atmospheric_model/Data/ERA5/era5.nc';
 ECMWF_DATAFILE = input(['[',mfilename,'] Input ERA5 file to use > '],'s');
+if(not(exist(ECMWF_DATAFILE)))
+  error(['[',mfilename,', ERROR] This ERA5 file does not exist.']);
+end
 threshold_ok_latlon = 0.5; % If point is < 0.5 ° away, consider it ok.
 threshold_ok_time = 10; % If time is < 10 minutes away, consider it ok.
 [R, ~, ~, M_dryair] = thermodynamicalConstants();
@@ -119,7 +124,7 @@ dz_ecmwf=min(diff(z_ecmwf)); % Get finest step from ECMWF.
 min_alt=input(['[',mfilename,'] Minimum altitude (m)? > ']);
 max_alt=input(['[',mfilename,'] Maximum altitude (m, <',num2str(z_ecmwf(end)),')? > ']);
 nsteps=ceil((max_alt-min_alt)/dz_ecmwf);
-nsteps_input=input(['[',mfilename,'] About to call MSISEHWM wrapper with ',num2str(nsteps),' layers (dz=',num2str((max_alt-min_alt)/nsteps),'). Continue (1 for yes, new value for no)? > ']);
+nsteps_input=input(['[',mfilename,'] About to call MSISEHWM wrapper with ',num2str(nsteps),' layers (dz=',num2str((max_alt-min_alt)/nsteps),'). Continue? 1 for yes; new number of layers if wanted (max 5000)? > ']);
 if(not(isempty(nsteps_input) | nsteps_input==1))
   nsteps=nsteps_input;
 end
@@ -128,6 +133,11 @@ clear('nsteps_input');
 % wind_proj=input(['[',mfilename,'] Input projection angle for projected wind (0 is full zonal positive eastward, 90 is full meridional positive northward, 180 is full backward zonal positive southward, 270 is full backward meridional positive westward)? > ']);
 wind_proj=input(['[',mfilename,'] Input projection angle for projected wind ([deg] from North counter-clockwise)? > ']);
 % run plot_model_wind(z_ecmwf,w_M_ecmwf,w_Z_ecmwf).
+flipwind=-1;
+while(not(numel(flipwind)==1 & ismember(flipwind, [0, 1])))
+  disp(['[',mfilename,'] Flip wind? 0 for positive wind in West->East (/South->North) direction; 1 for positive in East->West (/North->South).']);
+  flipwind=input(['[',mfilename,']            This is still physical, it simply means we look on either side of the simulation plane. > ']);
+end
 
 o_file = model_namer(min_alt, max_alt, nsteps, final_lat, final_lon, annee, jours, secondes, wind_proj);
 
@@ -138,21 +148,27 @@ build_MSISEHWM(min_alt, max_alt, nsteps,final_lat,final_lon,annee,jours,secondes
 [Z, ~, ~, ~, ~, H_m, ~, ~, ~, ~, MUVOL_m, ~, ~, ~, CP_m, CV_m, GAMMA_m] = extract_atmos_model(o_file, 3, 0, 0);
 
 % Interpolate ECMWF on MSISE grid.
-disp(['[',mfilename,'] Interpolating ECMWF quantities on MSISE (finer) grid.']);
+disp(['[',mfilename,'] Interpolating ECMWF quantities on MSISE (finer) grid with splines.']);
 T_e   = spline(z_ecmwf, T_ecmwf, Z);
 p_e   = spline(z_ecmwf, p_full_ecmwf, Z);
 g_e   = spline(z_ecmwf, g_ecmwf, Z);
 w_North_e = spline(z_ecmwf, w_M_ecmwf, Z);
 W_East_e = spline(z_ecmwf, w_Z_ecmwf, Z);
 
+disp(['[',mfilename,'] Summary: loaded (Z, H, MUVOL, CP, CV, GAMMA) from MSISE,.']);
+disp([blanks(length(mfilename)+2),'             and (T, P, G, WN, WE)            from ECMWF.']);
+  
 % Projecting wind.
-disp(['[',mfilename,'] Projected wind onto ',num2str(wind_proj),'° from North counter-clockwise.']); % Projection angle, from North, counter-clockwise, [rad].
+disp(['[',mfilename,'] Built W by projection of (WN, WE) onto ',num2str(wind_proj),'° from North counter-clockwise.']); % Projection angle, from North, counter-clockwise, [rad].
 % w_P_e = cos(wind_proj*pi/180.)*W_Z_e+sin(wind_proj*pi/180.)*w_M_e;
 w_P_e = w_North_e*cos(wind_proj*pi/180) - W_East_e*sin(wind_proj*pi/180);
-smthpar=1e-8; spline=fit(Z, w_P_e, 'smoothingspline','smoothingparam',smthpar); nW=spline(Z); disp(['[',mfilename,'] Spline W (par=',num2str(smthpar),').']);
+if(flipwind)
+  w_P_e = -w_P_e;
+end
+smthpar = 1e-9; spline=fit(Z, w_P_e, 'smoothingspline','smoothingparam',smthpar); nW=spline(Z); disp(['[',mfilename,'] Spline W (par=',num2str(smthpar),').']);
 % Apodise wind.
 apodisewind=-1;
-while(not(numel(apodisewind)==1 & ismember(apodisewind, [0,1,2])))
+while(not(numel(apodisewind)==1 & ismember(apodisewind, [0, 1, 2])))
   apodisewind=input(['[',mfilename,'] Apodise wind (0 for no, 1 for yes and w(z=0)=0, 2 for yes and w(z=0) unchanged from model)? > ']);
 end
 if(apodisewind)
@@ -174,34 +190,55 @@ if(apodisewind)
     error('kek');
   end
 end
-w_P_e=nW;
+w_P_treated=nW;
 
 % Compute hydrostatic rho from ECMWF p.
-P = p_e; G = g_e; method='bruteforce_rho'; modify_atmos_model;
-rho_e = bruteforced_RHO;
-disp(['[',mfilename,'] Bruteforce RHO from P.']); % Regularise hydrostatic ratio by bruteforcing $\rho = -\partial_z{P} / g_z$.
+P = p_e; G = g_e;
+method='bruteforce_rho';
+% method='bruteforce_rho_log';
+modify_atmos_model;
+nRHO = bruteforced_RHO;
+disp(['[',mfilename,'] Bruteforce RHO from ECMWF''s P.']); % Regularise hydrostatic ratio by bruteforcing $\rho = -\partial_z{P} / g_z$.
+smthpar = 1e-12; spline=fit(Z, log(nRHO), 'smoothingspline','smoothingparam',smthpar); nRHO=exp(spline(Z)); disp(['[',mfilename,'] Spline log(RHO) (par=',num2str(smthpar),').']);
+% smthpar = 1e-15; spline=fit(Z, LRHO, 'smoothingspline','smoothingparam',smthpar);       figure();subplot(121);plot(LRHO,Z,spline(Z),Z);subplot(122);plot(D*LRHO,Z,D*spline(Z),Z);
+rho_treated=nRHO;
 
 % Compute dynamic viscosity from ECMWF quantities.
-mu_e = dynamicViscosity(rho_e, T_e, p_e);
+disp(['[',mfilename,'] Computing MU and KAPPA from ECMWF''s (RHO, T, P).']);
+mu_e = dynamicViscosity(rho_treated, T_e, p_e);
 kappa_e = thermalConductivity(T_e);
 
 % Compute missing quantities:
 % - sound speed can be computed from T_ECMWF and gamma_MSISE (c=sqrt(gamma*R*T/M)=sqrt(gamma*P/rho)),
 % - N^2 can be computed from gamma_MSISE, g_ECMWF, and T_ECMWF (N^2=(gamma-1)*g^2/(gamma*R*T)).
-disp(['[',mfilename,'] Computing missing quantities (sound speed, Brunt-Väisälä frequency).']);
+disp(['[',mfilename,'] Computing missing quantities (sound speed, Brunt-Väisälä frequency) from MSISE''s GAMMA, ECMWF''s (P, RHO, G).']);
 % Version 1, assuming the molar mass of air does not change and is equal to dry air molar mass. Relying on 1 MSISE quantity.
 % soundspeed_merged=sqrt(GAMMA.*R.*T_e2m/M_dryair);
 % Nsquared_merged=(GAMMA-1).*g_e2m.^2.*M_dryair./(GAMMA.*R.*T_e2m);
 % Version 2, more exact. Relying on 2 MSISE quantities.
 % soundspeed_merged=sqrt(GAMMA.*p_e./DENSITY); % unused by specfem
-soundspeed_merged=sqrt(GAMMA_m.*p_e./rho_e); % unused by specfem
-Nsquared_merged=(GAMMA_m-1).*g_e.^2.*rho_e./(GAMMA_m.*p_e); % unused by specfem
+soundspeed_merged=sqrt(GAMMA_m.*p_e./rho_treated); % unused by specfem
+Nsquared_merged=(GAMMA_m-1).*g_e.^2.*rho_treated./(GAMMA_m.*p_e); % unused by specfem
+
+plotricharddd=-1;
+while(not(numel(plotricharddd)==1 & ismember(plotricharddd, [0, 1])))
+  plotricharddd=input(['[',mfilename,'] Plot Richardson number (0 for no, 1 for yes)? > ']);
+end
+if(plotricharddd)
+  figure();
+  semilogx(Richardson_number(w_P_e, differentiation_matrix(Z, 0), Nsquared_merged.^0.5),Z); hold on;
+  semilogx(Richardson_number(w_P_treated, differentiation_matrix(Z, 0), Nsquared_merged.^0.5),Z); hold on;
+  plot(0.25*[1,1],[min(Z),max(Z)]); hold on;
+  plot(1*[1,1],[min(Z),max(Z)]);
+  xlim([1e-1,1e2]);
+  ylim([min(Z),max(Z)]);
+end
 
 % Output newly-built file.
 disp(['[',mfilename,'] Rewriting model to another file.']);
 new_o_file = ['msiseecmwf_',o_file];
 % rewrite_atmos_model(new_o_file, o_file, ALTITUDE, DENSITY, T_e2m, soundspeed_merged, p_e2m, LOCALPRESSURESCALE, g_e2m, Nsquared_merged, KAPPA, MU, MUVOL, w_M_e2m, W_Z_e2m, w_P, CP, CV, GAMMA);
-rewrite_atmos_model(new_o_file, o_file, Z, rho_e, T_e, soundspeed_merged, p_e, H_m, g_e, Nsquared_merged, kappa_e, mu_e, MUVOL_m, w_North_e, W_East_e, w_P_e, CP_m, CV_m, GAMMA_m);
+rewrite_atmos_model(new_o_file, o_file, Z, rho_treated, T_e, soundspeed_merged, p_e, H_m, g_e, Nsquared_merged, kappa_e, mu_e, MUVOL_m, w_North_e, W_East_e, w_P_treated, CP_m, CV_m, GAMMA_m);
 
 kek=what(o_folder);
 fullnewpath=[kek.path,filesep,new_o_file];

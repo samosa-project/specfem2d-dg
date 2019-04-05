@@ -33,18 +33,33 @@ plotrateversion = 'FNS';
 nbeltsElastic = input(['[',mfilename,'] Number of viscoelastic elements? > ']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Auto-read from parfile. %%%%%
-parfile = input(['[',mfilename,'] Path to simulation parfile > '],'s');
+parfile='';
+while(not(exist(parfile)==2))
+  parfile = input(['[',mfilename,'] Path to simulation parfile > '],'s');
+end
 nstations = sum(extractParamFromInputFile(parfile, 'nrec', 'float'));
 nstepseismo = extractParamFromInputFile(parfile, 'NSTEP_BETWEEN_OUTPUT_SEISMOS', 'float');
-extmesh=extractParamFromInputFile(parfile, 'read_external_mesh', 'bool');
+extmesh = extractParamFromInputFile(parfile, 'read_external_mesh', 'bool');
 if(not(extmesh))
   command = ['cat ',parfile,' | grep -oP " *1 +[0-9]+ +[0-9]+ +[0-9]+ | tail -1"'];
   [~, r]=system(command);
   r = str2num(r);
   neltot    = r(end,end-2)*r(end,end);
 else
-  error('ENTER THE NUMBER OF POINTS OMEGALUL');
-  neltot    = 204980;
+  disp(['[',mfilename,'] Need to read number of elements from the external mesh.']);
+  spl=split(parfile,'/');
+  spl{end}='';
+  folderofparfile=strjoin(spl,filesep);
+  tryMeshExtMeshLocalisation = [folderofparfile,'EXTMSH',filesep,'Mesh_extMesh'];
+  if(not(exist(tryMeshExtMeshLocalisation)))
+    error('ENTER THE NUMBER OF POINTS OMEGALUL');
+  else
+    [~,r]=system(['head ',tryMeshExtMeshLocalisation,' -n 1']);
+    neltot    = str2num(r);
+    disp(['[',mfilename,'] Total number of elements found to be ',num2str(neltot),'. Check your EXTMSH files.']);
+    disp(['[',mfilename,'] Press any key to continue.']);
+    pause();
+  end
 end
 neldg       = neltot-nbeltsElastic;
 nstepsnap   = extractParamFromInputFile(parfile, 'NSTEP_BETWEEN_OUTPUT_IMAGES', 'float');
@@ -77,6 +92,7 @@ nproc = -1;
 while(nproc~=0)
   nproc = -1;
   while(not(numel(nproc)==1 & nproc>=0))
+    disp(' ');disp(' ');disp(' ');
     nproc = input(['[',mfilename,'] Number of procs (>=0, 0 to stop script)? > ']);
   end
   if(nproc==0)
@@ -264,27 +280,27 @@ function [x,t,RUNINFO,RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[  29100   10500 0.471   2500   64  100    2  50     85]; RUNINFO{i}={71913, 'OKQ45 small for test impedance FNS'}; i=i+1;
   RUN_RAWDATA(i,:)=[  29100       0 0.471   2500   64  100    2  50     47]; RUNINFO{i}={71936, 'OKQ45 small for test impedance but potential FNS'}; i=i+1;
   RUN_RAWDATA(i,:)=[  57887   39553 0.441  28000   16  250   29  25  18010]; RUNINFO{i}={74752, 'tir de mine heavy & incomplete FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  17220   17220 0.570  21400   32  500   52  25   1083]; RUNINFO{i}={74710, 'mb gmsh FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  19425   13563 0.464  40000   16  250   29  25   6580]; RUNINFO{i}={75040, 'tir de mine light & full FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25   1669]; RUNINFO{i}={830669,'FNS visc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25   1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1; % First LNS.
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25   1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25    809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500   87  25    351]; RUNINFO{i}={120363,'mb gmsh FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500   87  25    325]; RUNINFO{i}={120414,'mb gmsh LNS 200km'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500   87  25    931]; RUNINFO{i}={120557,'mb gmsh LNS 400km (1)'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500   87  25    941]; RUNINFO{i}={120621,'mb gmsh LNS 400km (2)'}; i=i+1;
-  RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500    4  25  41137]; RUNINFO{i}={130337,'test DAG FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 195500  195500 0.490  24600  128  500   20  25   4080]; RUNINFO{i}={103088,'DAG FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500   87  25  12591]; RUNINFO{i}={1447857,'mb gmsh LNS longestyet'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250   10  25    972]; RUNINFO{i}={144802,'tir de mine FNS'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  12944    6597 0.385 160000   96  250   18  25   1136]; RUNINFO{i}={147954,'tir de mine FNS 400Hz'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500  131  50  32583]; RUNINFO{i}={147921,'FNS mars insight'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428 113000   48  500   11  50    575]; RUNINFO{i}={1484867,'FNS mars insight cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   11  50     41]; RUNINFO{i}={1485893,'FNS mars insight cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   15  50     41]; RUNINFO{i}={1486004,'FNS mars insight cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500    8  50     41]; RUNINFO{i}={1486113,'FNS mars insight cut'}; i=i+1;
-  RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000   18  25    401]; RUNINFO{i}={1508049,'FNS tir de mine 40Hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  17220   17220 0.570  21400   32  500   52  25    1083]; RUNINFO{i}={74710, 'mb gmsh FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  19425   13563 0.464  40000   16  250   29  25    6580]; RUNINFO{i}={75040, 'tir de mine light & full FNS'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25    1669]; RUNINFO{i}={830669,'FNS visc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25    1252]; RUNINFO{i}={830672,'LNS visc'}; i=i+1; % First LNS.
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25    1590]; RUNINFO{i}={830670,'FNS novisc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10000   10000 0.404  10000    4   50    1  25     809]; RUNINFO{i}={830671,'LNS novisc'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500   87  25     351]; RUNINFO{i}={120363,'FNS mb gmsh'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  29171   29171 0.421   4000   32  500   87  25     325]; RUNINFO{i}={120414,'LNS mb gmsh 200km'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500   87  25     931]; RUNINFO{i}={120557,'LNS mb gmsh 400km (1)'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  53719   53719 0.423  10000   48  500   87  25     941]; RUNINFO{i}={120621,'LNS mb gmsh 400km (2)'}; i=i+1;
+  RUN_RAWDATA(i,:)=[7155000 7155000 0.310  40000  680  500    4  25   41137]; RUNINFO{i}={130337,'FNS test DAG'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 195500  195500 0.490  24600  128  500   20  25    4080]; RUNINFO{i}={103088,'FNS DAG'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  38257   38257 0.231  28600  288  500   87  25   12591]; RUNINFO{i}={1447857,'LNS mb gmsh longestyet'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  11178    6766 0.485 160000   96  250   10  25     972]; RUNINFO{i}={144802,'FNS tir de mine'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  12944    6597 0.385 160000   96  250   18  25    1136]; RUNINFO{i}={147954,'FNS tir de mine 400Hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1226000 1184000 0.428 113000  384  500  131  50   32583]; RUNINFO{i}={147921,'FNS mars insight'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428 113000   48  500   11  50     575]; RUNINFO{i}={1484867,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   11  50      41]; RUNINFO{i}={1485893,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500   15  50      41]; RUNINFO{i}={1486004,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[   5120    3440 0.428   8000   48  500    8  50      41]; RUNINFO{i}={1486113,'FNS mars insight cut'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  10318    5451 0.496  64000   96 1000   18  25     401]; RUNINFO{i}={1508049,'FNS tir de mine 40Hz'}; i=i+1;
   RUN_RAWDATA(i,:)=[1328000 1284800 0.391 393800 1008 2000  164 100   74988]; RUNINFO{i}={1529789,'FNS mars insight 20h 3hz w/  perioBC'}; i=i+1;
   RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000  200 100   51256]; RUNINFO{i}={1538139,'FNS mars insight 22h 3hz w/o perioBC'}; i=i+1;
   RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000   87  50   86388]; RUNINFO{i}={1560350,'LNS mb gmsh 400km (3) refined and atmmodel reg'}; i=i+1;

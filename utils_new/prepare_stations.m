@@ -20,8 +20,25 @@ addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
 simulationfolder = input(['[',mfilename,'] Path to simulation folder > '],'s');
 if(not(simulationfolder(end)==filesep)); simulationfolder=[simulationfolder,filesep]; end;
 
+typeeee=-1;
+while(not(numel(typeeee)==1 & ismember(typeeee,[0,1,101])))
+  disp(['[',mfilename,'] Type of simulation?']);
+  disp([blanks(length(mfilename)+2),'     0 AboveAndBelowGround_Periodic_WithTilt']);
+  disp([blanks(length(mfilename)+2),'     1 AboveGroundSimple']);
+  disp([blanks(length(mfilename)+2),'   101 AboveGroundSimple_Microbaroms']);
+  typeeee=input([blanks(length(mfilename)+2),' > ']);
+end
+switch (typeeee)
+  case 0
+    [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt(simulationfolder);
+  case 1
+    [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple(simulationfolder);
+  case 101
+    [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple_Microbaroms(simulationfolder);
+  otherwise
+    error('kuk');
+end
 % [xminmax, zminmax, interface, Xsource, debfin, d, name] = mars_insight([0,500]);
-[xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt(simulationfolder);
 % [xminmax, zminmax, interface, Xsource, debfin, d, name] = tir_de_mine();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,53 +80,97 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Functions.                  %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [N] = get_domain_and_stations(xminmax, zminmax, interface, Xsource, debfin, delta)
-  if(not( numel(xminmax) == numel(zminmax) & numel(zminmax) == 2))
-    error('kek');
-  end
-  if(not(size(debfin, 1) == numel(delta)))
-    error('kek');
-  end
-  lid = numel(delta);
-  figure('units', 'normalized', 'outerposition', [0 0 1 1]);
-  set(gca, 'Color', 'k');
-  set(gca, 'GridColor', 'white');
-  rectangle('Position', [xminmax(1), zminmax(1), diff(xminmax), diff(zminmax)], 'edgecolor', 'white', 'linewidth', 1); hold on;
-  line(interface(1, :), interface(2, :), 'color', 'white', 'linewidth', 1);
-  pct = 0.05; margin = min(pct*diff(xminmax), pct*diff(zminmax));
-  axis([xminmax(1)-margin, xminmax(2)+margin, zminmax(1)-margin, zminmax(2)+margin]);
-  grid on; box on;
-  plot(Xsource(1), Xsource(2), 'r+');
-  for i = 1:lid
-    Lline = norm(diff(debfin(i, :, :), 1, 3));
-    if(Lline == 0 || delta(i) == 0)
-      N(i) = 1;
-    else
-      N(i) = ceil(Lline/delta(i))+1;
-    end
-    N(i)
-    xz = [linspace(debfin(i, 1, 1), debfin(i, 1, 2), N(i)); ...
-        linspace(debfin(i, 2, 1), debfin(i, 2, 2), N(i))]
-    plot(xz(1, :), xz(2, :), 'g.');
-  end
-  daspect([1 1 1]);
-  xlabel(['$x$ [m]']); ylabel(['$z$ [m]']);
-  set(gca, 'ticklabelinterpreter', 'latex');
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run configurations.         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple_Microbaroms(simulationfolder)
+  parfile        = [simulationfolder, 'parfile_input'];
+  sourcefile     = [simulationfolder, 'source_input'];
+  interfacesfile = [simulationfolder, 'interfaces_input'];
+  [xminmax, zminmax, Xsource] = getRunParameters(parfile, sourcefile, interfacesfile);
+  STAT_DX = 15e3;
+  STAT_Z = [1, 15, 30]*1e3; % altitude of stations.
+  groundclearance = 3;
+  interface = [-1e9, 1e9;0, 0];
+  isitok=-1;
+  while(not(ismember(isitok,[0,1])))
+    isitok=input(['[', mfilename, '] Stations'' DX planned to be ',num2str(STAT_DX),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  end
+  if(isitok==0)
+    error(['[',mfilename,', ERROR] Parameter was not ok, re-choose parametrisation in script.']);
+  end
+  isitok=-1;
+  while(not(ismember(isitok,[0,1])))
+    isitok=input(['[', mfilename, '] Stations'' Z planned to be ',num2str(STAT_Z),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  end
+  if(isitok==0)
+    error(['[',mfilename,', ERROR] Parameter was not ok, re-choose parametrisation in script.']);
+  end
+  lid = 0;
+%   lid = lid+1;
+%   d(lid) = 0;
+%   debfin(lid, 1, :) = Xsource(1)*[1, 1]; % xdeb xfin
+%   debfin(lid, 2, :) = Xsource(2)*[1, 1]; % zdeb zfin
+%   name{lid} = ['source'];
+  for i=1:numel(STAT_Z)
+    lid = lid+1;
+    d(lid) = STAT_DX;
+    debfin(lid, 1, :) = [xminmax(1)+d(lid), Xsource(1)]; % xdeb xfin
+    debfin(lid, 2, :) = [1, 1]*STAT_Z(i); % zdeb zfin
+    name{lid} = ['horizontal altitude ',num2str(STAT_Z),' [m]'];
+  end
+  lid = lid+1;
+  d(lid) = 1000;
+  debfin(lid, 1, :) = [-1, 1]*8e3; % xdeb xfin
+  debfin(lid, 2, :) = [1, 1]*groundclearance; % zdeb zfin
+  name{lid} = ['microbarom monitoring'];
+end
+
+function [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple(simulationfolder)
+  parfile        = [simulationfolder, 'parfile_input'];
+  sourcefile     = [simulationfolder, 'source_input'];
+  interfacesfile = [simulationfolder, 'interfaces_input'];
+  [xminmax, zminmax, Xsource] = getRunParameters(parfile, sourcefile, interfacesfile);
+  STAT_DX = 15e3;
+  STAT_Z = [1, 15, 30]*1e3; % altitude of stations.
+  interface = [-1e9, 1e9;0, 0];
+  isitok=-1;
+  while(not(ismember(isitok,[0,1])))
+    isitok=input(['[', mfilename, '] Stations'' DX planned to be ',num2str(STAT_DX),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  end
+  if(isitok==0)
+    error(['[',mfilename,', ERROR] Parameter was not ok, re-choose parametrisation in script.']);
+  end
+  isitok=-1;
+  while(not(ismember(isitok,[0,1])))
+    isitok=input(['[', mfilename, '] Stations'' Z planned to be ',num2str(STAT_Z),' [m]. Is that ok (0 for no, 1 for yes)? > ']);
+  end
+  if(isitok==0)
+    error(['[',mfilename,', ERROR] Parameter was not ok, re-choose parametrisation in script.']);
+  end
+  lid = 0;
+  lid = lid+1;
+  d(lid) = 0;
+  debfin(lid, 1, :) = Xsource(1)*[1, 1]; % xdeb xfin
+  debfin(lid, 2, :) = Xsource(2)*[1, 1]; % zdeb zfin
+  name{lid} = ['source'];
+  for i=1:numel(STAT_Z)
+    lid = lid+1;
+    d(lid) = STAT_DX;
+    debfin(lid, 1, :) = [xminmax(1)+d(lid), xminmax(2)-d(lid)]; % xdeb xfin
+    debfin(lid, 2, :) = [1, 1]*STAT_Z(i); % zdeb zfin
+    name{lid} = ['horizontal altitude ',num2str(STAT_Z),' [m]'];
+  end
+end
+
 function [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt(simulationfolder)
   parfile        = [simulationfolder, 'parfile_input'];
   sourcefile     = [simulationfolder, 'source_input'];
   interfacesfile = [simulationfolder, 'interfaces_input'];
-  xminmax = [extractParamFromInputFile(parfile, 'xmin', 'float'), extractParamFromInputFile(parfile, 'xmax', 'float')];
-  Xsource = [extractParamFromInputFile(sourcefile, 'xs', 'float'), extractParamFromInputFile(sourcefile, 'zs', 'float')];
-  [zmin, zmax] = extractZminZmaxFromInterfacesFile(interfacesfile);
-  zminmax = [zmin,zmax];
+%   xminmax = [extractParamFromInputFile(parfile, 'xmin', 'float'), extractParamFromInputFile(parfile, 'xmax', 'float')];
+%   Xsource = [extractParamFromInputFile(sourcefile, 'xs', 'float'), extractParamFromInputFile(sourcefile, 'zs', 'float')];
+%   [zmin, zmax] = extractZminZmaxFromInterfacesFile(interfacesfile);
+%   zminmax = [zmin,zmax];
+  [xminmax, zminmax, Xsource] = getRunParameters(parfile, sourcefile, interfacesfile);
   spacingstations = 300;
   isitok=-1;
   while(not(ismember(isitok,[0,1])))
@@ -196,4 +257,78 @@ function [xminmax, zminmax, interface, Xsource, debfin, d, name] = tir_de_mine()
   lid = lid+1; d(lid) = 0; r = 187; name{lid} = ['ISAE IS Sensor 2, above GLA08 (@r = ', num2str(r), '), z = +', num2str(ISAEIS2_z), ' (ISAEIS ground is GLA08 z = +1m)']; debfin(lid, :, :) = debfin(idGLA08, :, :); debfin(lid, 2, :) = debfin(lid, 2, :)+ISAEIS2_z;
   lid = lid+1; d(lid) = 0; r = 187; name{lid} = ['ISAE IS Sensor 3, above GLA08 (@r = ', num2str(r), '), z = +', num2str(ISAEIS3_z), ' (ISAEIS ground is GLA08 z = +1m)']; debfin(lid, :, :) = debfin(idGLA08, :, :); debfin(lid, 2, :) = debfin(lid, 2, :)+ISAEIS3_z;
   lid = lid+1; d(lid) = 1; r = 0; name{lid} = ['Monitor Source']; debfin(lid, 1, :) = Xsource(1)*[1, 1]; debfin(lid, 2, :) = (Xsource(2)+d(lid))*[1, 1];
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functions.                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [N] = get_domain_and_stations(xminmax, zminmax, interface, Xsource, debfin, delta)
+  if(not( numel(xminmax) == numel(zminmax) & numel(zminmax) == 2))
+    error('kek');
+  end
+  if(not(size(debfin, 1) == numel(delta)))
+    error('kek');
+  end
+  lid = numel(delta);
+  figure('units', 'normalized', 'outerposition', [0 0 1 1]);
+  set(gca, 'Color', 'k');
+  set(gca, 'GridColor', 'white');
+  rectangle('Position', [xminmax(1), zminmax(1), diff(xminmax), diff(zminmax)], 'edgecolor', 'white', 'linewidth', 1); hold on;
+  line(interface(1, :), interface(2, :), 'color', 'white', 'linewidth', 1);
+  pct = 0.05; margin = min(pct*diff(xminmax), pct*diff(zminmax));
+  axis([xminmax(1)-margin, xminmax(2)+margin, zminmax(1)-margin, zminmax(2)+margin]);
+  grid on; box on;
+  plot(Xsource(1), Xsource(2), 'r+');
+  for i = 1:lid
+    Lline = norm(diff(debfin(i, :, :), 1, 3));
+    if(Lline == 0 || delta(i) == 0)
+      N(i) = 1;
+    else
+      N(i) = ceil(Lline/delta(i))+1;
+    end
+    N(i)
+    xz = [linspace(debfin(i, 1, 1), debfin(i, 1, 2), N(i)); ...
+        linspace(debfin(i, 2, 1), debfin(i, 2, 2), N(i))]
+    plot(xz(1, :), xz(2, :), 'g.');
+  end
+  daspect([1 1 1]);
+  xlabel(['$x$ [m]']); ylabel(['$z$ [m]']);
+  set(gca, 'ticklabelinterpreter', 'latex');
+end
+
+function [xminmax, zminmax, Xsource] = getRunParameters(parfile, sourcefile, interfacesfile)
+  externalMesh = extractParamFromInputFile(parfile, 'read_external_mesh', 'bool');
+  if(externalMesh)
+    disp(['[',mfilename,'] Need to read an external mesh.']);
+    P=extMesh_loadNodes();
+    xminmax = [min(P(:,1)), max(P(:,1))];
+    zminmax = [min(P(:,2)), max(P(:,2))];
+  else
+    xminmax = [extractParamFromInputFile(parfile, 'xmin', 'float'), extractParamFromInputFile(parfile, 'xmax', 'float')];
+    [zmin, zmax] = extractZminZmaxFromInterfacesFile(interfacesfile);
+    zminmax = [zmin,zmax];
+  end
+  Xsource = [extractParamFromInputFile(sourcefile, 'xs', 'float'), extractParamFromInputFile(sourcefile, 'zs', 'float')];
+  disp(['[',mfilename,'] [xminmax zminmax] found to be [',num2str([xminmax, zminmax]),'].']);
 end

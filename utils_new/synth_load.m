@@ -41,8 +41,8 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-fig_title = strcat('Mars Coupling');
-rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
+% fig_title = strcat('Mars Coupling');
+% rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
@@ -69,7 +69,8 @@ rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPU
 % rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
-% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash@20600/'); subsample = 1; wanted_dt = 0.01; % same as 1560350 but fns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560541_crashfns/'); % same as 1560350 but fns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash/'); % same as 1560541 but lns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1447857_longestyet/');

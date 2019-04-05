@@ -22,21 +22,20 @@
 % yields:
 %   TODO.
 
-clear all; clc ; 
+clear all;
 % close all;
+clc ;
 format long ;
-clear DIFF
-clear synf
+% clear DIFF
+% clear synf
+iiii = complex(0, 1); % the square root of -1
 
 SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
 addpath([SPCFMloc,'utils_new/Atmospheric_Models']); % For extract_atmos_model
 addpath([SPCFMloc,'utils_new/tools']); % For extractParamFromInputFile
+
 rootd=[SPCFMloc,'EXAMPLES/validation_lns_gravito/']; % EXAMPLE path
 
-%%%%%%%%%%%%%%%%%%%%
-% Kind of simulation and seismotype (Found in Par_file)
-seismotype = 2 ;  
-simuType = 1; % 1 for forcing and 2 for attenuation
 
 %%%%%%%%%
 % Display
@@ -56,6 +55,7 @@ subtitle2 = strcat([' with a variable density profile and a sound speed equal to
 % directory = strcat('/home/qbrissaud/Documents/Results/LAST_GRAVI_Roland/200PROCS/');
 % directory = strcat('./');
 OFd = [rootd,'OUTPUT_FILES/'];
+simuType = 1; % 1 for forcing and 2 for attenuation
 % directory = strcat('/home/qbrissaud/Documents/FD/FD_14/');
 % directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4_3D/');
 % directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/') ; 
@@ -77,44 +77,119 @@ int_file=[OFd,'input_interfaces'];
 % istattab=[6:7:48]
 % xstattab=[450250.0:50000.0:750250.0]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Time and space domain variables (parfile)
-% xmin = 350000;
-% xmax = 1250000.0;
-% xmin = 400000;
-% xmax = 600000.0;
-% ymin = xmin;
-% ymax = xmax;
 
-% automatically find xmin xmax ymin ymax nx from simulation's OUTPUT_FILES directory
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Time and space domain
+% variables (parfile)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Automatically load parameters from simulation's OUTPUT_FILES directory.
+[ymin, ymax] = extractZminZmaxFromInterfacesFile(int_file);
+
+dt = extractParamFromInputFile(parfile, 'DT', 'float');
+TYPE_FORCING = extractParamFromInputFile(parfile, 'TYPE_FORCING', 'int');
+P_0 = extractParamFromInputFile(parfile, 'main_spatial_period', 'float'); % main spatial period
+T_0 = extractParamFromInputFile(parfile, 'main_time_period', 'float'); % main time period
+X_0 = extractParamFromInputFile(parfile, 'forcing_initial_loc', 'float'); % forcing initial location
+t_0 = extractParamFromInputFile(parfile, 'forcing_initial_time', 'float'); % forcing initial time
+seismotype = extractParamFromInputFile(parfile, 'seismotype', 'int');
 xmin = extractParamFromInputFile(parfile, 'xmin', 'float');
 xmax = extractParamFromInputFile(parfile, 'xmax', 'float');
-grep_remove_comments=['grep -v "^#.*"'];
-grep_find_interface_lines=['grep -P "[0-9]+\.?[^[0-9]]*[0-9]+"'];
-[~,y]=system(['cat ',int_file,' | ',grep_remove_comments,' | ',grep_find_interface_lines,' | head -1']); y=str2num(y); ymin=y(end)
-[~,y]=system(['cat ',int_file,' | ',grep_remove_comments,' | ',grep_find_interface_lines,' | tail -1']); y=str2num(y); ymax=y(end)
 nx = extractParamFromInputFile(parfile, 'nx', 'int');
-
-% dx   = 5000.0;
-dx = (xmax-xmin)/nx
-dy   = dx;
+% Atmospheric model.
+switch(extractParamFromInputFile(parfile, 'MODEL', 'string'))
+  case 'default'
+    externalDGAtmosModel = 0;
+  case 'external_DG'
+    externalDGAtmosModel = 1;
+  otherwise
+    error('kok');
+end
+% Deduce other useful parameters.
+dx = (xmax-xmin)/nx;
+dz = dx; disp(['[',mfilename,', INFO] Setting dz=dx. Make sure this is the case for your simulation.']);
 t0 = 0.0;
-% dt   = 25.0 ;
-% syn_duration=400000 ;
-% dt   = 100.0 ;
-dt   = 1e-2 ;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Analytical solution.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Choices
 extent_time = 3.5;
 extent_x = 1;
 extent_y = 1;
+% fs   = 1/dt ; %not used anywhere
+fmax = 1;
+fmin = -fmax;
+% Atmospheric part parameters.
+if(externalDGAtmosModel)
+  % External DG atmospheric model, load it.
+  disp(['[',mfilename,'] Loading atmospheric model from external file in ''',OFd,'''.']);
+  % set H, NSQ
+  [ALT, RHO, ~, SOUNDSPEED, ~, ~, GRA, NSQ, ~, ~, ~, ~, ~, WIND, ~, ~, ~] = extract_atmos_model(atmmodelfile, 3, 0, 0); % plot_model(atmmodelfile,'-','k',[]);
+  % Set wi
+  if(max(abs(diff(WIND)))==0)
+    disp(['[',mfilename,'] Constant wind, setting wi.']);
+    wi = WIND(1);
+  else
+    disp(['[',mfilename,'] Wind not constant, setting wi as sound speed at ground.']);
+    wi = WIND(1);
+  end
+%   H        = (ALT(2)-ALT(1))/log(RHO(1)/RHO(2))
+  H        = (-ALT(2))/log(RHO(2)/RHO(1));
+%   rho_0    = RHO(1); % used nowhere
+%   Nsqt      = -(GRA(1)*( -1/H - GRA(1)/(velocity(1)^2) )); % used nowhere
+else
+  % Internal model, load it.
+  disp(['[',mfilename,'] Loading atmospheric model from parfile in ''',OFd,'''.']);
+  % set H
+  H = extractParamFromInputFile(parfile, 'SCALE_HEIGHT', 'float');
+  % set NSQ
+  GRA = extractParamFromInputFile(parfile, 'gravity', 'float');
+  SOUNDSPEED = extractParamFromInputFile(parfile, 'sound_velocity', 'float');
+  NSQ = -(GRA*( -1/H - GRA/(SOUNDSPEED^2) ));% NOT SURE ABOUT THAT FORMULA, CHECK
+  % Set wi
+  wi = extractParamFromInputFile(parfile, 'wind', 'float');
+end
 
-% Frequency domain
-fs   = 1/dt ;
-fmax = 1 ;
-fmin = -fmax ;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Loading Results.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% data = readAndSubsampleSynth(OFd, 2, 'BXZ', 'semv', 1, 1, 0); sig_t = data(:,1)'; sig_v = data(:,2)'; figure(); plot(sig_t, sig_v); % test
+switch(seismotype)
+  case(1)
+    variable = ' Displacement along' ;
+    signal_type = 'd' ; % -> 'a' for acceleration
+    % -> 'd' for displacement or sqrt(density) *
+    %    displacement
+    % -> 'v' for velocity or sqrt(density) * velocity
+    % Watch the right letter at the end of the output
+    % ascii file from specfem2D
+  case(2)
+    variable = 'Velocity along' ;
+    signal_type = 'v' ;
+  case(3)
+    variable = 'Acceleration along' ;
+    signal_type = 'a' ;
+  case(4)
+    variable = 'Pressure along ' ;
+    signal_type = 'p' ;
+  case(5)
+    variable = 'Curl of displacement along ' ;
+    signal_type = 'c' ;
+  case(6)
+    variable = 'Fluid potential along ' ;
+    signal_type = 'p' ;                  
+  case(7)
+    variable = '\rho^{1/2} cdot {\bf u} along' ;
+    signal_type = 'd' ;
+  otherwise
+    error(['[',mfilename,', ERROR] seismotype not implemented.']);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Analytical model variables, as in parfile.
-%  xo     = 750000.0;
+% xo     = 750000.0;
 % xo     = 250000.0;
 % lambdo = 10000.0;
 % lambdo = 80000.0;
@@ -128,87 +203,59 @@ fmin = -fmax ;
 % to     = 65.0;
 % xo = 600000.0;
 % wind in x direction
-% uo=99.999
-% %  uo=4.9
-% uo = 10;
-% uo = 0.0
-
-% [Brissaud et al., 2016, Section 5.2].
-TYPE_FORCING = extractParamFromInputFile(parfile, 'TYPE_FORCING', 'int');
-P_0 = extractParamFromInputFile(parfile, 'main_spatial_period', 'float'); % main spatial period
-T_0 = extractParamFromInputFile(parfile, 'main_time_period', 'float'); % main time period
-X_0 = extractParamFromInputFile(parfile, 'forcing_initial_loc', 'float'); % forcing initial location
-t_0 = extractParamFromInputFile(parfile, 'forcing_initial_time', 'float'); % forcing initial time
-
+% wi=99.999
+% %  wi=4.9
+% wi = 10;
+% wi = 0.0
 % rho_cst = 0.02 ;
 % A = 1;
 % V = 639.52; % [m/s]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading data from the atmospherical model
 % atmos = load(atmmodelfile) ;
 % atmos = load('1D_iso_enhanced.txt');
-
 % % CONVERT OLD FILES TO NEW ONES
 % atmos = load([rootd,'1D_iso_enhanced.txt']);
 % alti_atm = atmos(:,1); rho = atmos(:,2); velocity = atmos(:,3); gravity = atmos(:,4); Nsq = atmos(:,5); Pressure = atmos(:,6);
 % cpcst=1005; cvcst=717.3447537473;
 % wind = 0;
 % rewrite_atmos_model([rootd,'atmospheric_model.dat'], [], alti_atm, rho, rho*0, velocity, Pressure, rho*0, gravity, Nsq, rho*0, rho*0, rho*0, rho*0, rho*0, rho*0+wind, rho*0+cpcst, rho*0+cvcst, rho*0);
-
 % alti_atm = atmos(:,1) ;
 % rho      = atmos(:,2) ;
 % velocity = atmos(:,3) ;
 % gravity  = atmos(:,4) ;
 % Nsq      = atmos(:,5) ;
 % Pressure = atmos(:,6) ;
-disp(['[',mfilename,'] Loading atmospheric model from simulation ''',OFd,'''.']);
-[ALT, RHO, ~, SOUNDSPEED, ~, ~, GRA, NSQ, ~, ~, ~, ~, ~, WIN, ~, ~, ~] = extract_atmos_model(atmmodelfile, 3, 0, 0);
-%plot_model(atmmodelfile,'-','k',[]);
-if(max(abs(diff(SOUNDSPEED)))==0)
-  disp('constant sound speed, setting uo');
-  uo=SOUNDSPEED(1);
-else
-  disp(['sound speed not constant, setting uo as sound speed at ground']);
-  uo=SOUNDSPEED(1);
-end
 
-
-% Profile of density with a constant scaling H
-% H        = (ALT(2)-ALT(1))/log(RHO(1)/RHO(2))
-H        = (-ALT(2))/log(RHO(2)/RHO(1));
-% Nsqt      = -(GRA(1)*( -1/H - GRA(1)/(velocity(1)^2) ));
-rho_0    = RHO(1);
+pause %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 nSamp=10000;
 xstattab = [5000];
-    zstattab = [10000];
-%      xo = xmax/2;
-    nstat = 1;
-    Ztime(1,:) = linspace(0,nSamp,dt);
+zstattab = [10000];
+% xo = xmax/2;
+nstat = 1;
+Ztime(1,:) = linspace(0,nSamp,dt);
 READ_DATA = 1;
     
 if(READ_DATA == 1)
   %%%%%%%%%%%%%%%%%%%%%%
-  % Stations data
-%   pos_stat = load(strcat(directory,'STATIONS')) ;
-  [x_stat,z_stat,y_stat,~] = loadStations(rootd, OFd);
-  pos_stat=[y_stat,z_stat,x_stat]; % try to do something to stick with rest of code
+  % Load stations' data.
+%   pos_stat = load(strcat(directory,'STATIONS')) ; % first code version
+  [x_stat, z_stat, y_stat, ~] = loadStations(rootd, OFd);
+  pos_stat=[y_stat, z_stat, x_stat]; % try to do something to stick with rest of code
   
+  % Build istattab.
   % istattab = 1:size(pos_stat(:,1),1);
   % istattab = [1:18:81] ;
   % istattab = [37 38 39 40 41 42 43 44 45];
   % istattab = [36 37 44 45]+9;
-  
   coef = 9;
   alti = 4;
   istattab = [alti+coef alti+2*coef alti+7*coef alti+8*coef];
   % istattab = [1:5] + 1*9;
   istattab = [2 4 6 8] + 2*9;
-  
   istattab = [1,2,3,4]; % test
-  
   % istattab = 5;
   % istattab = [1 2 8 9] + 4*9
   % istattab = [1 10 19 28] + 8
@@ -262,40 +309,7 @@ if(READ_DATA == 1)
   beta_stat_tot = atan(pos_stat(:,2)./(pos_stat(:,1)-X_0));
   beta_stat     = beta_stat_tot(istattab);
   pos_ok        = istattab.*(beta_stat<beta)';
-
-  %%%%%%%%%%%%%%%%%%%%%%
-  % title for simulation
-  switch(seismotype)
-    case(1)
-      variable = ' Displacement along' ;
-      signal_type = 'd' ; % -> 'a' for acceleration
-      % -> 'd' for displacement or sqrt(density) *
-      %    displacement
-      % -> 'v' for velocity or sqrt(density) * velocity
-      % Watch the right letter at the end of the output
-      % ascii file from specfem2D
-    case(2)
-      variable = 'Velocity along' ;
-      signal_type = 'v' ;
-    case(3)
-      variable = 'Acceleration along' ;
-      signal_type = 'a' ;
-    case(4)
-      variable = 'Pressure along ' ;
-      signal_type = 'p' ;
-    case(5)
-      variable = 'Curl of displacement along ' ;
-      signal_type = 'c' ;
-    case(6)
-      variable = 'Fluid potential along ' ;
-      signal_type = 'p' ;                  
-    case(7)
-      variable = '\rho^{1/2} cdot {\bf u} along' ;
-      signal_type = 'd' ;
-    otherwise
-      error(['[',mfilename,', ERROR] seismotype not implemented.']);
-  end
-
+  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % First loop over the stations to read semd files
   % subsample the results to save memory space
@@ -313,9 +327,9 @@ if(READ_DATA == 1)
 %       file = strcat(directory,prefix,num2str(istat),'.AA.BXX.sem',signal_type) ;
 %       file = strcat(OFd,'AA.',prefix,num2str(gloStatNumber),'.BXX.sem',signal_type) ;
 %       data = load(file) ;
-      %if (istat == 1)
+%       if (istat == 1)
 %       nt = floor(max(size(data))/nsub) ;
-      %end
+%       end
 %       Xtime(locStatNumber,1:nt) = data(1:nsub:max(size(data)),1)' ;
 %       Xamp(locStatNumber,1:nt) = data(1:nsub:max(size(data)),2)' ;
       [tmpDat, nt] = readAndSubsampleSynth(OFd, gloStatNumber, 'BXX', ['sem',signal_type], 0, -1, locStatNumber);
@@ -336,12 +350,9 @@ if(READ_DATA == 1)
 %   dt = dt;
   subsampledDt = Ztime(locStatNumber,2)-Ztime(locStatNumber,1);
   nSamp=nt;
-end
+end % Endif on READ_DATA.
 
-% the square root of -1
-i = complex(0,1);
-
-disp(['[',mfilename,'] Synthetics loaded: ',num2str(nSamp),' samples each.']);
+disp(['[',mfilename,'] Synthetics loaded: ', num2str(nSamp), ' samples each.']);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -357,14 +368,14 @@ NFFT2 = 2^nextpow2(nSamp)*extent_time;
 % dt=256*dt; % ?????
 % Fourier space
 NFFT1 = 2^nextpow2((xmax-xmin)/dx)*extent_x;
-NFFT3 = 2^nextpow2((ymax-ymin)/dy)*extent_y;
+NFFT3 = 2^nextpow2((ymax-ymin)/dz)*extent_y;
 disp(['[',mfilename,'] FFT3D matrix size: ',num2str(NFFT1*NFFT2*NFFT3),'.']);
 k = zeros(NFFT1,NFFT2,NFFT3);
 % t = zeros(1,NFFT2) ;
 t = dt * (0:1:NFFT2-1);
 maxwind = max(t);
 x = dx * (0:1:NFFT1-1) + xmin;
-y = dy * (0:1:NFFT3-1) + ymin;
+y = dz * (0:1:NFFT3-1) + ymin;
 % IN THIS SENSE? -> NO!
 %omega = 2.0*pi()*(1.0/(dt*NFFT2))*[ [0.0-[NFFT2/2-1:-1:1]] [0:1:NFFT2/2]];
 %kx = 2.0*pi()*(1.0/(dx*NFFT1))*[[0.0-[NFFT1/2-1:-1:1]] [0:1:NFFT1/2] ];
@@ -413,20 +424,28 @@ TFMo = fftn(Mo);
 % kx = 2π/λx and ky = 2π/λy for all spatial wavelengths λx,y."
 omega = 2.0*pi()*(1.0/(dt*NFFT2))*[[0:1:NFFT2/2] [0.0-[NFFT2/2-1:-1:1]]];
 kx = 2.0*pi()*(1.0/(dx*NFFT1))*[[0:1:NFFT1/2] [0.0-[NFFT1/2-1:-1:1]]];
-ky = 2.0*pi()*(1.0/(dy*NFFT3))*[[0:1:NFFT3/2] [0.0-[NFFT3/2-1:-1:1]]];
+ky = 2.0*pi()*(1.0/(dz*NFFT3))*[[0:1:NFFT3/2] [0.0-[NFFT3/2-1:-1:1]]];
 [KX,KY,Omega] = meshgrid(kx,ky,-omega);
 % Assuming constant Nsq
 Nsqtab = NSQ(1, 1) + 0.0*Omega;
 % KX = Omega/velocity(1);
 % see occhipinti 2008 for analytical solution (appendix A1)
 onestab=0.0*Nsqtab+1.0;
-omega_intr = Omega-(uo)*KX;
+omega_intr = Omega-(wi)*KX;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [Brissaud et al., 2016, Section 5.1]: "Calculation of kz from dispersion
 % relations for all wavenumbers kx, ky and time frequencies (see Appendix
 % B)."
-KZ = sqrt(Nsqtab.*(KX.*KX)./((Omega-(uo)*KX).*(Omega-(uo)*KX))-(KX.*KX) + (1 - Nsqtab./(Omega.*Omega) ).*((Omega-(uo)*KX).*(Omega-(uo)*KX))/(SOUNDSPEED(1)^2) );
+% KZ = sqrt(Nsqtab.*(KX.*KX)./((Omega-(wi)*KX).*(Omega-(wi)*KX))-(KX.*KX) + (1 - Nsqtab./(Omega.*Omega) ).*((Omega-(wi)*KX).*(Omega-(wi)*KX))/(SOUNDSPEED(1)^2) );
+
+KZ2 = sqrt( ...
+             (Nsqtab.*KX.^2) ./ ((Omega-wi*KX).^2) ...
+           - KX.^2 ...
+           + ( 1 - Nsqtab./(Omega.^2)) ...
+             .* ((Omega-wi*KX)./SOUNDSPEED(1)).^2 ...
+         );
+
 % KZ = sqrt( Nsqtab.*(KX.*KX + KY.*KY)./(omega_intr.*omega_intr)-(KX.*KX + KY.*KY) - onestab/(4*H*H) + (omega_intr.*omega_intr)/(velocity(1)^2) );
 ind1=find(isnan(KZ));
 ind2=find(isinf(KZ));
@@ -441,8 +460,8 @@ indimag = find(imag(KZ)<0);
 KZ(indimag) = conj(KZ(indimag));
 % real(KZ) should be positive for positive frequencies and negative for
 % negative frequencies in order to shift signal in positive times
-% restore the sign of KZ depending on Omega-uo*KX
-%     KZnew=real(KZ).*sign((Omega-uo*KX)).*sign(KX)+1i*imag(KZ);
+% restore the sign of KZ depending on Omega-wi*KX
+%     KZnew=real(KZ).*sign((Omega-wi*KX)).*sign(KX)+1i*imag(KZ);
 % !!! Why KZ should have a sign opposite to Omega for GW NOT UNDERSTOOD !!!
 % => because vg perpendicular to Vphi ?
 KZnew=0.0-real(KZ).*sign(omega_intr)+1i*imag(KZ);
@@ -480,7 +499,7 @@ if(seismotype == 1)
 %         Mz=1*exp(z_station/(2*H))*ifftn((filt.*TFMo));
 % compute X (horizontal component) assuming UX(f)=-(KZ/KX)*UZ
 % equations 2.8 and 2.16 of Nappo, 2002 (not affected by wind)
-% but frequencies close to (uo*KX-Omega)=0 create very large KZ...
+% but frequencies close to (wi*KX-Omega)=0 create very large KZ...
 %         TFMx=TFMo.*(KZ./KX).*filt;
 %         ind1=find(isnan(TFMx));
 %         ind2=find(isinf(TFMx));
@@ -491,7 +510,7 @@ if(seismotype == 1)
 %        ystattab_analytic = size(ystattab);
     for locStatNumber=1:nstat
       z_station = zstattab(locStatNumber);
-      filt=exp(i*(KZ*z_station));
+      filt=exp(iiii*(KZ*z_station));
       filt(1,1,:)=0.0;
       Mz=1*exp(z_station/(2*H))*ifftn((filt.*TFMo));
 %           xcoord(istat) = xstattab(istat);
