@@ -218,11 +218,12 @@ subroutine stretching_function(r_l, ya)
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  eps_l = 1e-4 ! Ending value of stretching. 1.d-4 in Arina's paper.
+  eps_l = 1.d-4 ! Ending value of stretching. 1.d-4 in Arina's paper.
+  !eps_l = 0.25 ! Ending value of stretching. 1.d-4 in Arina's paper.
   p = 3.25
   q = 6.
   
-  ! Arina's stretching.
+  ! Arina's stretching. See 10.3390/aerospace3010007.
   ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.
   !ya=ONE
 end subroutine stretching_function
@@ -248,12 +249,12 @@ subroutine damp_function(r_l, sigma)
   C_1 = 0.!0.0d0 ! 0 in Arina's paper, 0<=C_1<=0.1 in Wasistho's.
   C_2 = 13.!6.!10.!13.0d0 ! 13 in Arina's paper, 10<=C_2<=20 in Wasistho's.
   ! Richards' damping coefficients.
-  beta = 4.!3.0d0 ! 4 in Richards' paper.
+  beta = 2.!3.0d0 ! 4 in Richards' paper.
   sigma_max = -1.0d0
   
-  ! Arina's damping.
+  ! Arina's damping. See 10.3390/aerospace3010007.
   sigma = (1.0d0 - C_1*r_l**2.0d0)*(1.0d0 - ( 1.0d0 - exp(C_2*(r_l)**2.0d0) )/( 1.0d0 - exp(C_2) ))
-  ! Richards' damping.
+  ! Richards' damping. See 10.1016/j.jsv.2003.09.042.
   !sigma = 1.0d0 + sigma_max * r_l ** beta
 end subroutine damp_function
 
@@ -304,8 +305,8 @@ subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
   use specfem_par, only: nspec, coord, ibool_DG, nglob_DG, &
         ibool_before_perio,&
         ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF,&
-        ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
-        ispec_is_acoustic_DG,&
+        !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
+        ispec_is_acoustic_DG,stretching_buffer,&
         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
   
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
@@ -336,28 +337,33 @@ subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
           iglob = ibool_DG(i, j, ispec)
           x=coord(1, iglob_unique)
           z=coord(2, iglob_unique)
-          ! TODO: use instead the newly-implemented stretching_buffer variable (see specfem2D_par).
-          if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
-             .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
-             .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
-             .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
+          ! TTODO: use instead the newly-implemented stretching_buffer variable (see specfem2D_par).
+          !if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+          !   .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
+          !   .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
+          !   .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
+          if(stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             
             sigma = ONE ! In case something bad happens.
             ! Load damping value.
-            if(ABC_STRETCH_LEFT) then
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1) then
+            !if(ABC_STRETCH_TOP) then
+              r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+            endif
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then
+            !if(ABC_STRETCH_LEFT) then
               r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
-            if(ABC_STRETCH_RIGHT) then
-              r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
-              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-            endif
-            if(ABC_STRETCH_BOTTOM) then
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then
+            !if(ABC_STRETCH_BOTTOM) then
               r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
-            if(ABC_STRETCH_TOP) then
-              r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then
+            !if(ABC_STRETCH_RIGHT) then
+              r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
               if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
             endif
             ! Load quiet state.

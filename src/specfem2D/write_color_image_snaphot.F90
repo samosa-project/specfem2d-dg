@@ -49,7 +49,8 @@
                         displs_poroelastic,velocs_poroelastic,accels_poroelastic,&! density_p, &
                         E_DG,rhovz_DG,rhovx_DG,rho_DG, nglob_DG, gamma_euler, &
                         rho_DG, rhovz_DG, E_DG, rhovx_DG, c_V, T_init,p_DG_init,gammaext_DG, T_init, E_init, rho_init, &
-                        ispec_is_acoustic_DG, nglob, any_acoustic_DG!, USE_DISCONTINUOUS_METHOD!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
+                        ispec_is_acoustic_DG, nglob, any_acoustic_DG,&!, USE_DISCONTINUOUS_METHOD!, this_iglob_is_acous, ispec_is_acoustic,b_rhovz_DG
+                        ABC_STRETCH,stretching_buffer,ibool_before_perio
   use specfem_par_lns ! TODO: select variables to use.
 
   ! PML arrays
@@ -262,6 +263,20 @@
             iglob = ibool(i, j, ispec)
             vector_field_display(1, iglob) = 0.d0
             vector_field_display(2, iglob) = 0.d0
+          enddo
+        enddo
+      endif
+    enddo
+  endif
+  
+  ! Quick hack to remove values in stretching buffers
+  if(ABC_STRETCH .and. REMOVE_PMLS_FROM_JPEG_IMAGES) then
+    do ispec = 1, nspec
+      !write(*,*) ibool_before_perio(:,:,ispec)
+      if(any(stretching_buffer(pack(ibool_before_perio(:,:,ispec),.true.))>0)) then
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            vector_field_display(:, ibool(i, j, ispec)) = 0.d0
           enddo
         enddo
       endif

@@ -37,7 +37,7 @@
 
 ! to display the snapshots : display image*.jpg
 
-  use constants,only: TINYVAL,TINYVAL_DG,HUGEVAL,STABILITY_THRESHOLD
+  use constants,only: TINYVAL,TINYVAL_DG,HUGEVAL,STABILITY_THRESHOLD!,REMOVE_PMLS_FROM_JPEG_IMAGES
 
   use specfem_par, only: myrank,it,NSOURCES,P_SV,nrec,&
                          ABC_STRETCH, ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
@@ -314,7 +314,8 @@
     enddo
   endif
   
-  ! Draw lines to mark the beginning of absorbing buffers.
+  ! Draw lines to mark the beginning of absorbing buffers, but only if values were not removed.
+  !if(ABC_STRETCH .and. (.not. REMOVE_PMLS_FROM_JPEG_IMAGES)) then
   if(ABC_STRETCH) then
     ! Horrible fushia.
     R = 255

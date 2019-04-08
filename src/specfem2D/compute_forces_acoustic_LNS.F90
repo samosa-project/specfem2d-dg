@@ -143,16 +143,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           xigammal(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-            ! Here are updated the operator \nabla and the jacobian, but only if stretching is activated and we are in a buffer.
+            ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
+            ! Here, in the volume integrations, easiest is the local derivatives involved in the change of reference.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
-            ! The jacobian of the stretching transformation is updated following the same rationale.
             iglob_unique      = ibool_before_perio(i,j,ispec)
             ya_x_l            = stretching_ya(1, iglob_unique)
             ya_z_l            = stretching_ya(2, iglob_unique)
-            xigammal(:, 1)    = ya_x_l*xigammal(:, 1)    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
-            xigammal(:, NDIM) = ya_z_l*xigammal(:, NDIM) ! Multiply x component by ya_z. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
-            !jacLoc            = ya_x_l*ya_z_l*jacLoc     ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+            xigammal(:, 1)    = ya_x_l * xigammal(:, 1)    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+            xigammal(:, NDIM) = ya_z_l * xigammal(:, NDIM) ! Multiply x component by ya_z. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+            !jacLoc            = ya_x_l * ya_z_l * jacLoc     ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
           endif
+          
           if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
             ! Need to include stretching on base stress tensor.
             ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
@@ -256,7 +257,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !enddo
           ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
           !do SPCDM = 1, NDIM
-          d0cntrb_rho0dv(1,i,j) = DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
+          d0cntrb_rho0dv(1,i,j)    = DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
           d0cntrb_rho0dv(NDIM,i,j) =   cv_drho(iglob)*LNS_g(iglob) & ! \rho'g_i
                                      + DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
           !enddo
@@ -415,16 +416,18 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
       ! but only on exterior        !
       ! points.                     !
       ! --------------------------- !
-      !if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
-      !  ! NO FLUXES ECSDEE
-      !else
       do  iface = 1, 4
-       do  iface1 = 1, NGLLX
+        do  iface1 = 1, NGLLX
+          
+          i = link_iface_ijispec(iface1,iface,ispec,1)
+          j = link_iface_ijispec(iface1,iface,ispec,2)
+          iglobM = ibool_DG(i,j,ispec)
+          
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
             ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
-            if(     LNS_mu(iglob) > TINYVAL &
-               .OR. LNS_eta(iglob) > TINYVAL &
-               .OR. LNS_kappa(iglob) > TINYVAL) then
+            if(     LNS_mu(iglobM) > TINYVAL &
+               .OR. LNS_eta(iglobM) > TINYVAL &
+               .OR. LNS_kappa(iglobM) > TINYVAL) then
               viscousComputation=.true.
             else
               viscousComputation=.false.
@@ -433,12 +436,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             viscousComputation=.false. ! If viscosity is globally disabled, deactivate it for this element.
           endif
           
-          i = link_iface_ijispec(iface1,iface,ispec,1)
-          j = link_iface_ijispec(iface1,iface,ispec,2)
-          
           ! Step 1: prepare the normals' parameters (n_out(1), n_out(NDIM), weight, etc.).
           ! Interior point
-          iglobM = ibool_DG(i,j,ispec)
           n_out(1)    = nx_iface(iface, ispec)
           n_out(NDIM) = nz_iface(iface, ispec)
           halfWeight = weight_iface(iface1,iface, ispec)*HALFcr
@@ -480,6 +479,15 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                        , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
                        + LNS_c0(iglobP) & ! Local sound speed, side "P".
                        )
+          
+          ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
+          ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to LNS_get_interfaces_unknowns and the affectation of lambda. If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+            iglob_unique = ibool_before_perio(i,j,ispec)
+            do SPCDM = 1, NDIM
+              n_out(SPCDM) = n_out(SPCDM) * stretching_ya(SPCDM, iglob_unique)
+            enddo
+          endif
           
           ! 1) Inviscid contributions.
           ! 1.1) Mass conservation (fully inviscid).

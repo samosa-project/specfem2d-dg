@@ -189,8 +189,8 @@ subroutine compute_forces_acoustic_LNS_main()
                                    timelocal) ! Time.
   
   ! Inverse mass matrix multiplication, in order to obtain actual RHS.
-  RHS_drho               = RHS_drho*rmass_inverse_acoustic_DG ! RHS = A^{-1}*b
-  RHS_dE                 = RHS_dE*rmass_inverse_acoustic_DG
+  RHS_drho               = RHS_drho * rmass_inverse_acoustic_DG ! RHS = A^{-1}*b
+  RHS_dE                 = RHS_dE   * rmass_inverse_acoustic_DG
   ! Update the auxiliary register. Note: no need to zero it beforehand if LNS_scheme_A(1) is 0.
   aux_drho               = LNS_scheme_A(i_stage)*aux_drho + deltat*RHS_drho ! U_{i} = a_{i}*U_{i-1} + dt*RHS
   aux_dE                 = LNS_scheme_A(i_stage)*aux_dE   + deltat*RHS_dE
@@ -199,7 +199,7 @@ subroutine compute_forces_acoustic_LNS_main()
   LNS_dE                 = LNS_dE   + LNS_scheme_B(i_stage)*aux_dE
   ! Group momentum treatment in loop on dimension.
   do i_aux=1,NDIM
-    RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)
+    RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:) * rmass_inverse_acoustic_DG(:)
     aux_rho0dv(i_aux,:) = LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
     LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + LNS_scheme_B(i_stage)*aux_rho0dv(i_aux,:)
   enddo
@@ -297,7 +297,113 @@ subroutine compute_forces_acoustic_LNS_main()
   !    call SlopeLimit1(LNS_dE, timelocal, 4)
   !  endif
   !endif
+  
+  ! TEST POSTERIORI DAMPING
+  !if(.false.) then
+  !if(ABC_STRETCH) then
+  !  if(it==1 .and. i_stage==1 .and. myrank==0) then
+  !      write(*,*) "********************************"
+  !      write(*,*) "*           WARNING            *"
+  !      write(*,*) "********************************"
+  !      write(*,*) "* A posteriori damping of the  *"
+  !      write(*,*) "* solution activated. Solution *"
+  !      write(*,*) "* is being damped in the       *"
+  !      write(*,*) "* absorbing buffers.           *"
+  !      write(*,*) "********************************"
+  !  endif
+  !  call damp_solution_LNS(LNS_drho, LNS_rho0dv, LNS_dE) ! See 'prepare_stretching.f90'.
+  !endif
+  !endif
 end subroutine compute_forces_acoustic_LNS_main
+
+
+
+
+
+
+
+
+
+
+! ------------------------------------------------------------ !
+! damp_solution_LNS                                            !
+! ------------------------------------------------------------ !
+! TODO: Description.
+
+subroutine damp_solution_LNS(drho, rho0dv, dE)
+
+  use specfem_par, only: nspec, coord, ibool_DG, nglob_DG, &
+        ibool_before_perio,&
+        ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF,&
+        !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
+        ispec_is_acoustic_DG,stretching_buffer,&
+        mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
+  
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM
+
+  implicit none
+  
+  ! Input/output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: drho, dE
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(inout) :: rho0dv
+  
+  
+  ! Local
+  integer :: iglob
+  real(kind=CUSTOM_REAL) :: sigma
+  integer iglob_unique,ispec,i,j
+  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: x, z
+  real(kind=CUSTOM_REAL) :: r_l
+  
+  do ispec = 1, nspec
+    if(ispec_is_acoustic_DG(ispec)) then
+      if(any(stretching_buffer(pack(ibool_before_perio(:,:,ispec),.true.))>0)) then
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            iglob_unique = ibool_before_perio(i, j, ispec)
+            iglob = ibool_DG(i, j, ispec)
+            x = coord(1, iglob_unique)
+            z = coord(2, iglob_unique)
+            !if(stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+              sigma = ONE ! In case something bad happens.
+              ! Load damping value.
+              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1) then
+              !if(ABC_STRETCH_TOP) then
+                r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
+                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+              endif
+              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then
+              !if(ABC_STRETCH_LEFT) then
+                r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
+                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+              endif
+              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then
+              !if(ABC_STRETCH_BOTTOM) then
+                r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
+                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+              endif
+              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then
+              !if(ABC_STRETCH_RIGHT) then
+                r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
+                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+              endif
+              ! Quiet state is zero.
+              ! Damp perturbation.
+              drho(iglob)     = sigma*drho(iglob)
+              rho0dv(:,iglob) = sigma*rho0dv(:,iglob)
+              dE(iglob)       = sigma*dE(iglob)
+            !endif
+          enddo
+        enddo
+      endif
+    endif
+  enddo
+end subroutine damp_solution_LNS
+
+
+
 
 
 
@@ -579,7 +685,8 @@ end subroutine LNS_PML_init_coefs
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
   use specfem_par, only: assign_external_model, gammaext_DG, ibool_DG, pext_dg, rhoext, &
-SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext
+SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext!, &
+!ABC_STRETCH, ibool_before_perio, stretching_buffer, stretching_ya
   use specfem_par_LNS, only: LNS_g
 
   implicit none
@@ -679,6 +786,11 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
       ! One might want to set vertical wind here, too.
     endif
   endif
+  
+  !! Test for stretching
+  !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+  !  out_v(1) = out_v(1) + (1.-stretching_ya(1, ibool_before_perio(i,j,ispec)))*340.*0.1
+  !endif
   
   ! Set energy based on pressure.
   if(swComputeE) then
@@ -864,14 +976,14 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   real(kind=CUSTOM_REAL) :: SF_P ! When swMETHOD==.true., this variable is used to store the value of the scalar field SF across the element's boundary, in order to compute the flux.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: TF_P, n_out ! When swMETHOD==.true., those variables are used to store the value of the tensor field TF across the element's boundary, in order to compute the flux.
   integer :: ispec,i,j,k,iglob, iglobM, iglobP, iglob_unique
-  real(kind=CUSTOM_REAL) :: weight!, flux_n, flux_x, flux_z,  !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
+  real(kind=CUSTOM_REAL) :: halfWeight!, flux_n, flux_x, flux_z,  !nx, nz, !rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         !E_DG_P&!, p_DG_P, &
         !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
         !timelocal,gamma_P
   logical :: exact_interface_flux
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
-  integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
+  integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor ,SPCDM
   real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacLoc ! Jacobian matrix and determinant
   !real(kind=CUSTOM_REAL) :: temp_SFx, temp_SFz, temp_TFxx, temp_TFzx, temp_TFxz, temp_TFzz
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
@@ -939,11 +1051,11 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! See beginning of subroutine compute_forces_acoustic_LNS for detailed explanations.
-            iglob_unique=ibool_before_perio(i,j,ispec)
-            ya_x_l=stretching_ya(1, iglob_unique)
-            ya_z_l=stretching_ya(2, iglob_unique)
-            xixl = ya_x_l * xixl          ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            xizl = ya_z_l * xizl          ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            iglob_unique = ibool_before_perio(i, j, ispec)
+            ya_x_l  = stretching_ya(1, iglob_unique)
+            ya_z_l  = stretching_ya(2, iglob_unique)
+            xixl    = ya_x_l * xixl          ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            xizl    = ya_z_l * xizl          ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
             gammaxl = ya_x_l * gammaxl    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
             gammazl = ya_z_l * gammazl    ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
             !jacLoc = ya_x_l*ya_z_l*jacLoc ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
@@ -1154,8 +1266,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             !Vxz_DG_P     = ZEROcr
             n_out(1) = nx_iface(iface, ispec)
             n_out(2) = nz_iface(iface, ispec)
-            
-            weight = weight_iface(iface1,iface,ispec)
+            !weight = weight_iface(iface1,iface,ispec)
+            halfWeight = weight_iface(iface1,iface, ispec)*HALFcr
             neighbor = -1
             if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
               iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
@@ -1165,13 +1277,6 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
               neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
               neighbor(3) = ispec_neighbor
             endif
-          
-            !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-            !  ! Update flux with stretching components. See explanation in the surface terms part in the subroutine above.
-            !  ! TO DO: Do that more clearly.
-            !  iglob_unique=ibool_before_perio(i,j,ispec)
-            !  weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
-            !endif
             
             iglobP = 1
             if(neighbor(1) > -1) then
@@ -1179,30 +1284,6 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             endif
             
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
-          !call compute_interface_unknowns(i,j,ispec, drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(NDIM), in_dp_P, T_P, &
-          !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
-          !        neighbor, &
-          !        exact_interface_flux, &
-          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(NDIM,iglobM), &
-          !        V_DG(:,:,iglobM), T_DG(:,iglobM), &
-          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(NDIM,iglobP), &
-          !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
-          !        nx, nz, weight, currentTime, iface1, iface)
-          !        !TEST STRETCH
-          !        !nx_unit, nz_unit, weight, currentTime, iface1, iface)
-          !call LNS_get_interfaces_unknowns(i, j, ispec, &
-          !        drho_P, rho0dv_P(1), &
-          !        rho0dv_P(2), dE_P, TF_P(1), TF_P(NDIM), in_dp_P, T_P, &
-          !        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
-          !        neighbor, &
-          !        exact_interface_flux, &
-          !        cv_drho(iglobM), cv_dE(iglobM), cv_rho0dv(1,iglobM), cv_rho0dv(NDIM,iglobM), &
-          !        V_DG(:,:,iglobM), T_DG(:,iglobM), &
-          !        cv_drho(iglobP), cv_dE(iglobP), cv_rho0dv(1,iglobP), cv_rho0dv(NDIM,iglobP), &
-          !        V_DG(:,:,iglobP), T_DG(:,iglobP), &
-          !        nx, nz, weight, currentTime, iface1, iface)
-            
             call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
                   LNS_drho(iglobM), LNS_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
                   LNS_drho(iglobP), LNS_rho0dv(:,iglobP), LNS_dE(iglobP), & ! Input constitutive variables, "P" side.
@@ -1217,9 +1298,15 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
                   .false., LNS_dummy_2d(:,1), LNS_dummy_1d(1:3), & ! Output other variables: viscous.
                   .true., SF_P) ! Output other variables.
             ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. If other fields need to be computed, one will have to use a dedicated routine.
-
-            !vx_init = rhovx_init(iglobM)/rho_init(iglobM)
-            !vz_init = rhovz_init(iglobM)/rho_init(iglobM)
+            
+            ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
+            ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to LNS_get_interfaces_unknowns. If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+              iglob_unique = ibool_before_perio(i,j,ispec)
+              do SPCDM = 1, NDIM
+                n_out(SPCDM) = n_out(SPCDM) * stretching_ya(SPCDM, iglob_unique)
+              enddo
+            endif
             
             if(swTF) then
               if(abs(timelocal)<TINYVAL) then
@@ -1231,11 +1318,11 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! Dot products.
             do i=1,NDIM
               if(swSF) then
-                nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*(SF(iglobM)+SF_P)*n_out(i)*HALFcr
+                nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + halfWeight*(SF(iglobM)+SF_P)*n_out(i)
               endif
               if(swTF) then
                 do j=1,NDIM
-                  nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + weight*(TF(i,iglobM)+TF_P(i))*n_out(j)*HALFcr
+                  nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + halfWeight*(TF(i,iglobM)+TF_P(i))*n_out(j)
                 enddo
               endif
             enddo
@@ -1244,16 +1331,16 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             !  !!!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*T_init(iglobM)
             !  !!flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
             !  !flux_n = (SF(iglobM)+SF_P)*n_out(1) ! Recall: n_out(1)=n_x.
-            !  !nabla_SF(1,iglobM) = nabla_SF(1,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_SF(1,iglobM) = nabla_SF(1,iglobM) + halfWeight*flux_n
             !  !!flux_z = SF(iglobM) + SF_P ! Once multiplied with HALFcr below, will represent flux along z of the scalar field SF.
             !  !!!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*T_init(iglobM)
             !  !!flux_n = flux_z*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
             !  !flux_n = (SF(iglobM)+SF_P)*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
-            !  !nabla_SF(NDIM,iglobM) = nabla_SF(NDIM,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_SF(NDIM,iglobM) = nabla_SF(NDIM,iglobM) + halfWeight*flux_n
             !  do i=1,NDIM
             !    !flux_n = (SF(iglobM)+SF_P)*n_out(i) ! Recall: n_out(1)=n_x.
-            !    !nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*flux_n*HALFcr
-            !    nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + weight*(SF(iglobM)+SF_P)*n_out(i)*HALFcr
+            !    !nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + halfWeight*flux_n
+            !    nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + halfWeight*(SF(iglobM)+SF_P)*n_out(i)
             !  enddo
             !endif
             !if(swTF) then
@@ -1261,25 +1348,25 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             !  !!!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vx_init
             !  !!flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
             !  !flux_n = (TF(1,iglobM)+TF_P(1))*n_out(1) ! Recall: n_out(1)=n_x.
-            !  !nabla_TF(1,1,iglobM) = nabla_TF(1,1,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_TF(1,1,iglobM) = nabla_TF(1,1,iglobM) + halfWeight*flux_n
             
             !  !flux_z = TF(1,iglobM) + TF_P(1) ! Once multiplied with HALFcr below, will represent flux along z of the x-component of the tensor field TF.
             !  !!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
             !  !flux_n = flux_z*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
-            !  !nabla_TF(1,NDIM,iglobM) = nabla_TF(1,NDIM,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_TF(1,NDIM,iglobM) = nabla_TF(1,NDIM,iglobM) + halfWeight*flux_n
             
             !  !flux_x = TF(NDIM,iglobM) + TF_P(NDIM) ! Once multiplied with HALFcr below, will represent flux along x of the z-component of the tensor field TF.
             !  !!if(CONSTRAIN_HYDROSTATIC) flux_x = flux_x - 2*vz_init
             !  !flux_n = flux_x*n_out(1) ! Recall: n_out(1)=n_x.
-            !  !nabla_TF(NDIM,1,iglobM) = nabla_TF(NDIM,1,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_TF(NDIM,1,iglobM) = nabla_TF(NDIM,1,iglobM) + halfWeight*flux_n
             
             !  !flux_z = TF(NDIM,iglobM) + TF_P(NDIM) ! Once multiplied with HALFcr below, will represent flux along z of the z-component of the tensor field TF.
             !  !!if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vz_init
             !  !flux_n = flux_z*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
-            !  !nabla_TF(NDIM,NDIM,iglobM) = nabla_TF(NDIM,NDIM,iglobM) + weight*flux_n*HALFcr
+            !  !nabla_TF(NDIM,NDIM,iglobM) = nabla_TF(NDIM,NDIM,iglobM) + halfWeight*flux_n
             !  do i=1,NDIM
             !    do j=1,NDIM
-            !      nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + weight*(TF(i,iglobM)+TF_P(i))*n_out(j)*HALFcr
+            !      nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + halfWeight*(TF(i,iglobM)+TF_P(i))*n_out(j)
             !    enddo
             !  enddo
             !endif

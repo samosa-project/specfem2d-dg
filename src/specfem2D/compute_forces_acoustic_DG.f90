@@ -60,7 +60,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                          !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
                          !ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF, ABC_STRETCH_TOP_LBUF, ABC_STRETCH_BOTTOM_LBUF,&
                          !mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
-                         coord, &
+                         !coord, &
                          ibool_before_perio,stretching_buffer!,c_V
                          
   implicit none
@@ -514,7 +514,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           !             !trans_boundary ! DEBUG
           !             lambda
           !endif ! DEBUG
-          if(.false.) write(*,*) coord ! UGLY
+          !if(.false.) write(*,*) coord ! UGLY
           
           ! 05 Apr 2019: commented out this section, since it did nothing special.
           !              Ultimately, either we should keep both, or remove both.

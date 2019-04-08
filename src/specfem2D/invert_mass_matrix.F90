@@ -414,6 +414,12 @@
           !else
           rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
                                              jacobian(i,j,ispec)
+          ! New tests for stretching
+          ! This term should not be here since we assumed we divided the whole strong form by it.
+          !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
+          !  rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob) &
+          !                                     * (1./product(stretching_ya(:, ibool_before_perio(i, j, ispec))))
+          !endif
           
           ! LNS PML additions.
           if (LNS_PML_activated .and. ispec_is_PML(ispec)) then
