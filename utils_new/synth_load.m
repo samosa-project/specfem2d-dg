@@ -69,8 +69,8 @@ unknown = 'BXZ'; % _z.
 % rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
-fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
-rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash@20600/'); subsample = 1; wanted_dt = 0.01; % same as 1560350 but fns
+% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+% rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash@20600/'); subsample = 1; wanted_dt = 0.01; % same as 1560350 but fns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560541_crashfns/'); % same as 1560350 but fns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash/'); % same as 1560541 but lns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1447857_longestyet/');
@@ -84,7 +84,13 @@ rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350
 % rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % PML.
-% fig_title = strcat('LNS PML');
+fig_title = strcat('LNS ABC');
+rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_155014_e0p2/'); fig_title=[fig_title,' buffw0 e0.2'];
+% rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_154970/'); fig_title=[fig_title,' buffw0 e1e-4'];
+% rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w100/'); OFd = strcat(rootd, '/OUTPUT_FILES_154971/'); fig_title=[fig_title,' buffw100 e1e-4'];
+% rootd = strcat(SPCFMEXloc,'test_realstretching_square_nobuffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_154980/'); fig_title=[fig_title,' nobuffw0 e1e-4'];
+% rootd = strcat(SPCFMEXloc,'test_realstretching_square_nobuffs_w100/'); OFd = strcat(rootd, '/OUTPUT_FILES_154979/'); fig_title=[fig_title,' nobuffw100 e1e-4'];
+
 % rootd = strcat(SPCFMEXloc,'test_pml/'); OFd = strcat(rootd, 'OUTPUT_FILES_alright/');
 
 % Validation LNS.

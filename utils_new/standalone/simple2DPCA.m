@@ -1,6 +1,10 @@
 % Author:        Léo Martire.
 % Description:   Very basic PCA.
-% Notes:         TODO.
+% Notes:         *) This algorithm is basically a SVD.
+%                *) The direction of the fitted ellipse's axes are given
+%                   by the eigenvectors.
+%                *) The values of the fitted ellipse's axes are given by
+%                   sqrt(eigenVals*2). See e.g. http://notmatthancock.github.io/2016/02/03/ellipse-princpal-axes.html
 %
 % Usage:
 %   [eigenVals, eigenVect] = simple2DPCA(DATA)
@@ -8,8 +12,8 @@
 %   TODO.
 % yields:
 %   eigenVals a vector of the generalized eigenvalues (not sorted),
-%   eigenVect a full matrix V whose columns are the corresponding
-%             eigenvectors.
+%   eigenVect a full matrix whose columns are the corresponding
+%             eigenvectors (not sorted).
 
 % One-liner to produce test data:
 %   noi=0.75; rota=pi/6; t=0:.01:8*pi;v=[cos(t);2*sin(t)]'+noi*rand(numel(t),2);R=[cos(-rota),sin(-rota);-sin(-rota),cos(-rota)]; for i=1:numel(t);v(i,:)=(R*v(i,:)')';end;
