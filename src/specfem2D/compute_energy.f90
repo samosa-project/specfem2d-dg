@@ -45,9 +45,11 @@ subroutine compute_energy()
     vsext,vpext,rhoext,poroelastcoef,density,kmato,assign_external_model, &
     ispec_is_poroelastic,ispec_is_elastic, &
     P_SV &
-    , rhovx_DG, rhovz_DG, rho_DG,ibool_before_perio,ABC_STRETCH,stretching_buffer ! Modification for DG.
+    , rhovx_DG, rhovz_DG, rho_DG,ibool_before_perio,ABC_STRETCH,stretching_buffer, ibool_DG, & ! Modification for DG.
+    USE_DISCONTINUOUS_METHOD,gammaext_DG ! Modification for DG.
   
-  use specfem_par_LNS, only: USE_LNS, LNS_dv, LNS_v0, norm2
+  use specfem_par_LNS, only: USE_LNS, LNS_dummy_1d, LNS_dv, norm2r1, &
+                             LNS_dp,LNS_drho,LNS_rho0, LNS_v0!,LNS_c0,LNS_p0
 
   implicit none
 
@@ -72,6 +74,8 @@ subroutine compute_energy()
   real(kind=CUSTOM_REAL), dimension(NDIM,NGLLX,NGLLZ) :: vector_field_element
   ! pressure in an element
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: pressure_element
+  
+  integer :: iglob ! for LNS energy computation
 
   ! initializes
   kinetic_energy = ZERO
@@ -284,7 +288,7 @@ subroutine compute_energy()
       if(USE_LNS) then
         call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                         potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                        norm2(LNS_v0+LNS_dv), ispec,vector_field_element)
+                                        LNS_dummy_1d, ispec,vector_field_element)
       else
         call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                         potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
@@ -322,14 +326,40 @@ subroutine compute_energy()
           endif
 
           jacobianl = jacobian(i,j,ispec)
+          
+          if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+            iglob = ibool_DG(i, j, ispec)
+            ! See equation (23) of M. Maess et al., Journal of Sound and Vibration 296 (2006) 264-276
+            ! TODO: Storing E_{K,0} and E_{P,0} would be far better. But since it is already far too heavy to compute the energy, we do not even bother.
+            ! LNS kinetic energy perturbation E_K' = E_K - E_{K,0}
+            kinetic_energy = kinetic_energy &
+                             + (   (LNS_rho0(iglob)+LNS_drho(iglob)) * norm2r1(LNS_v0(:,iglob)+LNS_dv(:,iglob)) & ! E_K
+                                 - LNS_rho0(iglob)*norm2r1(LNS_v0(:,iglob)) & ! - E_{K,0}
+                               ) &
+                               * (wxgll(i)*wzgll(j)*jacobianl/TWO)
+            ! LNS potential energy perturbation E_P = E_{P,0} + E_P'
+            !potential_energy = potential_energy &
+            !                   + ((LNS_p0(iglob)+LNS_dp(iglob))**2/(LNS_rho0(iglob)+LNS_drho(iglob))) &
+            !                     * (wxgll(i)*wzgll(j)*jacobianl/(TWO*LNS_c0(iglob)**2))
+            ! LNS potential energy perturbation E_P' = E_P - E_{P,0}
+            !potential_energy = potential_energy &
+            !                   + (   (LNS_p0(iglob)+LNS_dp(iglob))**2/(LNS_rho0(iglob)+LNS_drho(iglob)) & ! E_P
+            !                       - LNS_p0(iglob)**2/LNS_rho0(iglob) & ! - E_{P,0}
+            !                     ) &
+            !                     * (wxgll(i)*wzgll(j)*jacobianl/(TWO*LNS_c0(iglob)**2))
+            ! LNS potential energy perturbation under ideal gas hypothesis
+            potential_energy = potential_energy &
+                               + (LNS_dp(iglob)/gammaext_DG(iglob)) &
+                                 * (wxgll(i)*wzgll(j)*jacobianl/TWO)
+          else
+            ! compute kinetic energy
+            kinetic_energy = kinetic_energy &
+                + rhol*(vector_field_element(1,i,j)**2 + vector_field_element(2,i,j)**2) *wxgll(i)*wzgll(j)*jacobianl / TWO
 
-          ! compute kinetic energy
-          kinetic_energy = kinetic_energy &
-              + rhol*(vector_field_element(1,i,j)**2 + vector_field_element(2,i,j)**2) *wxgll(i)*wzgll(j)*jacobianl / TWO
-
-          ! compute potential energy
-          potential_energy = potential_energy &
-              + (pressure_element(i,j)**2)*wxgll(i)*wzgll(j)*jacobianl / (TWO * rhol * cpl**2)
+            ! compute potential energy
+            potential_energy = potential_energy &
+                + (pressure_element(i,j)**2)*wxgll(i)*wzgll(j)*jacobianl / (TWO * rhol * cpl**2)
+          endif
 
         enddo
       enddo
