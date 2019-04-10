@@ -1,3 +1,14 @@
+% Author:        Léo Martire.
+% Description:   TODO.
+% Notes:         TODO.
+%
+% Usage:
+%   TODO.
+% with:
+%   TODO.
+% yields:
+%   TODO.
+
 function [X] = scan_database_file(FILE)
   fclose('all'); f=fopen(FILE,'r');
   stop=0;

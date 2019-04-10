@@ -3,13 +3,13 @@
 % Notes:         TODO.
 %
 % Usage:
-%   [var] = extractParamFromInputFile(path2parfile, varName, varType)
+%   [var] = readExampleFiles_extractParam(path2file, varName, varType)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
-function [var] = extractParamFromInputFile(path2file, varName, varType)
+function [var] = readExampleFiles_extractParam(path2file, varName, varType)
 
 %   path2parfile='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_gravito/OUTPUT_FILES/input_parfile';
 %   varName='NPROC';

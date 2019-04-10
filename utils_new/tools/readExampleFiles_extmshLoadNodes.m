@@ -1,4 +1,16 @@
-function [P] = extMesh_loadNodes(Nodes_extMesh)
+% Author:        Léo Martire.
+% Description:   Loads nodes from a 'Nodes_extMesh' file.
+% Notes:         The 'Nodes_extMesh' file only exists after having ran the
+%                GMSH to SPECFEM mesh converter.
+%
+% Usage:
+%   [P] = extMesh_loadNodes(Nodes_extMesh)
+% with:
+%   TODO.
+% yields:
+%   TODO.
+
+function [P] = readExampleFiles_extmshLoadNodes(Nodes_extMesh)
   if(not(exist('Nodes_extMesh')))
     Nodes_extMesh = input(['[',mfilename,'] Path to Nodes_extMesh? > '],'s');
   end

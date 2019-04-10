@@ -9,16 +9,16 @@ clear all;
 % close all;
 % clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 4);
 set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-boundarythreshold=1;
-ptsize=10;
-dofill=0;
-fillalpha=0.25;
-figsize=1000;
+boundarythreshold = 1;
+ptsize    = 5;
+dofill    = 0;
+fillalpha = 0.25;
+figsize   = 1000;
 
 PseudoGMSH0orDATABASE1=-1;
 while(not(numel(PseudoGMSH0orDATABASE1)==1 & ismember(PseudoGMSH0orDATABASE1,[0,1])))
@@ -27,15 +27,11 @@ end
 
 if(PseudoGMSH0orDATABASE1==0)
 %   error(['[',mfilename,', ERROR] Not implemented yet.']);
-%   Nodes_extMesh = input(['[',mfilename,'] Path to Nodes_extMesh? > '],'s');
-%   Nodes_extMesh_f = fopen(Nodes_extMesh,'r');
-%   lines = textscan(Nodes_extMesh_f, '%f %f');
-% %   X = lines{1}(2:end); Z = lines{2}(2:end); P = [X,Z];
-%   P = [lines{1}(2:end), lines{2}(2:end)];
-%   if( not(lines{1}(1)==size(P, 1)))
-%     error(['[',mfilename,', ERROR] Issue while reading Nodes_extMesh: number of points read (number of lines) does not correspond to number of points specified (first line).']);
-%   end
-  [P] = extMesh_loadNodes(Nodes_extMesh);
+  Nodes_extMesh = input(['[',mfilename,'] Path to Nodes_extMesh? > '],'s');
+  if(not(exist(Nodes_extMesh)==2))
+    error('not a file')
+  end
+  [P] = readExampleFiles_extmshLoadNodes(Nodes_extMesh);
   
   doWindowX = -1;
   while (not((numel(doWindowX)==1 && doWindowX==0) || (numel(doWindowX)==2)))
@@ -78,11 +74,11 @@ if(PseudoGMSH0orDATABASE1==1)
     error(['[',mfilename,', ERROR] No ''Database'' file found.']);
   end
   numdatabases=numel(database_list);
-  for i=1:numdatabases
-    X{i}=scan_database_file([FOLDER,database_list(i).name]);
+  for i = 1:numdatabases
+    X{i} = scan_database_file([FOLDER,database_list(i).name]);
     if(bound)
-      j=boundary(X{i},boundarythreshold);
-      X{i}=X{i}(j,:);
+      j = boundary(X{i}, boundarythreshold);
+      X{i} = X{i}(j,:);
     end
   end
   arrcpus=1:numdatabases;

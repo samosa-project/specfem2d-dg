@@ -3,13 +3,13 @@
 % Notes:         TODO.
 %
 % Usage:
-%   [ymin,ymax] = extractZminZmaxFromInterfacesFile(interfaces_file)
+%   [ymin, ymax] = readExampleFiles_zMinMaxInterfacesFile(interfaces_file)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
-function [ymin,ymax] = extractZminZmaxFromInterfacesFile(interfaces_file)
+function [ymin, ymax] = readExampleFiles_zMinMaxInterfacesFile(interfaces_file)
 %   interfaces_file=[OFd,'input_interfaces'];
   grep_remove_comments=['grep -v "^#.*"'];
   numberregexp='\-?[0-9]+\.?[0-9]*(e|d)?\+?[0-9]*';

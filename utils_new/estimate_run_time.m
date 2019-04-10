@@ -39,9 +39,9 @@ if(not(plot_rate))
   while(not(exist(parfile)==2))
     parfile = input(['[',mfilename,'] Path to simulation parfile > '],'s');
   end
-  nstations = sum(extractParamFromInputFile(parfile, 'nrec', 'float'));
-  nstepseismo = extractParamFromInputFile(parfile, 'NSTEP_BETWEEN_OUTPUT_SEISMOS', 'float');
-  extmesh = extractParamFromInputFile(parfile, 'read_external_mesh', 'bool');
+  nstations = sum(readExampleFiles_extractParam(parfile, 'nrec', 'float'));
+  nstepseismo = readExampleFiles_extractParam(parfile, 'NSTEP_BETWEEN_OUTPUT_SEISMOS', 'float');
+  extmesh = readExampleFiles_extractParam(parfile, 'read_external_mesh', 'bool');
   if(not(extmesh))
     command = ['cat ',parfile,' | grep -oP " *1 +[0-9]+ +[0-9]+ +[0-9]+ | tail -1"'];
     [~, r]=system(command);
@@ -64,8 +64,8 @@ if(not(plot_rate))
     end
   end
   neldg       = neltot-nbeltsElastic;
-  nstepsnap   = extractParamFromInputFile(parfile, 'NSTEP_BETWEEN_OUTPUT_IMAGES', 'float');
-  nsteptot    = extractParamFromInputFile(parfile, 'NSTEP', 'float');
+  nstepsnap   = readExampleFiles_extractParam(parfile, 'NSTEP_BETWEEN_OUTPUT_IMAGES', 'float');
+  nsteptot    = readExampleFiles_extractParam(parfile, 'NSTEP', 'float');
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Define by hand. %%%%%%%%%%%%%
   % nstations   = 857;
