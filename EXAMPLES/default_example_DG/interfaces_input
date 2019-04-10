@@ -2,6 +2,7 @@
  2
 
 # For each interface, give the number of points defining it, and coordinates (x, z) for each point.
+# If you are using DG, it is recommended to have the variable "coord_interface" (in the "Discontinuous Galerkin" section of the parfile) agree either with the fluid-solid interface (for cuopled simulations) or the bottom of the mesh (for DG only simulations). While working most of the time, it is safer to do so.
 # Interface 1 (bottom of the mesh):
  2
  -50.d0 -50.d0
