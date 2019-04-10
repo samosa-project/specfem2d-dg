@@ -1,0 +1,14 @@
+1) Run all 9 simulations:
+  LNSABC_PS_buffers
+  LNSABC_PS_FF
+  LNSABC_PS_large
+  LNSABC_PW_buffers
+  LNSABC_PW_FF
+  LNSABC_PW_large
+  LNSABC_WPS_buffers
+  LNSABC_WPS_FF
+  LNSABC_WPS_large
+
+2) Use script '../utils_new/validation/ABC.m' to plot results for each case (PS, PW, WPS).
+
+3) Find figures here.
