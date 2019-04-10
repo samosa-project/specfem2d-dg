@@ -90,7 +90,7 @@ for r in range(0,NRAYS):
     selectedray[:,c]=np.extract(sel,ray[:,c])
   seld=np.reshape(np.extract(sel,d),(nlines_sel,1))
   selectedray=np.append(selectedray, seld,axis=1)
-  colour = np.extract(sel,ray[:,idt])/520. # colour as function of time
+  #colour = np.extract(sel,ray[:,idt])/520. # colour as function of time
   colour = np.extract(sel,np.sum(ray[:,[idattgeo,idattatm]],axis=1))/maxattenuationdb # color as function of attenuation
   
   if(ptype==3):

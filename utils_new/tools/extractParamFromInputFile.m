@@ -16,7 +16,7 @@ function [var] = extractParamFromInputFile(path2file, varName, varType)
 %   varType='int';
   
   if(not(exist(path2file,'file')))
-    error(['[',mfilename,', ERROR] File does not exist. Run ''help ',mfilename,'''.']);
+    error(['[',mfilename,', ERROR] File ''',path2file,''' does not exist. Run ''help ',mfilename,'''.']);
   end
   
   command=['grep -r "^ *',varName,' *=" ',path2file];

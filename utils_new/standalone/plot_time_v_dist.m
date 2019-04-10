@@ -1,14 +1,18 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Combines time series under the classical one-panel plot
 %                fashion, with some distance as abscissas.
-% Last modified: See file metadata.
-% Usage:         N/A.
 % Notes:         Needs:
 %                a) .m scripts and functions (if not alongside this script, recover via Léo):
 %                  1) bulkfilter.m
+%
+% Usage:
+%   plot_time_v_dist(times, values, distances, reducedTime, figureTitle, distanceName, skipFilters)
+% with:
+%   TODO.
+% yields:
+%   TODO.
 
-function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitle, distanceName)
+function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitle, distanceName, skipFilters, names,colours,linestyles)
   if(nargin<3)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''times,values,distances''.']);
   end
@@ -23,6 +27,40 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
   if(not(exist('distanceName')))
     distanceName=['distance $d$ '];
   end
+  if(not(exist('skipFilters')))
+    % not found, make default
+    skipFilters=0;
+  end
+  if(not(exist('names')))
+    namesGiven=0;
+  else
+    if(numel(names)==1 && names==0)
+      namesGiven=0;
+    else
+      namesGiven=1;
+    end
+  end
+  
+  if(not(exist('colours')))
+    coloursGiven=0;
+  else
+    if(numel(colours)==1 && colours==0)
+      coloursGiven=0;
+    else
+      coloursGiven=1;
+    end
+  end
+  
+  if(not(exist('linestyles')))
+    linestylesGiven=0;
+  else
+    if(numel(linestyles)==1 && linestyles==0)
+      linestylesGiven=0;
+    else
+      linestylesGiven=1;
+    end
+  end
+  
 %   format compact;
 %   set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
 %   set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
@@ -41,6 +79,21 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
     error(['[',mfilename,', ERROR] distance array should contain the same number of stations as the number of data series, but right now do not.']);
   end
   distances = reshape(distances, [nbstat, 1]);
+  if(namesGiven)
+    if(not(numel(names)==nbstat))
+      error(['[',mfilename,', ERROR] If a name structure is given, it must contain same number of names as the number of data series.']);
+    end
+  end
+  if(coloursGiven)
+    if(not(numel(colours)==nbstat))
+      error(['[',mfilename,', ERROR] If a colours structure is given, it must contain same number of names as the number of data series.']);
+    end
+  end
+  if(linestylesGiven)
+    if(not(numel(linestyles)==nbstat))
+      error(['[',mfilename,', ERROR] If a linestyles structure is given, it must contain same number of names as the number of data series.']);
+    end
+  end
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load.                       %
@@ -80,7 +133,9 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
 %     disp(['[', mfilename, ', WARNING] Data was rescaled by a factor ', num2str(rescale), '.']);
 %   end
   
-  data_v = bulkfilter(data_t, data_v);
+  if(not(skipFilters))
+    data_v = bulkfilter(data_t, data_v);
+  end
   
   fign = - 1;
   fign = input(['[', mfilename, '] Figure number? > ']);
@@ -89,7 +144,7 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
 %   if (length(colour) > 1)
 %     eval(['colour=', colour]);
 %   end
-  colour='k';
+%   colour='k';
 %   dist_unit = "-1";
 %   while (~ ismember(dist_unit, ["m", "km"]))
 %     dist_unit = input(['[', mfilename, '] Distance unit (m, km)? > '], 's');
@@ -165,13 +220,14 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Figure.                     %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  figure(fign);
-  name = {};
+  fh = figure(fign);
+%   name = {};
   yticklabel = [];
   scalez = - 1;
   while (scalez ~= 0)
     close(fign);
-    figure(fign);
+    fh = figure(fign);
+    set(fh,'units','normalized','outerposition',[0 0 1 1])
     if (scalez ~= 0 && scalez ~= - 1)
       dist_over_ptp = scalez;
     end
@@ -187,13 +243,31 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
 %       istat_glob = istattab(istat);
       istat_glob = istat;
       %     vertical_shift{istat}=*distance(istat_glob);
-      name{istat} = strcat('S', num2str(istat_glob));
+      
+      if(namesGiven)
+        name = names{istat};
+      else
+        name = strcat('S', num2str(istat_glob));
+      end
+      
+      if(coloursGiven)
+        colour=colours{istat};
+      else
+        colour='k';
+      end
+      
+      if(linestylesGiven)
+        LS = linestyles{istat};
+      else
+        LS = '-';
+      end
+      
       yticklabel = [yticklabel, sprintf(" %.2f",distances(istat_glob))];
       
 %       [i, dist_over_ptp, min(dist_over_ptp * data_v(istat, sel)), max(dist_over_ptp * data_v(istat, sel))]
       
 %       plot(data_t(istat, sel), distances(istat_glob) + dist_over_ptp * data_v(istat, sel), 'displayname', name{istat}, 'color', colour);
-      plot(data_t(istat, :), distances(istat_glob) + dist_over_ptp * data_v(istat, :), 'displayname', name{istat}, 'color', colour);
+      plot(data_t(istat, :), distances(istat_glob) + dist_over_ptp * data_v(istat, :), 'displayname', name, 'color', colour,'linestyle',LS);
       hold on;
     end
 %     xlim([min(data_t(:, 1)), max(data_t(:, end))]); % max ignores nan
@@ -226,7 +300,7 @@ function [] = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
   end
   if (labeleach == 1)
     % YTicks.
-    yticks(distances(isort));
+    yticks(unique(distances(isort)));
 %     % Stations' names labels.
 %     for i = 1:size(isort, 1)
 %       text(1.01 * tmax, distance(istattab(isort(i))), name{isort(i)}, 'HorizontalAlignment', 'left');

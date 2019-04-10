@@ -41,11 +41,11 @@ unknown = 'BXZ'; % _z.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars AGW.
-% fig_title = strcat('Mars Coupling');
+fig_title = strcat('Mars Coupling');
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
-% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
@@ -84,8 +84,9 @@ unknown = 'BXZ'; % _z.
 % rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % PML.
-fig_title = strcat('LNS ABC');
-rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_155014_e0p2/'); fig_title=[fig_title,' buffw0 e0.2'];
+% fig_title = strcat('LNS ABC');
+% rootd = strcat(SPCFMEXloc,'test_realstretching_planewave/'); OFd = strcat(rootd, '/OUTPUT_FILES/'); fig_title=[fig_title,' planewave'];
+% rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_155014_e0p2/'); fig_title=[fig_title,' buffw0 e0.2'];
 % rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_154970/'); fig_title=[fig_title,' buffw0 e1e-4'];
 % rootd = strcat(SPCFMEXloc,'test_realstretching_square_buffs_w100/'); OFd = strcat(rootd, '/OUTPUT_FILES_154971/'); fig_title=[fig_title,' buffw100 e1e-4'];
 % rootd = strcat(SPCFMEXloc,'test_realstretching_square_nobuffs_w000/'); OFd = strcat(rootd, '/OUTPUT_FILES_154980/'); fig_title=[fig_title,' nobuffw0 e1e-4'];
