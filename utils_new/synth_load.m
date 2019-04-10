@@ -293,7 +293,7 @@ elseif (behaviour == 2) % Eventually, plot as time-distance.
 %   addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo'); % wtff?
   reducedtime = - 1;
   while (not(numel(reducedtime)==1 && reducedtime>=0))
-    reducedtime = input(['[', mfilename, '] Reduced time? (0 for no, any other value for speed) > ']);
+    reducedtime = input(['[', mfilename, '] Reduced time? (0 for no, any other value for speed [m/s]) > ']);
   end
   
   plot_time_v_dist(Ztime, Zamp, distance(istattab), reducedtime, fig_title, dist_name);
