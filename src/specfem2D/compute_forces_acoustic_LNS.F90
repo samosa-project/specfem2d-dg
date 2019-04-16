@@ -171,12 +171,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             if(     LNS_mu(iglob) > TINYVAL &
                .OR. LNS_eta(iglob) > TINYVAL &
                .OR. LNS_kappa(iglob) > TINYVAL) then
-              viscousComputation=.true.
+              viscousComputation = .true.
             else
-              viscousComputation=.false.
+              viscousComputation = .false.
             endif
           else
-            viscousComputation=.false. ! If viscosity is globally disabled, deactivate it for this element.
+            viscousComputation = .false. ! If viscosity is globally disabled, deactivate it for this element.
           endif
           
           ! Note:

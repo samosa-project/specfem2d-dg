@@ -1,45 +1,18 @@
 ! ------------------------------------------------------------ !
-! compute_forces_acoustic_LNS_main                              !
+! compute_forces_acoustic_LNS_main                             !
 ! ------------------------------------------------------------ !
 ! TODO: Description.
+! 
+! Initialisation (routine initial_state_LNS()) was done way before, in
+! prepare_timerun().
+! 
+! This routine is called by iterate_time().
 
 subroutine compute_forces_acoustic_LNS_main()
   ! TODO: select variables to use.
   use constants
   use specfem_par
   use specfem_par_LNS
-  !use constants, only: &
-  !  CUSTOM_REAL, &
-  !  rk4a_d, rk4b_d, rk4c_d, &
-  !  ls33rk_a, ls33rk_b, ls33rk_c, &
-  !  HALF, ONE, NGLLX, NGLLZ
-  !use specfem_par, only:&! kmato,&
-  !  deltat, nglob_DG,stage_time_scheme,&
-  !  !gravityext, muext, etaext, kappa_DG,&
-  !  !tau_epsilon, tau_sigma, &
-  !  ispec_is_acoustic_coupling_ac,&
-  !  rmass_inverse_acoustic_DG,&
-  !  assign_external_model, any_acoustic_DG, only_DG_acoustic, &
-  !  !c_V,&!,gammaext_DG,&
-  !  it, i_stage,&
-  !  myrank, nspec, nproc, ibool_DG, ibool_before_perio, &
-  !  ninterface_acoustic, &
-  !  time_stepping_scheme, &
-  !  !CONSTRAIN_HYDROSTATIC, &
-  !  coord!, &
-  !  !T_DG, V_DG ! Use those to store respectively \nabla T' and \nabla v'.
-  !use specfem_par_LNS, only: &
-  !  LNS_g, LNS_mu, LNS_eta, LNS_kappa,&
-  !  LNS_rho0, LNS_v0, LNS_E0,&
-  !  LNS_drho, LNS_rho0dv, LNS_dE,&
-  !  aux_drho, aux_rho0dv, aux_dE,&
-  !  RHS_drho, RHS_rho0dv, RHS_dE,&
-  !  nabla_v0, LNS_T0, sigma_v_0, LNS_p0,&
-  !  LNS_dm, LNS_dp, LNS_dT,&
-  !  buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P,&
-  !  LNS_VERBOSE,&
-  !  NDIM,&
-  !  LNS_dummy_1d, LNS_dummy_2d!, LNS_dummy_3d
 
   implicit none
 
@@ -50,10 +23,6 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
   integer :: ier, i_aux
   logical check_linearHypothesis
-  
-  !! Needed for INLINE PREPARATION OF RHS FOR PMLs.
-  !real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_alpha
-  !integer :: i,j,ispec,iglob,ispec_PML,iglobPML
   
   ! Checks if anything has to be done.
   if (.not. any_acoustic_DG) then
@@ -113,34 +82,27 @@ subroutine compute_forces_acoustic_LNS_main()
   
     call LNS_prevent_nonsense() ! Check initial conditions.
     
-    !do ispec=1,nspec; if(ispec_is_PML(ispec)) then; ispec_PML=spec_to_PML(ispec); ! DEBUG
-    !  write(*,*) '     ', coord(:,ibool_before_perio(3,3,ispec)), ' is PML, ispec_PML=',ispec_PML,'.' ! DEBUG
-    !endif; enddo ! DEBUG
-    !write(*,*) 'nglob_PML', nglob_PML
-    !write(*,*) LNS_PML_drho ! DEBUG
-    !stop 'kek'; ! DEBUG
-    
   endif ! Endif on (it == 1) and (i_stage == 1).
   
   if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
-    WRITE(*,*) "****************************************************************"
-    WRITE(*,"(a,i9,a,i1,a,e23.16,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, "."
+    WRITE(*, *) "****************************************************************"
+    WRITE(*, "(a,i9,a,i1,a,e23.16,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, "."
   endif
   
-  ! Precompute momentum perturbation and velocity perturbation.
+  ! Precompute momentum perturbation, velocity perturbation,
+  ! temperature perturbation, and pressure perturbation.
   LNS_dv = ZEROcr
   do i_aux = 1, NDIM
-    LNS_dm(i_aux,:) = LNS_rho0dv(i_aux,:) + LNS_drho*LNS_v0(i_aux,:)
-    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux,:) = LNS_rho0dv(i_aux,:)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
+    LNS_dm(i_aux, :) = LNS_rho0dv(i_aux, :) + LNS_drho*LNS_v0(i_aux, :)
+    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux, :) = LNS_rho0dv(i_aux, :)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
-  
-  ! Recompute temperature and pressure perturbation.
   call compute_dp(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dp)
   call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
   
   ! Precompute gradients, only if viscosity exists whatsoever.
   if(LNS_viscous) then
-    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal) ! Note: we compute nabla_dv only if viscosity is activated.
+    ! Note: this will compute nabla_dv only if viscosity is activated.
+    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
     ! Precompute \Sigma_v' from \nabla(v').
     call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
   endif
@@ -466,6 +428,9 @@ end subroutine LNS_PML_updateD0
 ! initial_state_LNS                                            !
 ! ------------------------------------------------------------ !
 ! Computes initial state.
+! 
+! This routine is called by prepare_timerun(), well before
+! iterate_time() and thus compute_forces_acoustic_LNS_main().
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
@@ -865,9 +830,9 @@ end subroutine set_fluid_properties
 ! ------------------------------------------------------------ !
 ! Computes the viscous Navier-Stokes stress tensor \Sigma_v for a given velocity v.
 ! IN:
-!   \nabla v, gradient of v, (1,1) being dxvx, (1,2) dzvx, (2,1) dxvz, and (2,2) dzvz.
+!   \nabla v, gradient of v, (1, 1) being dxvx, (1, 2) dzvx, (2, 1) dxvz, and (2, 2) dzvz.
 ! OUT:
-!   \Sigma_v(v), as a size 3 vector since the stress tensor is symmetric: 1<->(1,1), 2<->(1,2)&(2,1), and 3<->(2,2).
+!   \Sigma_v(v), as a size 3 vector since the stress tensor is symmetric: 1<->(1, 1), 2<->(1, 2)&(2, 1), and 3<->(2, 2).
 
 subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
                                              sigma_v)
@@ -885,7 +850,7 @@ subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
   real(kind=CUSTOM_REAL), parameter :: TWOcr = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: LNS_lambda
   
-  LNS_lambda = LNS_eta-(2._CUSTOM_REAL/3._CUSTOM_REAL)*LNS_mu
+  LNS_lambda = LNS_eta - (2._CUSTOM_REAL/3._CUSTOM_REAL)*LNS_mu
   
   ! Explicit.
   !sigma_v(1,:) = TWOcr*LNS_mu*nabla_v(1,1,:) + LNS_lambda*(nabla_v(1,1,:)+nabla_v(2,2,:))
@@ -893,9 +858,9 @@ subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
   !sigma_v(3,:) = TWOcr*LNS_mu*nabla_v(2,2,:) + LNS_lambda*(nabla_v(1,1,:)+nabla_v(2,2,:))
   
   ! Compact.
-  sigma_v(1,:) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(1,1,:) + LNS_lambda*nabla_v(NDIM,2,:)
-  sigma_v(2,:) = LNS_mu*(nabla_v(1,2,:)+nabla_v(NDIM,1,:))
-  sigma_v(3,:) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(NDIM,2,:) + LNS_lambda*nabla_v(1,1,:)
+  sigma_v(1, :) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(1, 1, :) + LNS_lambda*nabla_v(NDIM, 2, :)
+  sigma_v(2, :) = LNS_mu*(nabla_v(1, 2, :)+nabla_v(NDIM, 1, :))
+  sigma_v(3, :) = (TWOcr*LNS_mu+LNS_lambda)*nabla_v(NDIM, 2, :) + LNS_lambda*nabla_v(1, 1, :)
   
 end subroutine LNS_compute_viscous_stress_tensor
 
@@ -1054,8 +1019,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             iglob_unique = ibool_before_perio(i, j, ispec)
             ya_x_l  = stretching_ya(1, iglob_unique)
             ya_z_l  = stretching_ya(2, iglob_unique)
-            xixl    = ya_x_l * xixl          ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            xizl    = ya_z_l * xizl          ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            xixl    = ya_x_l * xixl       ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            xizl    = ya_z_l * xizl       ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
             gammaxl = ya_x_l * gammaxl    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
             gammazl = ya_z_l * gammazl    ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
             !jacLoc = ya_x_l*ya_z_l*jacLoc ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.

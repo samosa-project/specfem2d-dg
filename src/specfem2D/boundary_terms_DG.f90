@@ -594,6 +594,7 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
         !                     (exp(-((current_time-(t_0+P_0/4d0))/(P_0/4d0))**2)) )
         ! Actual Gaussian derivative.
         forced_SF = -(2.*(PI/P_0)**2) * (current_time-t0-t_0) * exp(-((current_time-t0-t_0)*PI/P_0)**2)
+        ! Matlab one-liner: TT=???; T0=???; GGG = -(2.*(pi/TT)^2) * (t-T0) .* exp(-((t-T0)*pi/TT).^2)
       
       case (2)
         ! Time and space Gaussian derivative (gravity wave forcing).
