@@ -33,16 +33,18 @@ outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
 subsample = 1;
 subsample_dt = 1e-3;
 
-compareEnergies = 1;
+compareEnergies = 0;
 compareStations = 1;
 
-basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
-% basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
+% basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
+basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
 % basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
 
-% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps1em4']; suffixBu='$\varepsilon=10^{-4}$';
-bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps0p25']; suffixBu='$\varepsilon=0.25$';
-% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps0p5']; suffixBu='$\varepsilon=0.5$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e1em4']; suffixBu='$\varepsilon=10^{-4}$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p250']; suffixBu='$\varepsilon=0.25$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p160']; suffixBu='$\varepsilon=0.16$';
+bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p001']; suffixBu='$\varepsilon=10^{-3}$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p500']; suffixBu='$\varepsilon=0.5$';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.
@@ -56,9 +58,9 @@ if(numel(bufferRunOF)>0); if(not(strcmp(bufferRunOF(end),filesep))); bufferRunOF
 if(numel(largeRunOF)>0); if(not(strcmp(largeRunOF(end),filesep))); largeRunOF=[largeRunOF,filesep]; end; end;
 if(numel(farFieldRunOF)>0); if(not(strcmp(farFieldRunOF(end),filesep))); farFieldRunOF=[farFieldRunOF,filesep]; end; end;
 % retrieve parameters
-OF=largeRunOF; [xmM_La, zmM_La, ~] = getRunParameters([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
-OF=bufferRunOF; [xmM_Bu, zmM_Bu, ~] = getRunParameters([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']); LBUF=extractParamFromInputFile([OF,'input_parfile'], 'ABC_STRETCH_TOP_LBUF', 'float');
-OF=farFieldRunOF; [xmM_Fa, zmM_Fa, ~] = getRunParameters([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
+OF=largeRunOF; [xmM_La, zmM_La, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
+OF=bufferRunOF; [xmM_Bu, zmM_Bu, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']); LBUF=readExampleFiles_extractParam([OF,'input_parfile'], 'ABC_STRETCH_TOP_LBUF', 'float');
+OF=farFieldRunOF; [xmM_Fa, zmM_Fa, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
 % prepare information strings
 tit_La = ['$[',num2str(min(xmM_La)),', ',num2str(max(xmM_La)),']\times[',num2str(min(zmM_La)),', ',num2str(max(zmM_La)),']$'];
 tit_Bu = ['$[',num2str(min(xmM_Bu)),', ',num2str(max(xmM_Bu)),']\times[',num2str(min(zmM_Bu)),', ',num2str(max(zmM_Bu)),']$, Buffer=',num2str(LBUF),' [m], ',suffixBu];

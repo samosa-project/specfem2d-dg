@@ -220,6 +220,27 @@ disp(['[',mfilename,'] Computing missing quantities (sound speed, Brunt-Väisäl
 soundspeed_merged=sqrt(GAMMA_m.*p_e./rho_treated); % unused by specfem
 Nsquared_merged=(GAMMA_m-1).*g_e.^2.*rho_treated./(GAMMA_m.*p_e); % unused by specfem
 
+killMU=-1;
+while(not(numel(killMU)==1 & ismember(killMU, [0, 1])))
+  killMU=input(['[',mfilename,'] Set MU (viscosity) to zero (0 for no, 1 for yes)? > ']);
+end
+killKAPPA=-1;
+while(not(numel(killKAPPA)==1 & ismember(killKAPPA, [0, 1])))
+  killKAPPA=input(['[',mfilename,'] Set KAPPA (thermal conductivity) to zero (0 for no, 1 for yes)? > ']);
+end
+if(killMU)
+  factorMU=0; suffixMU='_noMU';
+  disp(['[',mfilename,'] Killing MU (MU is now 0 everywhere).']);
+else
+  factorMU=1; suffixMU='';
+end
+if(killKAPPA)
+  factorKAPPA=0; suffixKAPPA='_noKAPPA';
+  disp(['[',mfilename,'] Killing KAPPA (KAPPA is now 0 everywhere).']);
+else
+  factorKAPPA=1; suffixKAPPA='';
+end
+
 plotricharddd=-1;
 while(not(numel(plotricharddd)==1 & ismember(plotricharddd, [0, 1])))
   plotricharddd=input(['[',mfilename,'] Plot Richardson number (0 for no, 1 for yes)? > ']);
@@ -236,11 +257,14 @@ end
 
 % Output newly-built file.
 disp(['[',mfilename,'] Rewriting model to another file.']);
-new_o_file = ['msiseecmwf_',o_file];
-% rewrite_atmos_model(new_o_file, o_file, ALTITUDE, DENSITY, T_e2m, soundspeed_merged, p_e2m, LOCALPRESSURESCALE, g_e2m, Nsquared_merged, KAPPA, MU, MUVOL, w_M_e2m, W_Z_e2m, w_P, CP, CV, GAMMA);
-rewrite_atmos_model(new_o_file, o_file, Z, rho_treated, T_e, soundspeed_merged, p_e, H_m, g_e, Nsquared_merged, kappa_e, mu_e, MUVOL_m, w_North_e, W_East_e, w_P_treated, CP_m, CV_m, GAMMA_m);
-
+new_o_file = ['msiseecmwf_',o_file,suffixMU,suffixKAPPA];
 kek=what(o_folder);
 fullnewpath=[kek.path,filesep,new_o_file];
+% rewrite_atmos_model(new_o_file, o_file, ALTITUDE, DENSITY, T_e2m, soundspeed_merged, p_e2m, LOCALPRESSURESCALE, g_e2m, Nsquared_merged, KAPPA, MU, MUVOL, w_M_e2m, W_Z_e2m, w_P, CP, CV, GAMMA);
+rewrite_atmos_model(fullnewpath, o_file, Z, rho_treated, T_e, ...
+                    soundspeed_merged, p_e, H_m, g_e, Nsquared_merged, ...
+                    factorKAPPA*kappa_e, factorMU*mu_e, factorMU*MUVOL_m, ...
+                    w_North_e, W_East_e, w_P_treated, CP_m, CV_m, GAMMA_m);
+
 disp(['[',mfilename,'] Model stored in: ''',fullnewpath,'''.']);
 plot_model(fullnewpath, '-', 'k', []);

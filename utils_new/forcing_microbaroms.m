@@ -14,8 +14,9 @@ set(0, 'defaultTextFontSize', 22);
 set(0, 'defaultAxesFontSize', 22); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
-
 set(groot, 'defaultSurfaceEdgeColor', 'none');
+
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % lglnodes
 
 rng(0123456789); % Set seed to produce same forcing everytime.
 
@@ -48,7 +49,7 @@ nT0 = 20; % Number of temporal periods (must be integer to prevent FFT misbehavi
 % nT0 = 2; % Number of temporal periods (must be integer to prevent FFT misbehaving).
 % L0 = 200; % Spatial period.
 L0 = 286.2; % k1, spatial period from WAVEWATCH3 multi_1.partition.glo_30m.20160523060000-48500182000.
-L02 = -291.07; % k2.
+L02 = -293.27; % k2.
 % nL0 = 160; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 nL0 = 54; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).
 % nL0 = 5; % Number of spatial periods (total, must be integer to prevent FFT misbehaving).

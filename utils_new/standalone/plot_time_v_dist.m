@@ -12,7 +12,7 @@
 % yields:
 %   TODO.
 
-function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitle, distanceName, skipFilters, names,colours,linestyles)
+function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitle, distanceName, skipFilters, names, colours, linestyles)
   if(nargin<3)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''times,values,distances''.']);
   end

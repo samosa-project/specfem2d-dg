@@ -71,16 +71,16 @@ function [] = rewrite_atmos_model(output_file, header_file, Z, RHO, T, C, P, H, 
   end
   
   % Informative print.
-  disp(['[',mfilename,'] Maximum acceptable DX for CFD computation with this atmospheric model is ',num2str(min(C).*(1-max(W./C))),' / (max(f)*NPointsPerWavelength).']);
+  disp(['[',mfilename,'] Maximum acceptable DX for CFD computation with this atmospheric model is ',num2str(min(C).*(1-max(W./C))),' / (min(c)*(1-max(Mach))).']);
   
   % Check if output file exists.
   if(exist(output_file,'file'))
     decision=-1;
     while(not(ismember(decision,[0,1])))
-      decision=input([char(strcat("[",mfilename,"] File (", output_file,') exists.\n[',mfilename,'] Overwrite? (0 for no, 1 for yes) >')),' ']);
+      decision=input([char(strcat("[", mfilename, "] File (", output_file,') exists.\n[',mfilename,'] Overwrite? (0 for no, 1 for yes) >')),' ']);
     end
     if(decision==0)
-      disp(['[',mfilename,'] Overwrite cancelled, stopping script.']); return;
+      disp(['[', mfilename, '] Overwrite cancelled, stopping script.']); return;
     end
   end
   

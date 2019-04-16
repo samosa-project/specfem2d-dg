@@ -29,7 +29,7 @@ if(PseudoGMSH0orDATABASE1==0)
 %   error(['[',mfilename,', ERROR] Not implemented yet.']);
   Nodes_extMesh = input(['[',mfilename,'] Path to Nodes_extMesh? > '],'s');
   if(not(exist(Nodes_extMesh)==2))
-    error('not a file')
+    error('[',mfilename,', ERROR] ''',Nodes_extMesh,''' is not a file.');
   end
   [P] = readExampleFiles_extmshLoadNodes(Nodes_extMesh);
   
