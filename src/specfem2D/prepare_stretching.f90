@@ -218,8 +218,10 @@ subroutine stretching_function(r_l, ya)
   
   ! Coefficients for the stretching function.
   ! Arina's stretching
-  !eps_l = 1.d-4 ! Ending value of stretching. 1.d-4 in Arina's paper.
-  eps_l = 0.25 ! Ending value of stretching. 1.d-4 in Arina's paper.
+  !eps_l = 1.d-4 ! Ending value of stretching. 1.d-4 in Arina's paper
+  eps_l = 1.d-3 ! Ending value of stretching. 1.d-4 in Arina's paper
+  !eps_l = 0.16 ! Ending value of stretching. 1.d-4 in Arina's paper..
+  !eps_l = 0.25 ! Ending value of stretching. 1.d-4 in Arina's paper.
   !eps_l = 0.5 ! Ending value of stretching. 1.d-4 in Arina's paper.
   p = 3.25
   q = 6.
