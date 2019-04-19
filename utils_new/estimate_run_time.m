@@ -95,7 +95,7 @@ if(not(plot_rate))
     nproc = -1;
     while(not(numel(nproc)==1 & nproc>=0))
       disp(' ');disp(' ');disp(' ');
-      nproc = input(['[',mfilename,'] Number of procs (>=0, 0 to stop script)? > ']);
+      nproc = input(['[',mfilename,'] Number of procs (>=0, 0 to stop script, for now your parfile has NPROC=',num2str(readExampleFiles_extractParam(parfile, 'NPROC', 'float')),')? > ']);
     end
     if(nproc==0)
       continue

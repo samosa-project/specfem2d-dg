@@ -25,17 +25,24 @@
 clear all;
 % close all;
 clc ;
-format long ;
+format shortg
 % clear DIFF
 % clear synf
 
+set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+set(0, 'defaultTextFontSize', 20); set(0, 'defaultAxesFontSize', 20);
+set(0, 'DefaultTextInterpreter', 'latex');
+set(0, 'DefaultLegendInterpreter', 'latex');
 SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
 addpath([SPCFMloc,'utils_new/Atmospheric_Models']); % extract_atmos_model
 addpath([SPCFMloc,'utils_new/tools']); % readExampleFiles_extractParam, seismotypeNames
 
 rootd=[SPCFMloc,'EXAMPLES/validation_lns_gravito/']; % EXAMPLE path
 % OFd = [rootd,'OUTPUT_FILES/'];
-OFd = [rootd,'OUTPUT_FILES_long/'];
+% OFd = [rootd,'OUTPUT_FILES_long/'];
+OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171808_vel_isobaric/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
 
 data_test0_or_readRun1 = 1;
 subsample = 1; % subsample synthetics? see sumsamble_dt below, near T_0
@@ -84,6 +91,8 @@ int_file=[OFd,'input_interfaces'];
 % Time and space domain
 % variables (parfile)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% disp([' ']);
+disp(['[',mfilename,', INFO] Loading simulation parameters.']);
 % Automatically load parameters from simulation's OUTPUT_FILES directory.
 [zmin, zmax] = readExampleFiles_zMinMaxInterfacesFile(int_file);
 dt = readExampleFiles_extractParam(parfile, 'DT', 'float');
@@ -97,7 +106,7 @@ xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
 xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
 ymin = 0; ymax = 0; % Setting this for 2D simulations. For 3D simulations, another call to readExampleFiles_extractParam would be needed.
 nx = readExampleFiles_extractParam(parfile, 'nx', 'int');
-subsample_dt = T_0/20; % if subsample == 1, wanted dt for subsampling: ~30 pts/period is safe
+subsample_dt = T_0/30; % if subsample == 1, wanted dt for subsampling: ~30 pts/period or higher is safe
 % Atmospheric model.
 switch(readExampleFiles_extractParam(parfile, 'MODEL', 'string'))
   case 'default'
@@ -109,56 +118,92 @@ switch(readExampleFiles_extractParam(parfile, 'MODEL', 'string'))
 end
 % Deduce other useful parameters.
 dx = (xmax-xmin)/nx;
-dy = dx; disp(['[',mfilename,', INFO] Setting dy=dx. Make sure this is the case for your simulation.']);
+dy = dx; disp(['[',mfilename,'] Setting dy=dx. Make sure this is the case for your simulation.']);
 t0 = 0.0;
+% Safeguards.
+if(any([readExampleFiles_extractParam(parfile, 'dynamic_viscosity', 'float'), readExampleFiles_extractParam(parfile, 'thermal_conductivity', 'float')]~=0))
+  error(['[',mfilename,', ERROR] Simulation was viscous (dynamic_viscosity and/or thermal_conductivity != 0), this case is not implemented yet.']);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Analytical solution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Choices
-mult_tSpan = 1.5; % multiplier for time span (used for analytical solution)
+mult_tSpan = 1; % multiplier for time span (used for analytical solution)
 mult_xSpan = 1; % multiplier for x span (used for analytical solution)
 mult_ySpan = 1; % multiplier for y span (used for analytical solution)
 % fs   = 1/dt ; %not used anywhere
-fmax = 1;
-fmin = -fmax;
-% Atmospheric part parameters.
+% fmax = 1; %not used ??
+% fmin = -fmax; %not used ??
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Atmospheric Parameters.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp([' ']);
+disp(['[',mfilename,', INFO] Preparing atmospheric model.']);
 if(externalDGAtmosModel)
   % External DG atmospheric model, load it.
   disp(['[',mfilename,'] Loading atmospheric model from external file in ''',OFd,'''.']);
-  % set H, NSQ
   [ALT, RHO, ~, SOUNDSPEED, ~, ~, GRA, NSQ, ~, ~, ~, ~, ~, WIND, ~, ~, ~] = extract_atmos_model(atmmodelfile, 3, 0, 0); % plot_model(atmmodelfile,'-','k',[]);
-  % Set wi
-  if(max(abs(diff(WIND)))==0)
-    disp(['[',mfilename,'] Constant wind, setting wind_x.']);
-    wind_x = WIND(1);
-  else
-    disp(['[',mfilename,'] Wind not constant, setting wind_x as wind at altitude 0.']);
-    wind_x = WIND(1);
-  end
 %   H        = (ALT(2)-ALT(1))/log(RHO(1)/RHO(2))
-  H        = (-ALT(2))/log(RHO(2)/RHO(1));
+  % Set H.
+  H        = (-ALT(2))/log(RHO(2)/RHO(1)); % NEEDED FOR NSQ AND ANALYTIC SOLUTION
+  disp(['[',mfilename,'] Scale height computed,         = ',num2str(H),'.']);
 %   rho_0    = RHO(1); % used nowhere
 %   Nsqt      = -(GRA(1)*( -1/H - GRA(1)/(velocity(1)^2) )); % used nowhere
+
+  % Set NSQ.
+  error(['[',mfilename,', ERROR] N^2 computation for external models not implemented yet.']);
+  
+  % Set wind_x.
+  if(max(abs(diff(WIND)))==0)
+    wind_x = WIND(1);
+    disp(['[',mfilename,'] Wind_x loaded,                 = ',num2str(wind_x),'. Constant with altitude.']);
+  else
+    wind_x = WIND(1);
+    disp(['[',mfilename,'] Wind_x loaded,                 = ',num2str(wind_x),'. Not constant with altitude, setting wind_x as wind at altitude 0.']);
+  end
+  
 else
   % Internal model, load it.
-  disp(['[',mfilename,'] Loading atmospheric model from parfile in ''',OFd,'''.']);
-  % set H
-  H = readExampleFiles_extractParam(parfile, 'SCALE_HEIGHT', 'float');
-  % set NSQ
-  GRA = readExampleFiles_extractParam(parfile, 'gravity', 'float');
-  SOUNDSPEED = readExampleFiles_extractParam(parfile, 'sound_velocity', 'float');
-  NSQ = -(GRA*( -1/H - GRA/(SOUNDSPEED^2) ));% NOT SURE ABOUT THAT FORMULA, CHECK
-  % Set wi
+  disp(['[',mfilename,'] Building atmospheric model from parfile in ''',OFd,'''.']);
+  
+  % Set H.
+  H = readExampleFiles_extractParam(parfile, 'SCALE_HEIGHT', 'float'); % NEEDED FOR NSQ AND ANALYTIC SOLUTION
+  disp(['[',mfilename,'] Scale height loaded,           = ',num2str(H),'.']);
+  
+  if(readExampleFiles_extractParam(parfile, 'USE_ISOTHERMAL_MODEL', 'bool'))
+    % isothermal case
+    disp(['[',mfilename,'] Isothermal case.']);
+    error(['[',mfilename,', ERROR] Isothermal case not implemented yet.']);
+    % need to produce SOUNDSPEED
+    GRA = readExampleFiles_extractParam(parfile, 'gravity', 'float'); % ONLY NEEDED FOR NSQ
+  else
+    % isobaric case
+    disp(['[',mfilename,'] Isobaric case.']);
+    SOUNDSPEED = readExampleFiles_extractParam(parfile, 'sound_velocity', 'float');
+    disp(['[',mfilename,'] Speed of sound loaded,         = ',num2str(SOUNDSPEED),'.']);
+    GRA = 0; % ONLY NEEDED FOR NSQ
+    disp(['[',mfilename,'] Gravity set for isobaric case, = ',num2str(GRA),'.']);
+  end
+  
+  % Set NSQ.
+  NSQ = -(GRA*( -1/H - GRA/(SOUNDSPEED^2) )); % NOT SURE ABOUT THAT FORMULA, CHECK
+  disp(['[',mfilename,'] N^2 computed,                  = ',num2str(NSQ),'.']);
+  
+  % Set wind_x.
   wind_x = readExampleFiles_extractParam(parfile, 'wind', 'float');
+  disp(['[',mfilename,'] Wind_x loaded,                 = ',num2str(wind_x),'.']);
 end
-disp(['[',mfilename,'] Constant wind, setting wind_y = wind_z = 0.']);
+disp(['[',mfilename,'] Setting wind_y = wind_z = 0.']);
 wind_y = 0;
 wind_z = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading Results.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp([' ']);
+disp(['[',mfilename,', INFO] Loading synthetics.']);
 % data = readAndSubsampleSynth(OFd, 2, 'BXZ', 'semv', 1, 1, 0); sig_t = data(:,1)'; sig_v = data(:,2)'; figure(); plot(sig_t, sig_v); % test
 [variable, signal_type] = seismotypeNames(seismotype, readExampleFiles_extractParam(parfile, 'USE_DISCONTINUOUS_METHOD', 'bool'));
 
@@ -328,6 +373,7 @@ if(data_test0_or_readRun1 == 1)
 %   dt = dt;
   subsampledDt = Ztime(locStatNumber, 2)-Ztime(locStatNumber, 1);
   nSamp = nt;
+%   dt = subsampledDt; % update dt
 else % Else on data_test0_or_readRun1.
   % Test data.
   error('not implemented')
@@ -341,33 +387,41 @@ end % Endif on data_test0_or_readRun1.
 
 disp(['[',mfilename,'] Synthetics loaded: ', num2str(nSamp), ' samples each.']);
 % 
-% pause %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialization of the analytical solution.
+disp([' ']);
+disp(['[',mfilename,', INFO] Building analytical solution.']);
+tmax_anal = t_0 + max(zstattab)/SOUNDSPEED(1) + 0.5*T_0 + 1*T_0; % go as far as 2 times the time necessary (roughly) for the signal to pass last station (t_0 + travel time + half period), + full period for safety
+dt_anal   = T_0 / (2*100); % ensure fmax=1/dt >> 2*f0=2/T_0 by setting 1/dt = (2*2.5)/T_0
+dx_anal = dx;
+dy_anal = dy;
+
 % syn = zeros(nstat,length(Ztime(nstat,:))) ;
 % synX = zeros(nstat,length(Ztime(nstat,:))) ;
 % synZ = zeros(nstat,length(Ztime(nstat,:))) ;
 % NFFT2 = 2^nextpow2(length(Ztime(nstat,:))); 
-syn = zeros(nstat, nSamp);
-synX = zeros(nstat, nSamp);
-synZ = zeros(nstat, nSamp);
+% syn = zeros(nstat, nSamp); %unused?
+% synX = zeros(nstat, nSamp); %unused?
+% synZ = zeros(nstat, nSamp); %unused?
 % NFFT2 = 2^nextpow2(nSamp)*extent_time;
-NFFT2 = 2^nextpow2(nSamp)*mult_tSpan;
+% NFFT2 = 2^nextpow2(nSamp)*mult_tSpan;
+NFFT2 = 2^nextpow2(ceil(tmax_anal/dt_anal))*mult_tSpan;
 % dt=256*dt; % ?????
 % Fourier space
-NFFT1 = 2^nextpow2((xmax-xmin)/dx)*mult_xSpan;
-NFFT3 = 2^nextpow2((ymax-ymin)/dy)*mult_ySpan;
+NFFT1 = 2^nextpow2((xmax-xmin)/dx_anal)*mult_xSpan;
+NFFT3 = 2^nextpow2((ymax-ymin)/dy_anal)*mult_ySpan;
 disp(['[',mfilename,'] FFT3D matrix size: ',sprintf('%.1e', NFFT1*NFFT2*NFFT3),' reals.']);
 disp(['[',mfilename,'] Usually, 9e7 is ok, 1e8 chugs a bit, 2e8 chugs HARD.']);
 k = zeros(NFFT1,NFFT2,NFFT3);
 % t = zeros(1,NFFT2) ;
 % t = dt * (0:1:NFFT2-1);
-t = subsampledDt * (0:1:NFFT2-1);
-maxwind = max(t);
-x = dx * (0:1:NFFT1-1) + xmin;
-y = dy * (0:1:NFFT3-1) + ymin;
+% t = subsampledDt * (0:1:NFFT2-1);
+t = dt_anal * (0:1:NFFT2-1);
+% maxwind = max(t);
+x = dx_anal * (0:1:NFFT1-1) + xmin;
+y = dy_anal * (0:1:NFFT3-1) + ymin;
 % IN THIS SENSE? -> NO!
 %omega = 2.0*pi()*(1.0/(dt*NFFT2))*[ [0.0-[NFFT2/2-1:-1:1]] [0:1:NFFT2/2]];
 %kx = 2.0*pi()*(1.0/(dx*NFFT1))*[[0.0-[NFFT1/2-1:-1:1]] [0:1:NFFT1/2] ];
@@ -385,7 +439,7 @@ switch(TYPE_FORCING)
   case(1)
 %     Mo = 2 * (   exp(-((T-(t_0-T_0/4)-t0)/(T_0/4)).^2) ...
 %                - exp(-((T-(t_0+T_0/4)-t0)/(T_0/4)).^2) ); % not really pretty
-    Mo = -(2.*(pi/T_0)^2) * (T-t_0) .* exp(-((T-t_0)*pi/T_0).^2); % neary equivalent, and an actual Gaussian derivative
+    Mo = -0.5*(2.*(pi/T_0)^2) * (T-t_0) .* exp(-((T-t_0)*pi/T_0).^2); % neary equivalent, and an actual Gaussian derivative
     displayMo = squeeze(Mo(1, 1, :));
   case(2)
     Mo = 2 * (   exp(-((X-(X_0-P_0/4))/(P_0/4)).^2) ...
@@ -417,15 +471,16 @@ TFMo = fftn(Mo);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [Brissaud et al., 2016, Section 5.1]: "Calculation of wavenumbers
 % kx = 2π/λx and ky = 2π/λy for all spatial wavelengths λx,y."
-omega = 2.0*pi()*(1.0/(dt*NFFT2))*[[0:1:NFFT2/2] [0.0-[NFFT2/2-1:-1:1]]];
-kx = 2.0*pi()*(1.0/(dx*NFFT1))*[[0:1:NFFT1/2] [0.0-[NFFT1/2-1:-1:1]]];
-ky = 2.0*pi()*(1.0/(dy*NFFT3))*[[0:1:NFFT3/2] [0.0-[NFFT3/2-1:-1:1]]];
-[KX, KY, Omega] = meshgrid(kx, ky, -omega);
+% omega = 2.0*pi()*(1.0/(dt*NFFT2))*[[0:1:NFFT2/2] [0.0-[NFFT2/2-1:-1:1]]];
+omega = 2.0*pi()*(1.0/(dt_anal*NFFT2))*[[0:1:NFFT2/2] [0.0-[NFFT2/2-1:-1:1]]];
+kx =    2.0*pi()*(1.0/(dx     *NFFT1))*[[0:1:NFFT1/2] [0.0-[NFFT1/2-1:-1:1]]];
+ky =    2.0*pi()*(1.0/(dy     *NFFT3))*[[0:1:NFFT3/2] [0.0-[NFFT3/2-1:-1:1]]];
+[KX, KY, Omega] = meshgrid(kx, ky, omega);
 % Assuming constant Nsq
 Nsqtab = NSQ(1, 1) + 0.0*Omega;
 % KX = Omega/velocity(1);
 % see occhipinti 2008 for analytical solution (appendix A1)
-onestab = 0.0*Nsqtab+1.0; % unused
+onestab = 0.0*Nsqtab + 1.0;
 % Omega_intrinsic = Omega-(wi)*KX;
 Omega_intrinsic = Omega - wind_x*KX - wind_y*KY;
 
@@ -433,20 +488,35 @@ Omega_intrinsic = Omega - wind_x*KX - wind_y*KY;
 % [Brissaud et al., 2016, Section 5.1]: "Calculation of kz from dispersion
 % relations for all wavenumbers kx, ky and time frequencies (see Appendix
 % B)."
+% [Brissaud et al., 2016, Eq. (B4)] ?? See brouillons 190412
+% [Fritts and Alexander, 2003, Eq. (22)] ?? Not  ( 1 - Nsqtab./(Omega.^2)) ?? See brouillons 190412
+
+% Base formula:
 % KZ = sqrt(Nsqtab.*(KX.*KX)./((Omega-(wi)*KX).*(Omega-(wi)*KX))-(KX.*KX) + (1 - Nsqtab./(Omega.*Omega) ).*((Omega-(wi)*KX).*(Omega-(wi)*KX))/(SOUNDSPEED(1)^2) );
+% KZ = sqrt(Nsqtab.*(KX.*KX)./((Omega-(wind_x)*KX).*(Omega-(wind_x)*KX))-(KX.*KX) + (1 - Nsqtab./(Omega.*Omega) ).*((Omega-(wind_x)*KX).*(Omega-(wind_x)*KX))/(SOUNDSPEED(1)^2) );
+% Factorised base formula.
 % KZ = sqrt(   (Nsqtab.*KX.^2) ./ ((Omega-wind_x*KX).^2) ...
 %            - KX.^2 ...
 %            + ( 1 - Nsqtab./(Omega.^2)) ...
 %              .* ((Omega-wind_x*KX)./SOUNDSPEED(1)).^2      );
-KZ = sqrt(   Nsqtab .* (KX.^2+KY.^2) ./ (Omega_intrinsic.^2) ...
-           - (KX.^2+KY.^2) ...
-           - onestab/(4*H^2) ...
-           + ( 1 - Nsqtab./(Omega.^2)) ...
-             .* (Omega_intrinsic ./ SOUNDSPEED(1)).^2      );
-% [Brissaud et al., 2016, Eq. (B4)] ?? See brouillons 190412
-% [Fritts and Alexander, 2003, Eq. (22)] ?? Not  ( 1 - Nsqtab./(Omega.^2)) ?? See brouillons 190412
+% Factorised base formula + generalisation to stick to Fritts and Alexander.
+% KZ = sqrt(   Nsqtab .* (KX.^2+KY.^2) ./ (Omega_intrinsic.^2) ...
+%            - (KX.^2+KY.^2) ...
+%            - onestab/(4*H^2) ...
+%            + ( 1 - Nsqtab./(Omega.^2)) ... % THIS TERM INCREASES LOCAL PROPAGATION SPEED
+%              .* (Omega_intrinsic ./ SOUNDSPEED(1)).^2            );
+% Full Fritts and Alexander (22) with f=0.
+% KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
+%            - onestab/(4*H^2) + (Omega_intrinsic ./ SOUNDSPEED(1)).^2 );
+% Full Fritts and Alexander (22) with f=0 and no H term.
+KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
+           + (Omega_intrinsic ./ SOUNDSPEED(1)).^2 );
+% Full Fritts and Alexander (24) with f=0.
+% KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
+%            - onestab/(4*H^2)                                         );
+% Old formula.
+% KZ = sqrt( Nsqtab.*(KX.*KX + KY.*KY)./(Omega_intrinsic.*Omega_intrinsic)-(KX.*KX + KY.*KY) - onestab/(4*H*H) + (Omega_intrinsic.*Omega_intrinsic)/(SOUNDSPEED(1)^2) );
 
-% KZ = sqrt( Nsqtab.*(KX.*KX + KY.*KY)./(omega_intr.*omega_intr)-(KX.*KX + KY.*KY) - onestab/(4*H*H) + (omega_intr.*omega_intr)/(velocity(1)^2) );
 ind1=find(isnan(KZ));
 ind2=find(isinf(KZ));
 disp(['[',mfilename,'] Number of NaNs in KZ: ',num2str(numel(ind1)),'.']);
@@ -461,7 +531,7 @@ KZ(indimag) = conj(KZ(indimag));
 % real(KZ) should be positive for positive frequencies and negative for
 % negative frequencies in order to shift signal in positive times
 % restore the sign of KZ depending on Omega-wi*KX
-%     KZnew=real(KZ).*sign((Omega-wi*KX)).*sign(KX)+1i*imag(KZ);
+%     KZnew=real(KZ).*sign((Omega-wind_x*KX)).*sign(KX)+1i*imag(KZ);
 % !!! Why KZ should have a sign opposite to Omega for GW NOT UNDERSTOOD !!!
 % => because vg perpendicular to Vphi ?
 KZnew = 0.0 - real(KZ).*sign(Omega_intrinsic) + 1i*imag(KZ);
@@ -518,7 +588,17 @@ KZ=KZnew;
       gloStatNumber = istattab(locStatNumber);
       z_station = zstattab(gloStatNumber);
       filt = exp(1i*(KZ*z_station));
+%       shifttime=0.0-real(KZ*z_station)./Omega;
+%       filt = exp(1i*KZ*z_station).*(shifttime>=0);
+%       
+      % what
 %       filt(1, 1, :) = 0.0; % why
+
+      % remove waves assumed to propagate downward
+%       indw=find((real(KZ)>0.0));
+%       indw=find((real(KZ)<0.0));
+%       filt(indw)=0.0;
+
       Mz = exp(z_station/(2*H)) * ifftn(filt.*TFMo);
 %           xcoord(istat) = xstattab(istat);
       ix = round((xstattab(gloStatNumber)-xmin)/dx) + 1; % first guess for x
@@ -573,6 +653,26 @@ KZ=KZnew;
 %   end% REMOVED FOR TESTS
 % end% REMOVED FOR TESTS
 
+% test to see what forms has the analytic solution.
+disp([' ']);
+disp(['[',mfilename,', INFO] Checking analytical solution.']);
+f=figure();
+% colours=jet(nstat);
+% colours=prism(nstat);
+colours=winter(nstat);
+for i = 1:nstat;
+  plot(t,synf(i,:),'displayname',num2str(zstattab(istattab(i))),'color',colours(i,:)); hold on;
+end
+legend();
+prettyAxes(f);
+isThisOk=-1;
+while(not(ismember(isThisOk,[0,1])))
+  isThisOk=input(['[',mfilename,'] Does this analytical solution look ok (0 for no, 1 for yes)? > ']);
+end
+if(not(isThisOk))
+  error('stop kek');
+end
+
 % TEST ONLY
 % synf = Zamp;
 % 
@@ -589,40 +689,52 @@ timef = t;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat vertical components and synthetic signals against 
 % time
-figure();
+disp([' ']);
+disp(['[',mfilename,'] Plotting everything.']);
+f=figure('units','normalized','outerposition',[0 0 1 1]);
 ax = [];
 for locStatNumber = 1 : nstat
   ax(locStatNumber) = subplot(nstat,1,nstat-locStatNumber+1); 
   hold on
   if(seismotype == 1)
-    timef_final = find(timef<=Ztime(locStatNumber,end));
-    timef_final = timef_final(end);
-             plot(timef(1:timef_final),real(synf(istat,1:timef_final)),'Color',[0 0 0],'LineWidth',1)
-           plot(timef,real(synf(istat,:))/max(real(synf(istat,:))),'Color',[0 0 0],'LineWidth',1)
-
-           plot(Ztime(istat,:),real(synf(istat,1:length(Ztime(istat,:))))/max(real(synf(istat,1:length(Ztime(istat,:))))),'Color',[0 0 0],'LineWidth',1)
+    ID_t_anal_end = find(timef<=Ztime(locStatNumber,end), 1, 'last');
+%     plot(timef(1:timef_final),real(synf(locStatNumber,1:timef_final)),'Color',[0 0 0],'LineWidth',1)
+    plot(timef(1:ID_t_anal_end),synf(locStatNumber, 1:ID_t_anal_end),'Color',[0 0 0],'LineWidth',1,'displayname','analytical');
+%     plot(timef,real(synf(locStatNumber,:))/max(real(synf(locStatNumber,:))),'Color',[0 0 0],'LineWidth',1)
+%     plot(Ztime(locStatNumber,:),real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))/max(real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))),'Color',[0 0 0],'LineWidth',1)
   else
-    plot(Ztime(locStatNumber,:),syn(locStatNumber,:),'Color',[0 0 0],'LineWidth',1)
+%     plot(Ztime(locStatNumber,:),syn(locStatNumber,:),'Color',[0 0 0],'LineWidth',1)
+    plot(t,synf(locStatNumber,:),'Color',[0 0 0],'LineWidth',1,'displayname','analytical')
   end
+  
+  % Plot synthetic.
   Ztime_temp = Ztime(locStatNumber,1:floor(dt/subsampledDt):end);
   Zamp_temp  = Zamp(locStatNumber,1:floor(dt/subsampledDt):end);
 %   SIZE_R = size(Ztime_temp)
 %   disp(['[',mfilename,'] Plotting a ',num2str(numel(Ztime_temp)),' long array.']);
 %         size((Zamp_temp-real(synf(istat,1:length(Ztime_temp))))')
-  DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
-  plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2)
+%   DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
+  plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2,'displayname','synthetic');
+  
+  % x-y labels.
   if (locStatNumber == round(nstat/2))
-    ylabel([variable,'along z-axis (m)'] ,'FontSize',14.3);
+    ylabel([variable,' along z-axis (m)']);
   end
   if (locStatNumber == 1)
-    xlabel('time (s)','FontSize',14.3);
+    xlabel('time (s)');
+  else
+    xticklabels([]);
   end
-  text(00.943*max(Ztime(locStatNumber,:)),0.95,['X position : $',num2str(xstattab(locStatNumber)),'km$ (along x)']) 
-  legend('Analytical','Modeled','10*(Mo-An)','Location','East')
-  legend('Location','East');
+%   text(00.943*max(Ztime(locStatNumber,:)),0.95,['X position : $',num2str(xstattab(locStatNumber)),'km$ (along x)']) 
+%   legend('Analytical','Modeled','10*(Mo-An)','Location','East')
+%   legend('Location','East');
+  legend('location','northeast');
 end
 linkaxes(ax, 'x');
-title(strcat('Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)'),'FontSize',24)
+% title(['Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)']);
+title(['Stations at altitudes ', sprintf('%.0f ',zstattab(istattab)),' [m]']);
+addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
+prettyAxes(f);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 

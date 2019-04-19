@@ -33,17 +33,18 @@ outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
 subsample = 1;
 subsample_dt = 1e-3;
 
-compareEnergies = 0;
-compareStations = 1;
+compareEnergies = 1;
+compareStations = 0;
 
 % basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
 basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
 % basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
 
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps0p25']; suffixBu='$\varepsilon=0.25$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e1em4']; suffixBu='$\varepsilon=10^{-4}$';
-% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p250']; suffixBu='$\varepsilon=0.25$';
-% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p160']; suffixBu='$\varepsilon=0.16$';
-bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p001']; suffixBu='$\varepsilon=10^{-3}$';
+bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p250']; suffixBu='$\varepsilon=0.25$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p160_woE']; suffixBu='$\varepsilon=0.16$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p001']; suffixBu='$\varepsilon=10^{-3}$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p500']; suffixBu='$\varepsilon=0.5$';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
