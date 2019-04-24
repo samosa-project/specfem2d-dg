@@ -42,11 +42,12 @@ unknown = 'BXZ'; % _z.
 
 % Mars AGW.
 fig_title = strcat('Mars Coupling');
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1682282_z12k_hardsoil/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
@@ -284,14 +285,45 @@ elseif (behaviour == 2) % Eventually, plot as time-distance.
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
   end
+  
+  xstattab4dist = xstattab;
+  
+  if(readExampleFiles_extractParam([OFd,'input_parfile'], 'ADD_PERIODIC_CONDITIONS', 'bool')) % if periodic boundary conditions in input_parfile found, ask if we should periodize X
+    periodizechoice = - 1;
+    while (~ ismember(periodizechoice, [0, 1, 2]))
+      disp(['[', mfilename, '] Periodic boundary conditions found in input_parfile. Periodize signal w.r.t. x=0 (0 for no, 1 for right-side, 2 for left-side)?']);
+      disp(['[', mfilename, ']   ''right-side'' will put all stations with x<0 as if they were to the right of the right boundary.']);
+      disp(['[', mfilename, ']   ''left-side''  will put all stations with x>0 as if they were to the left  of the left  boundary.']);
+      periodizechoice = input(['[', mfilename, '] > ']);
+    end
+    if(periodizechoice)
+      [xminmax, ~, ~] = readExampleFiles([OFd,'input_parfile'], [], []);
+    end
+    switch periodizechoice
+      case 0
+        % nothing
+      case 1
+        selection = istattab(xstattab4dist(istattab)<0);
+%         distance(istattab(xstattab(istattab)<0))=40e3 + 160e3-distance(istattab(xstattab(istattab)<0))
+        xstattab4dist(selection) = max(xminmax) - min(xminmax) + xstattab4dist(selection);
+      case 2
+        error('not implemented');
+      otherwise
+        error('should not have come here');
+    end
+  end
+  
   switch distancechoice
     case 1
-      distance = xstattab; dist_symbol = "x"; dist_name = "horizontal distance";
+      distance = xstattab4dist; dist_symbol = "x"; dist_name = "horizontal distance";
     case 2
-      distance = abs(xstattab); dist_symbol = "|x|"; dist_name = "horizontal distance";
+      distance = abs(xstattab4dist); dist_symbol = "|x|"; dist_name = "horizontal distance";
     case 3
       distance = ystattab; dist_symbol = "z"; dist_name = "altitude";
     case 4
+      if(periodizechoice)
+        error('not implemented, need to recompute distance to sources here');
+      end
       distance = dist_to_sources; dist_symbol = "d"; dist_name = "distance";
   end
 %   addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo'); % wtff?

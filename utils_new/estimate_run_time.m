@@ -25,6 +25,22 @@ plotrateversion = 'FNS';
 % plotrateversion='LNS';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Display data.               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% for i=numel(t)-3:numel(t)
+for i=1:numel(t)
+  ID=info{i}(1); ID=ID{1};
+  disp(['[',mfilename,'] Run ID ',sprintf('%7d',ID),' (',sprintf('%5.1f',data(i,2)*100),'% DG):       ',sprintf('%.2e',t(i)),' s CPU, per el., per it.       (''',char(string(info{i}(2))),''').']);
+end
+disp(' ');
+Nshow=10; [~,idsort_t]=sort(t);
+disp(['[',mfilename,'] Best ',num2str(Nshow),' number of elements per proc in terms of total CPU time per element and per iteration:']);
+format shortg; disp([data(idsort_t(1:Nshow),end),t(idsort_t(1:Nshow))]'); format longG;
+disp(['[',mfilename,'] First best being ''',char(info{idsort_t(1)}(2)),'''. Run ''figure();loglog(t,data(:,end),''.''); hold on; CVH=convhull(t,data(:,end)); loglog(t(CVH),data(CVH,end)); xlabel(''t''); ylabel(''elements per CPU'');'' to plot a convex hull.']);
+% figure();loglog(t,data(:,end),'.'); hold on; CVH=convhull(t,data(:,end)); loglog(t(CVH),data(CVH,end)); xlabel('t'); ylabel('elements per CPU');
+disp(' ');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -73,16 +89,6 @@ if(not(plot_rate))
   % nstepsnap   = 5000;
   % nsteptot    = 70000;
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  % Display data.               %
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  % for i=numel(t)-3:numel(t)
-  for i=1:numel(t)
-    ID=info{i}(1); ID=ID{1};
-    disp(['[',mfilename,'] Run ID ',sprintf('%7d',ID),' (',sprintf('%5.1f',data(i,2)*100),'% DG):       ',sprintf('%.2e',t(i)),' s CPU, per el., per it.       (''',char(string(info{i}(2))),''').']);
-  end
-  disp(' ');
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Computation of estimate.    %
@@ -341,8 +347,8 @@ function [x, t, RUNINFO, RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[ 748360  748360 0.345  16000   96  250  114  50  17354];  RUNINFO{i}={641616, 'FNS StratoBaro full with EBF'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 266162  266162 0.345  16000  128  250  114  50   5904];  RUNINFO{i}={656505, 'FNS microbaroms periodic with EBF'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 266162  266162 0.345  16000  256  250  114  50   4076];  RUNINFO{i}={655513, 'FNS microbaroms periodic with EBF'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500   80  50    757];  RUNINFO{i}={660223, 'FNS SH soft axisym'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500   80  50    744];  RUNINFO{i}={661601, 'FNS SH hard axisym'}; i=i+1;
+%   RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500   80  50    757];  RUNINFO{i}={660223, 'FNS SH soft axisym'}; i=i+1;
+%   RUN_RAWDATA(i,:)=[ 102150       0 0.443  30000   32  500   80  50    744];  RUNINFO{i}={661601, 'FNS SH hard axisym'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 225000  150000 0.443  12250   32  500   82  50  10802];  RUNINFO{i}={668888, 'FNS SH soft first layer tweaked stopped 12kit'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 224000  150000 0.443  20000   64  500   82  50   7802];  RUNINFO{i}={668888, 'FNS SH soft first layer retweaked'}; i=i+1;
   RUN_RAWDATA(i,:)=[1866000 1680000 0.471 110000  256 5000  116  50 102012];  RUNINFO{i}={668833, 'FNS OKQ0 redone'}; i=i+1;
@@ -377,11 +383,13 @@ function [x, t, RUNINFO, RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[1660000 1606000 0.391 600000 1680 4000  200 100   51256]; RUNINFO{i}={1538139,'FNS mars insight 22h 3hz w/o perioBC'}; i=i+1;
   RUN_RAWDATA(i,:)=[  80518   80518 0.254  20600 1152 5000   87  50   86388]; RUNINFO{i}={1560350,'LNS mb gmsh 400km (3) refined and atmmodel reg'}; i=i+1;
   RUN_RAWDATA(i,:)=[  80518   80518 0.254  37200 1152 5000   87  50   86386]; RUNINFO{i}={1560541,'FNS mb gmsh 400km (3) refined and atmmodel reg'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83018]; RUNINFO{i}={1633618,'FNS mars insight 20h 3hz w/  perioBC'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83542]; RUNINFO{i}={1601166,'FNS mars insight 20h 3hz w/  perioBC softsoil z12k'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 490000 1680 5000  204 100   83018]; RUNINFO{i}={1633618,'FNS mars insight 20h 3hz w/  perioBC softsoil z800'}; i=i+1;
   RUN_RAWDATA(i,:)=[  23520   20160 0.039  46200  240  100  400 100     598]; RUNINFO{i}={150400, 'FNS mars insight 20h 0.1hz'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 204980  198320 0.044  70000  384 5000  857 100    8541]; RUNINFO{i}={150395, 'FNS mars insight incidence 20h 3hz'}; i=i+1;
   RUN_RAWDATA(i,:)=[  23520   20160 0.039 236600  240  100  400 100    3036]; RUNINFO{i}={151120, 'FNS mars insight f=0.1Hz but crashed'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 415000  401500 0.469 490000  640 5000  669 100   81734]; RUNINFO{i}={151319, 'FNS mars insight incidence 20h 3hz larger'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1702000 1602000 0.469 486400 1680 5000  494 100   86386]; RUNINFO{i}={1682282,'FNS mars insight 20h 3hz w/  perioBC hardsoil z12k'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

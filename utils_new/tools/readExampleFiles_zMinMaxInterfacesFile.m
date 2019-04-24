@@ -9,18 +9,30 @@
 % yields:
 %   TODO.
 
-function [ymin, ymax] = readExampleFiles_zMinMaxInterfacesFile(interfaces_file)
-%   interfaces_file=[OFd,'input_interfaces'];
-  grep_remove_comments=['grep -v "^#.*"'];
-  numberregexp='\-?[0-9]+\.?[0-9]*(e|d)?\+?[0-9]*';
-  grep_find_interface_lines=['grep -P "',[numberregexp, ' ',numberregexp],'"'];
+function [ymin, ymax] = readExampleFiles_zMinMaxInterfacesFile(interfaces_file, verbose)
+  if(not(exist('verbose')))
+    verbose=0;
+  end
   
-  [~,y]=system(['cat ',interfaces_file,' | ',grep_remove_comments,' | ',grep_find_interface_lines,' | head -1']);
-  y=str2num(y);
-  ymin=y(end);
-  
-  [~,y]=system(['cat ',interfaces_file,' | ',grep_remove_comments,' | ',grep_find_interface_lines,' | tail -1']);
-  y=str2num(y);
-  ymax=y(end);
+  if(not(exist(interfaces_file)==2))
+    if(verbose)
+      disp(['[',mfilename,', ERROR] ''',interfaces_file,''' is not a path to a file. Setting outputs to NaNs.']);
+    end
+    ymin = nan;
+    ymax = nan;
+  else
+  %   interfaces_file=[OFd,'input_interfaces'];
+    grep_remove_comments=['grep -v "^#.*"'];
+    numberregexp='\-?[0-9]+\.?[0-9]*(e|d)?\+?[0-9]*';
+    grep_find_interface_lines=['grep -P "',[numberregexp, ' ',numberregexp],'"'];
+
+    [~,y]=system(['cat ',interfaces_file,' | ',grep_remove_comments,' | ',grep_find_interface_lines,' | head -1']);
+    y=str2num(y);
+    ymin=y(end);
+
+    [~,y]=system(['cat ',interfaces_file,' | ',grep_remove_comments,' | ',grep_find_interface_lines,' | tail -1']);
+    y=str2num(y);
+    ymax=y(end);
+  end
 end
 
