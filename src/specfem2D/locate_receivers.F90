@@ -46,7 +46,8 @@
   use constants,only: NDIM,NGLLX,NGLLZ,MAX_LENGTH_STATION_NAME,MAX_LENGTH_NETWORK_NAME, &
     IMAIN,HUGEVAL,TINYVAL,NUM_ITER
 
-  use specfem_par, only : AXISYM,is_on_the_axis,xiglj,ispec_is_acoustic,USE_TRICK_FOR_BETTER_PRESSURE
+  use specfem_par, only : AXISYM,is_on_the_axis,xiglj,ispec_is_acoustic,USE_TRICK_FOR_BETTER_PRESSURE&
+                          , ispec_is_elastic, ispec_is_acoustic_dg
 
 #ifdef USE_MPI
   use mpi
@@ -134,7 +135,18 @@
     distance_receiver(irec) = sqrt((st_zval(irec)-z_source)**2 + (st_xval(irec)-x_source)**2)
 
     do ispec= 1,nspec
-
+      
+      ! The test below fails if stations are demanded too close to the fluid-solid interface in DG simulations. See ranting about that issue below, near user output.
+      ! A classical test would be to check if the station is within some element using the fact that they are convex quadrilaterals. Principle, for each element:
+      ! 1) Compute area of the quadrilateral (maybe it is already stored somewhere though).
+      ! 2) Compute sum of the areas of the four triangles formed by each side of the quadrilateral and the station.
+      ! 3a) If the area of the quadrilateral and the sum of the four triangles' areas are equal (within some tolerance, typically TINYVAL), then the station is in this element. Being on the edge of the element will also verify this condition, though very close to the tolerance.
+      ! 3b) If the area of the quadrilateral is SMALLER than the sum of the four triangles' areas, then the station is outside the element.
+      ! 3c) [area of the quadrilateral > sum of the four triangles' areas] cannot happen.
+      ! See e.g. https://i.stack.imgur.com/zFEPn.jpg for an illustration.
+      ! 
+      ! In fine, we leave the original code because we do not have time to thouroughly test our new method.
+      
       ! loop only on points inside the element
       ! exclude edges to ensure this point is not shared with other elements
       do j = 2,NGLLZ-1
@@ -244,11 +256,11 @@
         gather_ispec_selected_rec(1,1),nrec,MPI_INTEGER,0,MPI_COMM_WORLD,ier)
 
   if (myrank == 0) then
+    ! selects best slice which minimum distance to receiver location
     do irec = 1, nrec
       which_proc_receiver(irec:irec) = minloc(gather_final_distance(irec,:)) - 1
     enddo
   endif
-
   call MPI_BCAST(which_proc_receiver(1),nrec,MPI_INTEGER,0,MPI_COMM_WORLD,ier)
 
 #else
@@ -270,7 +282,8 @@
       endif
     enddo
   endif
-
+  
+  ! counts local receivers in this slice
   nrecloc = 0
   do irec = 1, nrec
     if (which_proc_receiver(irec) == myrank) then
@@ -278,9 +291,9 @@
       recloc(nrecloc) = irec
     endif
   enddo
-
+  
+  ! user output
   if (myrank == 0) then
-
     do irec = 1, nrec
       write(IMAIN,*)
       write(IMAIN,*) 'Station # ',irec,'    ',network_name(irec),station_name(irec)
@@ -294,6 +307,33 @@
       write(IMAIN,*) 'closest estimate found: ',sngl(gather_final_distance(irec,which_proc_receiver(irec)+1)), &
                     ' m away'
       write(IMAIN,*) ' in element ',gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)
+      
+      
+      ! ISSUE: if stations are demanded too close to the fluid-solid interface in DG simulations, this routine  will sometimes WRONGLY detect in which material the station actually is.
+      ! Why you ask? It is because it tries to find the closest INTERIOR point to the station. If it happens that the first closest interior point if the fluid one instead of the solid one, the software believes the station is in a fluid element, when it is not.
+      ! In the case of 5 GLL points, the key value is the altitude midpoint between 0.1727*DZ_{fluid} and 0.1727*DZ_{solid}, that is z_k = [z_interface + 0.5*0.1727*(DZ_{fluid}-DZ_{solid})]. If z_{station} > z_k, station will be believed to be in material above. If z_{station} < z_k, station will be believed to be in material below. This is the case wherever the interface is.
+      ! This poses very few problems in classic SPECFEM since quantites recorded are the same in all materials. In SPECFEM-DG, this can lead to nonsense.
+      ! Two solutions. (A) Always make sure that:
+      !                    1) Stations in fluid are such that z > 0.5*0.1727*(DZ_{fluid}-DZ_{solid}), and
+      !                    2) Stations in solid are such that z < 0.5*0.1727*(DZ_{fluid}-DZ_{solid}),
+      !                    where DZ_{fluid} is the vertical dimension of the first layer of fluid elements, and DZ_{solid} is the vertical dimension of the first layer of solid elements.
+      !                (B) Implement an actual test checking if the station is in either element or not, instead of the trick actually implemented. This is easy since we know the elements are convex quadrilaterals. See above for a somewhat complete pseudo-code.
+      
+      ! DEBUGGING REMAINS, maybe useful in the future.
+      write(IMAIN,*) '   > which is [elastic?', ispec_is_elastic(ispec_selected_rec(irec)),&! DEBUG
+                     '], [acoustic?', ispec_is_acoustic(ispec_selected_rec(irec)),&! DEBUG
+                     ' | acoustic DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']'! DEBUG
+      !write(IMAIN,*) '   > which is [elastic?', ispec_is_elastic(gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)),&! DEBUG
+      !               '], [acoustic?', ispec_is_acoustic(gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)),&! DEBUG
+      !               ' | acoustic DG?', ispec_is_acoustic_DG(gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)),']'! DEBUG
+      ! gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1) and ispec_selected_rec(irec) seem to contain the same information.! DEBUG
+      !write(IMAIN,*) ' xminmaxzminmax of that element:', &! DEBUG
+      !               minval(coord(1, pack(ibool(:,:,ispec_selected_rec(irec)), .true.))), &! DEBUG
+      !               maxval(coord(1, pack(ibool(:,:,ispec_selected_rec(irec)), .true.))), &! DEBUG
+      !               minval(coord(2, pack(ibool(:,:,ispec_selected_rec(irec)), .true.))), &! DEBUG
+      !               maxval(coord(2, pack(ibool(:,:,ispec_selected_rec(irec)), .true.)))! DEBUG
+      
+      
       write(IMAIN,*) ' at process ', which_proc_receiver(irec)
       write(IMAIN,*) ' at xi,gamma coordinates = ',gather_xi_receiver(irec,which_proc_receiver(irec)+1),&
                                   gather_gamma_receiver(irec,which_proc_receiver(irec)+1)
