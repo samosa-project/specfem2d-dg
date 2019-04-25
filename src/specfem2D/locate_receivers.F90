@@ -320,9 +320,9 @@
       !                (B) Implement an actual test checking if the station is in either element or not, instead of the trick actually implemented. This is easy since we know the elements are convex quadrilaterals. See above for a somewhat complete pseudo-code.
       
       ! DEBUGGING REMAINS, maybe useful in the future.
-      write(IMAIN,*) '   > which is [elastic?', ispec_is_elastic(ispec_selected_rec(irec)),&! DEBUG
-                     '], [acoustic?', ispec_is_acoustic(ispec_selected_rec(irec)),&! DEBUG
-                     ' | acoustic DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']'! DEBUG
+      !write(IMAIN,*) '   > which is [elastic?', ispec_is_elastic(ispec_selected_rec(irec)),&! DEBUG
+      !               '], [acoustic?', ispec_is_acoustic(ispec_selected_rec(irec)),&! DEBUG
+      !               ' | acoustic DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']'! DEBUG
       !write(IMAIN,*) '   > which is [elastic?', ispec_is_elastic(gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)),&! DEBUG
       !               '], [acoustic?', ispec_is_acoustic(gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)),&! DEBUG
       !               ' | acoustic DG?', ispec_is_acoustic_DG(gather_ispec_selected_rec(irec,which_proc_receiver(irec)+1)),']'! DEBUG
@@ -346,6 +346,21 @@
     call flush_IMAIN()
 
   endif
+  
+  ! RE-OUTPUT TO USER TO MAKE SURE THE MATERIAL OF EACH STATION IS RIGHT (SAFEGUARD)
+  !if(myrank == 0) then
+  call synchronize_all() ! This is a trick to force those prints to be put in the same place, after previous prints.
+  do irec = 1, nrec
+    if(myrank == which_proc_receiver(irec)) then
+      ! The CPU in which the station is (or, to be more exact, in which the station is believed to be in) has the last word.
+      ! Thus, believe it.
+      write(IMAIN,*) 'Station #',irec,": closest element match is [on CPU",myrank,"] & ", & ! DEBUG
+                     '[el.?', ispec_is_elastic(ispec_selected_rec(irec)),'] ', & ! DEBUG
+                     '[ac.?', ispec_is_acoustic(ispec_selected_rec(irec)),'] ', & ! DEBUG
+                     '[ac. DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']' ! DEBUG
+    endif
+  enddo
+  call flush_IMAIN()
 
   ! deallocate arrays
   deallocate(final_distance)
