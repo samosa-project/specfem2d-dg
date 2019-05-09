@@ -22,10 +22,11 @@ simulationfolder = input(['[',mfilename,'] Path to simulation folder > '],'s');
 if(not(simulationfolder(end)==filesep)); simulationfolder=[simulationfolder,filesep]; end;
 
 typeeee=-1;
-while(not(numel(typeeee)==1 & ismember(typeeee,[0,1,101])))
+while(not(numel(typeeee)==1 & ismember(typeeee,[0,1,101,102,201])))
   disp(['[',mfilename,'] Type of simulation?']);
   disp([blanks(length(mfilename)+2),'   1   AboveAndBelowGround_Periodic_WithTilt']);
   disp([blanks(length(mfilename)+2),'   101 AboveAndBelowGround_Periodic_WithTilt__MarsInSIGHT']);
+  disp([blanks(length(mfilename)+2),'   102 AboveAndBelowGround_Periodic_WithTilt__MarsInSIGHT_Impact']);
   disp([blanks(length(mfilename)+2),'   2   AboveGroundSimple']);
   disp([blanks(length(mfilename)+2),'   201 AboveGroundSimple_Microbaroms']);
   typeeee=input([blanks(length(mfilename)+2),' > ']);
@@ -35,6 +36,8 @@ switch (typeeee)
     [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt(simulationfolder);
   case 101
     [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt__MarsInSIGHT(simulationfolder);
+  case 102
+    [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveAndBelowGround_Periodic_WithTilt__MarsInSIGHT_Impact(simulationfolder);
   case 2
     [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple(simulationfolder);
   case 201

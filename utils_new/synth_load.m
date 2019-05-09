@@ -40,9 +40,12 @@ unknown = 'BXZ'; % _z.
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Mars AGW.
-fig_title = strcat('Mars Coupling');
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1682282_z12k_hardsoil/'); subsample = 1; wanted_dt = 0.01;
+% Mars.
+% fig_title = strcat('Mars InSIGHT Impact');
+% rootd = strcat(SPCFMEXloc,'mars_insight_impact/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); subsample = 1; wanted_dt = 0.01;
+
+fig_title = strcat('Mars InSIGHT Guided');
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1689947_z12k_hardsoil_goodstations/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
@@ -691,43 +694,5 @@ function factor = getScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, resc
   if (renorm_statbystat == 1)
     % If rescaling is actually wanted by user, do it.
     factor = factor * rescale_fact;
-  end
-end
-
-function plotOneByOne(Ztime, Zamp, istattab, xstat, zstat, norm_ylims, figtitle, ylab)
-  if(not(all(size(Ztime)==size(Zamp))))
-    error('must have same sizes');
-  end
-  if(not(exist('figtitle')))
-    figtitle='';
-  end
-  if(not(exist('ylab')))
-    ylab='SIGNAL';
-  end
-  nstat = size(Ztime, 1);
-  figure();
-  hold on;
-  axes = {};
-  for istat = 1:nstat
-    istat_glob = istattab(istat); % Recover global number of station.
-    subplot(nstat, 1, istat);
-    axes{istat} = gca;
-    legtext{istat} = ['S', num2str(istat_glob), ', $(x,z) = (', num2str(xstat(istat)), ',', num2str(zstat(istat)), ')$ [m]'];
-    plot(Ztime(istat, :), Zamp(istat, :), 'displayname', legtext{istat}); hold on;
-    % Cosmetics.
-    if (istat == 1); title(figtitle); end; % Put title only on first subplot.
-    if (istat == nstat); xlabel('time [s]'); end; % Put xlabel only on last subplot.
-    if (istat ~= nstat); set(gca, 'xticklabel', []); end; % Remove xticks for all subplots except last one.
-    if (istat == round(nstat / 2)); ylabel(ylab); end; % Put one ylabel at the middle subplot.
-    xlim([min(min(Ztime)), max(max(Ztime))]);
-    legend('Location', 'northeast');
-    set(gca, 'TickLabelInterpreter', 'latex'); grid on; box on;
-  end
-  axess=[];
-  for i=1:numel(axes); axess(i)=axes{i}; end;
-  if (norm_ylims)
-    linkaxes(axess); % Link both x and y.
-  else
-    linkaxes(axess, 'x'); % Link only x.
   end
 end

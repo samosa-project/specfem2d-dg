@@ -22,7 +22,7 @@ plot_rate = 0;
 plotrate_selfulldgonly = 1;
 plotrate_snappercentthresh = 10; % in [%]
 plotrateversion = 'FNS';
-% plotrateversion='LNS';
+% plotrateversion = 'LNS';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display data.               %

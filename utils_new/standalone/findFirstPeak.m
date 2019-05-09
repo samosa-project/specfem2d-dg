@@ -4,48 +4,54 @@
 % Notes:         TODO.
 %
 % Usage:
-%   TODO.
+%   [found_x] = findFirstPeak(X, Y, start_rate, maxiter, verbose, processPlot)
 % with:
-%   TODO.
+%   TODO
+%   start_rate a float in [0, 1] representing the minimum positive relative
+%              amplitude the peak must have to be found,
+%   TODO
 % yields:
-%   TODO.
+%   found_x    the abscissa (from X) where the peak was found.
 
 % X=linspace(0,4*pi,1000); Y=0.5*abs(0.1*treat_t+sin(treat_t)); % test data
 
-function [found_x] = findFirstPeak(X, Y, maxiter, verbose, processPlot)
+function [found_x] = findFirstPeak(X, Y, start_rate, maxiter, verbose, processPlot)
+  if(not(exist('start_rate')))
+    start_rate = 0.5;
+  end
   if(not(exist('maxiter')))
-    maxiter=10;
+    maxiter = 10;
   end
   if(not(exist('verbose')))
-    verbose=0;
+    verbose = 0;
   end
   if(not(exist('processPlot')))
-    processPlot=0;
+    processPlot = 0;
   end
   
   if(processPlot)
     figure();
-    plot(X,Y); hold on;
+    plot(X, Y); hold on;
 %     xlim([53,58]);
   end
 
-  mask=ones(size(X)); % mask will do nothing
-  rate = 0.5; % start and work up
+  mask = ones(size(X)); % mask will do nothing
+  rate = start_rate; % starting point
   rate_upp = 1; % upper bound
   rate_low = 0.1; % lower bound
-  iter=0; 
+  iter = 0; 
   
-  while(iter<maxiter)
-    locsel=(Y>rate*max(Y));
+  while(iter < maxiter)
+    locsel = (Y > rate*max(Y));
     locsel = (locsel & mask);
     
     if(verbose)
-      disp(['Iteration ',num2str(iter)]);
+      disp(['Iteration ', num2str(iter)]);
     end
     
     if(not(any(locsel)))
       if(verbose)
-        disp(['  No peaks found with amplitude over ',num2str(rate), ' *amplitude']);
+        disp(['  No peaks found with amplitude over ', num2str(rate), ' *amplitude']);
       end
       
       rate_old = rate;
@@ -53,12 +59,12 @@ function [found_x] = findFirstPeak(X, Y, maxiter, verbose, processPlot)
       rate_upp = rate_old;  % updat lower bound
       
       if(verbose)
-        disp(['    Updating rate downwards: ', num2str(rate),' (lower bound ',num2str(rate_low),')']);
+        disp(['    Updating rate downwards: ', num2str(rate), ' (lower bound ',num2str(rate_low),')']);
       end
     else
       if(numel(find(locsel==1))==1)
         if(verbose)
-          disp(['    One unique point found: t=',num2str(found_x),'. Stopping algorithm.']);
+          disp(['    One unique point found: t=', num2str(found_x), '. Stopping algorithm.']);
         end
         
         found_x = X(locsel);
@@ -90,7 +96,8 @@ function [found_x] = findFirstPeak(X, Y, maxiter, verbose, processPlot)
       plot(X, locsel);
     end
     
-    iter=iter+1;
+    iter = iter+1;
   end
   legend();
 end
+

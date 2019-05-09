@@ -191,11 +191,14 @@ function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
     maxpercentdetrend=100*[max(gap2detrend)]/(max(data_v(i, :)) - min(data_v(i, :))); % finds maximum gap ignoring eventual NaNs.
 %     gap2detrend = abs(data_v(i, sel)-detrend(data_v(i, sel)));
 %     maxpercentdetrend=100*[max(gap2detrend)]/(max(data_v(i, sel)) - min(data_v(i, sel))); % finds maximum gap ignoring eventual NaNs.
-    if(max(maxpercentdetrend)>5)
+    if(max(maxpercentdetrend) > 5)
       disp(['[',mfilename,'] For dataset n°',num2str(i),', detrend would shift data values by a quantity which is ',sprintf('%.2g',maxpercentdetrend),' % of signal amplitude. Discarding detrend.'])
     else
-      data_v(i, :) = detrend(data_v(i, :));
-%       data_v(i, sel) = detrend(data_v(i, sel)); % detrend only where data is not ignored
+%       data_v(i, :) = detrend(data_v(i, :)); % DETREND WILL MESS UP EVERYTHING IF THERE IS A SINGLE NAN
+      % detrend only where not nan
+      notnansafetysel = not(isnan(data_v(i, :)));
+      data_v(i, :) = data_v(i, :);
+      data_v(i, notnansafetysel) = detrend(data_v(i, notnansafetysel));
     end
 %     data_v(i, :) = data_v(i, :) - mean(data_v(i, :));
 
@@ -216,6 +219,10 @@ function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
   if (dist_over_ptp > 1e15)
     error(['[', mfilename, ', ERROR] Variable dist_over_ptp is > 1e15, probably coming from the signal being very small everywhere for one of the signals.']);
   end
+  if (isnan(dist_over_ptp))
+    error(['[', mfilename, ', ERROR] Variable dist_over_ptp is NaN.']);
+  end
+  dist_over_ptp
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Figure.                     %
@@ -275,7 +282,7 @@ function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
 %     xlim([min(min(data_t(:, sel))), max(max(data_t(:, sel)))]); % max ignores nan
     xlabel(xlab);
     ylabel(['$d + \left(', coef_string, '\right)\times ', unknown_name,'$']);
-    scalez = input(['[', mfilename, '] Rechoose coefficient (0 for no, new value for yes)? > ']);
+    scalez = input(['[', mfilename, '] Rechoose coefficient (0 for no, new value for yes, now being ',num2str(scalez),')? > ']);
   end
 
   ylabel(strcat(distanceName, dist_unit)); %, " $\longrightarrow$"));
