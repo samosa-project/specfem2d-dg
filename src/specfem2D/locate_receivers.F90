@@ -349,7 +349,7 @@
   
   ! RE-OUTPUT TO USER TO MAKE SURE THE MATERIAL OF EACH STATION IS RIGHT (SAFEGUARD)
   !if(myrank == 0) then
-  call synchronize_all() ! This is a trick to force those prints to be put in the same place, after previous prints.
+  !call synchronize_all() ! This is a trick to force those prints to be put in the same place, after previous prints.
   do irec = 1, nrec
     if(myrank == which_proc_receiver(irec)) then
       ! The CPU in which the station is (or, to be more exact, in which the station is believed to be in) has the last word.
@@ -360,7 +360,7 @@
                      '[ac. DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']' ! DEBUG
     endif
   enddo
-  call flush_IMAIN()
+  !call flush_IMAIN()
 
   ! deallocate arrays
   deallocate(final_distance)
