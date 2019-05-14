@@ -390,6 +390,7 @@ function [x, t, RUNINFO, RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[  23520   20160 0.039 236600  240  100  400 100    3036]; RUNINFO{i}={151120, 'FNS mars insight f=0.1Hz but crashed'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 415000  401500 0.469 490000  640 5000  669 100   81734]; RUNINFO{i}={151319, 'FNS mars insight incidence 20h 3hz larger'}; i=i+1;
   RUN_RAWDATA(i,:)=[1702000 1602000 0.469 486400 1680 5000  494 100   86386]; RUNINFO{i}={1682282,'FNS mars insight 20h 3hz w/  perioBC hardsoil z12k'}; i=i+1;
+  RUN_RAWDATA(i,:)=[900000   853000 0.469 110500 1536 5000  397 100   17985]; RUNINFO{i}={1691823,'FNS mars insight impact'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

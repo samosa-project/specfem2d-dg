@@ -1,12 +1,6 @@
 % Author:        Quentin Brissaud, Léo Martire.
 % Description:   TODO.
-% Notes:         See [Brissaud et al., 2016].
-%                [Brissaud et al., 2016] Brissaud, Q., Martin, R., Garcia,
-%                  R. F., & Komatitsch, D. (2016). Finite-difference
-%                  numerical modelling of gravitoacoustic wave propagation
-%                  in a windy and attenuating atmosphere. Geophysical
-%                  Journal International, 206(1), 308–327.
-%                  https://doi.org/10.1093/gji/ggw121
+% Notes:         [Fritts and Alexander, 2003, Brissaud et al., 2016].
 %
 % Usage:
 %   Use this file to plot on seismograms traces exiting from specfem2D in 
@@ -21,6 +15,8 @@
 %   TODO.
 % yields:
 %   TODO.
+
+% [Brissaud et al., 2016] Brissaud, Q., Martin, R., Garcia, R. F., & Komatitsch, D. (2016). Finite-difference numerical modelling of gravitoacoustic wave propagation in a windy and attenuating atmosphere. Geophysical Journal International, 206(1), 308–327. https://doi.org/10.1093/gji/ggw121
 
 clear all;
 % close all;

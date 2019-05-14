@@ -37,8 +37,8 @@ compareEnergies = 1;
 compareStations = 0;
 
 % basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
-basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
-% basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
+% basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
+basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
 
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps0p25']; suffixBu='$\varepsilon=0.25$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e1em4']; suffixBu='$\varepsilon=10^{-4}$';
@@ -78,12 +78,15 @@ outputFigDir_wprefix=[outputDir,prefix,'_'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot energy
 if(compareEnergies)
-  outputFigPath=[outputFigDir_wprefix,'KE'];
-  fKE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},0,1,tit_all);
-  customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
+%   outputFigPath=[outputFigDir_wprefix,'KE'];
+%   fKE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},0,1,tit_all);
+%   customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
+%   outputFigPath=[outputFigDir_wprefix,'PE'];
+%   fPE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},1,0,tit_all);
+%   customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
   
-  outputFigPath=[outputFigDir_wprefix,'PE'];
-  fPE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},1,0,tit_all);
+  outputFigPath=[outputFigDir_wprefix,'E'];
+  plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},4,1,tit_all);
   customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
 end
 

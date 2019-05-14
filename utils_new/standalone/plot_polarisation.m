@@ -39,6 +39,17 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
     error(['[',mfilename,', ERROR] (time, sig_x, sig_y) must be the same length. Run ''help ',mfilename,'''.']);
   end
   
+  doWindowSignal = -1;
+  while (not((numel(doWindowSignal)==1 && doWindowSignal==0) || (numel(doWindowSignal)==2)))
+    doWindowSignal = input(['[', mfilename, '] Window signal ([t1 t2] vector for yes, 0 for no)? > ']);
+  end
+  if(any(doWindowSignal))
+    sel = (time>=min(doWindowSignal) & time<=max(doWindowSignal));
+    time = time(sel);
+    sig_x = sig_x(sel);
+    sig_y = sig_y(sel);
+  end
+  
   overdrawcolor='k';
   
   % Parameters for plotting and displaying.
@@ -49,6 +60,7 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   frmt_eigval_plot = '%.1e';
   
   figure('units','normalized','outerposition',[0 0 0.5 1]);
+%   tight_subplot(1, 1, 0.005, 0.05, [0.05, 0.01]); % not mandatory, but prettier % incompatible with daspect
   
   % Get and plot major/minor axes (under everything else).
   [eigval, eigvec] = simple2DPCA([sig_x,sig_y]);
@@ -69,7 +81,7 @@ function plot_polarisation(time, sig_x, sig_y, lab_x, lab_y, titlefig, wavepropd
   % Actual plot of polarisation.
   plot(sig_x, sig_y, 'white', 'linewidth', 0.1*lw, 'linestyle',':'); hold on
   scatter(sig_x, sig_y, 15, time, 'filled'); hold on;
-  daspect([1 1 1]);
+  daspect([1 1 1]); % incompatible with tight_subplot
   
   % Add a colorbar for time.
   colormap jet;

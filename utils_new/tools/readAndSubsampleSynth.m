@@ -9,15 +9,15 @@
 % yields:
 %   TODO.
 
-function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, unknown, extension, subsample, wanted_dt, outputSubsampleInfo)
+function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, channel, extension, subsample, wanted_dt, outputSubsampleInfo)
   if(not(exist('subsample'))); subsample=0; end;
   if(not(exist('wanted_dt'))); wanted_dt=-1; end;
   if(not(exist('outputSubsampleInfo'))); outputSubsampleInfo=1; end;
   % Read the synthetic.
 %   stattag = stations_data.textdata(istat_glob, 1);
   stattag = sprintf('S%04d', stationGlobalNumber);
-  OFd = char(OFd); unknown = char(unknown); extension = char(extension); % safety.
-  file = [OFd, 'AA.', stattag, '.', unknown, '.', extension];
+  OFd = char(OFd); channel = char(channel); extension = char(extension); % safety.
+  file = [OFd, 'AA.', stattag, '.', channel, '.', extension];
 %   data = load(file{1});
   data = load(file);
   nt = max(size(data));

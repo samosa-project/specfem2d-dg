@@ -1,8 +1,13 @@
 % Author:        Léo Martire.
 % Description:   TODO.
-% Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         N/A.
+% Notes:         TODO.
+%
+% Usage:
+%   [...] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
+% with:
+%   TODO.
+% yields:
+%   TODO.
 
 function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

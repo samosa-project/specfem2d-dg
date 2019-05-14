@@ -10,7 +10,7 @@
 
 clc;
 % clear all;
-clear('Zamp','Ztime'); disp(['[',mfilename,'] Cleared Zamp and Ztime variables.']);
+clear('Zamp','Ztime'); disp(['[',mfilename,', INFO] Cleared Zamp and Ztime variables.']);
 % close all;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
@@ -33,8 +33,9 @@ plot_amplitude = 0; % Plot amplitude (0 for no, 1 for yes sorted by x, 2 for yes
 subsample = 0; wanted_dt = 1; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that final time sampling is as parametrised by wanted_dt.
 type_display = 2; % Quantity to display (should be the same as the seismotype variable in parfile). 1 = {displacement for non-DG, velocity for DG}. 2 = {velocity for non-DG, pressure perturbation [Pa] for DG}.
 % Unknown (for direct plots only). Note that for type_display == 2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.
-% unknown = 'BXX'; % _x.
-unknown = 'BXZ'; % _z.
+% channel = 'BXX'; % _x.
+% channel = 'BXZ'; % _z.
+% DETERMINED BELOW, NOW
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %
@@ -42,7 +43,7 @@ unknown = 'BXZ'; % _z.
 
 % Mars.
 % fig_title = strcat('Mars InSIGHT Impact');
-% rootd = strcat(SPCFMEXloc,'mars_insight_impact/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight_impact/'); OFd = strcat(rootd, 'OUTPUT_FILES_1691823_reachedtimelimit/'); subsample = 1; wanted_dt = 0.01;
 
 fig_title = strcat('Mars InSIGHT Guided');
 rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1689947_z12k_hardsoil_goodstations/'); subsample = 1; wanted_dt = 0.01;
@@ -169,7 +170,7 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_16
 % Loading.                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 type_display = readExampleFiles_extractParam([OFd,'input_parfile'],'seismotype','int');
-disp(['[',mfilename,'] Found in OUTPUT_FILES'' input_parfile file that seismotype==',num2str(type_display),'. Setting type_display to this value.']);
+disp(['[',mfilename,', INFO] Found in OUTPUT_FILES'' input_parfile file that seismotype==',num2str(type_display),'. Setting type_display to this value.']);
 OFd = checkOFd(OFd); % Test if OUTPUT_FILES directory exists.
 pos_sources = loadSources(OFd); % Load sources' positions.
 [xstattab, ystattab, stations_data] = loadStations(OFd); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
@@ -199,6 +200,16 @@ format compact;
 behaviour = - 1;
 while (not(length(behaviour) == 1 && ismember(behaviour, [0, 1, 2, 3])))
   behaviour = input(['[',mfilename,'] Load and plot separately (0), load only (1), load plot time-distance (2), or load and plot polarisation (3)? > ']);
+end
+if(not(behaviour==3))
+  % Ask for channel.
+  channelle = - 1;
+  while (not(length(channelle) == 1 && ismember(channelle, 'xz')))
+    channelle = input(['[',mfilename,'] Channel (x, or z)? > '],'s');
+  end
+  channel = ['BX',upper(channelle)];
+else
+  channel = -1;
 end
 % Ask for stations.
 istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']); istattab = reshape(istattab,[1,numel(istattab)]);
@@ -237,8 +248,8 @@ for istat = 1:nstat
   factor = getScalings(istat_glob, geometric_attenuation, xstattab, ystattab, dist_to_sources, rescale_factor); % Get scaling factors.
   
   if(ismember(behaviour, [0, 1, 2])) % If direct plots, get the one unknown and proceed.
-    [extension, ylabel_unknown] = getUnknowns(type_display, unknown);
-    [data, nsamples] = readAndSubsampleSynth(OFd, istat_glob, unknown, extension, subsample, wanted_dt, istat);
+    [extension, ylabel_unknown] = getUnknowns(type_display, channel);
+    [data, nsamples] = readAndSubsampleSynth(OFd, istat_glob, channel, extension, subsample, wanted_dt, istat);
     Ztime(istat, 1:nsamples) = data(:, 1)'; Zamp(istat, 1:nsamples) = data(:, 2)'; % Recover time/amplitude data.
     Zamp(istat, :) = factor * Zamp(istat, :); % Scale.
     
@@ -620,35 +631,35 @@ function pos_sources = loadSources(OFdir)
   fclose('all');
 end
 
-function [ext, unknown] = getUnknowns(type_displ, unknown)
+function [ext, chantxt] = getUnknowns(type_displ, chan)
   % Switch on type of display.
   switch type_displ
 %   if (type_display == 1) % Original SPECFEM2D's synthetic is displacement.
     case 1 % Original SPECFEM2D's synthetic is displacement.
       ext = 'semd'; % Because original SPECFEM2D's synthetic is displacement.
       % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
-      if (strcmp(unknown, 'BXZ'))
-        unknown = 'vertical {$u_z$ (m), $v_z$ [m/s]}';
-      elseif (strcmp(unknown, 'BXX'))
-        unknown = 'horizontal {$u_x$ (m), $v_x$ [m/s]}';
+      if (strcmp(chan, 'BXZ'))
+        chantxt = 'vertical {$u_z$ (m), $v_z$ [m/s]}';
+      elseif (strcmp(chan, 'BXX'))
+        chantxt = 'horizontal {$u_x$ (m), $v_x$ [m/s]}';
       else
         error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
       end
 %   elseif (type_display == 2) % Original SPECFEM2D's synthetic is velocity.
     case 2 % Original SPECFEM2D's synthetic is velocity.
       ext = 'semv'; % Because original SPECFEM2D's synthetic is velocity.
-      if (strcmp(unknown, 'BXZ'))
-        unknown = '{$v_z$ [m/s], $\delta P$ [Pa]}';
-      elseif (strcmp(unknown, 'BXX'))
-        unknown = '{$v_x$ [m/s], $\delta P$ [Pa]}';
+      if (strcmp(chan, 'BXZ'))
+        chantxt = '{$v_z$ [m/s], $\delta P$ [Pa]}';
+      elseif (strcmp(chan, 'BXX'))
+        chantxt = '{$v_x$ [m/s], $\delta P$ [Pa]}';
       else
         error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
       end
 %   elseif (type_display == 4) % Original SPECFEM2D's synthetic is pressure.
     case 4 % Original SPECFEM2D's synthetic is pressure.
       ext = 'semp'; % Because original SPECFEM2D's synthetic is pressure.
-      if (strcmp(unknown, 'PRE'))
-        unknown = '$\delta P$ [Pa]';
+      if (strcmp(chan, 'PRE'))
+        chantxt = '$\delta P$ [Pa]';
       else
         error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
       end

@@ -1,29 +1,33 @@
 % Author:        Léo Martire.
 % Description:   TODO.
-% Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         N/A.
+% Notes:         TODO.
+%
+% Usage:
+%   f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logscale, titlefig, outputfigpath)
+% with:
+%   TODO.
+% yields:
+%   TODO.
 
-
-function f = plot_total_energy(OFDIRs, switchE_0K_1P_2T, logscale, titlefig, outputfigpath)
+function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logscale, titlefig, outputfigpath)
   addpath('/home/l.martire/Documents/work/mars/mars_is'); % prettyAxes
   if(not(exist('OFDIRs')))
     OFDIRsProvided=0;
   else
     OFDIRsProvided=1;
   end
-  if(not(exist('switchE_0K_1P_2T')))
-    switchE_0K_1P_2T = 0;
+  if(not(exist('swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP')))
+    swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP = 0;
   else
-    if(not(ismember(switchE_0K_1P_2T,[0,1,2])))
-      disp('switchE_0K_1P_2T not in [0,1,2], setting it to 0 (kinetic energy).');
-      switchE_0K_1P_2T = 0;
+    if(not(ismember(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP,[0,1,2,4])))
+      disp(['[',mfilename,', INFO] swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP not in [0,1,2,4], setting it to 0 (kinetic energy).']);
+      swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP = 0;
     end
   end
   if(not(exist('logscale')))
     logscale=1;
   end
-  if(not(exist('titlefig')))
+  if(not(exist('titlefig')) | strcmp(titlefig,'auto'))
     titlefig_provided=0;
   else
     titlefig_provided=1;
@@ -81,15 +85,52 @@ function f = plot_total_energy(OFDIRs, switchE_0K_1P_2T, logscale, titlefig, out
     end
   end
 
+  
+  % prepare labels
+  switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
+    case 0
+      titlefig_local='Simulation Kinetic Energy';
+      ylab = 'kinetic energy (J)';
+    case 1
+      titlefig_local='Simulation Potential Energy';
+      ylab = 'potential energy (J)';
+    case 2
+      titlefig_local='Simulation Total (K+P) Energy';
+      ylab = 'total energy (J)';
+    case {3,4}
+      titlefig_local='Simulation Energies';
+      ylabL = ['potential energy (J)'];
+      ylabR = ['kinetic energy (J)'];
+      if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
+        LS_left='-';
+        LS_right='--';
+        prefixL = LS_left;
+        prefixR = LS_right;
+        ylabL = [ylabL, ' (\texttt{',prefixL,'})'];
+        ylabR = [ylabR, ' (\texttt{',prefixR,'})'];
+      else
+        LS_left='-';
+        LS_right='-';
+      end
+    otherwise
+      error('Set swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP only to either 0, 1, 2, or 3.');
+  end
+
+  if(not(titlefig_provided))
+    titlefig = titlefig_local;
+  end
+
   f = figure('units','normalized','outerposition',[0 0 0.5 1]);
+
   for i=1:numel(OFDIRs)
+    % set loading directory, and check it
     OFDIR = OFDIRs{i};
     if(not(strcmp(OFDIR(end),'/'))); OFDIR=[OFDIR,'/']; end;
     if(not(exist(OFDIR)==7))
       disp(['[',mfilename,', INFO] ''',OFDIR,''' is not a directory. Skipping.']);
       continue;
     end
-    energypath = [OFDIR,energyfilename]
+    energypath = [OFDIR,energyfilename];
     if(not(exist(energypath)==2))
       disp(['[',mfilename,', INFO] Energy file ''',energypath,'''does not exist. Skipping.']);
       continue;
@@ -107,56 +148,114 @@ function f = plot_total_energy(OFDIRs, switchE_0K_1P_2T, logscale, titlefig, out
     pe = EF.data(:, 3);
     te = EF.data(:, 4);
     
-    switch(switchE_0K_1P_2T)
+    % define what goes where
+    switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
       case 0
         y=ke;
-        titlefig_local='Simulation Kinetic Energy';
-        ylab = 'kinetic energy (J)';
       case 1
         y=pe;
-        titlefig_local='Simulation Potential Energy';
-        ylab = 'potential energy (J)';
       case 2
         y=te;
-        titlefig_local='Simulation Total (K+P) Energy';
-        ylab = 'total energy (J)';
+      case {3,4}
+        yL = pe;
+        yR = ke;
       otherwise
-        error('Set switchE_0K_1P_2T only to either 0, 1, or 2');
+        error('ddddd');
     end
-    if(not(titlefig_provided))
-      titlefig=titlefig_local;
+    
+    % do the plot
+    switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
+      case {3,4}
+        % classical but two yaxis or two subplots
+        
+        if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==4)
+          % prepare axes for subplots
+          if(i==1)
+            topscale = 1;
+            if(isa(titlefig,'cell'))
+              topscale = numel(titlefig);
+            end
+            axxx = tight_subplot(2, 1, 0.03, [0.07,topscale*0.03], [0.15, 0.011]); % not mandatory, but prettier
+%           else
+%             f=gcf; axxx = f.Children;
+          end
+        end
+        
+        % switch to good axis
+        if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
+          yyaxis left;
+        else
+          axes(axxx(1));
+        end
+        % plot
+        if(logscale && peak2peak(yL)>0)
+          semilogy(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+          y=yL; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yL(sel)),max(yL(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax)
+        else
+          plot(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+        end
+        ylabel(ylabL); set(gca,'ycolor','k');
+        % switch to good axis
+        if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
+          yyaxis right;
+        else
+          set(axxx(1),'xticklabels',[]);
+          axes(axxx(2));
+        end
+        % plot
+        if(logscale && peak2peak(yR)>0)
+          semilogy(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
+          y=yR; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yR(sel)),max(yR(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax)
+        else
+          plot(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
+        end
+        ylabel(ylabR); set(gca,'ycolor','k');
+        % link axes t
+        linkaxes(axxx, 'x');
+        
+      case {0,1,2}
+        % if classical plot
+        if(logscale && peak2peak(y)>0)
+          semilogy(t, y, 'displayname',simulationname); hold on;
+        else
+          plot(t, y, 'displayname',simulationname); hold on;
+        end
+      otherwise
+        error('kuk');
     end
-
-    if(logscale)
-      semilogy(t, y, 'displayname',simulationname);
-    else
-      plot(t, y, 'displayname',simulationname);
-    end
-    hold on;
   end
-  xlabel('t (s)');
-  ylabel(ylab);
-%   title({['Total Simulation Energy'],['(',titlefig,')']});
-  title(titlefig);
   
-  sel = (t>=0);
-  kek=find(sel==1);
-  sel(kek(1)-1) = 1; % for safety, add the previous time step to include 0
-  if(logscale)
-    % create nice logarithmic ylims
-    curMinMax = [min(y(sel)),max(y(sel))];
-    if(curMinMax(1)<=0)
-      suby = sort(y(sel));
-      curMinMax(1) = suby(find(suby>0,1,'first'));
-    end
-    powTen = 10.^(floor(log10(curMinMax)));
-    mM_multiplier = curMinMax./powTen;
-    mM_multiplier = [floor(mM_multiplier(1)), ceil(mM_multiplier(2))];
-    newYlim = mM_multiplier.* powTen;
-    ylim(newYlim);
+  xlabel('t (s)');
+  switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
+    case {0,1,2}
+      ylabel(ylab);
+  end
+  
+  % update xlim (and eventually ylim)
+%   sel = (y>0 & (not(max(t)>0)|(t>=0)));
+  if(max(t)>=0)
+    sel = (t>=0);
+  else
+    sel = 1:numel(t);
+  end
+  kek = find(sel==1);
+  if(kek(1)>1)
+    sel(kek(1)-1) = 1; % for safety, add the previous time step to include 0
   end
   xlim([min(t(sel)),max(t(sel))]);
-  
+%   if(logscale)
+%     % create nice logarithmic ylims
+%     if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP~=3)
+%       ylim(niceLogYLim([min(y(sel)),max(y(sel))]));
+%     end
+%   end
+
+  if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==4)
+    axes(axxx(1));
+    niceFormatForYTickLabels(gcf);
+  end
+%   title({['Total Simulation Energy'],['(',titlefig,')']});
+  title(titlefig);
   legend('location','best');
   prettyAxes(f);
   if(outputfigpath_provided)
@@ -165,4 +264,15 @@ function f = plot_total_energy(OFDIRs, switchE_0K_1P_2T, logscale, titlefig, out
     % customSaveFig([OFDIR,'total_energy']);
     customSaveFig(['~/TMP/total_energy']);
   end
+end
+
+function newYlim = niceLogYLim(curMinMax)
+  if(curMinMax(1)<=0)
+    suby = sort(y(sel));
+    curMinMax(1) = suby(find(suby>0,1,'first'));
+  end
+  powTen = 10.^(floor(log10(curMinMax)));
+  mM_multiplier = curMinMax./powTen;
+  mM_multiplier = [floor(mM_multiplier(1)), ceil(mM_multiplier(2))];
+  newYlim = mM_multiplier.* powTen;
 end
