@@ -467,6 +467,7 @@ subroutine it_compute_and_output_energy()
   use constants,only: IOUT_ENERGY,CUSTOM_REAL
 
   use specfem_par,only: GPU_MODE,myrank,it,deltat,kinetic_energy,potential_energy,t0
+  use specfem_par_LNS,only: USE_LNS
 
   implicit none
 
@@ -487,7 +488,13 @@ subroutine it_compute_and_output_energy()
   if (myrank == 0) then
     if(it==1) then
       ! Print header.
-      write(IOUT_ENERGY,*) "Time(s) kinetic_energy(J) potential_energy(J) total_energy(J)"
+      if(USE_LNS) then
+        write(IOUT_ENERGY,*) "Time(s) kinetic_energy(J) potential_energy(J) total_energy(J) ", &
+                             "[LNS WARNING: FIRST LINE IS E_{K,0} E_{P,0} E_{T,0} ", &
+                             "AND NEXT LINES ARE CORRESPONDING PERTURBATIONS]"
+      else
+        write(IOUT_ENERGY,*) "Time(s) kinetic_energy(J) potential_energy(J) total_energy(J)"
+      endif
     endif
     write(IOUT_ENERGY,*) real(dble(it-1)*deltat - t0,4),real(kinetic_energy_total,4), &
                          real(potential_energy_total,4),real(kinetic_energy_total + potential_energy_total,4)
