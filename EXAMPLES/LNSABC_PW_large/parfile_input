@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 4
+NPROC                           = 16
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -155,7 +155,7 @@ REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BE
 #  3: Gaussian second time derivative, localised around forcing_initial_time, and for all abscissas.
 #  9: hardcoded custom forcing (set it up directly in the code).
 # 10: read from 'external_bottom_forcing.dat' (generated with 'utils_new/forcings.m'). The lines of this file should be formatted as 't x value', using the same DT as above and points x should correspond to the mesh. The time values in this file will be read as time values from beginning of simulation, thus including any time shift induced by non-Dirac sources (i.e. 'negative times').
-TYPE_FORCING                    = 3
+TYPE_FORCING                    = 1
 main_spatial_period             = 1. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2.
 main_time_period                = 1.4e-2 # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3.
 forcing_initial_loc             = 0. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2.
@@ -382,9 +382,9 @@ cutsnaps                        = 1.
 output_color_image              = .true.         # Draw JPEG color snapshot?
 imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure 11=? 12=? 13=? 14=? 15=? 16=?
                                                  # DG display: 1=veloc_Ux 2=veloc_Uz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz
-factor_subsample_image          = 1d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
-USE_CONSTANT_MAX_AMPLITUDE      = .true.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
-CONSTANT_MAX_AMPLITUDE_TO_USE   = 2e-4          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
+factor_subsample_image          = 1d0            # (double precision) factor to subsample color images output by the code (useful for very large models)
+USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
+CONSTANT_MAX_AMPLITUDE_TO_USE   = 2e-4           # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
 DRAW_SOURCES_AND_RECEIVERS      = .true.         # Display sources as orange crosses and receivers as green squares?
 DRAW_WATER_IN_BLUE              = .true.         # display acoustic layers as constant blue in JPEG images, because they likely correspond to water in the case of ocean acoustics or in the case of offshore oil industry experiments (if off, display them as greyscale, as for elastic or poroelastic elements, for instance for acoustic-only oil industry models of solid media)
