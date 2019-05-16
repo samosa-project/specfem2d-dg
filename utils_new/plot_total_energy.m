@@ -9,7 +9,7 @@
 % yields:
 %   TODO.
 
-function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logscale, titlefig, outputfigpath)
+function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logscale, titlefig, outputfigpath)
   addpath('/home/l.martire/Documents/work/mars/mars_is'); % prettyAxes
   if(not(exist('OFDIRs')))
     OFDIRsProvided=0;
@@ -28,9 +28,9 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
     logscale=1;
   end
   if(not(exist('titlefig')) | strcmp(titlefig,'auto'))
-    titlefig_provided=0;
+    titlefig_provided = 0;
   else
-    titlefig_provided=1;
+    titlefig_provided = 1;
   end
   if(not(exist('outputfigpath')))
     outputfigpath_provided=0;
@@ -90,28 +90,30 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
   switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
     case 0
       titlefig_local='Simulation Kinetic Energy';
-      ylab = 'kinetic energy (J)';
+      ylab = 'kinetic energy [J]';
     case 1
       titlefig_local='Simulation Potential Energy';
-      ylab = 'potential energy (J)';
+      ylab = 'potential energy [J]';
     case 2
       titlefig_local='Simulation Total (K+P) Energy';
-      ylab = 'total energy (J)';
+      ylab = 'total energy [J]';
     case {3,4}
       titlefig_local='Simulation Energies';
-      ylabL = ['potential energy (J)'];
-      ylabR = ['kinetic energy (J)'];
+      ylabL_base = ['potential energy [J]'];
+      ylabR_base = ['kinetic energy [J]'];
       if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
         LS_left='-';
         LS_right='--';
         prefixL = LS_left;
         prefixR = LS_right;
-        ylabL = [ylabL, ' (\texttt{',prefixL,'})'];
-        ylabR = [ylabR, ' (\texttt{',prefixR,'})'];
+        ylabL_base = [ylabL_base, ' (\texttt{',prefixL,'})'];
+        ylabR_base = [ylabR_base, ' (\texttt{',prefixR,'})'];
       else
         LS_left='-';
         LS_right='-';
       end
+      ylabL=ylabL_base;
+      ylabR=ylabR_base;
     otherwise
       error('Set swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP only to either 0, 1, 2, or 3.');
   end
@@ -120,7 +122,7 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
     titlefig = titlefig_local;
   end
 
-  f = figure('units','normalized','outerposition',[0 0 0.5 1]);
+  figureHandle = figure('units','normalized','outerposition',[0 0 0.5 1]);
 
   for i=1:numel(OFDIRs)
     % set loading directory, and check it
@@ -147,6 +149,16 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
     ke = EF.data(:, 2);
     pe = EF.data(:, 3);
     te = EF.data(:, 4);
+    
+    % If LNS, update values given the file format (see energy file, iterate_time.f90, and compute_energy.f90).
+    if(readExampleFiles_extractParam([OFDIR,'input_parfile'],'USE_LNS','bool'))
+%       ke(2:end) = ke(1)+ke(2:end);
+%       pe(2:end) = pe(1)+pe(2:end);
+%       te(2:end) = te(1)+te(2:end);
+      ke(1)=0;
+      pe(1)=0;
+      te(1)=0;
+    end
     
     % define what goes where
     switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
@@ -189,12 +201,19 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
         end
         % plot
         if(logscale && peak2peak(yL)>0)
-          semilogy(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
-          y=yL; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yL(sel)),max(yL(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax)
+          if(sign(min(yL))==sign(max(yL)))
+            % if no change of sign, plot normal log
+            semilogy(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+            y=yL; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yL(sel)),max(yL(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax);
+          else
+            % if change of sign, symlog (https://fr.mathworks.com/matlabcentral/fileexchange/57902-symlog)
+            plot(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+%             autoSymLog(axxx(1), yL); ylabL={ylabL_base,'(symlog scale)'};
+          end
         else
           plot(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
         end
-        ylabel(ylabL); set(gca,'ycolor','k');
+        ylabel(ylabL); set(gca, 'ycolor', 'k');
         % switch to good axis
         if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
           yyaxis right;
@@ -204,8 +223,14 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
         end
         % plot
         if(logscale && peak2peak(yR)>0)
-          semilogy(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
-          y=yR; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yR(sel)),max(yR(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax)
+          if(sign(min(yL))==sign(max(yL)))
+            semilogy(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
+            y=yR; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yR(sel)),max(yR(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax);
+          else
+            % if change of sign, symlog (https://fr.mathworks.com/matlabcentral/fileexchange/57902-symlog)
+            plot(t, yR, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+%             autoSymLog(axxx(2), yR); ylabR={ylabR_base,'(symlog scale)'};
+          end
         else
           plot(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
         end
@@ -225,7 +250,7 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
     end
   end
   
-  xlabel('t (s)');
+  xlabel('time $t$ [s]');
   switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
     case {0,1,2}
       ylabel(ylab);
@@ -252,12 +277,12 @@ function f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logsc
 
   if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==4)
     axes(axxx(1));
-    niceFormatForYTickLabels(gcf);
+%     niceFormatForYTickLabels(gcf);
   end
 %   title({['Total Simulation Energy'],['(',titlefig,')']});
   title(titlefig);
-  legend('location','best');
-  prettyAxes(f);
+  legend('location', 'best');
+  prettyAxes(figureHandle);
   if(outputfigpath_provided)
     customSaveFig(outputfigpath);
   else

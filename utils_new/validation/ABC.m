@@ -31,21 +31,23 @@ SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
 
 subsample = 1;
-subsample_dt = 1e-3;
+subsample_dt = 1e-4;
 
 compareEnergies = 1;
 compareStations = 0;
 
-% basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
+basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
 % basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
-basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
+% basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
 
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps0p25']; suffixBu='$\varepsilon=0.25$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e1em4']; suffixBu='$\varepsilon=10^{-4}$';
-bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p250']; suffixBu='$\varepsilon=0.25$';
+% bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p250']; suffixBu='$\varepsilon=0.25$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p160_woE']; suffixBu='$\varepsilon=0.16$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p001']; suffixBu='$\varepsilon=10^{-3}$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p500']; suffixBu='$\varepsilon=0.5$';
+
+bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25q6e0p001']; suffixBu='$\varepsilon=10^{-3}$';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.
@@ -53,7 +55,7 @@ bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e0p250']; s
 % build OUTPUT_FILES directories' paths
 BufRNam='buffers';
 largeRunOF    = [SPCFMEXloc,basename,'_large/OUTPUT_FILES_baseline']; LarRNam='large';
-farFieldRunOF = [SPCFMEXloc,basename,'_FF/OUTPUT_FILES_baseline']; FafRNam='far-field';
+farFieldRunOF = [SPCFMEXloc,basename,'_FF/OUTPUT_FILES_FF']; FafRNam='far-field';
 % safeguard
 if(numel(bufferRunOF)>0); if(not(strcmp(bufferRunOF(end),filesep))); bufferRunOF=[bufferRunOF,filesep]; end; end;
 if(numel(largeRunOF)>0); if(not(strcmp(largeRunOF(end),filesep))); largeRunOF=[largeRunOF,filesep]; end; end;
@@ -181,4 +183,10 @@ if(0)
   figure();
   subplot(1,2,1); plot(dataL(:,2)); hold on; plot(dataF(:,2)); hold on; plot(dataB(:,2));
   subplot(1,2,2); plot(errorFactor*abs(dataL(:,2)-dataF(:,2))); hold on; plot(errorFactor*abs(dataL(:,2)-dataB(:,2)));
+end
+
+function autoSymLog(axxx, y)
+  ydataamplitudes = cellfun(@max,get(ch(1).Children,'ydata'))-cellfun(@min,get(ch(1).Children,'ydata'));
+  maxydataamplitudes = max(ydataamplitudes);
+  symlog(ch(1),'y',ceil(maxydataamplitudes)-4);
 end

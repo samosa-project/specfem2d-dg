@@ -15,8 +15,13 @@ cd ${localEXAMPLEDirPath}
 nargneed=1
 if [[ $# -ne $nargneed ]]; then
   echo
-  echo "> This script needs $nargneed argument, a list of EXAMPLE folders separated by commas, e.g.:"
-  echo "    default_example_DG,anotherOne,wHaTeVeR"
+  echo "> This script needs $nargneed argument, a selection of EXAMPLE folders,"
+  echo "  > either a single one, e.g.:"
+  echo "      default_example_DG"
+  echo "  > or separated by commas, e.g.:"
+  echo "      {default_example_DG,anotherOne,wHaTeVeR}"
+  echo "  > or using wildcards, e.g.:"
+  echo "      \"TEST*\""
   echo "> Script will now exit."
   echo
   exit -1
@@ -29,7 +34,7 @@ echo " "
 listOfEXAMPLES=$1
 #listOfEXAMPLES='test1,test2'
 
-command="rsync -avz -e 'ssh' --relative {$listOfEXAMPLES}/{$listOfSubFilesToSend} martire@olympe.calmip.univ-toulouse.fr:${remoteEXAMPLEDirPath}"
+command="rsync -avz -e 'ssh' --relative $listOfEXAMPLES/{$listOfSubFilesToSend} martire@olympe.calmip.univ-toulouse.fr:${remoteEXAMPLEDirPath}"
 echo "Running command '$command'."
 echo " "
 

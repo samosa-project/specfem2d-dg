@@ -29,7 +29,17 @@ function [var] = readExampleFiles_extractParam(path2file, varName, varType, verb
     command=['grep -r "^ *',varName,' *=" ',path2file];
     [~,res] = system(command);
     if(isempty(res))
-      error('found nothing');
+      disp(['[',mfilename,', ERROR] Found nothing.']);
+      switch(varType)
+        case{'int', 'float'}
+          disp([blanks(length(mfilename)+9),' Setting requested int/float to NaN.']); var = nan;
+        case{'bool', 'boolean'}
+          disp([blanks(length(mfilename)+9),' Setting requested boolean to 0.']); var = 0;
+        case{'string'}
+          disp([blanks(length(mfilename)+9),' Setting requested string to ''''.']); var = '';
+        otherwise
+          error('kek');
+      end
     end
     res = regexprep(res,'#[^\n]*',''); % remove comments
   %   res = regexprep(res,'[\n\r]+',' ') % remove endline

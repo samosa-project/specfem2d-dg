@@ -9,22 +9,25 @@
 % yields:
 %   TODO.
 
-function [CompZ, CompH, V] = computeCompliance(atmfile, parfile, speedType)
+function [CompZ, CompH, V] = computeCompliance(atmfile, parfile, speedType, groundModelNumber)
   if(not(exist('speedType')))
     speedType = '+w';
+  end
+  
+  if(not(exist('groundModelNumber')))
+    groundModelNumber='all';
+  end
+  
+  if(strcmp(groundModelNumber,'all'))
+    allGroundModels0_oneGroundModel1 = 0;
+  else
+    allGroundModels0_oneGroundModel1 = 1;
   end
   
   [~, ~, ~, SOUNDSPEED, ~, ~, ~, ~, ~, ~, ~, ~, ~, WIND] = extract_atmos_model(atmfile,3,0,-1);
   % get wind at ground
   SOUNDSPEED = SOUNDSPEED(1);
   WIND = WIND(1);
-  
-  model = readExampleFiles_extractParfileModels(parfile); % get parfile models;
-  model = model(2, :); disp(['[',mfilename,'] From parfile, assume first ground model is numbered 2.']);
-  % extract rho, vp, and vs from this model
-  rho = model(3);
-  vp = model(4);
-  vs = model(5);
   
   switch(speedType)
     case '+w'
@@ -47,16 +50,26 @@ function [CompZ, CompH, V] = computeCompliance(atmfile, parfile, speedType)
   end
   V = signC*SOUNDSPEED + signW*WIND;
   
-  [CompZ, CompH] = compliance(1, V, rho, vp, vs);
+  model = readExampleFiles_extractParfileModels(parfile); % get parfile models;
+  if(allGroundModels0_oneGroundModel1)
+    model = model(groundModelNumber, :); disp(['[',mfilename,'] From parfile, select ground model numbered ',num2str(groundModelNumber),'.']);
+  end
   
-  CompZ = abs(CompZ);
-  CompH = abs(CompH);
-  disp(['[',mfilename,'] Computed compliances, with']);
-  disp([blanks(length(mfilename)+2),'     V   = ',sprintf('%6.1f',V),' [m/s] (',speedType,' at ground),']);
-  disp([blanks(length(mfilename)+2),'     rho = ',sprintf('%6.1f',rho),' [kg/m^3],']);
-  disp([blanks(length(mfilename)+2),'     vp  = ',sprintf('%6.1f',vp),' [m/s],']);
-  disp([blanks(length(mfilename)+2),'     vs  = ',sprintf('%6.1f',vs),' [m/s],']);
-  disp([blanks(length(mfilename)+2),' are C_Z = ',sprintf('%12.3e',CompZ),' [??],']);
-  disp([blanks(length(mfilename)+2),'     C_H = ',sprintf('%12.3e',CompH),' [??].']);
+  for m = 1:size(model,1)
+    % loop through models
+    % extract rho, vp, and vs from this model
+    rho = model(m, 3);
+    vp = model(m, 4);
+    vs = model(m, 5);
+    
+    [CompZ(m), CompH(m)] = compliance(1, V, rho, vp, vs);
+
+    CompZ(m) = abs(CompZ(m));
+    CompH(m) = abs(CompH(m));
+    disp(['[',mfilename,'] Computed compliances for model ',num2str(groundModelNumber),' (rho = ',sprintf('%.1e',rho),' [kg/m^3], vp = ',sprintf('%6.1f',vp),' [m/s], vs = ',sprintf('%6.1f',vs),' [m/s]), with']);
+    disp([blanks(length(mfilename)+2),'     V   = ',sprintf('%6.1f',V),' [m/s] (',speedType,' at ground),']);
+    disp([blanks(length(mfilename)+2),' are C_Z = ',sprintf('%12.3e',CompZ(m)),' [??],']);
+    disp([blanks(length(mfilename)+2),'     C_H = ',sprintf('%12.3e',CompH(m)),' [??].']);
+  end
 end
 

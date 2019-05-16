@@ -1,15 +1,20 @@
 % Author:        Léo Martire.
-% Description:   TODO.
+% Description:   Loads an atmospheric model from a atmospheric_model.dat
+%                formatted (SPECFEM-DG) file.
 % Notes:         TODO.
 %
 % Usage:
-%   [...] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
+%   [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, ...
+%    EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = ...
+%   extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
-function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCALE, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
+function [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, ...
+          EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = ...
+         extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load and store data.        %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,12 +33,12 @@ function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCA
       error('wrong number of columns (must be either 17 or 19)');
     end
   end
-  ALTITUDE = DATA.data(:, 1); %                                     (z)
-  DENSITY = DATA.data(:, 2); %                                      (rhoat)
-  TEMPERATURE = DATA.data(:, 3); %                                  (T)
-  SOUNDSPEED = DATA.data(:, 4); %                                   (c)
-  PRESSURE = DATA.data(:, 5); %                                     (p)
-  LOCALPRESSURESCALE = DATA.data(:, 6); % Unused.                   (H)
+  Z = DATA.data(:, 1); %                                     (z)
+  RHO = DATA.data(:, 2); %                                      (rhoat)
+  TEMP = DATA.data(:, 3); %                                  (T)
+  C = DATA.data(:, 4); %                                   (c)
+  P = DATA.data(:, 5); %                                     (p)
+  H = DATA.data(:, 6); % Unused.                   (H)
   G = DATA.data(:, 7); %                                            (gravity)
   NBVSQ = DATA.data(:, 8); %                                        (Nsqtab)
   KAPPA = DATA.data(:, 9); %                                        (kappa)
@@ -65,42 +70,42 @@ function [ALTITUDE, DENSITY, TEMPERATURE, SOUNDSPEED, PRESSURE, LOCALPRESSURESCA
   if(interpolate==1)
     % Setup.
     % ALTITUDE = ALTITUDE - ALTITUDE(1); % Set first altitude to 0.
-    if min(diff(ALTITUDE)) < interp_delta
+    if min(diff(Z)) < interp_delta
       disp('[WARNING] Interpolation step is greater than data step. Undersampling will occur.');
     end
     % interp_ALTITUDE=[ALTITUDE(1):interp_delta:ALTITUDE(end)]; % Using this, it is possible that interp_ALTITUDE(end)<ALTITUDE(end).
-    interp_ALTITUDE=[ALTITUDE(1):interp_delta:ALTITUDE(1)+ceil((ALTITUDE(end)-ALTITUDE(1)) / interp_delta)*interp_delta]; % Using this, interp_ALTITUDE(end)>=ALTITUDE(end), always.
+    interp_ALTITUDE=[Z(1):interp_delta:Z(1)+ceil((Z(end)-Z(1)) / interp_delta)*interp_delta]; % Using this, interp_ALTITUDE(end)>=ALTITUDE(end), always.
 
     % Logarithmically interpolated quantities.
-    interp_DENSITY = exp(interp1(ALTITUDE, log(DENSITY), interp_ALTITUDE))';                  % (rhoat)
-    interp_PRESSURE = exp(interp1(ALTITUDE, log(PRESSURE), interp_ALTITUDE))';                % (P)
+    interp_DENSITY = exp(interp1(Z, log(RHO), interp_ALTITUDE))';                  % (rhoat)
+    interp_PRESSURE = exp(interp1(Z, log(P), interp_ALTITUDE))';                % (P)
     % interp_VIBRATTENUATION = exp(interp1(ALTITUDE, log(VIBRATTENUATION), interp_ALTITUDE))';  % (fr)
 
     % Linearly interpolated quantities.
-    interp_TEMPERATURE = interp1(ALTITUDE, TEMPERATURE, interp_ALTITUDE)';                    % (T)
-    interp_SOUNDSPEED = interp1(ALTITUDE, SOUNDSPEED, interp_ALTITUDE)';                      % (v)
-    interp_LOCALPRESSURESCALE = interp1(ALTITUDE, LOCALPRESSURESCALE, interp_ALTITUDE)';    % (Htab)
-    interp_G = interp1(ALTITUDE, G, interp_ALTITUDE)';                                        % (gravity)
-    interp_NBVSQ = interp1(ALTITUDE, NBVSQ, interp_ALTITUDE)';                                % (Nsqtab)
+    interp_TEMPERATURE = interp1(Z, TEMP, interp_ALTITUDE)';                    % (T)
+    interp_SOUNDSPEED = interp1(Z, C, interp_ALTITUDE)';                      % (v)
+    interp_LOCALPRESSURESCALE = interp1(Z, H, interp_ALTITUDE)';    % (Htab)
+    interp_G = interp1(Z, G, interp_ALTITUDE)';                                        % (gravity)
+    interp_NBVSQ = interp1(Z, NBVSQ, interp_ALTITUDE)';                                % (Nsqtab)
     % interp_NCUTA = interp1(ALTITUDE, NCUTA, interp_ALTITUDE)';                                % (Ncuttab)
-    interp_KAPPA = interp1(ALTITUDE, KAPPA, interp_ALTITUDE)';                                % (Kappatab)
-    interp_MU = interp1(ALTITUDE, MU, interp_ALTITUDE)';                                      % (MUtab)
-    interp_MUVOL = interp1(ALTITUDE, MUVOL, interp_ALTITUDE)';                                % (MUvoltab)
+    interp_KAPPA = interp1(Z, KAPPA, interp_ALTITUDE)';                                % (Kappatab)
+    interp_MU = interp1(Z, MU, interp_ALTITUDE)';                                      % (MUtab)
+    interp_MUVOL = interp1(Z, MUVOL, interp_ALTITUDE)';                                % (MUvoltab)
     % interp_MUVOLROT = interp1(ALTITUDE, MUVOLROT, interp_ALTITUDE)';                          % (MUvolrottab)
     % interp_SVIB = interp1(ALTITUDE, SVIB, interp_ALTITUDE)';                                  % (Svib)
-    interp_NORTHWIND = interp1(ALTITUDE, NORTHWIND, interp_ALTITUDE)';                        % (Wind(1,iz))
-    interp_EASTWIND = interp1(ALTITUDE, EASTWIND, interp_ALTITUDE)';                          % (Wind(2,iz))
-    interp_WIND = interp1(ALTITUDE, WIND, interp_ALTITUDE)';                          % projected wind
-    interp_CP = interp1(ALTITUDE, CP, interp_ALTITUDE)';                                    % (Cp)
-    interp_CV = interp1(ALTITUDE, CV, interp_ALTITUDE)';                                    % (Cv)
-    interp_GAMMA = interp1(ALTITUDE, GAMMA, interp_ALTITUDE)';                              % (gammatab)
+    interp_NORTHWIND = interp1(Z, NORTHWIND, interp_ALTITUDE)';                        % (Wind(1,iz))
+    interp_EASTWIND = interp1(Z, EASTWIND, interp_ALTITUDE)';                          % (Wind(2,iz))
+    interp_WIND = interp1(Z, WIND, interp_ALTITUDE)';                          % projected wind
+    interp_CP = interp1(Z, CP, interp_ALTITUDE)';                                    % (Cp)
+    interp_CV = interp1(Z, CV, interp_ALTITUDE)';                                    % (Cv)
+    interp_GAMMA = interp1(Z, GAMMA, interp_ALTITUDE)';                              % (gammatab)
 
-    ALTITUDE = interp_ALTITUDE;
-    DENSITY = interp_DENSITY;
-    TEMPERATURE = interp_TEMPERATURE;
-    SOUNDSPEED = interp_SOUNDSPEED;
-    PRESSURE = interp_PRESSURE;
-    LOCALPRESSURESCALE = interp_LOCALPRESSURESCALE;
+    Z = interp_ALTITUDE;
+    RHO = interp_DENSITY;
+    TEMP = interp_TEMPERATURE;
+    C = interp_SOUNDSPEED;
+    P = interp_PRESSURE;
+    H = interp_LOCALPRESSURESCALE;
     G = interp_G;
     NBVSQ = interp_NBVSQ;
     KAPPA = interp_KAPPA;

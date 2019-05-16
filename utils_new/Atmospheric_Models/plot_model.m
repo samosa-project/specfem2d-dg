@@ -12,7 +12,7 @@
 % yields:
 %   TODO.
 
-function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW)
+function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW, plot_nosave0_save1)
   if(nargin<4)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
   end
@@ -31,6 +31,9 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
       LRorDWUW='LR';
     end
   end
+  if(not(exist('plot_nosave0_save1')))
+    plot_nosave0_save1 = 1;
+  end
   
 %   format compact;
 %   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
@@ -42,8 +45,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
    ~, NSQ, ~, ~, ~, ~, ~, W, ~, ~, ~] = ...
    extract_atmos_model(atmospheric_model_file, 3, 0, 0);
 
-  [datestr, posstr, ~, ~, ~, ~, ~, F107A, F107, AP] = extract_atmos_model_setup(atmospheric_model_file);
-  apf107str=strcat("F10.7 avg. = ", sprintf("%.1f",F107A), ", F10.7 = ", sprintf("%.1f",F107), ", AP = ", sprintf("%.1f",AP));
+  [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
   
   T=T-273.15;
   thresheqzero=1e-6;
@@ -54,14 +56,19 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
   DZW=gradient(W,Z);
   DZW(1:2)=DZW(3); % Correction hack.
   
-  f=figure('units','normalized','outerposition',[0 0 1 1]);
+  fh=figure('units','normalized','outerposition',[0 0 1 1]);
   
-  ax(1)=subplot(231);
+  axxx = tight_subplot(2, 3, [0.08,0.01], [0.08,0.1], [0.05, 0.01]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
+  
+%   axxx(1)=subplot(231);
+  i=1;
+  axes(axxx(i)); i=i+1;
   myplot(RHO, Z, marker, colour, datestr, 'sx');
   xlabel('$\rho$ [kg/m$^3$]');
   ylabel('$z$ [m]'); % xlim([0.1*min(RHO),10*max(RHO)]);
   
-  ax(2)=subplot(232);
+%   axxx(2)=subplot(232);
+  axes(axxx(i)); i=i+1;
   myplot(C, Z, marker, colour, '$c$', 'p'); xlabel('$c$ [m/s]'); hold on
   if(max(abs(W))>thresheqzero)
     % If wind==0, no need to plot effective sound speed.
@@ -85,9 +92,10 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
     forcexlimminmax([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))]);
   end
   
-  title({[posstr,', ',datestr],apf107str,''});
+  title({[posstr,', ',datestr],secondaryinfo,''});
   
-  ax(3)=subplot(233);
+%   axxx(3)=subplot(233);
+  axes(axxx(i)); i=i+1;
   myplot(NSQ, Z, marker, colour, datestr, 'p');
   xlabel('$N^2$ [rad$^2$/s$^2$]'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   yticklabels([]);
@@ -98,7 +106,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
     xlim(max(NSQ)*[.9,1.1]);
   end
   
-  ax(4)=subplot(234);
+%   axxx(4)=subplot(234);
+  axes(axxx(i)); i=i+1;
   myplot(T, Z, marker, colour, datestr, 'p');
   xlabel('$T$ [$^\circ$C]');
   ylabel('$z$ [m]'); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
@@ -108,7 +117,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
     forcexlimminmax(T);
   end
   
-  ax(5)=subplot(235);
+%   axxx(5)=subplot(235);
+  axes(axxx(i)); i=i+1;
   myplot(W, Z, marker, colour, datestr, 'p');
   xlabel('$w$ [m/s]');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
@@ -119,7 +129,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
     forcexlimminmax(W);
   end
   
-  ax(6)=subplot(236);
+%   axxx(6)=subplot(236);
+  axes(axxx(i)); i=i+1;
   myplot(DZW, Z, marker, colour, datestr, 'p');
   xlabel('$\partial_zw$ [1/s]');
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
@@ -129,15 +140,17 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
     forcexlimminmax(DZW);
   end
   
-  linkaxes(ax,'y');
+  linkaxes(axxx,'y');
   
 %   spl=split(atmospheric_model_file,'.');
 %   spl{length(spl)+1}='jpg';
 %   spl=join(spl,'.');
 %   saveas(gcf,spl{1}, 'jpg');
 %   disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
-  figure(f.Number);
-  customSaveFig(atmospheric_model_file);
+  figure(fh.Number);
+  if(plot_nosave0_save1)
+    customSaveFig(atmospheric_model_file);
+  end
 end
 
 function myplot(XDATA, YDATA, MARKER, COLOUR, DISPLAYNAME, TYPE)
