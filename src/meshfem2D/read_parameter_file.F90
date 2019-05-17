@@ -756,9 +756,10 @@
   subroutine check_parameters()
 
   use parameter_file_par
-  use constants
 
   implicit none
+  
+  double precision, parameter :: localTinyVal = 1.e-9 ! Do not use TINYVAL from constants.h, because it would need use to require constants.h in the makefile, spreading the modifications too far for comfort.
 
   ! checks partitioning
   if (NPROC <= 0) then
@@ -827,10 +828,10 @@
   
   if(output_energy .and. ENERGYBOXING) then
     ! If all 4 parameters were found (the user specified all ENERGYBOX_* parameters), and all of those are zero, then the user wants to deactivate energy boxing.
-    if(abs(ENERGYBOX_XMIN-ENERGYBOX_XMAX)<TINYVAL .and. &
-       abs(ENERGYBOX_XMAX-ENERGYBOX_ZMIN)<TINYVAL .and. &
-       abs(ENERGYBOX_ZMIN-ENERGYBOX_ZMAX)<TINYVAL .and. &
-       abs(ENERGYBOX_ZMAX)<TINYVAL) then
+    if(abs(ENERGYBOX_XMIN-ENERGYBOX_XMAX)<localTinyVal .and. &
+       abs(ENERGYBOX_XMAX-ENERGYBOX_ZMIN)<localTinyVal .and. &
+       abs(ENERGYBOX_ZMIN-ENERGYBOX_ZMAX)<localTinyVal .and. &
+       abs(ENERGYBOX_ZMAX)<localTinyVal) then
       ENERGYBOXING = .false.
       write(*,*) 'ENERGYBOX_* all set to 0., deactivating energy boxing.' ! DEBUG
     endif
