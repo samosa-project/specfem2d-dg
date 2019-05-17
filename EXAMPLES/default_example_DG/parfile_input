@@ -334,7 +334,7 @@ xmin                            = -50.0d0
 xmax                            =  50.0d0
 nx                              =  50
 
-# Absorbing boundary parameters (to be used with PML_BOUNDARY_CONDITIONS or STACEY_ABSORBING_CONDITIONS above).
+# Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .false.
 absorbright                     = .false.
 absorbtop                       = .false.
@@ -367,6 +367,11 @@ output_grid_Gnuplot             = .false.
 output_grid_ASCII               = .false.
 # Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .false.
+# For acoustic domains only (to generalise it to the other domains, edit 'compute_energy.f90'). Restrict energy integration to a box defined below. If all set to 0., does nothing and integrates over whole domain (as classically done). Nonsense cannot happen (ENERGYBOX_ZMIN>ENERGYBOX_ZMAX or whatever will stop program). If limit is set outside of domain (e.g. ENERGYBOX_ZMAX >= mesh_zmax), won't cut anything. See 'compute_energy.f90'.
+ENERGYBOX_XMIN = 0.
+ENERGYBOX_XMAX = 0.
+ENERGYBOX_ZMIN = 0.
+ENERGYBOX_ZMAX = 0.
 
 #---------------------------------------------------------------------#
 #                                                                     #
