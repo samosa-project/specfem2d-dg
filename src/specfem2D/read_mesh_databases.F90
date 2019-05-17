@@ -156,6 +156,9 @@
   read(IIN,*) output_grid_ASCII,output_energy,output_wavefield_dumps
 
   read(IIN,"(a80)") datlin
+  read(IIN,*) ENERGYBOXING, ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX
+  
+  read(IIN,"(a80)") datlin
   read(IIN,*) use_binary_for_wavefield_dumps
 
   read(IIN,"(a80)") datlin

@@ -47,7 +47,7 @@ subroutine compute_energy()
     P_SV &
     , rhovx_DG, rhovz_DG, rho_DG,ibool_before_perio,ABC_STRETCH,stretching_buffer, ibool_DG, & ! Modification for DG.
     USE_DISCONTINUOUS_METHOD,gammaext_DG& ! Modification for DG.
-    ,it ! modification for DG LNS
+    ,it,ENERGYBOXING, ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX,coord ! modification for DG LNS
   
   use specfem_par_LNS, only: USE_LNS, LNS_dummy_1d, LNS_dv, norm2r1, &
                              LNS_dp,LNS_drho,LNS_rho0, LNS_v0,LNS_p0!,LNS_c0,LNS_p0
@@ -312,6 +312,15 @@ subroutine compute_energy()
       ! double loop over GLL points
       do j = 1,NGLLZ
         do i = 1,NGLLX
+          
+          if(ENERGYBOXING) then
+            if(coord(1, ibool_before_perio(i, j, ispec))<=ENERGYBOX_XMIN .or. &
+               coord(1, ibool_before_perio(i, j, ispec))>=ENERGYBOX_XMAX .or. &
+               coord(2, ibool_before_perio(i, j, ispec))<=ENERGYBOX_ZMIN .or. &
+               coord(2, ibool_before_perio(i, j, ispec))>=ENERGYBOX_ZMAX) then
+              cycle
+            endif
+          endif
           
           !write(*,*) "COMPUTING", ispec, i, j, ABC_STRETCH, stretching_buffer(ibool_before_perio(i,j,ispec)) ! DEBUG
           

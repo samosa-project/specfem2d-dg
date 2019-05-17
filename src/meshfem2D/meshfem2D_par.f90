@@ -189,6 +189,8 @@
 
   ! for plotting the curve of energy
   logical :: output_energy
+  logical :: ENERGYBOXING
+  double precision :: ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX
 
   ! kernel output in case of adjoint simulation
   logical :: save_ASCII_kernels

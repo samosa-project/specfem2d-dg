@@ -45,7 +45,60 @@
   !integer counter !DEBUG
   !real(kind=CUSTOM_REAL) x_buffer !TEST
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-
+  integer :: countEnergyBoxingReplacements
+  
+  if(output_energy .and. ENERGYBOXING) then
+    ! Check if energy boxing parameters make sens w.r.t. the mesh.
+    ! Do it here, because lack of a better place to do it.
+    countEnergyBoxingReplacements = 0 ! Counts replacements.
+    if(myrank==0) write(*,*) "Energy boxing is on. Checking box."
+    if(ENERGYBOX_XMIN<=mesh_xmin) then
+      ENERGYBOX_XMIN = -HUGEVAL
+      countEnergyBoxingReplacements = countEnergyBoxingReplacements + 1
+      if(myrank==0) write(*,*) "  ENERGYBOX_XMIN<=mesh_xmin, ",&
+                 "assuming user wants to integrate all the way to the left   of their mesh. ",&
+                 "Set ENERGYBOX_XMIN=",-HUGEVAL,", just to be sure."
+    endif
+    if(ENERGYBOX_XMAX>=mesh_xmax) then
+      ENERGYBOX_XMAX = +HUGEVAL
+      countEnergyBoxingReplacements = countEnergyBoxingReplacements + 1
+      if(myrank==0) write(*,*) "  ENERGYBOX_XMAX>=mesh_xmax, ",&
+                 "assuming user wants to integrate all the way to the right  of their mesh. ",&
+                 "Set ENERGYBOX_XMAX=",+HUGEVAL,", just to be sure."
+    endif
+    if(ENERGYBOX_ZMIN<=mesh_zmin) then
+      ENERGYBOX_ZMIN = -HUGEVAL
+      countEnergyBoxingReplacements = countEnergyBoxingReplacements + 1
+      if(myrank==0) write(*,*) "  ENERGYBOX_ZMIN<=mesh_zmin, ",&
+                 "assuming user wants to integrate all the way to the bottom of their mesh. ",&
+                 "Set ENERGYBOX_XMIN=",-HUGEVAL,", just to be sure."
+    endif
+    if(ENERGYBOX_ZMAX>=mesh_zmax) then
+      ENERGYBOX_ZMAX = +HUGEVAL
+      countEnergyBoxingReplacements = countEnergyBoxingReplacements + 1
+      if(myrank==0) write(*,*) "  ENERGYBOX_ZMAX>=mesh_zmax, ",&
+                 "assuming user wants to integrate all the way to the top    of their mesh. ",&
+                 "Set ENERGYBOX_XMAX=",+HUGEVAL,", just to be sure."
+    endif
+    if(countEnergyBoxingReplacements==4) then
+      if(myrank==0) write(*,*) "  Done 4 replacements. The whole domain will be integrated. Setting ENERGYBOXING=.false.."
+      ENERGYBOXING = .false.
+    endif
+    if(myrank==0) write(*,*) "Done checking box for energy boxing. Finally:"
+  endif
+  if(output_energy) then
+    if(ENERGYBOXING) then
+      if(myrank==0) then
+        write(*,*) "Energy boxing activated. Will integrate only between:"
+        write(*,*) "  x = ",ENERGYBOX_XMIN,"and x = ",ENERGYBOX_XMAX,", and between"
+        write(*,*) "  z = ",ENERGYBOX_ZMIN,"and z = ",ENERGYBOX_ZMAX,"."
+      endif
+    else
+      if(myrank==0) write(*,*) "Energy boxing deactivated."
+    endif
+    if(myrank==0) write(*,*) " "
+  endif
+  
   ! Test compatibility with axisymmetric formulation
   if (AXISYM) call check_compatibility_axisym()
 

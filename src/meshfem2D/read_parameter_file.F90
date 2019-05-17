@@ -44,6 +44,7 @@
   ! local parameters
   integer :: ios,ireceiverlines
   integer,external :: err_occurred
+  integer :: count_ENERGYBOX
 
   !--------------------------------------------------------------------
   !
@@ -593,7 +594,42 @@
 
   call read_value_logical_p(output_energy, 'solver.output_energy')
   if (err_occurred() /= 0) stop 'error reading parameter output_energy in Par_file'
-
+  
+  ENERGYBOXING = .false.
+  if(output_energy) then
+    count_ENERGYBOX = 0 ! Count user inputs.
+    ENERGYBOX_XMIN = 0. ! Default value, used if the parameter is not found in parfile.
+    ENERGYBOX_XMAX = 0. ! Default value, used if the parameter is not found in parfile.
+    ENERGYBOX_ZMIN = 0. ! Default value, used if the parameter is not found in parfile.
+    ENERGYBOX_ZMAX = 0. ! Default value, used if the parameter is not found in parfile.
+    call read_value_double_precision_p(ENERGYBOX_XMIN, 'solver.ENERGYBOX_XMIN')
+    if (err_occurred() == 0) count_ENERGYBOX = count_ENERGYBOX + 1 ! No error, value has been read.
+    call read_value_double_precision_p(ENERGYBOX_XMAX, 'solver.ENERGYBOX_XMAX')
+    if (err_occurred() == 0) count_ENERGYBOX = count_ENERGYBOX + 1 ! No error, value has been read.
+    call read_value_double_precision_p(ENERGYBOX_ZMIN, 'solver.ENERGYBOX_ZMIN')
+    if (err_occurred() == 0) count_ENERGYBOX = count_ENERGYBOX + 1 ! No error, value has been read.
+    call read_value_double_precision_p(ENERGYBOX_ZMAX, 'solver.ENERGYBOX_ZMAX')
+    if (err_occurred() == 0) count_ENERGYBOX = count_ENERGYBOX + 1 ! No error, value has been read.
+    select case(count_ENERGYBOX)
+      case(0)
+        ! No ENERGYBOX parameter was found, this is okay.
+        ENERGYBOXING = .false.
+        write(*,*) 'No ENERGYBOX parameter was found, this is okay.'
+      case(4)
+        ENERGYBOXING = .true.
+        write(*,*) 'All 4 ENERGYBOX parameters were found, this is okay.'
+      case default
+        ! If the user specified only a subset of the ENERGYBOX_* parameters, then his porch light ain’t on, and he should be punished.
+        ENERGYBOXING = .false. ! Safeguard.
+        write(*,*) "Somehow only ",count_ENERGYBOX," ENERGYBOX parameters were found. ",& 
+                   "Wait. That's illegal. ",&
+                   "https://i.kym-cdn.com/entries/icons/original/000/028/207/Screen_Shot_2019-01-17_at_4.22.43_PM.jpg ", &
+                   "You must specify ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX. All of them or none. ",&
+                   "Do or do not, there is no try."
+        stop
+    end select
+  endif
+  
   !--------------------------------------------------------------------
   !
   ! movies/images/snapshots
@@ -720,6 +756,7 @@
   subroutine check_parameters()
 
   use parameter_file_par
+  use constants
 
   implicit none
 
@@ -788,6 +825,37 @@
     stop 'Bad value: SAVE_MODEL'
   end select
   
+  if(output_energy .and. ENERGYBOXING) then
+    ! If all 4 parameters were found (the user specified all ENERGYBOX_* parameters), and all of those are zero, then the user wants to deactivate energy boxing.
+    if(abs(ENERGYBOX_XMIN-ENERGYBOX_XMAX)<TINYVAL .and. &
+       abs(ENERGYBOX_XMAX-ENERGYBOX_ZMIN)<TINYVAL .and. &
+       abs(ENERGYBOX_ZMIN-ENERGYBOX_ZMAX)<TINYVAL .and. &
+       abs(ENERGYBOX_ZMAX)<TINYVAL) then
+      ENERGYBOXING = .false.
+      write(*,*) 'ENERGYBOX_* all set to 0., deactivating energy boxing.' ! DEBUG
+    endif
+    
+    if(ENERGYBOX_XMIN>=ENERGYBOX_XMAX) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* ENERGYBOX_XMIN>=ENERGYBOX_XMAX"
+      write(*,*) "* This is not allowed (because *"
+      write(*,*) "* it makes no sense).          *"
+      write(*,*) "********************************"
+      stop
+    endif
+    if(ENERGYBOX_ZMIN>=ENERGYBOX_ZMAX) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* ENERGYBOX_ZMIN>=ENERGYBOX_ZMAX"
+      write(*,*) "* This is not allowed (because *"
+      write(*,*) "* it makes no sense).          *"
+      write(*,*) "********************************"
+      stop
+    endif
+  endif
   
   if(USE_DISCONTINUOUS_METHOD) then
     ! Stop if time stepping scheme is not implemented.

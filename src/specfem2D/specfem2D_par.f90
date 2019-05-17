@@ -904,6 +904,8 @@ module specfem_par
   ! for energy output
   !---------------------------------------------------------------------
   logical :: output_energy
+  logical :: ENERGYBOXING
+  double precision :: ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX
   real(kind=CUSTOM_REAL) :: kinetic_energy,potential_energy
 
   ! Integrated energy field output int_0^t v^2 dt

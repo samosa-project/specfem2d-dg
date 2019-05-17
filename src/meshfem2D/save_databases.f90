@@ -219,6 +219,9 @@
 
   write(15,*) 'output_grid_ASCII output_energy output_wavefield_dumps'
   write(15,*) output_grid_ASCII,output_energy,output_wavefield_dumps
+  
+  write(15,*) 'ENERGYBOXING, ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX'
+  write(15,*) ENERGYBOXING, ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX
 
   write(15,*) 'use_binary_for_wavefield_dumps'
   write(15,*) use_binary_for_wavefield_dumps
