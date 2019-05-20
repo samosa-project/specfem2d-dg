@@ -234,7 +234,13 @@ function fh = plot_time_v_dist(times, values, distances, reducedTime, figureTitl
   while (scalez ~= 0)
     close(fign);
     fh = figure(fign);
-    tight_subplot(1, 1, 0.005, 0.05, [0.05, 0.01]); % not mandatory, but prettier
+    
+    topscale = 1;
+    if(isa(figureTitle,'cell'))
+      topscale = numel(figureTitle);
+    end
+    tight_subplot(1, 1, 0.005, [0.08,topscale*0.03], [0.05, 0.01]); % not mandatory, but prettier
+    
     set(fh,'units','normalized','outerposition',[0 0 1 1])
     if (scalez ~= 0 && scalez ~= - 1)
       dist_over_ptp = scalez;

@@ -16,10 +16,18 @@ clear all;
 % close all;
 clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 1.5); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+
+format compact;
+set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
+set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
+set(0, 'defaultTextFontSize', 18);
+set(0, 'defaultAxesFontSize', 16); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
+% set(0, 'DefaultLineLineWidth', 1.5); set(0, 'DefaultLineMarkerSize', 8);
+% set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+% set(0, 'DefaultTextInterpreter', 'latex');
+% set(0, 'DefaultLegendInterpreter', 'latex');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new');  % plot_total_energy
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone'); % plot_time_v_dist
@@ -33,12 +41,12 @@ outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
 subsample = 1;
 subsample_dt = 1e-4;
 
-compareEnergies = 1;
-compareStations = 0;
+compareEnergies = 0;
+compareStations = 1;
 
-basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e2; % factor by which multiply the absolute error between methods
+% basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e5; % factor by which multiply the absolute error between methods
 % basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
-% basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
+basename = 'LNSABC_WPS'; prefix='WPS'; distType_x0z1d2=2; errorFactor=1e2; % factor by which multiply the absolute error between methods
 
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_eps0p25']; suffixBu='$\varepsilon=0.25$';
 % bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25_q6_e1em4']; suffixBu='$\varepsilon=10^{-4}$';
@@ -66,12 +74,37 @@ OF=bufferRunOF; [xmM_Bu, zmM_Bu, ~] = readExampleFiles([OF,'input_parfile'], [OF
 OF=farFieldRunOF; [xmM_Fa, zmM_Fa, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
 % prepare information strings
 tit_La = ['$[',num2str(min(xmM_La)),', ',num2str(max(xmM_La)),']\times[',num2str(min(zmM_La)),', ',num2str(max(zmM_La)),']$'];
-tit_Bu = ['$[',num2str(min(xmM_Bu)),', ',num2str(max(xmM_Bu)),']\times[',num2str(min(zmM_Bu)),', ',num2str(max(zmM_Bu)),']$, Buffer=',num2str(LBUF),' [m], ',suffixBu];
-tit_Fa = ['$[',num2str(min(xmM_Fa)),', ',num2str(max(zmM_Fa)),']\times[',num2str(min(zmM_Fa)),', ',num2str(max(zmM_Fa)),']$'];
+tit_Bu = ['$[',num2str(min(xmM_Bu)),', ',num2str(max(xmM_Bu)),']\times[',num2str(min(zmM_Bu)),', ',num2str(max(zmM_Bu)),']$, buffer=',num2str(LBUF),' [m], ',suffixBu];
+tit_Fa = ['$[',num2str(min(xmM_Fa)),', ',num2str(max(xmM_Fa)),']\times[',num2str(min(zmM_Fa)),', ',num2str(max(zmM_Fa)),']$'];
 % tit_La = ['$z\in[',num2str(min(zmM_La)),', ',num2str(max(zmM_La)),']$'];
 % tit_Bu = ['$z\in[',num2str(min(zmM_Bu)),', ',num2str(max(zmM_Bu)),']$, Buffer=',num2str(LBUF),', ',suffixBu];
 % tit_Fa = ['$z\in[',num2str(min(zmM_Fa)),', ',num2str(max(zmM_Fa)),']$'];
-tit_all = {[LarRNam,'=[',tit_La,'], '],[BufRNam,'=[',tit_Bu,'], '],[FafRNam,'=[',tit_Fa,']']};
+% get energyboxes
+ENERGYBOX_La = [readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_XMIN', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_XMAX', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_ZMIN', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_ZMAX', 'float')];
+ENERGYBOX_Bu = [readExampleFiles_extractParam([bufferRunOF,'input_parfile'], 'ENERGYBOX_XMIN', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_XMAX', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_ZMIN', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_ZMAX', 'float')];
+ENERGYBOX_Fa = [readExampleFiles_extractParam([farFieldRunOF,'input_parfile'], 'ENERGYBOX_XMIN', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_XMAX', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_ZMIN', 'float'),readExampleFiles_extractParam([largeRunOF,'input_parfile'], 'ENERGYBOX_ZMAX', 'float')];
+if(not(all(ENERGYBOX_La==ENERGYBOX_Bu & ENERGYBOX_Bu==ENERGYBOX_Fa)))
+  error(['ENERGY BOXES WERE NOT THE SAME, ABORTING']);
+else
+  ENERGYBOX = ENERGYBOX_La;
+  globxmin=min([min(xmM_La),min(xmM_Bu),min(xmM_Fa)]);
+  globxmax=max([max(xmM_La),max(xmM_Bu),max(xmM_Fa)]);
+  globzmin=min([min(zmM_La),min(zmM_Bu),min(zmM_Fa)]);
+  globzmax=max([max(zmM_La),max(zmM_Bu),max(zmM_Fa)]);
+  if(ENERGYBOX(1)<globxmin)
+    ENERGYBOX(1)=globxmin;
+  end
+  if(ENERGYBOX(2)>globxmax)
+    ENERGYBOX(2)=globxmax;
+  end
+  if(ENERGYBOX(3)<globzmin)
+    ENERGYBOX(3)=globzmin;
+  end
+  if(ENERGYBOX(4)>globzmax)
+    ENERGYBOX(4)=globzmax;
+  end
+end
+tit_all = {[LarRNam,'=[',tit_La,'], ',FafRNam,'=[',tit_Fa,']'],[BufRNam,'=[',tit_Bu,'], '],['energy box: ',['$[',num2str(min(ENERGYBOX(1:2))),', ',num2str(max(ENERGYBOX(1:2))),']\times[',num2str(min(ENERGYBOX(3:4))),', ',num2str(max(ENERGYBOX(3:4))),']$']]};
 
 outputFigDir_wprefix=[outputDir,prefix,'_'];
 
@@ -87,9 +120,10 @@ if(compareEnergies)
 %   fPE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},1,0,tit_all);
 %   customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
   
-  outputFigPath=[outputFigDir_wprefix,'E'];
-  plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},4,1,tit_all);
-  customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
+  EEE_outputFigPath=[outputFigDir_wprefix,'E'];
+  fE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},4,1,tit_all,[],{'-','--',':'});
+  customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});
+  disp(["figure(fE.Number); customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});"]);
 end
 
 % plot time series
@@ -137,7 +171,7 @@ if(compareStations)
   end
   
   % actual plot
-  outputFigPath=[outputFigDir_wprefix,'time_series'];
+  TS_outputFigPath=[outputFigDir_wprefix,'time_series'];
   nRepetitions = size(Zamp, 1)/nbstats;
   switch(distType_x0z1d2)
     case 0
@@ -158,7 +192,8 @@ if(compareStations)
   set(cax.Children(1:nRepetitions*(nbstats-1)),'handlevisibility','off');
   legend('location','northwest');
   prettyAxes(fTvD);
-  customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
+  customSaveFig(TS_outputFigPath, {'fig', 'jpg', 'eps'});
+  disp(["figure(fTvD.Number); customSaveFig(TS_outputFigPath, {'fig', 'jpg', 'eps'});"]);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

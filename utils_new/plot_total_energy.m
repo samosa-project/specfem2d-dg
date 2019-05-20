@@ -3,25 +3,26 @@
 % Notes:         TODO.
 %
 % Usage:
-%   f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logscale, titlefig, outputfigpath)
+%   f = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_4sbpltKP, logscale, titlefig, outputfigpath)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
-function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP, logscale, titlefig, outputfigpath)
+function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_4sbpltKP, logscale, titlefig, outputfigpath, linestyles)
   addpath('/home/l.martire/Documents/work/mars/mars_is'); % prettyAxes
+  energyfilename='energy.dat';
   if(not(exist('OFDIRs')))
     OFDIRsProvided=0;
   else
     OFDIRsProvided=1;
   end
-  if(not(exist('swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP')))
-    swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP = 0;
+  if(not(exist('swtchE_0K_1P_2T_4sbpltKP')))
+    swtchE_0K_1P_2T_4sbpltKP = 0;
   else
-    if(not(ismember(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP,[0,1,2,4])))
-      disp(['[',mfilename,', INFO] swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP not in [0,1,2,4], setting it to 0 (kinetic energy).']);
-      swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP = 0;
+    if(not(ismember(swtchE_0K_1P_2T_4sbpltKP,[0,1,2,4])))
+      disp(['[',mfilename,', INFO] swtchE_0K_1P_2T_4sbpltKP not in [0,1,2,4], setting it to 0 (kinetic energy).']);
+      swtchE_0K_1P_2T_4sbpltKP = 0;
     end
   end
   if(not(exist('logscale')))
@@ -32,27 +33,33 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
   else
     titlefig_provided = 1;
   end
-  if(not(exist('outputfigpath')))
+  if(not(exist('outputfigpath')) | strcmp(outputfigpath,'no') | isempty(outputfigpath))
     outputfigpath_provided=0;
   else
     outputfigpath_provided=1;
   end
-  
-  % clear all;
-  % clc;
-  format compact;
-  set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
-  set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-  set(0, 'defaultTextFontSize', 18);
-  set(0, 'defaultAxesFontSize', 16); % Default at 10.
-  set(0, 'DefaultTextInterpreter', 'latex');
-  set(0, 'DefaultLegendInterpreter', 'latex');
-
-  energyfilename='energy.dat';
+  if(not(exist('linestyles')))
+    linestyles_provided = 0;
+  else
+    linestyles_provided = 1;
+    if(not(iscell(linestyles)))
+      error(['linestyles input must be a cell array']);
+    end
+    if(not(numel(OFDIRs)==numel(linestyles)))
+      error(['linestyles input must be the same length as OFDIRs input']);
+    end
+  end
   
   if(OFDIRsProvided)
     % nothing
   else
+    format compact;
+    set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
+    set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
+    set(0, 'defaultTextFontSize', 18);
+    set(0, 'defaultAxesFontSize', 16); % Default at 10.
+    set(0, 'DefaultTextInterpreter', 'latex');
+    set(0, 'DefaultLegendInterpreter', 'latex');
     % get OFDIRs
     many0orone1=-1;
     while(not(numel(many0orone1) & ismember(many0orone1,[0,1])))
@@ -68,7 +75,7 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
       OFDIRs{1} = in;
     else
       in='-1';
-      i=1;
+      of_id=1;
       stop=0;
       while(not(stop))
         in = input(['[',mfilename,'] Next folder containing the energy.dat file (or 0 to stop)? > '], 's');
@@ -78,16 +85,21 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
             continue;
           end
         end
-        OFDIRs{i}=in;
-        i=i+1;
+        OFDIRs{of_id}=in;
+        of_id=of_id+1;
       end
       OFDIRs
     end
   end
-
+  
+  if(not(linestyles_provided))
+    for of=1:numel(OFDIRs)
+      linestyles{of} = '-';
+    end
+  end
   
   % prepare labels
-  switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
+  switch(swtchE_0K_1P_2T_4sbpltKP)
     case 0
       titlefig_local='Simulation Kinetic Energy';
       ylab = 'kinetic energy [J]';
@@ -97,25 +109,23 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
     case 2
       titlefig_local='Simulation Total (K+P) Energy';
       ylab = 'total energy [J]';
-    case {3,4}
+%     case {3,4}
+    case 4
       titlefig_local='Simulation Energies';
       ylabL_base = ['potential energy [J]'];
       ylabR_base = ['kinetic energy [J]'];
-      if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
+      if(swtchE_0K_1P_2T_4sbpltKP==3)
         LS_left='-';
         LS_right='--';
         prefixL = LS_left;
         prefixR = LS_right;
         ylabL_base = [ylabL_base, ' (\texttt{',prefixL,'})'];
         ylabR_base = [ylabR_base, ' (\texttt{',prefixR,'})'];
-      else
-        LS_left='-';
-        LS_right='-';
       end
       ylabL=ylabL_base;
       ylabR=ylabR_base;
     otherwise
-      error('Set swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP only to either 0, 1, 2, or 3.');
+      error('Set swtchE_0K_1P_2T_4sbpltKP only to either 0, 1, 2, or 4.');
   end
 
   if(not(titlefig_provided))
@@ -127,6 +137,7 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
   for i=1:numel(OFDIRs)
     % set loading directory, and check it
     OFDIR = OFDIRs{i};
+    localLS = linestyles{i};
     if(not(strcmp(OFDIR(end),'/'))); OFDIR=[OFDIR,'/']; end;
     if(not(exist(OFDIR)==7))
       disp(['[',mfilename,', INFO] ''',OFDIR,''' is not a directory. Skipping.']);
@@ -161,97 +172,101 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
     end
     
     % define what goes where
-    switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
+    switch(swtchE_0K_1P_2T_4sbpltKP)
       case 0
         y=ke;
       case 1
         y=pe;
       case 2
         y=te;
-      case {3,4}
-        yL = pe;
-        yR = ke;
+      case 4
+        y_top = pe;
+        y_bottom = ke;
       otherwise
         error('ddddd');
     end
     
     % do the plot
-    switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
-      case {3,4}
+    switch(swtchE_0K_1P_2T_4sbpltKP)
+%       case {3,4}
+      case 4
         % classical but two yaxis or two subplots
         
-        if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==4)
+%         if(swtchE_0K_1P_2T_4sbpltKP==4)
           % prepare axes for subplots
-          if(i==1)
-            topscale = 1;
-            if(isa(titlefig,'cell'))
-              topscale = numel(titlefig);
-            end
-            axxx = tight_subplot(2, 1, 0.03, [0.07,topscale*0.03], [0.15, 0.011]); % not mandatory, but prettier
+        if(i==1)
+          topscale = 1;
+          if(isa(titlefig,'cell'))
+            topscale = numel(titlefig);
+          end
+          axxx = tight_subplot(2, 1, 0.03, [0.07,topscale*0.03], [0.15, 0.011]); % not mandatory, but prettier
 %           else
 %             f=gcf; axxx = f.Children;
-          end
         end
+%         end
         
         % switch to good axis
-        if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
-          yyaxis left;
-        else
-          axes(axxx(1));
-        end
+%         if(swtchE_0K_1P_2T_4sbpltKP==3)
+%           yyaxis left;
+%         else
+        axes(axxx(1));
+%         end
         % plot
-        if(logscale && peak2peak(yL)>0)
-          if(sign(min(yL))==sign(max(yL)))
+        if(logscale && peak2peak(y_top)>0)
+          if(sign(min(y_top))==sign(max(y_top)))
             % if no change of sign, plot normal log
-            semilogy(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
-            y=yL; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yL(sel)),max(yL(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax);
+            semilogy(t, y_top, 'displayname',simulationname, 'linestyle', localLS); hold on;
+            y=y_top; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(y_top(sel)),max(y_top(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax);
           else
             % if change of sign, symlog (https://fr.mathworks.com/matlabcentral/fileexchange/57902-symlog)
-            plot(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+            plot(t, y_top, 'displayname',simulationname, 'linestyle', localLS); hold on;
 %             autoSymLog(axxx(1), yL); ylabL={ylabL_base,'(symlog scale)'};
           end
         else
-          plot(t, yL, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+          plot(t, y_top, 'displayname',simulationname, 'linestyle', localLS); hold on;
         end
-        ylabel(ylabL); set(gca, 'ycolor', 'k');
+        ylabel(ylabL);
+%         set(gca, 'ycolor', 'k');
         % switch to good axis
-        if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==3)
-          yyaxis right;
-        else
-          set(axxx(1),'xticklabels',[]);
-          axes(axxx(2));
-        end
+%         if(swtchE_0K_1P_2T_4sbpltKP==3)
+%           yyaxis right;
+%         else
+        set(axxx(1),'xticklabels',[]);
+        axes(axxx(2));
+%         end
         % plot
-        if(logscale && peak2peak(yR)>0)
-          if(sign(min(yL))==sign(max(yL)))
-            semilogy(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
-            y=yR; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(yR(sel)),max(yR(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax);
+        if(logscale && peak2peak(y_bottom)>0)
+          if(sign(min(y_top))==sign(max(y_top)))
+            semilogy(t, y_bottom, 'displayname',simulationname, 'linestyle', localLS); hold on;
+            y=y_bottom; sel=(y>0 & (not(max(t)>0)|(t>=0))); cMinMax=[min(y_bottom(sel)),max(y_bottom(sel))]; ylim(niceLogYLim(cMinMax)); sprintf('%.1e ',cMinMax);
           else
             % if change of sign, symlog (https://fr.mathworks.com/matlabcentral/fileexchange/57902-symlog)
-            plot(t, yR, 'displayname',simulationname, 'linestyle', LS_left); hold on;
+            plot(t, y_bottom, 'displayname',simulationname, 'linestyle', localLS); hold on;
 %             autoSymLog(axxx(2), yR); ylabR={ylabR_base,'(symlog scale)'};
           end
         else
-          plot(t, yR, 'displayname',simulationname, 'linestyle', LS_right); hold on;
+          plot(t, y_bottom, 'displayname',simulationname, 'linestyle', localLS); hold on;
         end
-        ylabel(ylabR); set(gca,'ycolor','k');
+        ylabel(ylabR);
+%         set(gca,'ycolor','k');
         % link axes t
         linkaxes(axxx, 'x');
         
       case {0,1,2}
         % if classical plot
         if(logscale && peak2peak(y)>0)
-          semilogy(t, y, 'displayname',simulationname); hold on;
+          semilogy(t, y, 'displayname',simulationname, 'linestyle', localLS); hold on;
         else
-          plot(t, y, 'displayname',simulationname); hold on;
+          plot(t, y, 'displayname',simulationname, 'linestyle', localLS); hold on;
         end
+      
       otherwise
-        error('kuk');
+        error('swtchE_0K_1P_2T_4sbpltKP has wrong value');
     end
   end
   
   xlabel('time $t$ [s]');
-  switch(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP)
+  switch(swtchE_0K_1P_2T_4sbpltKP)
     case {0,1,2}
       ylabel(ylab);
   end
@@ -270,12 +285,12 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
   xlim([min(t(sel)),max(t(sel))]);
 %   if(logscale)
 %     % create nice logarithmic ylims
-%     if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP~=3)
+%     if(swtchE_0K_1P_2T_4sbpltKP~=3)
 %       ylim(niceLogYLim([min(y(sel)),max(y(sel))]));
 %     end
 %   end
 
-  if(swtchE_0K_1P_2T_3yyaxisKP_4sbpltKP==4)
+  if(swtchE_0K_1P_2T_4sbpltKP==4)
     axes(axxx(1));
 %     niceFormatForYTickLabels(gcf);
   end

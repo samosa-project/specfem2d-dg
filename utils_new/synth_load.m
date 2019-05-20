@@ -45,8 +45,14 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % fig_title = strcat('Mars InSIGHT Impact');
 % rootd = strcat(SPCFMEXloc,'mars_insight_impact/'); OFd = strcat(rootd, 'OUTPUT_FILES_1691823_reachedtimelimit/'); subsample = 1; wanted_dt = 0.01;
 
-fig_title = strcat('Mars InSIGHT Guided');
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1689947_z12k_hardsoil_goodstations/'); subsample = 1; wanted_dt = 0.01;
+% Aarhus
+% /home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/aarhus/OUTPUT_FILES_172328
+fig_title = strcat('Aarhus');
+% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172328_900hz/');
+rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172340_2000hz/');
+
+% fig_title = strcat('Mars InSIGHT Guided');
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1689947_z12k_hardsoil_goodstations/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
