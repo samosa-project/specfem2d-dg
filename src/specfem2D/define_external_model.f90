@@ -1820,25 +1820,26 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       write(*,*) "********************************"
     endif
   endif
-  if(.not. ADD_PERIODIC_CONDITIONS) then
-    do i=1, nlines_model
-      if(myrank==0 .and. abs(z_model(i))==0. .and. abs(wx_model(i))>0.) then
-        write(*,*) "********************************"
-        write(*,*) "*            ERROR             *"
-        write(*,*) "********************************"
-        write(*,*) "* In the loaded model, wind is *"
-        write(*,*) "* non-zero at altitude 0. This *"
-        write(*,*) "* is not physically            *"
-        write(*,*) "* acceptable. Activating       *"
-        write(*,*) "* horizontal periodic boundary *"
-        write(*,*) "* conditions can make this     *"
-        write(*,*) "* work, but this will remain   *"
-        write(*,*) "* questionnable.               *"
-        write(*,*) "********************************"
-        stop
-      endif
-    enddo
-  endif
+
+  !if(.not. ADD_PERIODIC_CONDITIONS) then
+  !  do i=1, nlines_model
+  !    if(myrank==0 .and. abs(z_model(i))==0. .and. abs(wx_model(i))>0.) then
+  !      write(*,*) "********************************"
+  !      write(*,*) "*            ERROR             *"
+  !      write(*,*) "********************************"
+  !      write(*,*) "* In the loaded model, wind is *"
+  !      write(*,*) "* non-zero at altitude 0. This *"
+  !      write(*,*) "* is not physically            *"
+  !      write(*,*) "* acceptable. Activating       *"
+  !      write(*,*) "* horizontal periodic boundary *"
+  !      write(*,*) "* conditions can make this     *"
+  !      write(*,*) "* work, but this will remain   *"
+  !      write(*,*) "* questionnable.               *"
+  !      write(*,*) "********************************"
+  !      stop
+  !    endif
+  !  enddo
+  !endif
   if(minval(density_model)<=ZERO) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
