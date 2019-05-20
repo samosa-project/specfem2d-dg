@@ -60,7 +60,8 @@
   ! for the JPEG library
   character(len=1), dimension(3,NX_IMAGE_color,NZ_IMAGE_color) :: JPEG_raw_image
   integer :: ix, iy, R, G, B
-  double precision :: amplitude_max, normalized_value, vpmin, vpmax, x1
+  double precision :: amplitude_max, normalized_value, vpmin, vpmax,vpmin_acous, vpmax_acous,&
+        vpmin_elastic, vpmax_elastic, x1, coef_acous_blue
   character(len=100) :: filename
   logical :: do_warning
   
@@ -147,14 +148,21 @@
   endif
   do_warning = .false.
 
-  vpmin = HUGEVAL
-  vpmax = TINYVAL
+  vpmin_elastic = HUGEVAL
+  vpmax_elastic = TINYVAL
+  vpmin_acous = HUGEVAL
+  vpmax_acous = TINYVAL
   do iy = 1, NZ_IMAGE_color
     do ix = 1, NX_IMAGE_color
 ! negative values in image_color_vp_display are a flag indicating a water layer to color in light blue later
       if (iglob_image_color(ix, iy) > -1 .and. image_color_vp_display(ix, iy) >= 0) then
-        vpmin = min(vpmin, image_color_vp_display(ix, iy))
-        vpmax = max(vpmax, image_color_vp_display(ix, iy))
+        if(this_ij_image_acous(ix, iy)) then
+        vpmin_acous = min(vpmin_acous, image_color_vp_display(ix, iy))
+        vpmax_acous = max(vpmax_acous, image_color_vp_display(ix, iy))
+        else
+        vpmin_elastic = min(vpmin_elastic, image_color_vp_display(ix, iy))
+        vpmax_elastic = max(vpmax_elastic, image_color_vp_display(ix, iy))
+        endif
       endif
     enddo
   enddo
@@ -162,12 +170,24 @@
 ! in the image format, the image starts in the upper-left corner
   do iy = NZ_IMAGE_color, 1, -1
     do ix = 1, NX_IMAGE_color
+    
+      coef_acous_blue = 0.
       if(this_ij_image_acous(ix, iy)) then
+      
+        coef_acous_blue = 50
+      
+        vpmin = vpmin_acous
+        vpmax = vpmax_acous
+      
         amplitude_max = amplitude_max_var(1)
         ! Trick to avoid very small amplitudes
         if(abs(image_color_data(ix, iy)) < TINYVAL_DG) image_color_data(ix, iy) = 0.
         !WRITE(*,*) "acous ix/iy", ix, iy, amplitude_max
       else
+      
+        vpmin = vpmin_elastic
+        vpmax = vpmax_elastic
+      
         amplitude_max = amplitude_max_var(2)
        ! WRITE(*,*) "elas ix/iy", ix, iy, amplitude_max
        ! Trick to avoid very small amplitudes
@@ -201,7 +221,7 @@
         if (R < 0) R = 0
         if (R > 255) R = 255
         G = R
-        B = R
+        B = R + coef_acous_blue
 ! negative values in image_color_vp_display are a flag indicating a water layer to color in light blue
         if (image_color_vp_display(ix, iy) < 0) then
 ! use light blue to display water
