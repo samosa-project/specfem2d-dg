@@ -755,6 +755,11 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
     ! Leave everything unchanged and leave early.
     return
   endif ! Endif on abs(z).
+  
+  ! Scale using source file factor, from first source.
+  ! TODO: a dedicated parameter in parfile.
+  forced_SF = factor(1) * forced_SF
+  
 end subroutine forcing_DG
 
 ! ------------------------------------------------------------ !
