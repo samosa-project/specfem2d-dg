@@ -61,7 +61,8 @@
                          rmemory_dux_dx_prime,rmemory_dux_dz_prime,rmemory_duz_dx_prime,rmemory_duz_dz_prime, &
                          rmemory_displ_elastic_LDDRK, &
                          rmemory_dux_dx_LDDRK,rmemory_dux_dz_LDDRK,rmemory_duz_dx_LDDRK,&
-                         ispec_is_acoustic,time_stepping_scheme
+                         ispec_is_acoustic,time_stepping_scheme, &
+                         sigma_elastic
 
   ! PML arrays
   use specfem_par, only: nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
@@ -141,6 +142,8 @@
 
   ! temporary RK4 variable
   real(kind=CUSTOM_REAL) :: weight_rk
+  
+  sigma_elastic = 0.
   
   !WRITE(*,*) "VELOC, ELAS", maxval(abs(displ_elastic)), maxval(abs(veloc_elastic))
 
@@ -980,6 +983,12 @@
               sigma_zz = c13*dux_dxl + c33*duz_dzl + c35*(duz_dxl + dux_dzl)
               sigma_xz = c15*dux_dxl + c35*duz_dzl + c55*(duz_dxl + dux_dzl)
               sigma_zx = sigma_xz
+              
+              sigma_elastic(1,ibool(i,j,ispec)) = sigma_xx
+              sigma_elastic(2,ibool(i,j,ispec)) = sigma_xz
+              sigma_elastic(3,ibool(i,j,ispec)) = sigma_zx
+              sigma_elastic(4,ibool(i,j,ispec)) = sigma_zz
+              
             endif
           endif
 

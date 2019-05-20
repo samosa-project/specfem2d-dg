@@ -1057,7 +1057,8 @@ end subroutine prepare_external_forcing
                          veloc_vector_acoustic_DG_coupling, MPI_transfer_iface,&
                          ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
                          ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF,&
-                         mesh_xmin, mesh_xmax
+                         mesh_xmin, mesh_xmax, sigma_elastic, vpext, vsext, rhoext, &
+                         assign_external_model, kmato, poroelastcoef, density, surface_density, sound_velocity
                          
   implicit none
   
@@ -1088,11 +1089,15 @@ end subroutine prepare_external_forcing
   integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
   real(kind=CUSTOM_REAL), dimension(2, 2) :: trans_boundary
   
+  real(kind=CUSTOM_REAL), dimension(4) :: sumtau, invsumtau, tauplus, tauac
+  real(kind=CUSTOM_REAL), dimension(2) :: v_interface
+
   ! Parameters
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALF = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: FOUR_THIRDS = 4._CUSTOM_REAL/3._CUSTOM_REAL
   
   real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
   
@@ -1100,7 +1105,8 @@ end subroutine prepare_external_forcing
   real(kind=CUSTOM_REAL) :: p_b, rho_b, s_b, rho_inf, v_b_x, v_b_z, c_b, un_b, &
                             rlambda_max, rlambda_min, c_in, c_inf, un_in, un_inf, &
                             deltaZ1, deltaZ2star, p_n, a_n, alpha0
-  
+  real(kind=CUSTOM_REAL) :: rhol, cpl, csl, lambdal_unrelaxed_elastic, mul_unrelaxed_elastic, kappal, cpal, rhoal
+
   iglobM = ibool_DG(i, j, ispec)
   
   if(.false.) weight=1. ! Horrible hack to get rid of the warning "Warning: Unused dummy argument 'weight'". I'm sorry. TODO: Remove weight from arguments in all calls to compute_interface_unknowns.
@@ -1267,11 +1273,64 @@ end subroutine prepare_external_forcing
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
-      !rho_DG_P = rho_DG_iM
+      rho_DG_P = rho_DG_iM
+      
+      ! Elastic parameters
+      lambdal_unrelaxed_elastic = poroelastcoef(1,1,kmato(ispec_el))
+      mul_unrelaxed_elastic = poroelastcoef(2,1,kmato(ispec_el))
+      rhol  = density(1,kmato(ispec_el))
+      kappal  = lambdal_unrelaxed_elastic + mul_unrelaxed_elastic
+
+      cpl = sqrt((kappal + FOUR_THIRDS * mul_unrelaxed_elastic)/rhol) ! Check kappa
+      csl = sqrt(mul_unrelaxed_elastic/rhol)
+      
+      rhoal = surface_density
+      cpal  = sound_velocity
+      if(assign_external_model) then
+        rhol = rhoext(i_el,j_el,ispec_el)
+        cpl  = vpext(i_el,j_el,ispec_el)
+        csl  = vsext(i_el,j_el,ispec_el)
+        
+        rhoal = rhoext(i,j,ispec)
+        cpal  = vpext(i,j,ispec)
+      endif
+      
+      ! From Terrana (2017) eq. 56
+      ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+      tauac(1) = nx**2
+      tauac(2) = nz*nx
+      tauac(3) = nz*nx
+      tauac(4) = nz**2
+      tauac = rhoal*cpal*tauac
+      tauplus(1) = cpl*nx**2 + csl*nz**2
+      tauplus(2) = (cpl - csl)*nx*nz
+      tauplus(3) = (cpl - csl)*nx*nz
+      tauplus(4) = csl*nx**2 + cpl*nz**2
+      
+      tauplus = rhol*tauplus
+      sumtau    = tauplus + tauac
+      invsumtau(1) = sumtau(4) 
+      invsumtau(2) = -sumtau(2) 
+      invsumtau(3) = -sumtau(3) 
+      invsumtau(4) = sumtau(1) 
+      invsumtau    = invsumtau/(sumtau(1)*sumtau(4) - sumtau(2)*sumtau(3))
+      
+      v_interface(1) = tauac(1)*veloc_x_DG_iM + tauac(2)*veloc_z_DG_iM &
+        + tauplus(1)*veloc_elastic(1, iglob) + tauplus(2)*veloc_elastic(2, iglob) &
+        - (p_DG_iM- p_DG_init(ibool_DG(i,j,ispec)))*nx &
+        + sigma_elastic(1,iglob)*nx + sigma_elastic(2,iglob)*nz
+        
+      v_interface(2) = tauac(3)*veloc_x_DG_iM + tauac(4)*veloc_z_DG_iM &
+        + tauplus(3)*veloc_elastic(1, iglob) + tauplus(4)*veloc_elastic(2, iglob) &
+        - (p_DG_iM- p_DG_init(ibool_DG(i,j,ispec)))*nz &
+        + sigma_elastic(3,iglob)*nx + sigma_elastic(4,iglob)*nz
+        
+      v_interface(1) = v_interface(1)*invsumtau(1) + v_interface(2)*invsumtau(2)
+      v_interface(2) = v_interface(1)*invsumtau(3) + v_interface(2)*invsumtau(4)
       
       ! Get elastic medium velocities.
-      veloc_x = veloc_elastic(1, iglob)
-      veloc_z = veloc_elastic(2, iglob)
+      veloc_x = 0*veloc_elastic(1, iglob) + 1*v_interface(1)
+      veloc_z = 0*veloc_elastic(2, iglob) + 1*v_interface(2)
       ! Tangential vector. It is assumed that we only have the elastic media under the DG medium, hence we always have nz>=0.
       tx = -nz
       tz =  nx
@@ -1320,8 +1379,13 @@ end subroutine prepare_external_forcing
         veloc_z_DG_P = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
       endif
       
+      !veloc_x_DG_P = 0*veloc_elastic(1, iglob) + 1*v_interface(1)
+      !veloc_z_DG_P = 0*veloc_elastic(2, iglob) + 1*v_interface(2)
+      
       ! No stress continuity.
       !p_DG_P = p_DG_iM
+      p_DG_P = p_DG_iM + 0*( (tauac(1)*(veloc_x_DG_iM - veloc_x) + tauac(2)*(veloc_z_DG_iM - veloc_z)) * nx  &
+        + (tauac(3)*(veloc_x_DG_iM - veloc_x) + tauac(4)*(veloc_z_DG_iM - veloc_z)) * nz )
 
       ! Deduce energy.
       E_DG_P = p_DG_P/(gammaext_DG(iglobM) - 1.) + HALF*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )

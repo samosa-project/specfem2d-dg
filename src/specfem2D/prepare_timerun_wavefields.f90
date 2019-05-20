@@ -77,7 +77,8 @@
   
   ! MODIF DG
   allocate(resu_accel_x(nglob_elastic), resu_accel_z(nglob_elastic), &
-        resu_veloc_x(nglob_elastic), resu_veloc_z(nglob_elastic))
+        resu_veloc_x(nglob_elastic), resu_veloc_z(nglob_elastic), &
+        sigma_elastic(4,nglob_elastic))
 
   ! PML
   allocate(displ_elastic_old(NDIM,nglob_elastic),stat=ier)
