@@ -35,9 +35,9 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 1250
+NSTEP                           = 2200
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 4.8d-4
+DT                              = 2.75e-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -112,8 +112,8 @@ surface_density                 = 1.4            # $\rho_0$. Unit: kg.m^{-3}. If
 sound_velocity                  = 340.0          # $c$. Unit: m.s^{-1}.
 wind                            = 102            # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 0.0            # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
-dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
-thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
+dynamic_viscosity               = 1.25e-5        # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
+thermal_conductivity            = 0.025          # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
 tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.
 tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. Unit: s.
 constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 1005 for dry air between -40 and 40 °C.
@@ -123,7 +123,7 @@ constant_v                      = 717.3447537473 # $c_v$, isochoric specific hea
 id_region_DG                    = 1
 
 # Fluid-solid interface
-coord_interface                 = -155.0            # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
+coord_interface                 = -150.0            # Only used if USE_ISOTHERMAL_MODEL==.true. or if MODEL=='external'. z-coordinate of the fluid-solid interface, used to compute raw altitude.
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
@@ -345,10 +345,10 @@ interfacesfile                  = ../interfaces_input
 # Geometry of the model       #
 #-----------------------------#
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
-# for this windy case, we need to have xmax=xmin*(c+w)/(c-w)
-xmin                            = -108.0d0
+# for this windy case, we need to have dx < (c-v)/(f0*np) = (340-102)/(75*2.5) = 1.26
+xmin                            = -120.0d0 # ensure t_reflection > t_max: (2L-|xmininterest|)/(c-w)>t_max: xmin>.5*.6*(340-102)+44=115.4
 xmax                            =  200.0d0
-nx                              =  200
+nx                              =  255
 
 # Absorbing boundary parameters (to be used with PML_BOUNDARY_CONDITIONS or STACEY_ABSORBING_CONDITIONS above).
 absorbbottom                    = .false.
@@ -363,10 +363,12 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 # mesh.                       #
 #-----------------------------#
 # Number of regions.
-nbregions                       = 1
+nbregions                       = 3
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 200 1 155 1
+1 255   1  40 1
+1 255  41 110 1
+1 255 111 150 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -383,6 +385,11 @@ output_grid_Gnuplot             = .false.
 output_grid_ASCII               = .false.
 # Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .true.
+# For acoustic domains only (to generalise it to the other domains, edit 'compute_energy.f90'). Restrict energy integration to a box defined below. If all set to 0., does nothing and integrates over whole domain (as classically done). Nonsense cannot happen (ENERGYBOX_ZMIN>ENERGYBOX_ZMAX or whatever will stop program). If limit is set outside of domain (e.g. ENERGYBOX_ZMAX >= mesh_zmax), won't cut anything. See 'compute_energy.f90'.
+ENERGYBOX_XMIN = -44.# stop @ xmin+buffer (in buffer run, should have no effect)
+ENERGYBOX_XMAX = +90 # stop @ xmax-buffer (in buffer run, should have no effect)
+ENERGYBOX_ZMIN = -70.# stop @ zmin+buffer (in buffer run, should have no effect)
+ENERGYBOX_ZMAX = +70.# stop @ zmax-buffer (in buffer run, should have no effect)
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -405,7 +412,7 @@ cutsnaps                        = 1.
 output_color_image              = .true.         # Draw JPEG color snapshot?
 imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure 11=? 12=? 13=? 14=? 15=? 16=?
                                                  # DG display: 1=veloc_Vx 2=veloc_Vz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz
-factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
+factor_subsample_image          = 1.5d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
 CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5d0          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
