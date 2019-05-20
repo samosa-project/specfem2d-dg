@@ -1531,7 +1531,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         nspec,coord,ibool,myrank,&
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,&
         USE_DISCONTINUOUS_METHOD,deltat
   
   implicit none
@@ -2116,6 +2116,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   enddo ! Enddo on ispec.
   
   call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile.
+  !call define_external_model_PREM()
   
   if(myrank==0) then
     write(*,*) "********************************"
@@ -2214,3 +2215,92 @@ subroutine external_DG_update_elastic_from_parfile()
     endif  ! Endif on ispec_is_elastic.
   enddo ! Enddo on ispec.
 end subroutine external_DG_update_elastic_from_parfile
+
+! ------------
+
+   subroutine define_external_model_PREM()
+
+  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
+  use specfem_par,only: poroelastcoef,density,kmato, ispec_is_elastic, &
+        coord,ibool, rhoext,vpext,vsext,QKappa_attenuationext,Qmu_attenuationext, &
+        c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,nspec
+
+  implicit none
+
+!--------------------------------------------------------------------------------------------------
+!
+!          Model is either test one or being based on the Nrl_MSISE2000 atmosphere model
+!          ----------------------------------------------------------
+
+! 1D model:
+!
+! The 1D model will be used to create a tabular model of atmosphere
+
+!--------------------------------------------------------------------------------------------------
+
+  integer, parameter :: NR_LAYER = 198
+  real(kind=CUSTOM_REAL), dimension(NR_LAYER) :: zz,rho_aux,vp_aux,vs_aux,Qkappa_aux,Qs_aux
+
+! number of layers in the model
+
+  integer :: i,j,ispec,iglob,k
+
+  double precision :: x,z
+  
+  open(10,file='./PREM.txt', form='formatted')
+
+  do i = 1,NR_LAYER
+  read(10,*) zz(i),rho_aux(i),vp_aux(i),vs_aux(i),Qkappa_aux(i),Qs_aux(i)
+  !WRITE(*,*) ">>>> z ", zz(i),rho_aux(i),vp_aux(i),vs_aux(i),Qkappa_aux(i),Qs_aux(i)
+  enddo
+  close(10)
+  
+! loop on all the elements of the mesh, and inside each element loop on all the GLL points
+  do ispec = 1,nspec
+
+    ! Recover current element's max height along z to discriminate between regions
+    do j = 1,NGLLZ
+      do i = 1,NGLLX
+      
+       iglob = ibool(i,j,ispec)
+
+       x = coord(1,iglob)
+       z = -coord(2,iglob)
+       
+       k = 1
+       do while (zz(k) < z .AND. k < NR_LAYER)
+        k = k + 1
+       enddo
+
+   if(ispec_is_elastic(ispec)) then
+   
+        ! From external file
+        density(1,kmato(ispec)) = rho_aux(k)
+        rhoext(i,j,ispec)          = rho_aux(k)
+        vpext(i,j,ispec)      = vp_aux(k)
+        vsext(i,j,ispec)      = vs_aux(k)
+        QKappa_attenuationext(i,j,ispec) = Qkappa_aux(k)
+        Qmu_attenuationext(i,j,ispec)    = Qs_aux(k)
+        
+        poroelastcoef(3,1,kmato(ispec)) = rhoext(i,j,ispec) * vpext(i,j,ispec) * vpext(i,j,ispec)
+        poroelastcoef(2,1,kmato(ispec)) =  rhoext(i,j,ispec) * vsext(i,j,ispec) * vsext(i,j,ispec)
+
+     endif
+  
+      enddo
+    enddo
+    
+  enddo
+
+! no anisotropy
+  c11ext(:,:,:) = 0.d0
+  c13ext(:,:,:) = 0.d0
+  c15ext(:,:,:) = 0.d0
+  c33ext(:,:,:) = 0.d0
+  c35ext(:,:,:) = 0.d0
+  c55ext(:,:,:) = 0.d0
+  c12ext(:,:,:) = 0.d0
+  c23ext(:,:,:) = 0.d0
+  c25ext(:,:,:) = 0.d0
+
+  end subroutine define_external_model_PREM
