@@ -134,6 +134,8 @@ module specfem_par
   ! Gradients of temperature and velocities.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: T_DG
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: V_DG
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: drho_DG
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dEp_DG
   ! "Time derivatives" of the constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
   ! Variables to store numerical time scheme temporary results.
@@ -175,7 +177,7 @@ module specfem_par
   ! MPI: Transfers' buffers.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, buffer_DG_Vzz_P, &
-                                                          buffer_DG_Vzx_P, buffer_DG_Vxz_P, &
+                                                          buffer_DG_Vzx_P, buffer_DG_Vxz_P, buffer_DG_drho_P, buffer_DG_dEp_P, &
                                                           ! TEST
                                                           buffer_DG_gamma_P, buffer_DG_e1_P
   

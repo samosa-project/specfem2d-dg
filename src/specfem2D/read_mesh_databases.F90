@@ -843,7 +843,9 @@
              buffer_DG_Vxx_P(NGLLX*max_interface_size,ninterface), &
              buffer_DG_Vzz_P(NGLLX*max_interface_size,ninterface), &
              buffer_DG_Vzx_P(NGLLX*max_interface_size,ninterface), &
-             buffer_DG_Vxz_P(NGLLX*max_interface_size,ninterface),stat=ier)
+             buffer_DG_Vxz_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_drho_P(NGLLX*max_interface_size,ninterface), &
+             buffer_DG_dEp_P(NGLLX*max_interface_size,ninterface),stat=ier)
     if (ier /= 0) then
       ! Safeguard.
       stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."

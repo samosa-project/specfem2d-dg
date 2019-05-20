@@ -1248,7 +1248,7 @@ end subroutine prepare_external_forcing
       write(*,*) "********************************"
       stop
          
-    elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
+    elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0 .AND. abs(nx) < 1.) then ! nx < 1 to remove outer edges from coupling
       ! --------------------------- !
       ! ipoin == -1                 !
       !   (+) elastic coupling      !
@@ -1267,7 +1267,7 @@ end subroutine prepare_external_forcing
       call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                  veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
 
-      rho_DG_P = rho_DG_iM
+      !rho_DG_P = rho_DG_iM
       
       ! Get elastic medium velocities.
       veloc_x = veloc_elastic(1, iglob)
@@ -1277,9 +1277,9 @@ end subroutine prepare_external_forcing
       tz =  nx
       ! Get the normal velocity of the solid perturbation (normal continuity) and the tangential velocity of the fluid flow (free slip).
       normal_v     = (veloc_x*nx + veloc_z*nz)
-      tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
+      !tangential_v = veloc_x_DG_P*tx + veloc_z_DG_P*tz
       !normal_v     = -(veloc_x_DG_iM*nx + veloc_z_DG_iM*nz) + 2*(veloc_x*nx + veloc_z*nz) ! DEBUG
-      !tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz ! DEBUG
+      tangential_v = veloc_x_DG_iM*tx + veloc_z_DG_iM*tz ! DEBUG
       !tangential_v    = (veloc_x*tx + veloc_z*tz) ! DEBUG
       ! Set the matrix for the transformation from normal/tangential coordinates to mesh coordinates.
       trans_boundary(1, 1) =  tz
@@ -1321,7 +1321,7 @@ end subroutine prepare_external_forcing
       endif
       
       ! No stress continuity.
-      p_DG_P = p_DG_iM
+      !p_DG_P = p_DG_iM
 
       ! Deduce energy.
       E_DG_P = p_DG_P/(gammaext_DG(iglobM) - 1.) + HALF*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 )

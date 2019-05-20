@@ -116,6 +116,8 @@ subroutine compute_forces_acoustic_DG_main()
     ! Initialise auxiliary tensors.
     T_DG = ZEROl
     V_DG = ZEROl
+    drho_DG = ZEROl
+    dEp_DG = ZEROl
     
     call initial_condition_DG()
 
@@ -207,14 +209,16 @@ subroutine compute_forces_acoustic_DG_main()
       call assemble_MPI_vector_DG(V_DG(2, 2, :), buffer_DG_Vzz_P)
       call assemble_MPI_vector_DG(V_DG(1, 2, :), buffer_DG_Vxz_P)
       call assemble_MPI_vector_DG(V_DG(2, 1, :), buffer_DG_Vzx_P)
+      call assemble_MPI_vector_DG(drho_DG(:), buffer_DG_drho_P)
+      call assemble_MPI_vector_DG(dEp_DG(:), buffer_DG_dEp_P)
     endif
 #endif
-    call compute_viscous_tensors(T_DG, V_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
+    call compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
     ! TODO: If CONSTRAIN_HYDROSTATIC=.true. and muext=etaext=kappa_DG=0, only T_DG is needed. Consider computing only T_DG in that case.
   endif
   
   call compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
-                                  T_DG, V_DG, e1_DG, &
+                                  T_DG, V_DG, drho_DG, dEp_DG, e1_DG, &
                                   dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
                                   timelocal)
   
