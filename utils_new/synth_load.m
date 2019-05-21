@@ -47,9 +47,10 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 
 % Aarhus
 % /home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/aarhus/OUTPUT_FILES_172328
-fig_title = strcat('Aarhus');
+% fig_title = strcat('Aarhus');
 % rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172328_900hz/');
-rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172340_2000hz/');
+% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172340_2000hz/');
+% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_173861_2090hz/');
 
 % fig_title = strcat('Mars InSIGHT Guided');
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1689947_z12k_hardsoil_goodstations/'); subsample = 1; wanted_dt = 0.01;
@@ -170,7 +171,9 @@ rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172340_2
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
 % Tests.
-% fig_title = 'test';
+fig_title = 'test';
+% rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_FNS/'); fig_title = [fig_title,' FNS'];
+rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title = [fig_title,' LNS'];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                     %

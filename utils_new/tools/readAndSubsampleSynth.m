@@ -5,7 +5,13 @@
 % Usage:
 %   [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, unknown, extension, subsample, wanted_dt, outputSubsampleInfo)
 % with:
-%   outputSubsampleInfo
+%   OFd the directory containing the files,
+%   stationGlobalNumber the station global number,
+%   channel the channel (either BXX, BXZ, etc.),
+%   extension the extension (either semv, semd, etc.),
+%   subsample a switch (0 or 1) enabling or disabling subsampling,
+%   wanted_dt (only used if subsample==1) the wanted subsampled dt,
+%   outputSubsampleInfo a verbosity switch.
 % yields:
 %   TODO.
 
