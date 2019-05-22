@@ -94,6 +94,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   d0cntrb_dE     = ZEROcr
   
   ! Start by adding source terms.
+!  if(.false.) then ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   select case (TYPE_SOURCE_DG)
     case (1)
       call LNS_mass_source(outrhs_drho, outrhs_rho0dv, outrhs_dE, it, i_stage)
@@ -106,6 +107,23 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     case default
       stop "TYPE_SOURCE_DG not implemented."
   end select
+!  endif ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
+!    iglob = ibool_DG(i,j,ispec)
+!#define DEX 3.
+!#define DEZ 2.
+!    !outrhs_drho = 0.
+!    outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + (gammaext_DG(iglob)-1.)*DEX*PI&
+!                              *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec)))&
+!                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!    outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) + (gammaext_DG(iglob)-1.)*DEZ*PI&
+!                              *cos(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))&
+!                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!    !outrhs_dE = 0.
+!  enddo; enddo; enddo
+!  !! DO NOT FORGET TO UPDATE BOUNDARY TERMS BELOW.
+!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, LNS_MODPRINT) == 0) then
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
@@ -1039,6 +1057,24 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
           !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
           call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
+        
+        
+!        ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!#define DEX 3.
+!#define DEZ 2.
+!        exact_interface_flux = .true.
+!        out_drho_P = 0.
+!        out_dv_P = 0.*out_dv_P
+!        out_dE_P =   sin(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!                   + sin(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))
+!        out_dp_P = (gammaext_DG(iglobM)-1.)*out_dE_P
+!        out_rho0dv_P = out_drho_P*out_dv_P
+!        if(swCompdT) then
+!          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+!          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+!        endif
+!        !! DO NOT FORGET TO UPDATE SOURCE TERM ABOVE.
+!        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
 !      endif ! Endif on PML.
     endif ! Endif on ipoin.

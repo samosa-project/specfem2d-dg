@@ -190,7 +190,8 @@
               ! P-SV waves
               if (imagetype_wavefield_dumps == 4) then
                 ! by convention we use the 2. component of the array to store the pressure above
-                write(27,*) sngl(vector_field_display(2,iglob))
+                !write(27,*) sngl(vector_field_display(2,iglob)) ! does not work for some reason (this writes zeros)
+                write(27,*) sngl(vector_field_display(1,iglob))
               else
                 write(27,*) sngl(vector_field_display(1,iglob)),sngl(vector_field_display(2,iglob))
               endif

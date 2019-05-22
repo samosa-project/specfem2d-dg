@@ -84,7 +84,9 @@
     hprimebar_xx,hprime_xx,hprime_zz, &
     xix,xiz,gammax,gammaz,jacobian,ibool,coord, &
     e1,e11, &
-    USE_TRICK_FOR_BETTER_PRESSURE
+    USE_TRICK_FOR_BETTER_PRESSURE,&
+    USE_DISCONTINUOUS_METHOD, ibool_DG ! DG
+  use specfem_par_LNS,only: USE_LNS, LNS_dp ! DG LNS
 
   implicit none
 
@@ -536,7 +538,15 @@
 ! pressure = - Chi_dot_dot if acoustic element
   else if (ispec_is_acoustic(ispec)) then
     ! acoustic element
-
+    
+    if(USE_DISCONTINUOUS_METHOD) then
+      if(USE_LNS) then
+        pressure_element(i,j) = LNS_dp(ibool_DG(i,j,ispec))
+      else
+        stop 'pressure computation for DG FNS not tested'
+        !pressure_element(i,j) = 0.
+      endif
+    else
     if (USE_TRICK_FOR_BETTER_PRESSURE) then
       ! use a trick to increase accuracy of pressure seismograms in fluid (acoustic) elements:
       ! use the second derivative of the source for the source time function instead of the source itself,
@@ -561,6 +571,7 @@
           pressure_element(i,j) = - potential_dot_dot_acoustic(iglob)
         enddo
       enddo
+    endif
     endif
 
   else if (ispec_is_gravitoacoustic(ispec)) then
