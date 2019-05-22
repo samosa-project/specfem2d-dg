@@ -1,4 +1,7 @@
-function [X,Y,V] = readDumps(OFD, IT)
+function [X,Y,V] = readDumps(OFD, IT, verbose)
+  if(not(exist('verbose')))
+    verbose=0;
+  end
 %   OFD='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_manufactured/OUTPUT_FILES';
 %   IT = 2000;
 
@@ -31,14 +34,18 @@ function [X,Y,V] = readDumps(OFD, IT)
     elseif(regexp(wavefield_file_name,'grid_for_dumps'))
       % grid, load it;
       inp = importdata(wavefield_file_path);
-      disp(['grid  file ''',wavefield_file_name,''' needs to be loaded, will be, needs to be loaded, will be, contains [',num2str(size(inp)),'] values.']);
+      if(verbose)
+        disp(['grid  file ''',wavefield_file_name,''' needs to be loaded, will be, needs to be loaded, will be, contains [',num2str(size(inp)),'] values.']);
+      end
       XY = [XY; importdata(wavefield_file_path)];
 %       size(XY)
     else
   %     disp(['''',wavefield_file_name,''' is a value file, loading it.']);
       if( regexp(wavefield_file_name,['0',num2str(IT),'_']) | regexp(wavefield_file_name,['d',num2str(IT),'_']))
         inp = importdata(wavefield_file_path);
-        disp(['value file ''',wavefield_file_name,''' has right iteration ID, needs to be loaded, will be, contains [',num2str(size(inp)),'] values.']);
+        if(verbose)
+          disp(['value file ''',wavefield_file_name,''' has right iteration ID, needs to be loaded, will be, contains [',num2str(size(inp)),'] values.']);
+        end
         V = [V;inp];
 %         size(V)
       else
