@@ -47,7 +47,7 @@
     IMAIN,HUGEVAL,TINYVAL,NUM_ITER
 
   use specfem_par, only : AXISYM,is_on_the_axis,xiglj,ispec_is_acoustic,USE_TRICK_FOR_BETTER_PRESSURE&
-                          , ispec_is_elastic, ispec_is_acoustic_dg
+                          , ispec_is_elastic, ispec_is_acoustic_dg, USE_DISCONTINUOUS_METHOD
 
 #ifdef USE_MPI
   use mpi
@@ -356,8 +356,9 @@
       ! Thus, believe it.
       write(IMAIN,*) 'Station #',irec,": closest element match is [on CPU",myrank,"] & ", & ! DEBUG
                      '[el.?', ispec_is_elastic(ispec_selected_rec(irec)),'] ', & ! DEBUG
-                     '[ac.?', ispec_is_acoustic(ispec_selected_rec(irec)),'] ', & ! DEBUG
-                     '[ac. DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']' ! DEBUG
+                     '[ac.?', ispec_is_acoustic(ispec_selected_rec(irec)),'] ' ! DEBUG
+      if(USE_DISCONTINUOUS_METHOD) &
+        write(IMAIN,*) '[ac. DG?', ispec_is_acoustic_DG(ispec_selected_rec(irec)),']' ! DEBUG
     endif
   enddo
   !call flush_IMAIN()
