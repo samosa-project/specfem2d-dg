@@ -56,6 +56,7 @@ subroutine iterate_time()
   character(len=5) :: zone
   integer, dimension(8) :: time_values
   integer :: year,mon,day,hr,minutes,timestamp
+  logical :: any_ac_reduced, any_el_reduced, any_ac_DG_reduced
 
   if (myrank == 0) write(IMAIN,400) ! Write = T i m e  e v o l u t i o n  l o o p =
 !
@@ -85,11 +86,16 @@ subroutine iterate_time()
 
   call synchronize_all() ! Synchronize all processes to make sure everybody is ready to start time loop.
 
+  ! Reduce information on run to CPU 0.
+  call MPI_REDUCE(any_acoustic, any_ac_reduced, NPROC, MPI_LOGICAL, MPI_LOR, 0, MPI_COMM_WORLD, ier)
+  call MPI_REDUCE(any_acoustic_DG, any_ac_DG_reduced, NPROC, MPI_LOGICAL, MPI_LOR, 0, MPI_COMM_WORLD, ier)
+  call MPI_REDUCE(any_elastic, any_el_reduced, NPROC, MPI_LOGICAL, MPI_LOR, 0, MPI_COMM_WORLD, ier)
+  
   ! Information on run.
   if(myrank==0) then
-    if(any_acoustic) then
+    if(any_ac_reduced) then
       write(IMAIN,*) "Acoustic zones exist."
-      if(any_acoustic_DG) then
+      if(any_ac_DG_reduced) then
         write(IMAIN,*) " |-> using DG."
         if(USE_LNS) then
           write(IMAIN,*) "     |-> using LNS."
@@ -107,10 +113,29 @@ subroutine iterate_time()
       else
         write(IMAIN,*) " |-> using potential method."
       endif
-    endif
-    if(any_elastic) then
+    else ! Else on any_acoustic.
+      write(IMAIN,*) "No acoustic zone exist."
+      if(USE_DISCONTINUOUS_METHOD) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* This is a safeguard. No      *"
+        write(*,*) "* acoustic zone exist, but     *"
+        write(*,*) "* USE_DISCONTINUOUS_METHOD is  *"
+        write(*,*) "* set to '.true.'. Either set  *"
+        write(*,*) "* USE_DISCONTINUOUS_METHOD to  *"
+        write(*,*) "* .false. or configure your    *"
+        write(*,*) "* acoustic zone right.         *"
+        write(*,*) "********************************"
+        stop
+        write(IMAIN,*) ". "
+      endif
+    endif ! Endif on any_acoustic.
+    if(any_el_reduced) then
       write(IMAIN,*) "Elastic zones exist."
-    endif
+    else ! Else on any_elastic.
+      write(IMAIN,*) "No elastic zone exist."
+    endif ! Endif on any_elastic.
     call flush_IMAIN()
   endif
 
