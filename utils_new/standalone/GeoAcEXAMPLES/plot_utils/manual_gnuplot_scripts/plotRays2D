@@ -1,4 +1,0 @@
-set pm3d map
-set palette defined (0 "white", 1 "blue", 2 "green", 3 "yellow", 4 "red")
-set cbrange[-150:-50]
-splot 'AMGeoAc_raypaths.dat' u 1:2:($3 + $4 > -150 ? $3 + $4 : 1/0) w lines lw 1 palette
