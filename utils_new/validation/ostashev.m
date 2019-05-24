@@ -19,10 +19,11 @@ clear all;
 clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+set(0, 'defaultTextFontSize', 16); set(0, 'defaultAxesFontSize', 16);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
+addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 rootd = strcat(SPCFMEXloc,'validation_lns_ostashev/');
 
@@ -57,8 +58,8 @@ NSTATIONS=15;
 % ofdweq0='OUTPUT_FILES_rho_M0_dx1_fullE/'; ofdwneq0='OUTPUT_FILES_rho_M.3_dx1_fullE/'; wind=102; simullab='LNS $\rho$ fullE'; % pas ouf
 
 % ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0=ofdweq0; wind=0; simullab='LNS $E$';
-% ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1/'; wind=102; simullab='LNS $E$';
-ofdweq0='OUTPUT_FILES_E_M0_dx1_reredone/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1_reredone/'; wind=102; simullab='LNS $E$ reredone'; % did not change anything
+ofdweq0='OUTPUT_FILES_E_M0_dx1/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1/'; wind=102; simullab='LNS $E$';
+% ofdweq0='OUTPUT_FILES_E_M0_dx1_reredone/'; ofdwneq0='OUTPUT_FILES_E_M.3_dx1_reredone/'; wind=102; simullab='LNS $E$ reredone'; % did not change anything
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % treatment %%%%%%%%%%%%%%
@@ -85,6 +86,7 @@ p0_th = p(k, r, 0, 0)
 
 switch(plotResults0orgenstats1orgengmsh2)
   case (0)
+    figPath = [rootd,'comp__',regexprep(ofdweq0,'/',''),'__vs__',regexprep(ofdwneq0,'/','')];
     % load results
     OFd_w0 = strcat(rootd, ofdweq0);
     OFd_w = strcat(rootd, ofdwneq0);
@@ -95,7 +97,7 @@ switch(plotResults0orgenstats1orgengmsh2)
     for istat = 1:NSTATIONS
       [data, ~] = readAndSubsampleSynth(OFd_w, istat, 'BXZ', 'semv', 0, -1, istat); ZampW(istat,:)=data(:,2)';
     end
-    [xstattab, ystattab, stations_data] = loadStations(rootd, OFd_w); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
+    [xstattab, ystattab, stations_data] = loadStations(OFd_w); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
     
     % get reference
     p0_exp=Zamp0; % Use this after having ran synth_load on Mach=0 simulation and selected the right station.
@@ -111,7 +113,7 @@ switch(plotResults0orgenstats1orgengmsh2)
     disp([angglle';p_exp_ampl]);
     
     % actuallay plot
-    figure();
+    fighandlll = figure('outerposition',[0 0 750 750]);
     
     plot(alpha*180/pi,p_th/p0_th,'k','displayname','Ostashev''s (72)'); hold on
     
@@ -119,13 +121,15 @@ switch(plotResults0orgenstats1orgengmsh2)
     
     plot(angglle,p_exp_ampl/p0_exp_ampl,'displayname',[simullab, ' (max. diff. = ',sprintf('%.3g',maxdiffpercent),'\%)']);
     
-    set(gca,'ticklabelinterpreter','latex');
+%     set(gca,'ticklabelinterpreter','latex');
     set(gca,'xtick',180*[0,0.25,0.5,0.75,1]);
     xlim([0,180]);
     title(['$f_0=',num2str(f0),'$ Hz, $c=',num2str(c),'$, $w=',num2str(wind),'$, $M=',num2str(M),'$, $k=',num2str(k),'$, $r=',num2str(r),'$, $kr=',num2str(k*r),'$']);
     ylabel(['normalised sound pressure amplitude']);
-    xlabel(['azimuth $\alpha$ [deg]']);
-    legend('location','northwest');grid on;
+    xlabel(['azimuth [deg], counter-clockwise from wind vector']);
+    legend('location','northwest');
+    prettyAxes(fighandlll);
+    customSaveFig(figPath,{'jpg','eps'});
     
     % manual plot
     if(0)
