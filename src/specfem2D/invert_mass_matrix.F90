@@ -414,13 +414,13 @@
           !else
           rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*&
                                              jacobian(i,j,ispec)
+          
           ! New tests for stretching
           ! This term should not be here since we assumed we divided the whole strong form by it.
           !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
           !  rmass_inverse_acoustic_DG(iglob) =   rmass_inverse_acoustic_DG(iglob) &
           !                                     * (1./product(stretching_ya(:, ibool_before_perio(i, j, ispec))))
           !endif
-          
           ! LNS PML additions.
           if (LNS_PML_activated .and. ispec_is_PML(ispec)) then
             ! This ispec is a PML element, we need to update the mass matrix in order to take the PML change of variable into account.
@@ -451,7 +451,24 @@
             endif
           endif ! Endif on LNS_PML_activated.
           
-        endif
+          
+          if (AXISYM) then
+            if (is_on_the_axis(ispec)) then
+              if (is_on_the_axis(ispec) .and. i == 1) then ! First GLJ point
+                xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+                rmass_inverse_acoustic_DG(iglob) = xxi*wxglj(i)*wzgll(j)*jacobian(i,j,ispec) 
+              else
+                rmass_inverse_acoustic_DG(iglob) = &
+                      coord(1,ibool(i,j,ispec))/(xiglj(i)+ONE)*wxglj(i)*wzgll(j)*jacobian(i,j,ispec) 
+              endif
+            else ! not on the axis
+              rmass_inverse_acoustic_DG(iglob) = coord(1,ibool(i,j,ispec))*wxgll(i)*wzgll(j)*jacobian(i,j,ispec) 
+            endif
+          else ! not axisym
+            rmass_inverse_acoustic_DG(iglob) = wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+          endif
+          
+        endif  
       enddo
     enddo
   enddo ! of do ispec = 1,nspec

@@ -44,7 +44,8 @@ subroutine find_normals()
         jacobian, gammax, gammaz, xix, xiz, wxgll, wzgll, &
         ispec_is_acoustic, &
         ! MODIF MAJEURE
-        nx_iface, nz_iface, weight_iface, link_iface_ijispec, neighbor_DG_iface
+        nx_iface, nz_iface, weight_iface, link_iface_ijispec, neighbor_DG_iface, &
+        AXISYM, is_on_the_axis, wxglj, xiglj
 
   implicit none
   
@@ -61,6 +62,9 @@ subroutine find_normals()
   real(kind=CUSTOM_REAL) :: nx_neighbor, nz_neighbor
   integer :: iface, iglob_first, iglob_last, iface1
   double precision, dimension(2) :: mid_iface, vd_iface
+  
+  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: r_xiplus1
   
   allocate(nx_iface(4,nspec), nz_iface(4,nspec), weight_iface(NGLLX,4,nspec))
   
@@ -121,12 +125,34 @@ subroutine find_normals()
         !prod2 = nx2*vd(ind,1) + nz2*vd(ind,2)
         prod2 = nx2*vd_iface(1) + nz2*vd_iface(2)
         
+        if (AXISYM) then
+! axial elements are always rotated by the mesher to make sure it is their i == 1 edge that is on the axis
+! and thus the case of an edge located along j == constant does not need to be considered here
+        if (is_on_the_axis(numelem) .and. i == 1) then
+          xxi = + gammaz(i,j,numelem) * jacobian(i,j,numelem)
+          r_xiplus1(i,j) = xxi
+        else if (is_on_the_axis(numelem)) then
+          r_xiplus1(i,j) = coord(1,ibool(i,j,numelem))/(xiglj(i)+ONE)
+        endif
+        endif
+        
         if(abs(prod1) < abs(prod2)) then
           nx = nx1
           nz = nz1
           jacobian1D = jacobian1D_1
-          weight     = jacobian1D*wxgll(i)
+          !weight     = jacobian1D*wxgll(i)
           
+          ! Axysimmetric implementation
+          if (AXISYM) then
+          if (is_on_the_axis(numelem)) then
+             weight = jacobian1D * wxglj(i) * r_xiplus1(i,j)
+             !WRITE(*,*) "weight", weight, nx, nz
+          else
+             weight = jacobian1D * wxgll(i) * coord(1,ibool(i,j,numelem))
+          endif
+          else
+            weight  = jacobian1D * wxgll(i)
+          endif
           ! BIG MODIF INSTEAD OF  
           !nx = -vd_iface(2)
           !nz = vd_iface(1)
@@ -134,7 +160,21 @@ subroutine find_normals()
           nx = nx2
           nz = nz2
           jacobian1D = jacobian1D_2
-          weight     = jacobian1D*wzgll(j)
+          
+          if (AXISYM) then
+          if (is_on_the_axis(numelem)) then
+             weight = jacobian1D * wzgll(j) * r_xiplus1(i,j)
+             !if(nx == -1) then
+             !   WRITE(*,*) "weight", weight
+             !   stop 'TOTO'
+             !endif
+             !WRITE(*,*) "weight", weight, nx, nz
+          else
+             weight = jacobian1D * wzgll(j) * coord(1,ibool(i,j,numelem))
+          endif
+          else
+            weight  = jacobian1D * wzgll(j)
+          endif
           
           !nx = -vd_iface(2)
           !nz = vd_iface(1)
@@ -182,6 +222,13 @@ subroutine find_normals()
         if(sign_cond1 + sign_cond2 + sign_cond3 + sign_cond4 >= 4d0) then
           nx = -nx
           nz = -nz
+        endif
+        
+        if (AXISYM) then
+          if (is_on_the_axis(numelem) .AND. coord(1,ibool(i,j,numelem)) == 0.) then
+                WRITE(*,*) "coord:", weight,coord(:,ibool(i,j,numelem))
+                !weight = 0.
+          endif
         endif
         
         nx_iface(iface,numelem) = real(nx, kind=CUSTOM_REAL)

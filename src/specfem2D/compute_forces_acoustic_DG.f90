@@ -60,8 +60,9 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                          !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
                          !ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF, ABC_STRETCH_TOP_LBUF, ABC_STRETCH_BOTTOM_LBUF,&
                          !mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
-                         !coord, &
-                         ibool_before_perio,stretching_buffer, rhovx_init, rho_init!,c_V
+                         coord, &
+                         ibool_before_perio,stretching_buffer, rhovx_init, rho_init, &
+                         AXISYM, is_on_the_axis, wxglj, hprimeBarwglj_xx, xiglj
                          
   implicit none
 
@@ -115,6 +116,10 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   !real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E ! ABSORB
   !logical :: ABSORB_BC ! ABSORB
   
+    ! Axisymmetric
+  real(kind=CUSTOM_REAL) :: xxi, temp_boundary
+  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: r_xiplus1
+
   ! For more convinient CONSTRAIN_HYDROSTATIC switches.
   ! TODO: Replace the CONSTRAIN_HYDROSTATIC switches using this variable.
   if(CONSTRAIN_HYDROSTATIC) then
@@ -201,6 +206,15 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           !   .and. timelocal>0.78) then ! DEBUG
           !  write(*,*) coord(2, ibool(i, j, ispec)), veloc_z_DG(iglob) ! DEBUG
           !endif
+
+          if (AXISYM) then
+            if (is_on_the_axis(ispec) .and. i == 1) then
+              xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+              r_xiplus1(i,j) = xxi
+            else if (is_on_the_axis(ispec)) then
+              r_xiplus1(i,j) = coord(1,ibool(i,j,ispec))/(xiglj(i)+ONE)
+            endif
+          endif
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! Here are updated the operator \nabla and the jacobian, but only if stretching is activated and we are in a buffer.
@@ -228,8 +242,19 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             temp_unknown = rhovx_DG(iglob) - coef_test_wind*rho_DG(iglob)*(rhovx_init(iglob)/rho_init(iglob))
           endif
           temp_unknown2 = rhovz_DG(iglob)
-          temp_rho_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
-          temp_rho_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
+          ! Axisym implementation
+          if (AXISYM) then
+            if (is_on_the_axis(ispec)) then
+              temp_rho_1(i,j) = wzgll(j) * r_xiplus1(i,j) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_rho_2(i,j) = wxglj(i) * r_xiplus1(i,j) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            else
+              temp_rho_1(i,j) = wzl * coord(1,ibool(i,j,ispec)) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_rho_2(i,j) = wxl * coord(1,ibool(i,j,ispec)) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            endif
+          else
+            temp_rho_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2)
+            temp_rho_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2)
+          endif
           
           ! x-Momentum.
           if(.not. CONSTRAIN_HYDROSTATIC) then
@@ -241,9 +266,19 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                 !+ (p_DG(iglob) - p_DG_init(iglob))
           endif
           temp_unknown2 = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
-          temp_rhovx_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rhovx_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
-          
+          if (AXISYM) then
+            if (is_on_the_axis(ispec)) then
+              temp_rhovx_1(i,j) = wzgll(j) * r_xiplus1(i,j) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_rhovx_2(i,j) = wxglj(i) * r_xiplus1(i,j) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            else
+              temp_rhovx_1(i,j) = wzl * coord(1,ibool(i,j,ispec)) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_rhovx_2(i,j) = wxl * coord(1,ibool(i,j,ispec)) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            endif
+          else
+            temp_rhovx_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_rhovx_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          endif
+
           ! z-Momentum.
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = rho_DG(iglob)*veloc_x_DG(iglob)*veloc_z_DG(iglob)
@@ -252,9 +287,20 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             temp_unknown = rho_DG(iglob)*(veloc_x_DG(iglob)-coef_test_wind*(rhovx_init(iglob)/rho_init(iglob)))*veloc_z_DG(iglob)
             temp_unknown2 = rho_DG(iglob)*veloc_z_DG(iglob)**2 + (p_DG(iglob) - p_DG_init(iglob))
           endif
-          temp_rhovz_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_rhovz_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
-          
+          ! Axisym implementation
+          if (AXISYM) then
+            if (is_on_the_axis(ispec)) then
+              temp_rhovz_1(i,j) = wzgll(j) * r_xiplus1(i,j) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_rhovz_2(i,j) = wxglj(i) * r_xiplus1(i,j) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            else
+              temp_rhovz_1(i,j) = wzl * coord(1,ibool(i,j,ispec)) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_rhovz_2(i,j) = wxl * coord(1,ibool(i,j,ispec)) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            endif
+          else
+            temp_rhovz_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_rhovz_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          endif
+
           ! Energy.
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown = veloc_x_DG(iglob)*(E_DG(iglob) + p_DG(iglob))
@@ -264,9 +310,20 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             + (p_DG(iglob) - p_DG_init(iglob)))
             temp_unknown2 = veloc_z_DG(iglob)*(E_DG(iglob) + (p_DG(iglob) - p_DG_init(iglob)))
           endif
-          temp_E_1(i,j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
-          temp_E_2(i,j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
-          
+          ! Axisym implementation
+          if (AXISYM) then
+            if (is_on_the_axis(ispec)) then
+              temp_E_1(i,j) = wzgll(j) * r_xiplus1(i,j) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_E_2(i,j) = wxglj(i) * r_xiplus1(i,j) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            else
+              temp_E_1(i,j) = wzl * coord(1,ibool(i,j,ispec)) * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+              temp_E_2(i,j) = wxl * coord(1,ibool(i,j,ispec)) * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+            endif
+          else
+            temp_E_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+            temp_E_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          endif
+
           ! Viscous stress tensor's contributions.
           dux_dx = V_DG(1, 1, iglob)
           dux_dz = V_DG(1, 2, iglob)
@@ -330,6 +387,16 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                 +coef_test_wind*(- 2*(rhovx_init(iglob)/rho_init(iglob))*(drho_DG(iglob)*veloc_x_DG(iglob) &
                  + dux_dx*rho_DG(iglob)) -  drho_DG(iglob)*((rhovx_init(iglob)/rho_init(iglob))**2))* jacobianl
           endif
+          if(AXISYM) then
+             if (is_on_the_axis(ispec)) then
+                temp_nondiv_rhovx(i, j) = r_xiplus1(i,j) * temp_nondiv_rhovx(i, j) &
+                        + p_DG(iglob)* jacobianl
+             else
+                temp_nondiv_rhovx(i, j) = coord(1,ibool(i,j,ispec)) * temp_nondiv_rhovx(i, j) &
+                        + p_DG(iglob)* jacobianl
+             endif
+          endif  
+
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_nondiv_rhovz(i,j) = -rho_DG(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec))* jacobianl
           else
@@ -338,6 +405,14 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                 - coef_test_wind*(rhovx_init(iglob)/rho_init(iglob))*(drho_DG(iglob)*veloc_z_DG(iglob) &
                  + duz_dx*rho_DG(iglob)) * jacobianl
           endif
+          if(AXISYM) then
+             if (is_on_the_axis(ispec)) then
+                temp_nondiv_rhovz(i, j) = r_xiplus1(i,j) * temp_nondiv_rhovz(i, j) 
+             else
+                temp_nondiv_rhovz(i, j) = coord(1,ibool(i,j,ispec)) * temp_nondiv_rhovz(i, j)
+             endif
+          endif 
+
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_nondiv_E(i,j) = -rho_DG(iglob)*(veloc_x_DG(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) + &
                                 veloc_z_DG(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)))* jacobianl
@@ -358,6 +433,13 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           !temp_nondiv_E(i,j) = temp_nondiv_E(i,j) &
           !  + jacobianl * p_DG_init(iglob)*gammaext_DG(iglob) &
           !  * (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) * e1_DG(iglob) / (gammaext_DG(iglob) - ONE)
+          if(AXISYM) then
+             if (is_on_the_axis(ispec)) then
+                temp_nondiv_E(i, j) = r_xiplus1(i,j) * temp_nondiv_E(i, j) 
+             else
+                temp_nondiv_E(i, j) = coord(1,ibool(i,j,ispec)) * temp_nondiv_E(i, j)
+             endif
+          endif 
 
           ! TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! ARTIFICIAL ADVECTION on top buffer
@@ -420,29 +502,61 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i,j,ispec)
-          do k = 1, NGLLX
-            dot_rho(iglob) = dot_rho(iglob) + &
+
+          if (AXISYM .AND. is_on_the_axis(ispec)) then
+
+              do k = 1, NGLLX
+              dot_rho(iglob) = dot_rho(iglob) + &
+                             (temp_rho_1(k, j) * real(hprimeBarwglj_xx(k, i), kind=CUSTOM_REAL) + &
+                              temp_rho_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              dot_rhovx(iglob) = dot_rhovx(iglob) + &
+                               (temp_rhovx_1(k, j) * real(hprimeBarwglj_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_rhovx_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              dot_rhovz(iglob) = dot_rhovz(iglob) + &
+                               (temp_rhovz_1(k, j) * real(hprimeBarwglj_xx(k, i), kind=CUSTOM_REAL) + &
+                                temp_rhovz_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              dot_E(iglob) = dot_E(iglob) + &
+                           (temp_E_1(k, j) * real(hprimeBarwglj_xx(k, i), kind=CUSTOM_REAL) + &
+                            temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              enddo ! Enddo on k.
+              
+              wzl = real(wzgll(j), kind=CUSTOM_REAL)
+              wxl = real(wxglj(i), kind=CUSTOM_REAL)
+          
+              ! Terms outside divergence operator.
+              dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i, j) * wxl * wzl
+              dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i, j) * wxl * wzl
+              dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i, j) * wxl * wzl
+              dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i, j) * wxl * wzl
+
+          else
+
+              do k = 1, NGLLX
+
+                dot_rho(iglob) = dot_rho(iglob) + &
                              (temp_rho_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                               temp_rho_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
-            dot_rhovx(iglob) = dot_rhovx(iglob) + &
+                dot_rhovx(iglob) = dot_rhovx(iglob) + &
                                (temp_rhovx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                 temp_rhovx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
-            dot_rhovz(iglob) = dot_rhovz(iglob) + &
+                dot_rhovz(iglob) = dot_rhovz(iglob) + &
                                (temp_rhovz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                                 temp_rhovz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
-            dot_E(iglob) = dot_E(iglob) + &
+                dot_E(iglob) = dot_E(iglob) + &
                            (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                             temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
-          enddo ! Enddo on k.
+              enddo ! Enddo on k.
+
+              wzl = real(wzgll(j), kind=CUSTOM_REAL)
+              wxl = real(wxgll(i), kind=CUSTOM_REAL)
           
-          wzl = real(wzgll(j), kind=CUSTOM_REAL)
-          wxl = real(wxgll(i), kind=CUSTOM_REAL)
-          
-          ! Terms outside divergence operator.
-          dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i,j) * wxl * wzl
-          dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i,j) * wxl * wzl
-          dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i,j) * wxl * wzl
-          dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i,j) * wxl * wzl
+              ! Terms outside divergence operator.
+              dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i,j) * wxl * wzl
+              dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i,j) * wxl * wzl
+              dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i,j) * wxl * wzl
+              dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i,j) * wxl * wzl
+  
+          endif ! AXISYM
           
           ! DEBUG: DEACTIVATE INTERNAL (ALL EXCEPT FLUXES) EVOLUTION.
           !dot_rho(iglob) = 0.
@@ -477,6 +591,15 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           i = link_iface_ijispec(iface1,iface,ispec,1)
           j = link_iface_ijispec(iface1,iface,ispec,2)
           
+          if (AXISYM) then
+            if (is_on_the_axis(ispec) .and. i == 1) then
+              xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+              r_xiplus1(i,j) = xxi
+            else if (is_on_the_axis(ispec)) then
+              r_xiplus1(i,j) = coord(1,ibool(i,j,ispec))/(xiglj(i)+ONE)
+            endif
+          endif
+          
           ! Step 1: prepare the normals' parameters (nx, nz, weight, etc.).
           ! Interior point
           iglobM = ibool_DG(i,j,ispec)
@@ -509,6 +632,13 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           endif
           
+          if(nx == -1 .AND. AXISYM .AND. is_on_the_axis(ispec)) then
+                iglobP = iglobM
+                neighbor(1) = i
+                neighbor(2) = j
+                neighbor(3) = ispec
+          endif
+          
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
           call compute_interface_unknowns(i,j,ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
@@ -522,6 +652,13 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                   nx, nz, weight, timelocal, iface1, iface)
                   !TEST STRETCH
                   !nx_unit, nz_unit, weight, timelocal, iface1, iface)
+          
+          ! Free slip at r=0 if AXISYM
+          if(nx == -1 .AND. AXISYM .AND. is_on_the_axis(ispec)) then
+                !WRITE(*,*) "DEBUG 2 >>", coord(:,ibool(i,j,ispec)), iglobP
+                veloc_x_DG_P = - rhovx_DG(iglobM)/rho_DG(iglobM)
+                rhovx_DG_P   = - rhovx_DG(iglobM)
+          endif
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
@@ -602,8 +739,19 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           if(exact_interface_flux) then
             jump = ZERO
           endif
-          dot_rho(iglobM) = dot_rho(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          !dot_rho(iglobM) = dot_rho(iglobM) - weight*(flux_n + lambda*jump)*HALF
           
+          temp_boundary = - weight*(flux_n + lambda*jump)*HALF
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_rho(iglobM) = dot_rho(iglobM) + temp_boundary
+            
           ! x-Momentum equation's inviscid contributions.
           if(.not. CONSTRAIN_HYDROSTATIC) then
             temp_unknown_M = rho_DG(iglobM)*veloc_x_DG(iglobM)**2 + p_DG(iglobM)
@@ -627,7 +775,18 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           if(exact_interface_flux) then
             jump = ZERO
           endif
-          dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          !dot_rhovx(iglobM) = dot_rhovx(iglobM) - weight*(flux_n + lambda*jump)*HALF
+
+          temp_boundary = - weight*(flux_n + lambda*jump)*HALF
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_rhovx(iglobM) = dot_rhovx(iglobM) + temp_boundary
 
           ! x-Momentum equation's viscous contributions.
           ! 1st line of \Sigma_v.
@@ -638,12 +797,35 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           ! Dot product.
           !flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           !dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*flux_n
-          dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*(temp_unknown*nx+temp_unknown2*nz) ! [1 affectation], instead of [2 affections].
+          !dot_rhovx(iglobM) = dot_rhovx(iglobM) + weight*(temp_unknown*nx+temp_unknown2*nz)
+          temp_boundary = weight*(temp_unknown*nx+temp_unknown2*nz)
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_rhovx(iglobM) = dot_rhovx(iglobM) + temp_boundary
+
+           ! [1 affectation], instead of [2 affections].
           ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's x component of the mean average flux at the boundary. Thus, we add this contribution here.
-          dot_E(iglobM)     = dot_E(iglobM) &
-                              + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
+          !dot_E(iglobM)     = dot_E(iglobM) &
+          !                    + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
+          !                                        +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
+          temp_boundary = weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nx
-          
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_E(iglobM)     = dot_E(iglobM) + temp_boundary
+
           ! z-Momentum equation's inviscid contributions.
           if(.not. CONSTRAIN_HYDROSTATIC) then        
             temp_unknown_M  = rho_DG(iglobM)*veloc_x_DG(iglobM)*veloc_z_DG(iglobM)
@@ -664,7 +846,17 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           if(exact_interface_flux) then
             jump = ZERO
           endif
-          dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          !dot_rhovz(iglobM) = dot_rhovz(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          temp_boundary = -weight*(flux_n + lambda*jump)*HALF
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_rhovz(iglobM) = dot_rhovz(iglobM) + temp_boundary
           
           ! z-Momentum equation's viscous contributions.
           ! 2nd line of \Sigma_v.
@@ -673,13 +865,35 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           temp_unknown = muext(i,j,ispec)*( dux_dz + duz_dx )
           temp_unknown2 = muext(i,j,ispec)*TWO*duz_dz + (etaext(i,j,ispec) - (TWO/3.)*muext(i,j,ispec))*(dux_dx + duz_dz)
           ! Dot product.
-          !flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
+          flux_n = temp_unknown*nx + temp_unknown2*nz ! [3 operations + 1 affectation], instead of [3 operations + 3 affectations].
           !dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*flux_n
-          dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*(temp_unknown*nx+temp_unknown2*nz) ! [1 affectation], instead of [2 affections].
+          !dot_rhovz(iglobM) = dot_rhovz(iglobM) + weight*(temp_unknown*nx+temp_unknown2*nz) ! [1 affectation], instead of [2 affections].
+          temp_boundary = weight*flux_n
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_rhovz(iglobM) = dot_rhovz(iglobM) + temp_boundary
+
           ! The computed values contained in the variables temp_unknown and temp_unknown2 can be used to compute the energy's z component of the mean average flux at the boundary. Thus, we add this contribution here.
-          dot_E(iglobM)     = dot_E(iglobM) &
-                              + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
+          !dot_E(iglobM)     = dot_E(iglobM) &
+          !                    + weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
+          !                                        +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
+          temp_boundary = weight * HALF * (  (veloc_x_DG(iglobM) + veloc_x_DG_P) * temp_unknown &
                                                   +(veloc_z_DG(iglobM) + veloc_z_DG_P) * temp_unknown2 )*nz
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_E(iglobM)     = dot_E(iglobM) + temp_boundary
 
           ! Energy equation's fully inviscid contributions.
           if(.not. CONSTRAIN_HYDROSTATIC) then
@@ -702,12 +916,33 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           if(exact_interface_flux) then
             jump = ZERO
           endif
-          dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          !dot_E(iglobM) = dot_E(iglobM) - weight*(flux_n + lambda*jump)*HALF
+          temp_boundary = - weight*(flux_n + lambda*jump)*HALF
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          
+          dot_E(iglobM) = dot_E(iglobM) + temp_boundary
           
           ! Energy equation's heat flux' contribution (last remaining term, viscous).
           ! Recall: dT_dx already contains the 0.5 factor to put the flux under mean average form.
-          dot_E(iglobM) = dot_E(iglobM) &
-                          + weight*( kappa_DG(i,j,ispec)*( dT_dx*nx + dT_dz*nz ) )
+          !dot_E(iglobM) = dot_E(iglobM) &
+          !                + weight*( kappa_DG(i,j,ispec)*( dT_dx*nx + dT_dz*nz ) )
+          temp_boundary = weight*( kappa_DG(i, j, ispec)*( dT_dx*nx + dT_dz*nz ) )
+          ! Axisym implementation
+          if (AXISYM .AND. .false.) then
+            if (is_on_the_axis(ispec)) then
+              temp_boundary = temp_boundary * r_xiplus1(i,j)
+            else
+              temp_boundary = temp_boundary * coord(1,ibool(i,j,ispec))
+            endif
+          endif
+          dot_E(iglobM) = dot_E(iglobM) + temp_boundary
           
           ! DEBUG: DEACTIVATE FLUXES.
           !dot_rho(iglobM) = 0.
