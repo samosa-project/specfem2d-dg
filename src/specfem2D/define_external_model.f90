@@ -1531,7 +1531,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         nspec,coord,ibool,myrank,&
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME,&
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
         USE_DISCONTINUOUS_METHOD,deltat
   
   implicit none
@@ -1821,25 +1821,27 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     endif
   endif
 
-  !if(.not. ADD_PERIODIC_CONDITIONS) then
-  !  do i=1, nlines_model
-  !    if(myrank==0 .and. abs(z_model(i))==0. .and. abs(wx_model(i))>0.) then
-  !      write(*,*) "********************************"
-  !      write(*,*) "*            ERROR             *"
-  !      write(*,*) "********************************"
-  !      write(*,*) "* In the loaded model, wind is *"
-  !      write(*,*) "* non-zero at altitude 0. This *"
-  !      write(*,*) "* is not physically            *"
-  !      write(*,*) "* acceptable. Activating       *"
-  !      write(*,*) "* horizontal periodic boundary *"
-  !      write(*,*) "* conditions can make this     *"
-  !      write(*,*) "* work, but this will remain   *"
-  !      write(*,*) "* questionnable.               *"
-  !      write(*,*) "********************************"
-  !      stop
-  !    endif
-  !  enddo
-  !endif
+  ! THIS CONDITION SHOULD REMAIN ON LNS BRANCH ONLY, BECAUSE QUENTIN WANTS TO REMOVE IT FROM MASTER BRANCH.
+  ! ON LNS BRANCH, I LEAVE IT HERE, BECAUSE I PREFER TO DO SO.
+  if(.not. ADD_PERIODIC_CONDITIONS) then
+    do i=1, nlines_model
+      if(myrank==0 .and. abs(z_model(i))==0. .and. abs(wx_model(i))>0.) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* In the loaded model, wind is *"
+        write(*,*) "* non-zero at altitude 0. This *"
+        write(*,*) "* is not physically            *"
+        write(*,*) "* acceptable. Activating       *"
+        write(*,*) "* horizontal periodic boundary *"
+        write(*,*) "* conditions can make this     *"
+        write(*,*) "* work, but this will remain   *"
+        write(*,*) "* questionnable.               *"
+        write(*,*) "********************************"
+        stop
+      endif
+    enddo
+  endif
   if(minval(density_model)<=ZERO) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
