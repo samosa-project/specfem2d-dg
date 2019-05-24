@@ -355,7 +355,10 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           temp_nondiv_E(i,j) = temp_nondiv_E(i,j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
                               * ( (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) - ONE ) &
                               * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
-          
+          !temp_nondiv_E(i,j) = temp_nondiv_E(i,j) &
+          !  + jacobianl * p_DG_init(iglob)*gammaext_DG(iglob) &
+          !  * (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) * e1_DG(iglob) / (gammaext_DG(iglob) - ONE)
+
           ! TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! ARTIFICIAL ADVECTION on top buffer
           !if(.false.) then
@@ -404,8 +407,11 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           
           ! Memory variable evolution for CO2 vibrationnal relaxation processes.
           ! See 10.1007/s11214-016-0324-6, equation (19).
+          wzl = real(wzgll(j), kind=CUSTOM_REAL)
+          wxl = real(wxgll(i), kind=CUSTOM_REAL)
           dot_e1(iglob) = dot_e1(iglob) - (ONE/tau_sigma(i,j,ispec)) &
-                          *( (ONE - (tau_sigma(i,j,ispec)/tau_epsilon(i,j,ispec))) * (dux_dx + duz_dz) + e1_DG(iglob) )
+                          *( (ONE - (tau_sigma(i,j,ispec)/tau_epsilon(i,j,ispec))) &
+                            * (dux_dx + duz_dz) + e1_DG(iglob) )* wxl*wzl*jacobianl
         enddo
       enddo
       
