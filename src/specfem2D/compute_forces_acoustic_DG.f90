@@ -352,9 +352,9 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           endif
           ! Add memory variable contribution.
           ! 10.1007/s11214-016-0324-6, equation (19), describes where in the pressure evolution equation the memory variable would be used.
-          temp_nondiv_E(i,j) = temp_nondiv_E(i,j) - jacobianl * (p_DG_init(iglob)*gammaext_DG(iglob)) &
-                              * ( (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) - ONE ) &
-                              * ( dux_dx + duz_dz - e1_DG(iglob))/(gammaext_DG(iglob) - ONE)
+          temp_nondiv_E(i,j) = temp_nondiv_E(i,j) - jacobianl * ( (p_DG_init(iglob)*gammaext_DG(iglob)) &
+                              * (( (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) - ONE ) &
+                              * ( dux_dx + duz_dz - e1_DG(iglob)) + e1_DG(iglob)))/(gammaext_DG(iglob) - ONE)
           !temp_nondiv_E(i,j) = temp_nondiv_E(i,j) &
           !  + jacobianl * p_DG_init(iglob)*gammaext_DG(iglob) &
           !  * (tau_epsilon(i,j,ispec)/tau_sigma(i,j,ispec)) * e1_DG(iglob) / (gammaext_DG(iglob) - ONE)
