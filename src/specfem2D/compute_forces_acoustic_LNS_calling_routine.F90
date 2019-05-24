@@ -434,8 +434,9 @@ end subroutine LNS_PML_updateD0
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
-  use specfem_par, only: ibool_DG, nspec, gravityext,muext, etaext, kappa_DG, tau_epsilon, &
-                         tau_sigma, NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
+  use specfem_par, only: ibool_DG, nspec, &
+                         gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
+                         NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
                          !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              LNS_eta, LNS_kappa, sigma_dv, LNS_dummy_1d, LNS_dummy_2d, &
@@ -483,7 +484,13 @@ subroutine initial_state_LNS()
     !endif
   enddo
   
-  deallocate(gravityext, muext, etaext, kappa_DG, tau_epsilon, tau_sigma) ! Not really optimal, but less invasive.
+  ! Not really optimal, but less invasive.
+  if(allocated(gravityext)) deallocate(gravityext)
+  if(allocated(muext)) deallocate(muext)
+  !if(allocated(etaext)) deallocate(etaext) ! Somehow this now (at least as of commit 5d9152885007a8c8dfc42a60f203ec12afe43b1e, maybe earlier) crashes the code when using external models. I do not have the time to look more into it.
+  if(allocated(kappa_DG)) deallocate(kappa_DG)
+  if(allocated(tau_epsilon)) deallocate(tau_epsilon)
+  if(allocated(tau_sigma)) deallocate(tau_sigma)
   
   ! Ugly patch to make it work.
   ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.

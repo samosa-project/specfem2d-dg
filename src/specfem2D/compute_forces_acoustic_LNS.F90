@@ -916,6 +916,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       stop
          
     elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
+    !elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0 .AND. abs(n_out(1)) < 1.) then ! The condition '|n_x|<1' is there to remove coupling on outer-pointing edges (those having |n_x|>1). However, while this works with flat horizontal topography, this also removes coupling at the vertical boundaries within the domain of interest.
       ! --------------------------- !
       ! ipoin == -1                 !
       !   and elastic coupling      !
