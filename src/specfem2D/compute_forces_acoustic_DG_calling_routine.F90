@@ -134,17 +134,16 @@ subroutine compute_forces_acoustic_DG_main()
                  - (HALF/rho_DG)*( rhovx_DG**2 + rhovz_DG**2 ) )
     T_init = (E_DG/rho_DG - HALF*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V
     
-    E_int = 0
-    M_int = 0
-    T_int = 0
-
-    do ispec = 1, nspec
-      do i = 1, NGLLX
-        do j = 1, NGLLZ
-          vp_init(ibool_DG(i, j, ispec)) = vpext(i,j,ispec)
-        enddo
-      enddo
-    enddo
+    !E_int = 0
+    !M_int = 0
+    !T_int = 0
+    !do ispec = 1, nspec
+    !  do i = 1, NGLLX
+    !    do j = 1, NGLLZ
+    !      vp_init(ibool_DG(i, j, ispec)) = vpext(i,j,ispec)
+    !    enddo
+    !  enddo
+    !enddo
 
     !write(*,*) it, i_stage, "rho0",rho_init(1), "E0", E_init(1), "T0", T_init(1), "p0", p_DG_init(1), &
     !           "gamma", gammaext_DG(1), "c_V", c_V ! DEBUG
@@ -275,25 +274,25 @@ subroutine compute_forces_acoustic_DG_main()
 
 
     !E_int = (rhovx_init/rho_init)
-    if(.false.) then
-    E_int = E_int + deltat * 0.5*(rho_init*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)) &
-        + 0.5*((gammaext_DG - ONE)*( E_DG &
-               - (HALF)*rho_DG*( veloc_x_DG**2 + veloc_z_DG**2 ) ) - &
-               0*(gammaext_DG - ONE)*( E_init &
-               - (HALF)*rho_init*( (rhovx_init/rho_init)**2 ) ) )/((rho_init)*(vp_init)**2)
-    where(E_int <= 0.) E_int = 1.
-    do ispec = 1, nspec
-      do i = 1, NGLLX
-        do j = 1, NGLLZ
-          M_int(ibool_DG(i, j, ispec)) = max(M_int(ibool_DG(i, j, ispec)), E_int(ibool_DG(i, j, ispec)))
-          !WRITE(*,*) "E_int(ibool_DG(i, j, ispec))", E_int(ibool_DG(i, j, ispec))
-        enddo
-      enddo
-    enddo
-    T_int = 2*E_int/M_int
-
-    WRITE(*,*) "rho_init:", minval(T_int ), maxval(T_int)
-    endif
+    !if(.false.) then
+    !E_int = E_int + deltat * 0.5*(rho_init*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2)) &
+    !    + 0.5*((gammaext_DG - ONE)*( E_DG &
+    !           - (HALF)*rho_DG*( veloc_x_DG**2 + veloc_z_DG**2 ) ) - &
+    !           0*(gammaext_DG - ONE)*( E_init &
+    !           - (HALF)*rho_init*( (rhovx_init/rho_init)**2 ) ) )/((rho_init)*(vp_init)**2)
+    !where(E_int <= 0.) E_int = 1.
+    !do ispec = 1, nspec
+    !  do i = 1, NGLLX
+    !    do j = 1, NGLLZ
+    !      M_int(ibool_DG(i, j, ispec)) = max(M_int(ibool_DG(i, j, ispec)), E_int(ibool_DG(i, j, ispec)))
+    !      !WRITE(*,*) "E_int(ibool_DG(i, j, ispec))", E_int(ibool_DG(i, j, ispec))
+    !    enddo
+    !  enddo
+    !enddo
+    !T_int = 2*E_int/M_int
+    ! 
+    !WRITE(*,*) "rho_init:", minval(T_int ), maxval(T_int)
+    !endif
 
     ! If we want to compute kernels, we save regularly.
     if(.false.) then
