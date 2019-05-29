@@ -33,12 +33,14 @@ SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
 addpath([SPCFMloc,'utils_new/Atmospheric_Models']); % extract_atmos_model
 addpath([SPCFMloc,'utils_new/tools']); % readExampleFiles_extractParam, seismotypeNames
 
+factor_err = 100; % factor by which multiply difference in plots.
+
 rootd=[SPCFMloc,'EXAMPLES/validation_lns_gravito/']; % EXAMPLE path
 % OFd = [rootd,'OUTPUT_FILES/'];
 % OFd = [rootd,'OUTPUT_FILES_long/'];
-OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
 % OFd = [rootd,'OUTPUT_FILES_1904171808_vel_isobaric/'];
-% OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
+OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
 
 data_test0_or_readRun1 = 1;
 subsample = 1; % subsample synthetics? see sumsamble_dt below, near T_0
@@ -505,13 +507,16 @@ Omega_intrinsic = Omega - wind_x*KX - wind_y*KY;
 % KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
 %            - onestab/(4*H^2) + (Omega_intrinsic ./ SOUNDSPEED(1)).^2 );
 % Full Fritts and Alexander (22) with f=0 and no H term.
-KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
-           + (Omega_intrinsic ./ SOUNDSPEED(1)).^2 );
+% KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
+%            + (Omega_intrinsic ./ SOUNDSPEED(1)).^2 );
 % Full Fritts and Alexander (24) with f=0.
 % KZ = sqrt(   (KX.^2+KY.^2) .* (Nsqtab./(Omega_intrinsic.^2) - 1) ...
 %            - onestab/(4*H^2)                                         );
 % Old formula.
 % KZ = sqrt( Nsqtab.*(KX.*KX + KY.*KY)./(Omega_intrinsic.*Omega_intrinsic)-(KX.*KX + KY.*KY) - onestab/(4*H*H) + (Omega_intrinsic.*Omega_intrinsic)/(SOUNDSPEED(1)^2) );
+
+% Test new formula (WORKS QUITE GOOD ON ISOBARIC, WITH Mz = ifftn(filt.*TFMo);)
+KZ = sqrt( (wind_x.^2 - SOUNDSPEED.^2).*KX.^2 - 2*KX.*Omega + Omega.^2) ./ SOUNDSPEED;
 
 ind1=find(isnan(KZ));
 ind2=find(isinf(KZ));
@@ -523,6 +528,8 @@ disp(['[',mfilename,'] Setting those Infs to zeros.']);
 KZ(ind2)=0.0;
 % imaginary part of KZ should be positive in order to attenuate the signal
 indimag = find(imag(KZ)<0);
+disp(['[',mfilename,'] Number of KZ such that Im(KZ)<0: ',num2str(numel(indimag)),'.']);
+disp(['[',mfilename,'] Setting those to their conjugate (only flips the sign of the imaginary part).']);
 KZ(indimag) = conj(KZ(indimag));
 % real(KZ) should be positive for positive frequencies and negative for
 % negative frequencies in order to shift signal in positive times
@@ -532,6 +539,7 @@ KZ(indimag) = conj(KZ(indimag));
 % => because vg perpendicular to Vphi ?
 KZnew = 0.0 - real(KZ).*sign(Omega_intrinsic) + 1i*imag(KZ);
 KZ=KZnew;
+
 % restore negative frequencies from postive ones:
 %      KZ(:,NFFT2/2+2:NFFT2)=0.0-real(KZ(:,NFFT2/2:-1:2))+1i*imag(KZ(:,NFFT2/2:-1:2));
 % restore negative frequencies from postive ones:
@@ -595,7 +603,9 @@ KZ=KZnew;
 %       indw=find((real(KZ)<0.0));
 %       filt(indw)=0.0;
 
-      Mz = exp(z_station/(2*H)) * ifftn(filt.*TFMo);
+%       Mz = exp(z_station/(2*H)) * ifftn(filt.*TFMo);
+%       Mz = 0.5*exp(z_station/(2*H)) * ifftn(filt.*TFMo);
+      Mz = ifftn(filt.*TFMo);
 %           xcoord(istat) = xstattab(istat);
       ix = round((xstattab(gloStatNumber)-xmin)/dx) + 1; % first guess for x
       iy = round((ystattab(gloStatNumber)-zmin)/dy) + 1; % first guess for y
@@ -704,13 +714,28 @@ for locStatNumber = 1 : nstat
   end
   
   % Plot synthetic.
-  Ztime_temp = Ztime(locStatNumber,1:floor(dt/subsampledDt):end);
-  Zamp_temp  = Zamp(locStatNumber,1:floor(dt/subsampledDt):end);
+%   Ztime_temp = Ztime(locStatNumber,1:floor(dt/subsampledDt):end);
+%   Zamp_temp  = Zamp(locStatNumber,1:floor(dt/subsampledDt):end);
 %   SIZE_R = size(Ztime_temp)
 %   disp(['[',mfilename,'] Plotting a ',num2str(numel(Ztime_temp)),' long array.']);
 %         size((Zamp_temp-real(synf(istat,1:length(Ztime_temp))))')
 %   DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
   plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2,'displayname','synthetic');
+  
+  % Produce and plot difference.
+  if(min(diff(Ztime(1,:))) < min(diff(t)))
+    % if dt_sythetic < dt_analytic, interpolate analytic on synthetic t (Ztime)
+    err_t = Ztime(locStatNumber,1:nt);
+    err_synth = Zamp(locStatNumber,1:nt);
+    err_anal = interp1(t, synf(locStatNumber,:), err_t);
+  else
+    % if dt_sythetic < dt_analytic, interpolate synthetic on analytic t (t)
+    err_t = t;
+    err_synth = interp1(Ztime(locStatNumber,1:nt), Zamp(locStatNumber,1:nt), err_t);
+    err_anal = synf(locStatNumber,:);
+  end
+  err_v = factor_err * abs(err_synth - err_anal);
+  plot(err_t,err_v,':k','LineWidth',1.5,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']);
   
   % x-y labels.
   if (locStatNumber == round(nstat/2))
@@ -724,13 +749,17 @@ for locStatNumber = 1 : nstat
 %   text(00.943*max(Ztime(locStatNumber,:)),0.95,['X position : $',num2str(xstattab(locStatNumber)),'km$ (along x)']) 
 %   legend('Analytical','Modeled','10*(Mo-An)','Location','East')
 %   legend('Location','East');
-  legend('location','northeast');
+  if(locStatNumber==1)
+    % legend only on first plot
+    legend('location','northeast');
+  end
 end
 linkaxes(ax, 'x');
 % title(['Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)']);
 title(['Stations at altitudes ', sprintf('%.0f ',zstattab(istattab)),' [m]']);
 addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
 prettyAxes(f);
+customSaveFig([OFd,'compare2FKanalytic'],{'fig','eps','jpg'});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 
