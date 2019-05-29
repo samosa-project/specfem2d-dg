@@ -55,14 +55,20 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
           % Earth, format is "year 0 day 0 seconds 54000.0000 lat 4.502384 lon 135.623447"
           % try to find year
           year = regExpQuantity(line, 'year', expr_int); % convert to float
+          if(isnan(year))
+            year=2000; % safeguard if not found
+          end
           info.year=year;
 %           year = str2num(regexprep(regexprep(line, 'day.*', ''), 'year', ''));
-          if(isempty(year))
-            disp(['[',mfilename,'] Regexp on ''year'' has found nothing, assuming header is empty.']);
-            break;
-          end
+%           if(isempty(year))
+%             disp(['[',mfilename,'] Regexp on ''year'' has found nothing, assuming header is empty.']);
+%             break;
+%           end
           % try to find day since new year
           daysincenewyear = str2num(regexprep(regexprep(line, 'seconds.*', ''), 'year *[0-9]+ *day', ''));
+          if(isempty(daysincenewyear))
+            daysincenewyear=1; % safeguard if not found
+          end
           info.doy=daysincenewyear;
         case 4
           % mars 
@@ -79,6 +85,9 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
 %       lat = regexp(line, ['lat ',expr_float], 'match'); % match form
 %       lat = regexp(lat{1}, expr_float, 'match'); % extract float from form
       lat = regExpQuantity(line, 'lat', expr_float); % convert to float
+      if(isnan(lat))
+        lat=0; % safeguard if not found
+      end
       info.lat=lat;
 %       lon = str2num(regexprep(line, 'year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat *-?[0-9]+\.[0-9]+ *lon', ''))
 %       lon = regexprep(line, ['year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat *-?[0-9]+\.[0-9]+ *lon'], '');
@@ -86,6 +95,9 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
 %       lon = regexp(lon{1}, expr_float, 'match'); % extract float from form
 %       lon = str2num(lon{1}); % convert to float
       lon = regExpQuantity(line, 'lon', expr_float); % convert to float
+      if(isnan(lon))
+        lon=0; % safeguard if not found
+      end
 %       lon = str2num(regexprep(line, ['year *[0-9]+ *day *[0-9]+ *seconds *[0-9]+\.[0-9]+ *lat *-?[0-9]+\.[0-9]+ *lon'], ''))
       info.lon=lon;
       
@@ -124,6 +136,9 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
           yyyymmdd=[num2str(year),'/',pad(num2str(m),2,'left','0'),'/',pad(num2str(dom),2,'left','0')];
           % Build hh:mm:ss.
           secondssincenewday=str2num(regexprep(regexprep(line, 'lat.*', ''), 'year *[0-9]+ *day *[0-9]+ *seconds', ''));
+          if(isempty(secondssincenewday))
+            secondssincenewday=0; % safeguard if not found
+          end
           info.sod=secondssincenewday;
     %       hhmm=[pad(num2str(floor(secondssincenewday/3600)),2,'left','0'),':',pad(num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)),2,'left','0')];
     %       hhmmss=[hhmm,':','00'];
@@ -151,6 +166,9 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
           f107=str2num(regexprep(regexprep(line, '.*F107', ''), 'AP.*', ''));
           info.f107=f107;
           aptab=str2num(regexprep(line, '.*AP', ''));
+          if(isempty(aptab))
+            aptab=0; % safeguard if not found
+          end
           ap=aptab(1);
           info.ap=ap;
           secondaryInfoString=strcat("F10.7 avg. = ", sprintf("%.1f",f107a), ", F10.7 = ", sprintf("%.1f",f107), ", AP = ", sprintf("%.1f",ap));
@@ -172,7 +190,7 @@ function val = regExpQuantity(chararray, Q, expr)
   val = regexp(chararray, reggg, 'match'); % match form
   if(isempty(val))
     disp(['not found (expr = ''',reggg,''', string = ''',chararray,''')']);
-    val = -1;
+    val = nan;
   else
     val = regexp(val{1}, expr, 'match'); % extract float from form
     val = str2num(val{1}); % convert to float

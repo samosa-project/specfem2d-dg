@@ -20,7 +20,7 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
+% addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,7 +107,9 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'test_pml/'); OFd = strcat(rootd, 'OUTPUT_FILES_alright/');
 
 % Validation LNS.
-% fig_title = strcat('Validation LNS');
+fig_title = strcat('Validation LNS');
+% rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_1904171832_vel_isobaric_LNS/');
+rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_1904171808_vel_isobaric/');
 % rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_redone_velocity/');
 % rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_long/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh_wow/'); % without wind in the source term
@@ -171,9 +173,9 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
 % Tests.
-fig_title = 'test';
+% fig_title = 'test';
 % rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_FNS/'); fig_title = [fig_title,' FNS'];
-rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title = [fig_title,' LNS'];
+% rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title = [fig_title,' LNS'];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                     %
