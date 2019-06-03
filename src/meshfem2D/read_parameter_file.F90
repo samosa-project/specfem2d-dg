@@ -231,6 +231,16 @@
   call read_value_double_precision_p(forcing_initial_time, 'solver.forcing_initial_time')
   if (err_occurred() /= 0) stop 'error reading parameter forcing_initial_time in Par_file'
   
+  
+  call read_value_double_precision_p(forcing_initial_time, 'solver.forcing_initial_time')
+  if (err_occurred() /= 0) stop 'error reading parameter forcing_initial_time in Par_file'
+  
+  FORCING_DG_FACTOR = 1. ! Default value.
+  if(USE_DISCONTINUOUS_METHOD) then
+    call read_value_double_precision_p(FORCING_DG_FACTOR, 'solver.FORCING_DG_FACTOR')
+    if (err_occurred() /= 0) write(*,*) 'Error reading parameter FORCING_DG_FACTOR in Par_file. Setting to 1., do not worry.'
+  endif
+  
   ! Default values, used if the parameters are not found in parfile.
   ABC_STRETCH_TOP    = .false.
   ABC_STRETCH_LEFT   = .false.

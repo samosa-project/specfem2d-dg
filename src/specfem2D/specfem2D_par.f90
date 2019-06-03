@@ -204,7 +204,7 @@ module specfem_par
   real(kind=CUSTOM_REAL) :: coord_interface
   !logical, dimension(:), allocatable :: this_iglob_is_acous
   integer :: TYPE_FORCING, id_region_DG
-  real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time 
+  real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time, FORCING_DG_FACTOR
   integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG
   logical, dimension(:), allocatable  :: is_MPI_interface_DG    
   integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG

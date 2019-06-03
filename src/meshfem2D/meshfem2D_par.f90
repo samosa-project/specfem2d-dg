@@ -131,7 +131,7 @@
   ! Modification for LNS.
   logical USE_LNS
   
-  double precision :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time      
+  double precision :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time, FORCING_DG_FACTOR
   integer :: id_region_DG, TYPE_SOURCE_DG, TYPE_FORCING
 
   ! variables used for source-receiver geometry

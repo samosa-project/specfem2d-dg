@@ -315,6 +315,9 @@
   read(IIN,*) forcing_initial_time
   
   read(IIN,"(a80)") datlin
+  read(IIN,*) FORCING_DG_FACTOR
+  
+  read(IIN,"(a80)") datlin
   read(IIN,*) ABC_STRETCH_TOP
   read(IIN,"(a80)") datlin
   read(IIN,*) ABC_STRETCH_LEFT

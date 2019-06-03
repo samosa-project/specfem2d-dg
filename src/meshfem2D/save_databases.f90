@@ -369,6 +369,8 @@
   write(15,*) forcing_initial_loc
   write(15,*) 'forcing_initial_time'
   write(15,*) forcing_initial_time
+  write(15,*) 'FORCING_DG_FACTOR'
+  write(15,*) FORCING_DG_FACTOR
   
   write(15,*) 'ABC_STRETCH_TOP'
   write(15,*) ABC_STRETCH_TOP
