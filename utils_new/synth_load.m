@@ -108,10 +108,17 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 
 % Validation LNS.
 fig_title = strcat('Validation LNS');
-% rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_1904171832_vel_isobaric_LNS/');
-rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_1904171808_vel_isobaric/');
-% rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_redone_velocity/');
-% rootd = strcat(SPCFMEXloc,'validation_lns_gravito/'); OFd = strcat(rootd, 'OUTPUT_FILES_long/');
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_FNS_190603_st2/'); fig_title=[fig_title,' FNS']; % factor 2 ??
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations/'); fig_title=[fig_title,' LNS']; % factor 2 ??
+rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected/'); fig_title=[fig_title,' LNS']; % factor 2 ??
+% rootd = strcat(SPCFMEXloc,'LNS_test_factor2/'); OFd = strcat(rootd, 'OUTPUT_FILES_FNS/'); fig_title=[fig_title,' test factor 2 FNS'];
+% rootd = strcat(SPCFMEXloc,'LNS_test_factor2/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title=[fig_title,' test factor 2 LNS'];
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_FNS_190529_st2/'); fig_title=[fig_title,' FNS']; % factor 2 ??
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_LNS_190529_st2/'); fig_title=[fig_title,' LNS']; % factor 2 ??
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_1904171832_vel_isobaric_LNS/');
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_1904171808_vel_isobaric/');
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_redone_velocity/');
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_long/');
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh_wow/'); % without wind in the source term
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M.3_dx1gmsh_wow/'); % without wind in the source term
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_rho_M0_dx1gmsh/'); % bad
@@ -217,16 +224,29 @@ if(not(behaviour==3))
   channelle = - 1;
   while (not(length(channelle) == 1 && ismember(channelle, 'xz')))
     channelle = input(['[',mfilename,'] Channel (x, or z)? > '],'s');
+    channelle = lower(channelle);
   end
   channel = ['BX',upper(channelle)];
 else
   channel = -1;
 end
 % Ask for stations.
-istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']); istattab = reshape(istattab,[1,numel(istattab)]);
-if(isempty(istattab))
-  error(['[',mfilename,', ERROR] Empty vector of stations, retry.']);
+istattab = [];
+while(isempty(istattab))
+  istattab = input(['[',mfilename,'] Stations (Matlab format)? > ']);
+%   if(isempty(istattab))
+%     error(['[',mfilename,', ERROR] Empty vector of stations, retry.']);
+%   end
+  okvaluesforistattab = (1:size(xstattab, 1));
+  if(isempty(istattab))
+    disp(['[',mfilename,']   Empty vector of stations. Retry.']);
+  end
+  if(not(all(ismember(istattab,okvaluesforistattab))))
+    disp(['[',mfilename,']   Some stations were outside the acceptable range of stations. Retry.']);
+    istattab = [];
+  end
 end
+istattab = reshape(istattab,[1,numel(istattab)]);
 disp(['[',mfilename,'] Loading [istattab, xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)] (absolute x and z, d relative to source):']);
 disp([istattab', xstattab(istattab), ystattab(istattab), dist_to_sources(istattab)]);
 nstat = numel(istattab);
@@ -234,6 +254,11 @@ nstat = numel(istattab);
 geometric_attenuation = - 1;
 while (not(ismember(geometric_attenuation, [0, 1, 2, 3])))
   geometric_attenuation = input(['[',mfilename,'] Apply geometric attenuation factor to data? (0 for no, 1 for d, 2 for |x|, 3 for |z|) > ']);
+  if(isempty(geometric_attenuation))
+    % in case user spams [RETURN]
+    geometric_attenuation = 0;
+    disp(['[',mfilename,']   Not applying geometric attenuation (default).']);
+  end
 end
 % Ask if plot y-axis should be normalised to same scale.
 normalise_ylims = 0; % Default value.
@@ -241,6 +266,11 @@ if (behaviour == 0 && nstat > 1)
   normalise_ylims = - 1;
   while (not(normalise_ylims == 0 || normalise_ylims == 1))
     normalise_ylims = input(['[',mfilename,'] Normalise y-scale? (0 for no, 1 for yes) > ']);
+    if(isempty(normalise_ylims))
+      % in case user spams [RETURN]
+      normalise_ylims = 0;
+      disp(['[',mfilename,']   Not normalising y-scale (default).']);
+    end
   end
 end
 
