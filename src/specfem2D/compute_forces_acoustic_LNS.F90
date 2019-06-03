@@ -1045,9 +1045,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Set out_dE_P.
         call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
         ! Set out_rho0dv_P.
-        do SPCDM = 1, NDIM
-          out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
-        enddo
+        !do SPCDM = 1, NDIM
+        !  out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
+        !enddo
+        out_rho0dv_P(:) = LNS_rho0(iglobM)*out_dv_P(:)
         ! Set out_dm_P: see bottom of routine.
         if(swCompVisc) then
           out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
