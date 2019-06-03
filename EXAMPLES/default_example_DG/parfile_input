@@ -126,6 +126,8 @@ coord_interface                 = -50.0            # Only used if USE_ISOTHERMAL
 
 # Source
 # 1: Density, 2: Moment, 3: Energy.
+# This is only used if the source specified in the source file is located in a DG region. Otherwise, the following parameter has no effect.
+# WARNING! This does NOT override TYPE_FORCING below. This means that if you activate both a forcing (TYPE_FORCING = anything but 0) and a classical source (factor = anything but 0 in the source file), you will have BOTH effects. To make sure only one is active, set either FORCING_DG_FACTOR (here, below) or factor (in the source file) to 0.
 TYPE_SOURCE_DG                  = 3
 
 # Stretched buffer absorbing boundary conditions. Not finalised, use at own risk.
@@ -148,6 +150,7 @@ SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial functio
 REMOVE_STF_INITIAL_DISCONTINUITY=.true.         # Only used if USE_TRICK_FOR_BETTER_PRESSURE==.false. and time_function_type==3 (see source_input). Analytically removes the discontinuity introduced at initial time (since Gaussians have non-compact support). Alternatively, leave this to .false. and set USER_T0 to a better value (see below).
 
 # Bottom forcing function. See "boundary_terms_DG.f90".
+# WARNING! This does NOT override TYPE_SOURCE_DG above. This means that if you activate both a forcing (TYPE_FORCING = anything but 0) and a classical source (factor = anything but 0 in the source file), you will have BOTH effects. To make sure only one is active, set either FORCING_DG_FACTOR (here, below) or factor (in the source file) to 0.
 #  0: none.
 #  1: Gaussian time derivative, localised around forcing_initial_time, and for all abscissas.
 #  2: Gaussian time and space derivative, localised around (forcing_initial_time, forcing_initial_loc).
@@ -160,6 +163,7 @@ main_spatial_period             = 1. # Self-explanatory. Unit: m. Used for TYPE_
 main_time_period                = 1. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
 forcing_initial_loc             = 0. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2,4.
 forcing_initial_time            = 0. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
+FORCING_DG_FACTOR               = 1. # Factor by which multiply the forcing.
 
 #---------------------------------------------------------------------#
 #                                                                     #
