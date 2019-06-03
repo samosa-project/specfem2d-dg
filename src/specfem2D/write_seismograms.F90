@@ -37,7 +37,7 @@
 
   use specfem_par
   use specfem_par_gpu,only: Mesh_pointer
-  use specfem_par_LNS, only: USE_LNS, LNS_rho0dv, LNS_dp, NDIM
+  use specfem_par_LNS, only: USE_LNS, LNS_rho0dv, LNS_rho0, LNS_dp, NDIM
 
   implicit none
 
@@ -90,7 +90,7 @@
               if (USE_LNS) then
                 call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
                                                 potential_gravito,displ_elastic,displs_poroelastic, &
-                                                LNS_rho0dv(NDIM,:),&
+                                                LNS_rho0dv(NDIM,:)/LNS_rho0(:),&
                                                 ispec,vector_field_element)
               else
                 call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &

@@ -544,7 +544,6 @@ end subroutine boundary_condition_DG
 subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
   use constants ! TODO: select variables to use.
   use specfem_par ! TODO: select variables to use.
-  use specfem_par_LNS ! TODO: select variables to use.
   
   implicit none
   
