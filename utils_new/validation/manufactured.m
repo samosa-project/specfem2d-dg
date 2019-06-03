@@ -23,13 +23,13 @@ set(0, 'defaultAxesFontSize', 16); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % output files
-OFD = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_manufactured/OUTPUT_FILES_dp';
+% OFD = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_manufactured/OUTPUT_FILES_dp';
+OFD = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_manufactured/OUTPUT_FILES_dp_190603';
 
 % IT = 5;
 % IT = 5000;
@@ -65,6 +65,7 @@ tri = delauTri.ConnectivityList ;
 xi = delauTri.Points(:,1) ; yi = delauTri.Points(:,2) ;
 F = scatteredInterpolant(X,Y,V);
 zexp = F(xi,yi);
+caxxxxiiss_exp = [min(zexp),max(zexp)];
 
 % build analytic
 % cf. LNS_manufactured_solutions.mw
@@ -76,27 +77,45 @@ dEz=2;
 % [Xmg,Ymg]=meshgrid(x,y);
 % Vmg = sin(dEx*pi*Xmg)+sin(dEz*pi*Ymg); 
 zth = sin(dEx*pi*xi)+sin(dEz*pi*yi);
+caxxxxiiss_th = [min(zth),max(zth)];
 
 % error
 % zerr = zth-zexp; errName='Analytic - SPECFEM-DG-LNS';
 zerr = zexp-zth; errName='SPECFEM-DG-LNS - Analytic';
+caxxxxiiss_err = [min(zerr),max(zerr)];
 L2NormOfError = (integrate2DDelaunayTriangulation(delauTri, zerr.^2))^0.5;
 
-%plot
-figure('units','normalized','outerposition',[0 0.5 1 0.5]);
+% colorbar scale
+all_caxx = [caxxxxiiss_th;caxxxxiiss_exp;caxxxxiiss_err];
+glob_caxx = [min(all_caxx(:,1)),max(all_caxx(:,2))];
 
-axxx(1)=subplot(1,3,1);
+%plot
+xlab = '$x/L$';
+ylab = '$z/L$';
+
+figure('units','normalized','outerposition',[0 0.4 1 0.6]);
+axxx = tight_subplot(1, 3, 0.012, [0.14,0.08], [0.05, 0.01]); % not mandatory, but prettier
+
+axes(axxx(1));
+% axxx(1)=subplot(1,3,1);
 % surf(Xmg,Ymg,Vmg); shading interp; view([0,0,1]); colormap jet;
-trisurf(tri,xi,yi,zth); shading interp; view([0,0,1]); colormap jet; colorbar;
+trisurf(tri,xi,yi,zth); shading interp; view([0,0,1]); colormap jet; caxis(glob_caxx); %colorbar;
+xlabel(xlab);
+ylabel(ylab);
 title('Analytic');
 
-axxx(2)=subplot(1,3,2);
-trisurf(tri,xi,yi,zexp); shading interp; view([0,0,1]); colormap jet; colorbar;
+axes(axxx(2));
+% axxx(2)=subplot(1,3,2);
+trisurf(tri,xi,yi,zexp); shading interp; view([0,0,1]); colormap jet; caxis(glob_caxx); %colorbar;
 yticklabels([]);
+xlabel(xlab);
 title('SPECFEM-DG-LNS');
 
-axxx(3)=subplot(1,3,3);
-trisurf(tri,xi,yi,zerr); shading interp; view([0,0,1]); colormap jet; colorbar;
+axes(axxx(3));
+% axxx(3)=subplot(1,3,3);
+trisurf(tri,xi,yi,zerr); shading interp; view([0,0,1]); colormap jet; caxis(glob_caxx);
+h_cb = colorbar;
+xlabel(xlab);
 yticklabels([]);
 title({[errName,', L$^2$-norm = ',num2str(L2NormOfError),'']});
 
@@ -105,4 +124,4 @@ Link = linkprop(axxx,{'CameraPosition', 'XLim', 'YLim'});
 setappdata(gcf, 'StoreTheLink', Link);
 
 prettyAxes(gcf);
-customSaveFig(figPath,{'jpg','png'});
+customSaveFig(figPath,{'jpg','eps'});

@@ -35,12 +35,15 @@ addpath([SPCFMloc,'utils_new/tools']); % readExampleFiles_extractParam, seismoty
 
 factor_err = 100; % factor by which multiply difference in plots.
 
-rootd=[SPCFMloc,'EXAMPLES/validation_lns_gravito/']; % EXAMPLE path
+rootd=[SPCFMloc,'EXAMPLES/validation_lns_fk/']; % EXAMPLE path
 % OFd = [rootd,'OUTPUT_FILES/'];
 % OFd = [rootd,'OUTPUT_FILES_long/'];
 % OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
 % OFd = [rootd,'OUTPUT_FILES_1904171808_vel_isobaric/'];
-OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
+% OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected']; % this is p', we want v'
+OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_190603_st1'];
+% OFd = [rootd,'OUTPUT_FILES_isobaric_FNS_190603_st1'];
 
 data_test0_or_readRun1 = 1;
 subsample = 1; % subsample synthetics? see sumsamble_dt below, near T_0
@@ -68,6 +71,8 @@ simuType = 1; % 1 for forcing and 2 for attenuation
 % directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4_3D/');
 % directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/') ; 
 % directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/');
+
+if(not(OFd(end)=='/')); OFd = [OFd,'/']; end;
 % atmmodelfile=[directory,'1D_iso_enhanced.txt'];
 atmmodelfile=[OFd,'input_atmospheric_model.dat'];
 parfile=[OFd,'input_parfile'];
@@ -170,7 +175,8 @@ else
   H = readExampleFiles_extractParam(parfile, 'SCALE_HEIGHT', 'float'); % NEEDED FOR NSQ AND ANALYTIC SOLUTION
   disp(['[',mfilename,'] Scale height loaded,           = ',num2str(H),'.']);
   
-  if(readExampleFiles_extractParam(parfile, 'USE_ISOTHERMAL_MODEL', 'bool'))
+  USE_ISOTHERMAL_MODEL = readExampleFiles_extractParam(parfile, 'USE_ISOTHERMAL_MODEL', 'bool');
+  if(USE_ISOTHERMAL_MODEL)
     % isothermal case
     disp(['[',mfilename,'] Isothermal case.']);
     error(['[',mfilename,', ERROR] Isothermal case not implemented yet.']);
@@ -197,13 +203,25 @@ disp(['[',mfilename,'] Setting wind_y = wind_z = 0.']);
 wind_y = 0;
 wind_z = 0;
 
+% Prepare figure name.
+savefigname = [OFd,'compare2FKanalytic'];
+if(externalDGAtmosModel)
+  savefigname = [savefigname, '_externalDG'];
+else
+  if(USE_ISOTHERMAL_MODEL)
+    savefigname = [savefigname, '_isobaric'];
+  else
+    savefigname = [savefigname, '_isothermal'];
+  end
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading Results.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp([' ']);
 disp(['[',mfilename,', INFO] Loading synthetics.']);
 % data = readAndSubsampleSynth(OFd, 2, 'BXZ', 'semv', 1, 1, 0); sig_t = data(:,1)'; sig_v = data(:,2)'; figure(); plot(sig_t, sig_v); % test
-[variable, signal_type] = seismotypeNames(seismotype, readExampleFiles_extractParam(parfile, 'USE_DISCONTINUOUS_METHOD', 'bool'));
+[~, signal_type, vname_long, vunit] = seismotypeNames(seismotype, readExampleFiles_extractParam(parfile, 'USE_DISCONTINUOUS_METHOD', 'bool'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Analytical model variables, as in parfile.
@@ -739,27 +757,30 @@ for locStatNumber = 1 : nstat
   
   % x-y labels.
   if (locStatNumber == round(nstat/2))
-    ylabel([variable,' along z-axis (m)']);
+%     ylabel([variable,' along z-axis (m)']);
+    ylabel(['$',vname_long,'_z$ ',vunit]);
   end
   if (locStatNumber == 1)
-    xlabel('time (s)');
+    xlabel('time [s]');
   else
     xticklabels([]);
   end
 %   text(00.943*max(Ztime(locStatNumber,:)),0.95,['X position : $',num2str(xstattab(locStatNumber)),'km$ (along x)']) 
 %   legend('Analytical','Modeled','10*(Mo-An)','Location','East')
 %   legend('Location','East');
-  if(locStatNumber==1)
+%   if(locStatNumber==1)
+  if(locStatNumber==nstat)
     % legend only on first plot
     legend('location','northeast');
   end
 end
 linkaxes(ax, 'x');
+xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);
 % title(['Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)']);
 title(['Stations at altitudes ', sprintf('%.0f ',zstattab(istattab)),' [m]']);
 addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
 prettyAxes(f);
-customSaveFig([OFd,'compare2FKanalytic'],{'fig','eps','jpg'});
+customSaveFig(savefigname,{'fig','eps','jpg'});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 
