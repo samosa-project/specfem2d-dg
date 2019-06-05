@@ -228,7 +228,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
             gammaxl = ya_x_l * gammaxl
             gammazl = ya_z_l * gammazl
             ! TODO: This is a bit rough, do it more clearly.
-            jacobianl = ya_x_l*ya_z_l*jacobianl
+            !jacobianl = ya_x_l*ya_z_l*jacobianl
           endif
           
           wzl = wzgll(j)
@@ -706,6 +706,13 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           !  !            *(stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique))
           !endif
           
+          ! 05 Jun 2019: made the thing agree with branch LNS
+          if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+            iglob_unique = ibool_before_perio(i,j,ispec)
+            nx = nx * stretching_ya(1,iglob_unique)
+            nz = nz * stretching_ya(2,iglob_unique)
+          endif
+          
           ! Viscous stress tensor's contributions (already under the form of the average mean flux).
           dux_dx = ZERO
           dux_dz = ZERO
@@ -1079,7 +1086,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
             gammaxl = ya_x_l * gammaxl
             gammazl = ya_z_l * gammazl
             ! TODO: Do that more clearly.
-            jacobianl = ya_x_l*ya_z_l*jacobianl
+            !jacobianl = ya_x_l*ya_z_l*jacobianl
           endif
           
           wzl = wzgll(j)
@@ -1323,6 +1330,12 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
             !  iglob_unique=ibool_before_perio(i,j,ispec)
             !  weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
             !endif
+            ! 05 Jun 2019: made the thing agree with branch LNS
+            if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
+              iglob_unique = ibool_before_perio(i,j,ispec)
+              nx = nx * stretching_ya(1,iglob_unique)
+              nz = nz * stretching_ya(2,iglob_unique)
+            endif
             
             iglobP = 1
             if(neighbor(1) > -1) then
