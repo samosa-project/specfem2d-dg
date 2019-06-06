@@ -9,9 +9,22 @@
 % yields:
 %   TODO.
 
-function [xminmax, zminmax, Xsource] = readExampleFiles(parfile, sourcefile, interfacesfile, verbose)
+function [xminmax, zminmax, Xsource] = readExampleFiles(parfile, sourcefile, interfacesfile, Nodes_extMesh, verbose)
+  if(not(exist('Nodes_extMesh','var')))
+    Nodes_extMesh=[];
+  end
   if(not(exist('verbose')))
     verbose=0;
+  end
+  
+  if(not(isempty(parfile)) && not(exist(parfile,'file')))
+    error(['[',mfilename,', ERROR] Parfile ''',parfile,''' does not exist.']);
+  end
+  if(not(isempty(sourcefile)) && not(exist(sourcefile,'file')))
+    error(['[',mfilename,', ERROR] Source file ''',sourcefile,''' does not exist.']);
+  end
+  if(not(isempty(interfacesfile)) && not(exist(interfacesfile,'file')))
+    error(['[',mfilename,', ERROR] Interfaces file ''',interfacesfile,''' does not exist.']);
   end
   
   % default values for cases in which the user only asks one of the things
@@ -26,7 +39,7 @@ function [xminmax, zminmax, Xsource] = readExampleFiles(parfile, sourcefile, int
       if(verbose)
         disp(['[',mfilename,'] Need to read an external mesh.']);
       end
-      P=extMesh_loadNodes();
+      P=readExampleFiles_extmshLoadNodes(Nodes_extMesh);
       xminmax = [min(P(:,1)), max(P(:,1))];
       zminmax = [min(P(:,2)), max(P(:,2))];
     else

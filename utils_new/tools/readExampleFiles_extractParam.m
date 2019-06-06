@@ -19,10 +19,10 @@ function [var] = readExampleFiles_extractParam(path2file, varName, varType, verb
 %   varType='int';
   
   if(not(exist(path2file,'file')))
-    if(verbose)
+%     if(verbose)
       %error(['[',mfilename,', ERROR] File ''',path2file,''' does not exist. Run ''help ',mfilename,'''.']);
       disp(['[',mfilename,', ERROR] ''',path2file,''' is not a path to a file. Setting outputs to NaNs.']);
-    end
+%     end
     var = nan;
     
   else

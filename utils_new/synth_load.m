@@ -67,7 +67,8 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1486113/');
 
 % TNTGlanes
-% fig_title = strcat('Tirs de Mine Glanes');
+fig_title = strcat('Tirs de Mine Glanes');
+rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1939115_40hz_neweststations/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1508049_40hz/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479543_clean/');
 % rootd = strcat(SPCFMEXloc,'tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
@@ -107,10 +108,10 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'test_pml/'); OFd = strcat(rootd, 'OUTPUT_FILES_alright/');
 
 % Validation LNS.
-fig_title = strcat('Validation LNS');
+% fig_title = strcat('Validation LNS');
 % rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_FNS_190603_st2/'); fig_title=[fig_title,' FNS']; % factor 2 ??
 % rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations/'); fig_title=[fig_title,' LNS']; % factor 2 ??
-rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected/'); fig_title=[fig_title,' LNS']; % factor 2 ??
+% rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected/'); fig_title=[fig_title,' LNS']; % factor 2 ??
 % rootd = strcat(SPCFMEXloc,'LNS_test_factor2/'); OFd = strcat(rootd, 'OUTPUT_FILES_FNS/'); fig_title=[fig_title,' test factor 2 FNS'];
 % rootd = strcat(SPCFMEXloc,'LNS_test_factor2/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title=[fig_title,' test factor 2 LNS'];
 % rootd = strcat(SPCFMEXloc,'validation_lns_fk/'); OFd = strcat(rootd, 'OUTPUT_FILES_isobaric_FNS_190529_st2/'); fig_title=[fig_title,' FNS']; % factor 2 ??
@@ -366,6 +367,8 @@ elseif (behaviour == 2) % Eventually, plot as time-distance.
       otherwise
         error('should not have come here');
     end
+  else
+    periodizechoice = 0;
   end
   
   switch distancechoice

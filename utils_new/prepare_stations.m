@@ -12,6 +12,10 @@
 clear all;
 close all;
 clc;
+set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 12);
+set(0, 'defaultTextFontSize', 24); set(0, 'defaultAxesFontSize', 24);
+set(0, 'DefaultTextInterpreter', 'latex');
+set(0, 'DefaultLegendInterpreter', 'latex');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/prepare_stations_subcases'); % subcases IMPORTANT
 
@@ -22,13 +26,14 @@ simulationfolder = input(['[',mfilename,'] Path to simulation folder > '],'s');
 if(not(simulationfolder(end)==filesep)); simulationfolder=[simulationfolder,filesep]; end;
 
 typeeee=-1;
-while(not(numel(typeeee)==1 & ismember(typeeee,[0,1,101,102,201])))
+while(not(numel(typeeee)==1 & ismember(typeeee,[0,1,101,102,201,3])))
   disp(['[',mfilename,'] Type of simulation?']);
   disp([blanks(length(mfilename)+2),'   1   AboveAndBelowGround_Periodic_WithTilt']);
   disp([blanks(length(mfilename)+2),'   101 AboveAndBelowGround_Periodic_WithTilt__MarsInSIGHT']);
   disp([blanks(length(mfilename)+2),'   102 AboveAndBelowGround_Periodic_WithTilt__MarsInSIGHT_Impact']);
   disp([blanks(length(mfilename)+2),'   2   AboveGroundSimple']);
   disp([blanks(length(mfilename)+2),'   201 AboveGroundSimple_Microbaroms']);
+  disp([blanks(length(mfilename)+2),'   3   tir_de_mine']);
   typeeee=input([blanks(length(mfilename)+2),' > ']);
 end
 switch (typeeee)
@@ -42,6 +47,8 @@ switch (typeeee)
     [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple(simulationfolder);
   case 201
     [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple_Microbaroms(simulationfolder);
+  case 3
+    [xminmax, zminmax, interface, Xsource, debfin, d, name] = tir_de_mine(simulationfolder);
   otherwise
     error('kuk');
 end

@@ -11,8 +11,11 @@
 %   TODO.
 
 function [P] = readExampleFiles_extmshLoadNodes(Nodes_extMesh)
-  if(not(exist('Nodes_extMesh')))
+  if(not(exist('Nodes_extMesh','var')) || isempty(Nodes_extMesh))
     Nodes_extMesh = input(['[',mfilename,'] Path to Nodes_extMesh? > '],'s');
+  end
+  if(not(exist(Nodes_extMesh,'file')))
+    error(['[',mfilename,', ERROR] Nodes_extMesh file ''',Nodes_extMesh,''' does not exist.']);
   end
   Nodes_extMesh_f = fopen(Nodes_extMesh,'r');
   lines = textscan(Nodes_extMesh_f, '%f %f');
