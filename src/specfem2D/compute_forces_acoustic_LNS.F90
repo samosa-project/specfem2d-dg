@@ -109,20 +109,39 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   end select
 !  endif ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
+!  !do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+!  do ispec = 1, nspec; do j = 2,4; do i = 2,4 ! V2: get on center GLL point only
 !    iglob = ibool_DG(i,j,ispec)
-!#define DEX 3.
-!#define DEZ 2.
-!    !outrhs_drho = 0.
-!    outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + (gammaext_DG(iglob)-1.)*DEX*PI&
+!#define DEX 1.5
+!#define DEZ 1.5
+!    outrhs_drho = 0. * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!    !outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + 1.
+!    outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + (gammaext_DG(iglob)-1.)*DEX*PI& ! V1: add
+!    !outrhs_rho0dv(1, iglob) = (gammaext_DG(iglob)-1.)*DEX*PI& ! V2: overwrite
 !                              *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec)))&
 !                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
-!    outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) + (gammaext_DG(iglob)-1.)*DEZ*PI&
+!    outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) + (gammaext_DG(iglob)-1.)*DEZ*PI& ! V1: add
+!    !outrhs_rho0dv(2, iglob) = (gammaext_DG(iglob)-1.)*DEZ*PI& ! V2: overwrite
 !                              *cos(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))&
 !                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
-!    !outrhs_dE = 0.
+!    outrhs_dE =   LNS_v0(1,iglob)*gammaext_DG(iglob)*DEX*PI &
+!                * cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!                * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
 !  enddo; enddo; enddo
 !  !! DO NOT FORGET TO UPDATE BOUNDARY TERMS BELOW.
+!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! Look what's inside source
+!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
+!    iglob = ibool_DG(i,j,ispec)
+!    if(coord(1,ibool_before_perio(i,j,ispec))>0.21 .and. coord(1,ibool_before_perio(i,j,ispec))<0.22) then
+!      if(coord(2,ibool_before_perio(i,j,ispec))>0.16 .and. coord(2,ibool_before_perio(i,j,ispec))<0.21) then
+!        write(*,*) 'x z outrhs_rho0dv(1, iglob)', coord(1,ibool_before_perio(i,j,ispec)), &
+!                   coord(2,ibool_before_perio(i,j,ispec)), outrhs_rho0dv(1, iglob)
+!      endif
+!    endif
+!  enddo; enddo; enddo
+!  stop
 !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, LNS_MODPRINT) == 0) then
@@ -1062,15 +1081,17 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
         
 !        ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!#define DEX 3.
-!#define DEZ 2.
 !        exact_interface_flux = .true.
 !        out_drho_P = 0.
 !        out_dv_P = 0.*out_dv_P
 !        out_dE_P =   sin(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
 !                   + sin(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))
 !        out_dp_P = (gammaext_DG(iglobM)-1.)*out_dE_P
-!        out_rho0dv_P = out_drho_P*out_dv_P
+!        out_rho0dv_P = LNS_rho0(iglobM)*out_dv_P
+!        if(swCompVisc) then
+!          out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
+!          out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
+!        endif
 !        if(swCompdT) then
 !          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
 !          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
