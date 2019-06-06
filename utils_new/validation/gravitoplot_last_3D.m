@@ -35,14 +35,22 @@ addpath([SPCFMloc,'utils_new/tools']); % readExampleFiles_extractParam, seismoty
 
 factor_err = 100; % factor by which multiply difference in plots.
 
-rootd=[SPCFMloc,'EXAMPLES/validation_lns_fk/']; % EXAMPLE path
+prefix = 'validation_lns_fk';
+
+% fignames
+savefigname = ['compare2FKanalytic'];
+savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',prefix,'_info/'];
+
+% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_1.00dt/']; % EXAMPLE path
+% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_0.50dt/']; % EXAMPLE path
+rootd=[SPCFMloc,'EXAMPLES/',prefix,'_0.50dx_0.50dt/']; % EXAMPLE path
 % OFd = [rootd,'OUTPUT_FILES/'];
 % OFd = [rootd,'OUTPUT_FILES_long/'];
 % OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
 % OFd = [rootd,'OUTPUT_FILES_1904171808_vel_isobaric/'];
 % OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
 % OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected']; % this is p', we want v'
-OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_190603_st1'];
+OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_st1'];
 % OFd = [rootd,'OUTPUT_FILES_isobaric_FNS_190603_st1'];
 
 data_test0_or_readRun1 = 1;
@@ -204,16 +212,17 @@ wind_y = 0;
 wind_z = 0;
 
 % Prepare figure name.
-savefigname = [OFd,'compare2FKanalytic'];
 if(externalDGAtmosModel)
   savefigname = [savefigname, '_externalDG'];
 else
   if(USE_ISOTHERMAL_MODEL)
-    savefigname = [savefigname, '_isobaric'];
-  else
     savefigname = [savefigname, '_isothermal'];
+  else
+    savefigname = [savefigname, '_isobaric'];
   end
 end
+spl=split(OFd,'/');
+savefigname = [savefigname, regexprep(spl{end-2},prefix,'')];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading Results.
@@ -717,6 +726,8 @@ disp([' ']);
 disp(['[',mfilename,'] Plotting everything.']);
 f=figure('units','normalized','outerposition',[0 0 1 1]);
 ax = [];
+
+max_relative_err_all_stats = []; % save maximum error
 for locStatNumber = 1 : nstat
   ax(locStatNumber) = subplot(nstat,1,nstat-locStatNumber+1); 
   hold on
@@ -753,6 +764,9 @@ for locStatNumber = 1 : nstat
     err_anal = synf(locStatNumber,:);
   end
   err_v = factor_err * abs(err_synth - err_anal);
+  
+  max_relative_err_all_stats(locStatNumber) = (max(err_v)/100)/peak2peak(synf(locStatNumber,:));
+  
   plot(err_t,err_v,':k','LineWidth',1.5,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']);
   
   % x-y labels.
@@ -777,10 +791,11 @@ end
 linkaxes(ax, 'x');
 xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);
 % title(['Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)']);
-title(['Stations at altitudes ', sprintf('%.0f ',zstattab(istattab)),' [m]']);
+title(['Sound Speed = ',num2str(SOUNDSPEED),' [m/s]. Stations'' Altitudes = [', sprintf('%.0f ',zstattab(istattab)),'] [m] - Max. Rel. Err. = ',num2str(max(max_relative_err_all_stats*100)),' \%']);
 addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
 prettyAxes(f);
-customSaveFig(savefigname,{'fig','eps','jpg'});
+savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
+customSaveFig(savefigfullpath,{'fig','eps','jpg'});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 
