@@ -253,6 +253,9 @@
   
   read(IIN,"(a80)") datlin
   read(IIN,*) CONSTRAIN_HYDROSTATIC
+
+  read(IIN,"(a80)") datlin
+  read(IIN,*) IONOSPHERIC_COUPLING
   
   read(IIN,"(a80)") datlin
   read(IIN,*) USE_ISOTHERMAL_MODEL
@@ -837,6 +840,11 @@
              buffer_DG_E_P(NGLLX*max_interface_size,ninterface), &
              buffer_DG_e1_P(NGLLX*max_interface_size,ninterface), &
              buffer_DG_gamma_P(NGLLX*max_interface_size,ninterface),stat=ier)
+    if (ier /= 0) then
+      ! Safeguard.
+      stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."
+    endif
+    if(IONOSPHERIC_COUPLING) allocate(buffer_DG_Ni_P(NGLLX*max_interface_size,ninterface),stat=ier)
     if (ier /= 0) then
       ! Safeguard.
       stop "Error allocating 'buffer_DG_*' arrays (see 'read_mesh_databases.F90')."

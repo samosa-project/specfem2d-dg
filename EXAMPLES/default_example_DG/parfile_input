@@ -76,7 +76,7 @@ SAVE_MODEL                      = default
 #---------------------------------------------------------------------#
 
 # attenuation parameters
-ATTENUATION_VISCOELASTIC_SOLID  = .true.         # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
+ATTENUATION_VISCOELASTIC_SOLID  = .false.         # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
 ATTENUATION_PORO_FLUID_PART     = .false.        # Poroelastic materials only. Turn on or off viscous attenuation for the fluid part of poroelastic parts of the model.
 Q0                              = 1              # Poroelastic materials only. Quality factor for the viscous attenuation.
 freq0                           = 0.05           # Poroelastic materials only. Frequency for the viscous attenuation.
@@ -103,6 +103,9 @@ REMOVE_DG_FLUID_TO_SOLID        = .false.        # Removes the effect of the flu
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
 CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydrostatic state. Causes the pressure output to be in perturbation only.
+
+# Ionospheric coupling
+IONOSPHERIC_COUPLING            = .false.         # Activate ionospheric coupling. Vertical/Horizontal magnetic fields and background TEC required
 
 # Fluid model (if MODEL\='external').
 USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobaric (.false.) model for the fluid part.

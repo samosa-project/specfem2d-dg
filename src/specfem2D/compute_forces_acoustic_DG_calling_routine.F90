@@ -85,6 +85,7 @@ subroutine compute_forces_acoustic_DG_main()
     dot_rhovz(:) = ZEROl
     dot_E(:)     = ZEROl
     dot_e1(:)    = ZEROl
+    if(IONOSPHERIC_COUPLING) dot_Ni(:)    = ZEROl
     
     ! DEBUG.
     !allocate(save_pressure(nglob_DG))
@@ -94,12 +95,14 @@ subroutine compute_forces_acoustic_DG_main()
     if(.not. assign_external_model) then
       deallocate(gravityext, muext, etaext, kappa_DG, &
                  tau_epsilon, tau_sigma)
+      if(IONOSPHERIC_COUPLING) deallocate(N0ext)
       allocate(gravityext(NGLLX, NGLLZ, nspec), &
                etaext(NGLLX, NGLLZ, nspec), &
                muext(NGLLX, NGLLZ, nspec), &
                kappa_DG(NGLLX, NGLLZ, nspec), &
                tau_epsilon(NGLLX, NGLLZ, nspec), &
                tau_sigma(NGLLX, NGLLZ, nspec)) 
+      if(IONOSPHERIC_COUPLING) allocate(N0ext(NGLLX, NGLLZ, nspec))
     endif
     
     
@@ -118,6 +121,7 @@ subroutine compute_forces_acoustic_DG_main()
     V_DG = ZEROl
     drho_DG = ZEROl
     dEp_DG = ZEROl
+    if(IONOSPHERIC_COUPLING) Ni_DG = ZEROl
     
     call initial_condition_DG()
 
@@ -208,6 +212,7 @@ subroutine compute_forces_acoustic_DG_main()
     call assemble_MPI_vector_DG(rhovx_DG, buffer_DG_rhovx_P)
     call assemble_MPI_vector_DG(rhovz_DG, buffer_DG_rhovz_P)
     call assemble_MPI_vector_DG(E_DG, buffer_DG_E_P)
+    if(IONOSPHERIC_COUPLING) call assemble_MPI_vector_DG(Ni_DG, buffer_DG_Ni_P)
   endif
 #endif
 
@@ -230,8 +235,8 @@ subroutine compute_forces_acoustic_DG_main()
   endif
   
   call compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
-                                  T_DG, V_DG, drho_DG, dEp_DG, e1_DG, &
-                                  dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, &
+                                  T_DG, V_DG, drho_DG, dEp_DG, e1_DG, Ni_DG, &
+                                  dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, dot_Ni, &
                                   timelocal)
   
   if (time_stepping_scheme == 3 .or. time_stepping_scheme == 4) then
@@ -258,6 +263,7 @@ subroutine compute_forces_acoustic_DG_main()
     dot_rhovz(:) = dot_rhovz(:) * rmass_inverse_acoustic_DG(:)
     dot_E(:)     = dot_E(:)     * rmass_inverse_acoustic_DG(:)
     dot_e1(:)    = dot_e1(:)    * rmass_inverse_acoustic_DG(:)
+    if(IONOSPHERIC_COUPLING) dot_Ni(:)    = dot_Ni(:)    * rmass_inverse_acoustic_DG(:)
     
     ! Time scheme low-storage update. See e.g. Eq. (2) of J. Berland, C. Bogey, and C. Bailly, “Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm,” Comput. Fluids, vol. 35, no. 10, pp. 1459–1463, 2006.
     resu_rho   = scheme_A(i_stage)*resu_rho   + deltat*dot_rho
@@ -270,6 +276,7 @@ subroutine compute_forces_acoustic_DG_main()
     rhovz_DG   = rhovz_DG + scheme_B(i_stage)*resu_rhovz
     E_DG       = E_DG     + scheme_B(i_stage)*resu_E
     e1_DG      = e1_DG    + scheme_B(i_stage)*resu_e1
+    if(IONOSPHERIC_COUPLING) Ni_DG      = Ni_DG    + scheme_B(i_stage)*resu_Ni
     
 
 

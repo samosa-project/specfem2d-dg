@@ -166,14 +166,15 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
   use constants,only: CUSTOM_REAL, gamma_euler, PI, HUGEVAL, TINYVAL, FOUR_THIRDS
 
   use specfem_par, only: ibool_before_perio, ibool_DG, coord, &
-        rhoext, windxext, pext_DG, gravityext, gammaext_DG, &
+        rhoext, windxext, pext_DG, gravityext, gammaext_DG, Bxext, Bzext, N0ext, &
         etaext, muext, coord_interface, kappa_DG, cp, c_V, &
         tau_epsilon, tau_sigma, &
         gravity_cte_DG, dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_eps_cte_DG, tau_sig_cte_DG, SCALE_HEIGHT, &
         USE_ISOTHERMAL_MODEL, potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
         surface_density, sound_velocity, wind, TYPE_FORCING, &
         !forcing_initial_time, main_time_period, forcing_initial_loc, main_spatial_period,&
-        assign_external_model!,myrank!, &
+        assign_external_model, &!,myrank,
+        IONOSPHERIC_COUPLING!, &
         !DT,&!, XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME,& ! Microbarom forcing.
         !EXTERNAL_FORCING_MAXTIME,EXTERNAL_FORCING, EXTFORC_MAP_ibbp_TO_LOCAL,& ! External forcing.
         !EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT! External forcing.
@@ -271,6 +272,14 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
       kappa_DG(i, j, ispec) = thermal_conductivity_cte_DG
       tau_epsilon(i, j, ispec) = tau_eps_cte_DG
       tau_sigma(i, j, ispec)   = tau_sig_cte_DG
+      if(IONOSPHERIC_COUPLING) then
+      Bxext(ibool_DG(i, j, ispec)) = ZEROl
+      Bzext(ibool_DG(i, j, ispec)) = ZEROl
+      N0ext(i, j, ispec) = ZEROl
+      endif
+
+      !WRITE(*,*) "dynamic_viscosity_cte_DG", dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG
+      !stop 'TOTO'
       
       potential_dphi_dx_DG(ibool(i, j, ispec)) = ZEROl
       potential_dphi_dz_DG(ibool(i, j, ispec)) = gravityext(i, j, ispec)
@@ -1029,12 +1038,15 @@ end subroutine prepare_external_forcing
   subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                 rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                 Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
+                Vix_P, Viz_P, Ni_P, &
                 neighbor, &
                 exact_interface_flux, &
                 rho_DG_iM, E_DG_iM, rhovx_DG_iM, rhovz_DG_iM, &
                 V_DG_iM, T_DG_iM, &
+                Vix_iM, Viz_iM, Ni_iM, &
                 rho_DG_iP, E_DG_iP, rhovx_DG_iP, rhovz_DG_iP, &
                 V_DG_iP, T_DG_iP, &
+                Vix_iP, Viz_iP, Ni_iP, &
                 nx, nz, weight, timelocal, &
                 iface1, iface)
   
@@ -1046,7 +1058,7 @@ end subroutine prepare_external_forcing
                          ACOUSTIC_FORCING, &
                           ispec_is_acoustic_coupling_el, ispec_is_acoustic_coupling_ac, potential_dot_dot_acoustic, veloc_elastic,&
                          DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
-                         buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P, NPROC, &
+                         buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P, buffer_DG_Ni_P, NPROC, &
                          buffer_DG_Vxx_P, buffer_DG_Vzz_P, buffer_DG_Vxz_P, buffer_DG_Vzx_P, buffer_DG_Tz_P, buffer_DG_Tx_P, &
                          p_DG_init, gammaext_DG, muext, etaext, kappa_DG, ibool, c_V, &
                          buffer_DG_gamma_P, coord,  &
@@ -1056,7 +1068,7 @@ end subroutine prepare_external_forcing
                          ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
                          ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF,&
                          mesh_xmin, mesh_xmax, sigma_elastic, vpext, vsext, rhoext, &
-                         assign_external_model, kmato, poroelastcoef, density, surface_density, sound_velocity
+                         assign_external_model, kmato, poroelastcoef, density, surface_density, sound_velocity, IONOSPHERIC_COUPLING
                          
   implicit none
   
@@ -1066,7 +1078,8 @@ end subroutine prepare_external_forcing
   
   real(kind=CUSTOM_REAL), intent(out) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
                                          E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
-                                         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P
+                                         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
+                                         Vix_P, Viz_P, Ni_P
         
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
         
@@ -1080,6 +1093,8 @@ end subroutine prepare_external_forcing
         
   real(kind=CUSTOM_REAL), intent(in) :: rho_DG_iM, E_DG_iM, rhovx_DG_iM, rhovz_DG_iM, &
                                         rho_DG_iP, E_DG_iP, rhovx_DG_iP, rhovz_DG_iP
+  ! Electron density
+  real(kind=CUSTOM_REAL), intent(in) :: Vix_iP, Viz_iP, Vix_iM, Viz_iM, Ni_iM, Ni_iP
   real(kind=CUSTOM_REAL), dimension(2), intent(in) :: T_DG_iP, T_DG_iM
   real(kind=CUSTOM_REAL), dimension(2, 2), intent(in) :: V_DG_iP, V_DG_iM
   
@@ -1123,6 +1138,11 @@ end subroutine prepare_external_forcing
   Vzz_DG_P = -V_DG_iM(2, 2)
   Vxz_DG_P = -V_DG_iM(1, 2)
   Vzx_DG_P = -V_DG_iM(2, 1)
+
+  ! Electron density
+  Vix_P = Vix_iM
+  Viz_P = Viz_iM
+  Ni_P     = Ni_iM
   
   gamma_P = gammaext_DG(iglobM)
   
@@ -1236,6 +1256,7 @@ end subroutine prepare_external_forcing
         p_DG_P = (gamma_P - ONE)*( E_DG_P &
                  - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
         T_P = (E_DG_P/rho_DG_P - 0.5*((rhovx_DG_P/rho_DG_P)**2 + (rhovz_DG_P/rho_DG_P)**2))/c_V
+        if(IONOSPHERIC_COUPLING) Ni_P     = buffer_DG_Ni_P(ipoin, num_interface)
 
       endif
                     
@@ -1600,6 +1621,12 @@ end subroutine prepare_external_forcing
     veloc_z_DG_P = rhovz_DG_P/rho_DG_P
     p_DG_P       = (gamma_P - ONE)*( E_DG_P &
                    - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
+    
+    ! Electron density
+    Vix_P = Vix_iP
+    Viz_P = Viz_iP
+    Ni_P = Ni_iP
+    
     if(muext(i, j, ispec) > 0 .OR. &
        etaext(i, j, ispec) > 0 .OR. &
        kappa_DG(i, j, ispec) > 0) then

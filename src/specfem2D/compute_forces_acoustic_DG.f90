@@ -38,8 +38,8 @@
 ! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
 
 subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, &
-                                        T_DG_main, V_DG_main, drho_DG_main, dEp_DG_main, e1_DG, &
-                                        dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, timelocal)
+                                        T_DG_main, V_DG_main, drho_DG_main, dEp_DG_main, e1_DG, Ni_DG, &
+                                        dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, dot_Ni, timelocal)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ!,gamma_euler
 
@@ -52,6 +52,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                          DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
                          myrank, &
                          i_stage, p_DG_init, gammaext_DG, muext, etaext, kappa_DG,tau_epsilon, tau_sigma, &
+                         Bxext, Bzext, N0ext, &
                          !rhovx_init, rhovz_init, E_init, &
                          rho_init, &
                          CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
@@ -62,16 +63,16 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                          !mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
                          coord, &
                          ibool_before_perio,stretching_buffer, rhovx_init, rho_init, &
-                         AXISYM, is_on_the_axis, wxglj, hprimeBarwglj_xx, xiglj
+                         AXISYM, is_on_the_axis, wxglj, hprimeBarwglj_xx, xiglj, IONOSPHERIC_COUPLING, VTECZ
                          
   implicit none
 
   ! Input/output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG_main, rhovx_DG_main, rhovz_DG_main, E_DG_main, e1_DG, &
-    drho_DG_main, dEp_DG_main
+    drho_DG_main, dEp_DG_main, Ni_DG
   real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(in) :: T_DG_main
   real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(in) :: V_DG_main
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, dot_Ni
   
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
@@ -86,6 +87,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: temp_rho_1, temp_rho_2, &
                                                      temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
                                                      temp_E_1, temp_E_2, &
+                                                     temp_Ni_1, temp_Ni_2, &
                                                      temp_nondiv_rho, &
                                                      temp_nondiv_rhovx, temp_nondiv_rhovz, temp_nondiv_E!, temp_e1
   real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl ! Jacobian matrix and determinant.
@@ -97,12 +99,14 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                             E_DG_P, p_DG_P, rhovx_DG_P, rhovz_DG_P, timelocal, &
                             Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vxz_DG_P, Vzx_DG_P, T_P, &
                             ! TEST
-                            gamma_P!,e1_DG_P
+                            gamma_P,&
+                            Vix_P, Viz_P, &
+                            Ni_DG_P
   real(kind=CUSTOM_REAL) :: dT_dx, dT_dz
   !real(kind=CUSTOM_REAL) :: veloc_n_M, veloc_n_P
   integer :: iglobM, iglobP
   integer, dimension(3) :: neighbor
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, p_DG
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, p_DG, Vix, Viz
   real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz ! Viscosity
   real(kind=CUSTOM_REAL) :: wxl, wzl ! Integration weigths.
   logical :: exact_interface_flux
@@ -110,13 +114,16 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
-  real(kind=CUSTOM_REAL) :: coef_test_wind
+  real(kind=CUSTOM_REAL) :: coef_test_wind, coef_Ni
   ! TESTS
   !real(kind=CUSTOM_REAL) :: x,z ! Artifical advection and a priori damping.
   !real(kind=CUSTOM_REAL) :: maxval_rho,maxval_rhovx,maxval_rhovz,maxval_E ! ABSORB
   !logical :: ABSORB_BC ! ABSORB
   
-    ! Axisymmetric
+  ! Ionospheric coupling
+  real(kind=CUSTOM_REAL) :: Vix_iP, Viz_iP, Ni_DG_iP, Vix_iM, Viz_iM, Ni_DG_iM
+
+  ! Axisymmetric
   real(kind=CUSTOM_REAL) :: xxi, temp_boundary
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: r_xiplus1
 
@@ -129,6 +136,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   endif
   
   coef_test_wind = 1.
+  coef_Ni = 1.
 
   rho_DG   = rho_DG_main
   rhovx_DG = rhovx_DG_main
@@ -155,12 +163,21 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                - (HALF)*rho_DG*( veloc_x_DG**2 + veloc_z_DG**2 ) )
   !p_DG = (rho_DG*8.314*2.8e-2/c_V)*(E_DG/rho_DG - 0.5*( veloc_x_DG**2 + veloc_z_DG**2 )) ! p=rho*R*T
   
+  if(IONOSPHERIC_COUPLING) then
+  Vix = (veloc_x_DG*Bxext + veloc_z_DG*Bzext)*Bxext
+  Viz = (veloc_x_DG*Bxext + veloc_z_DG*Bzext)*Bzext
+  endif
+
   ! Initialisation of the RHS.
   dot_rho   = ZERO
   dot_rhovx = ZERO
   dot_rhovz = ZERO
   dot_E     = ZERO
   dot_e1    = ZERO
+  if(IONOSPHERIC_COUPLING) then
+  dot_Ni    = ZERO
+  VTECZ = ZERO
+  endif
   
   ! Start by adding source terms.
   if(TYPE_SOURCE_DG == 1) then
@@ -322,6 +339,16 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           else
             temp_E_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
             temp_E_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
+          endif
+
+          ! Electron density.
+          if(IONOSPHERIC_COUPLING) then
+          !temp_unknown  = Vix(iglob)*N0ext(i,j,ispec)
+          !temp_unknown2 = Viz(iglob)*N0ext(i,j,ispec)
+          temp_unknown  = Vix(iglob)*(Ni_DG(iglob)*coef_Ni + N0ext(i,j,ispec))
+          temp_unknown2 = Viz(iglob)*(Ni_DG(iglob)*coef_Ni + N0ext(i,j,ispec))
+          temp_Ni_1(i, j) = wzl * jacobianl * (xixl * temp_unknown + xizl * temp_unknown2) 
+          temp_Ni_2(i, j) = wxl * jacobianl * (gammaxl * temp_unknown + gammazl * temp_unknown2) 
           endif
 
           ! Viscous stress tensor's contributions.
@@ -518,16 +545,15 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
               dot_E(iglob) = dot_E(iglob) + &
                            (temp_E_1(k, j) * real(hprimeBarwglj_xx(k, i), kind=CUSTOM_REAL) + &
                             temp_E_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              if(IONOSPHERIC_COUPLING) then
+              dot_Ni(iglob) = dot_Ni(iglob) + &
+                           (temp_Ni_1(k, j) * real(hprimeBarwglj_xx(k, i), kind=CUSTOM_REAL) + &
+                            temp_Ni_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              endif
               enddo ! Enddo on k.
               
               wzl = real(wzgll(j), kind=CUSTOM_REAL)
               wxl = real(wxglj(i), kind=CUSTOM_REAL)
-          
-              ! Terms outside divergence operator.
-              dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i, j) * wxl * wzl
-              dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i, j) * wxl * wzl
-              dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i, j) * wxl * wzl
-              dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i, j) * wxl * wzl
 
           else
 
@@ -545,19 +571,23 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                 dot_E(iglob) = dot_E(iglob) + &
                            (temp_E_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
                             temp_E_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL)   )
+              if(IONOSPHERIC_COUPLING) then
+              dot_Ni(iglob) = dot_Ni(iglob) + &
+                           (temp_Ni_1(k, j) * real(hprimewgll_xx(k, i), kind=CUSTOM_REAL) + &
+                            temp_Ni_2(i, k) * real(hprimewgll_zz(k, j), kind=CUSTOM_REAL)   )
+              endif
               enddo ! Enddo on k.
 
               wzl = real(wzgll(j), kind=CUSTOM_REAL)
               wxl = real(wxgll(i), kind=CUSTOM_REAL)
-          
-              ! Terms outside divergence operator.
-              dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i,j) * wxl * wzl
-              dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i,j) * wxl * wzl
-              dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i,j) * wxl * wzl
-              dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i,j) * wxl * wzl
   
           endif ! AXISYM
           
+          ! Terms outside divergence operator.
+          dot_rho(iglob)   = dot_rho(iglob)   + temp_nondiv_rho(i, j) * wxl * wzl
+          dot_rhovx(iglob) = dot_rhovx(iglob) + temp_nondiv_rhovx(i, j) * wxl * wzl
+          dot_rhovz(iglob) = dot_rhovz(iglob) + temp_nondiv_rhovz(i, j) * wxl * wzl
+          dot_E(iglob)     = dot_E(iglob)     + temp_nondiv_E(i, j) * wxl * wzl
           ! DEBUG: DEACTIVATE INTERNAL (ALL EXCEPT FLUXES) EVOLUTION.
           !dot_rho(iglob) = 0.
           !dot_rhovx(iglob) = 0.
@@ -638,17 +668,31 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
                 neighbor(2) = j
                 neighbor(3) = ispec
           endif
+
+          ! If IONOSPHERIC_COUPLING = .true., Ni_DG, Vix and Viz are not allocated
+          ! Therefore, we generate auxiliary variables
+          if(IONOSPHERIC_COUPLING) then
+          Vix_iP   = Vix(iglobP)
+          Viz_iP   = Viz(iglobP)
+          Ni_DG_iP = Ni_DG(iglobP)
+          Vix_iM   = Vix(iglobM)
+          Viz_iM   = Viz(iglobM)
+          Ni_DG_iM = Ni_DG(iglobM)
+          endif
           
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
           call compute_interface_unknowns(i,j,ispec, rho_DG_P, rhovx_DG_P, &
                   rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                   Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P,&
+                  Vix_P, Viz_P, Ni_DG_P, &
                   neighbor, &
                   exact_interface_flux, &
                   rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
                   V_DG(:,:,iglobM), T_DG(:,iglobM), &
+                  Vix_iM, Viz_iM, Ni_DG_iM,&
                   rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
                   V_DG(:,:,iglobP), T_DG(:,iglobP), &
+                  Vix_iP, Viz_iP, Ni_DG_iP, &
                   nx, nz, weight, timelocal, iface1, iface)
                   !TEST STRETCH
                   !nx_unit, nz_unit, weight, timelocal, iface1, iface)
@@ -936,6 +980,27 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
           
           dot_E(iglobM) = dot_E(iglobM) + temp_boundary
           
+          ! Electron density equation's fully inviscid contributions.
+          if(IONOSPHERIC_COUPLING) then
+          temp_unknown_M  = 1.*Vix(iglobM)*(N0ext(i,j,ispec) + Ni_DG(iglobM)*coef_Ni)
+          temp_unknown_P  = 1.*Vix_P*(N0ext(i,j,ispec) + Ni_DG_P*coef_Ni)
+          temp_unknown2_M = 1.*Viz(iglobM)*(N0ext(i,j,ispec) + Ni_DG(iglobM)*coef_Ni)
+          temp_unknown2_P = 1.*Viz_P*(N0ext(i,j,ispec) + Ni_DG_P*coef_Ni)
+          ! Dot product.
+          flux_n = (temp_unknown_M+temp_unknown_P)*nx + (temp_unknown2_M+temp_unknown2_P)*nz ! [5 operations + 1 affectation], instead of [5 operations + 3 affectations].
+          
+          temp_boundary = - weight*flux_n*HALF
+          dot_Ni(iglobM) = dot_Ni(iglobM) + temp_boundary
+          endif
+          
+          ! TODO: When CONSTRAIN_HYDROSTATIC==.true., doesn't the energy contribution lack the term \Sigma_{v,0}{\vect{v}'} here? As follows:
+          !if(.false. .and. CONSTRAIN_HYDROSTATIC) then
+          !  ! DV0X_DZ should be set to $\partial_z{v_{0,x}}$ here.
+          !  temp_unknown = muext(i, j, ispec)*DV0X_DZ*(veloc_z_DG(iglob)-rhovz_init(iglob)/rho_init(iglob))
+          !  temp_unknown2 = muext(i, j, ispec)*DV0X_DZ*(veloc_x_DG(iglob)-rhovx_init(iglob)/rho_init(iglob))
+          !  dot_E(iglobM) = dot_E(iglobM)+weight*(temp_unknown*nx+temp_unknown2*nz)
+          !endif
+          
           ! Energy equation's heat flux' contribution (last remaining term, viscous).
           ! Recall: dT_dx already contains the 0.5 factor to put the flux under mean average form.
           !dot_E(iglobM) = dot_E(iglobM) &
@@ -993,7 +1058,8 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
   real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
         E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
         Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
-        flux_n, flux_x, flux_z, nx, nz, timelocal, weight, gamma_P
+        flux_n, flux_x, flux_z, nx, nz, timelocal, weight, gamma_P, &
+        Vix_P, Viz_P, Ni_DG_P
   logical :: exact_interface_flux
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
@@ -1032,6 +1098,9 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
   logical :: ADD_SURFACE_TERMS
   real(kind=CUSTOM_REAL) :: vx_init, vz_init
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
+
+  ! Ionospheric coupling
+  real(kind=CUSTOM_REAL) :: Vix_iP, Viz_iP, Ni_DG_iP, Vix_iM, Viz_iM, Ni_DG_iM
   
   real(kind=CUSTOM_REAL) :: coef_test_wind
 
@@ -1346,12 +1415,15 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
             call compute_interface_unknowns(i,j,ispec, rho_DG_P, rhovx_DG_P, &
                     rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
                     Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
+                    Vix_P, Viz_P, Ni_DG_P, &
                     neighbor,&
                     exact_interface_flux, &
                     rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
                     V_DG(:,:,iglobM), T_DG(:,iglobM), &
+                    Vix_iM, Viz_iM,  Ni_DG_iM,  &
                     rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
                     V_DG(:,:,iglobP), T_DG(:,iglobP), &
+                    Vix_iP, Viz_iP, Ni_DG_iP, &
                     nx, nz, weight, timelocal,iface1, iface)
 
             vx_init = rhovx_init(iglobM)/rho_init(iglobM)

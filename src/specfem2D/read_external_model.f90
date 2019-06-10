@@ -50,6 +50,7 @@
     tomo_material,myrank, &
     ! MODIF DG
     windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, USE_DISCONTINUOUS_METHOD,&
+    Bxext, Bzext, N0ext, &
     EXTERNAL_DG_ONLY_MODEL_FILENAME,&
     !TEST
     ibool_before_perio
@@ -213,7 +214,8 @@
                                QKappa_attenuationext,Qmu_attenuationext,gravityext,Nsqext, &
                                c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,nspec,nglob, &
                                ! MODIF DG
-                               windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG)
+                               windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, Bxext, Bzext, N0ext)
+  
   
   else if (trim(MODEL)=='external_DG') then
     ! Check existence of model file.

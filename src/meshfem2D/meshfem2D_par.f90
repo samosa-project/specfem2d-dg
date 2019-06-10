@@ -124,7 +124,7 @@
   
   ! Discontinuous Galerkin method
   logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
-        CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
+        CONSTRAIN_HYDROSTATIC, IONOSPHERIC_COUPLING, USE_ISOTHERMAL_MODEL
   double precision :: SCALE_HEIGHT, gravity, dynamic_viscosity, thermal_conductivity, &
         tau_epsilon, tau_sigma, MINMOD_FACTOR, coord_interface, constant_p, constant_v, &
         surface_density, sound_velocity, wind

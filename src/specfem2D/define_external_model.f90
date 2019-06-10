@@ -1137,11 +1137,12 @@
   subroutine define_external_model_atmos_tabular_gravitoacoustic(coord,material_element,ibool, &
                                                                  rho,vp,vs,QKappa_attenuation,Qmu_attenuation,gravity,Nsq, &
                                                                  c11,c13,c15,c33,c35,c55,c12,c23,c25,nspec,nglob, &
-                                                                 windx, windz, pext, gammaext, etaext, muext, kappa_DG)
+                                                                 windx, windz, pext, gammaext, etaext, muext, &
+                                                                 kappa_DG, Bxext, Bzext, N0ext)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM,IMAIN
   use specfem_par,only: nglob_DG, ibool_DG, Htabext_DG, cp, c_V, coord_interface, &
-        poroelastcoef,density,kmato, ispec_is_acoustic_DG, ispec_is_elastic
+        poroelastcoef,density,kmato, ispec_is_acoustic_DG, ispec_is_elastic, IONOSPHERIC_COUPLING
 
   implicit none
 
@@ -1167,8 +1168,8 @@
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ,nspec), intent(out) :: rho,vp,vs,QKappa_attenuation,Qmu_attenuation,gravity,Nsq, &
                                               c11,c15,c13,c33,c35,c55,c12,c23,c25, &
                                               ! MODIF DG
-                                              windx, windz, pext, etaext, muext, kappa_DG
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: gammaext
+                                              windx, windz, pext, etaext, muext, kappa_DG, N0ext
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: gammaext, Bxext, Bzext
 
 ! number of layers in the model
   integer, parameter :: NR_LAYER = 99000!4900!
@@ -1187,6 +1188,8 @@
   double precision, dimension(NR_LAYER) :: Htab
   double precision, dimension(NR_LAYER) :: kappa_atmos
   double precision, dimension(NR_LAYER) :: gamma_atmos
+  ! Electron density
+  double precision, dimension(NR_LAYER) :: Bx_atmos, Bz_atmos, N0_atmos
   
 ! region flag to assign the Atmosphere model
   integer, parameter :: IREGION_AIR = 1
@@ -1222,14 +1225,15 @@
   ! tmp3 = Scale height
   ! tmp4 = kappa
   gamma_atmos(i) = 0.
+  if(IONOSPHERIC_COUPLING) then
   read(10,*) z_atmos(i),density_atmos(i),tmp1,vp_atmos(i),p_atmos(i),Htab(i),gravity_atmos(i),Nsq_atmos(i),kappa_atmos(i),&
-                mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, c_V, gamma_atmos(i)!, cp, c_V
- !  0.00 1.262524e+00   2.8451e+02 3.429393e+02 1.03112516e+05 9.32550391e+03 9.81392765e+00 5.48688753e-04 7.25211799e-01 1.25579500e-05 4.01909674e-05 0.00000000e+00 7.78566957e-01 
-!  write(*,'(6e16.7)') z_atmos(i),density_atmos(i),vp_atmos(i),gravity_atmos(i),tmp1,tmp2
-  !WRITE(*,*) ">>>", z_atmos(i),density_atmos(i),tmp1,vp_atmos(i),p_atmos(i),Htab(i),gravity_atmos(i),Nsq_atmos(i),kappa_atmos(i),&
-  !              mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, c_V
+                mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, c_V, gamma_atmos(i), &
+                Bx_atmos(i), Bz_atmos(i), N0_atmos(i)
+  else
+  read(10,*) z_atmos(i),density_atmos(i),tmp1,vp_atmos(i),p_atmos(i),Htab(i),gravity_atmos(i),Nsq_atmos(i),kappa_atmos(i),&
+                mu_atmos(i),eta_atmos(i), wx_atmos(i), wz_atmos(i), cp, c_V, gamma_atmos(i)
+  endif
   enddo
-  !stop 'TOTO'
   allocate(Htabext_DG(nglob_DG))
 
   close(10)
@@ -1308,6 +1312,12 @@
     muext(i,j,ispec)  = mu_atmos(1)
     kappa_DG(i,j,ispec)  = kappa_atmos(1)
     
+    if(IONOSPHERIC_COUPLING) then
+    Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(1)
+    Bzext(ibool_DG(i,j,ispec))  = Bz_atmos(1)
+    N0ext(i,j,ispec)  = N0_atmos(1)
+    endif
+    
   elseif (ii == 2) then
 
 ! interpolate from radius_ak135(ii-1) to r using the values at ii-1 and ii
@@ -1354,6 +1364,12 @@
     Htabext_DG(ibool_DG(i,j,ispec)) = Htab(ii-1) + frac*(Htab(ii)-Htab(ii-1))
 
     kappa_DG(i,j,ispec)  = kappa_atmos(ii-1) + frac*(kappa_atmos(ii)-kappa_atmos(ii-1))
+    
+    if(IONOSPHERIC_COUPLING) then
+    Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii-1) + frac*(Bx_atmos(ii)-Bx_atmos(ii-1))
+    Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii-1) + frac*(Bz_atmos(ii)-Bz_atmos(ii-1))
+    N0ext(i,j,ispec) = N0_atmos(ii-1) + frac*(N0_atmos(ii)-N0_atmos(ii-1))
+    endif
 
   else
   
@@ -1399,6 +1415,12 @@
     Htabext_DG(ibool_DG(i,j,ispec)) = Htab(ii)*pii + Htab(ii-1)*piim1 + Htab(ii-2)*piim2 !+ Htab(ii+1)*piip1
 
     kappa_DG(i,j,ispec)  = kappa_atmos(ii)*pii + kappa_atmos(ii-1)*piim1 + kappa_atmos(ii-2)*piim2! + kappa_atmos(ii+1)*piip1
+    
+    if(IONOSPHERIC_COUPLING) then
+    Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii)*pii + Bx_atmos(ii-1)*piim1 + Bx_atmos(ii-2)*piim2
+    Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii)*pii + Bz_atmos(ii-1)*piim1 + Bz_atmos(ii-2)*piim2
+    N0ext(i,j,ispec) = N0_atmos(ii)*pii + N0_atmos(ii-1)*piim1 + N0_atmos(ii-2)*piim2
+    endif
 
   endif ! IREGION_AIR
   
@@ -1531,8 +1553,10 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
         nspec,coord,ibool,myrank,&
         windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG,&
         c11ext,c13ext,c15ext,c33ext,c35ext,c55ext,c12ext,c23ext,c25ext,&
-        EXTERNAL_DG_ONLY_MODEL_FILENAME,ADD_PERIODIC_CONDITIONS,&
-        USE_DISCONTINUOUS_METHOD,deltat
+        EXTERNAL_DG_ONLY_MODEL_FILENAME,&
+        USE_DISCONTINUOUS_METHOD,deltat,&
+        ADD_PERIODIC_CONDITIONS,& ! LNS: keep ADD_PERIODIC_CONDITIONS to throw an error if ground wind is nonzero
+        IONOSPHERIC_COUPLING,Bxext, Bzext, N0ext
   
   implicit none
   
@@ -1563,6 +1587,11 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: svib_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: tau_sigma_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: tau_epsilon_model
+  ! Electron density
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: Bx_atmos
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: Bz_atmos
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: N0_atmos
+  
   integer :: i, j, ispec, ii, io, indglob_DG
   integer ncolz
   real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3, dummy4, dummy5, dummy6 ! Dummy reals for reading parameters which we do not care about.
@@ -1679,7 +1708,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
                             dummy4,dummy5,wx_model(i),&
                             cp_model(i),cv_model(i),gamma_model(i),&
                             fr_model(i), svib_model(i)
-      
+    
       ! If columns were found, compute tau_*.
       ! If not, do nothing. It will leave tau_sigma_model=tau_epsilon_model=1.
       ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
@@ -1748,6 +1777,22 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       !    endif
       !  !endif
       !endif
+    elseif(IONOSPHERIC_COUPLING) then
+      ! Read also fr and svib.
+      read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
+                            vp_model(i),p_model(i),dummy2,&
+                            gravity_model(i),dummy6,&!Nsq_model(i),&
+                            kappa_model(i),mu_model(i),dummy3,&
+                            dummy4,dummy5,wx_model(i),&
+                            cp_model(i),cv_model(i),gamma_model(i),&
+                            fr_model(i), svib_model(i),&
+                            Bx_atmos(i), Bz_atmos(i), N0_atmos(i)
+
+      ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
+      tau_sigma_model(i) = 0.5*ONE_over_twopifr*(-svib_model(i) + sqrt(svib_model(i)**2.+4.)) ! See 10.1007/s11214-016-0324-6, equation (11).
+      tau_epsilon_model(i) = tau_sigma_model(i) + svib_model(i)*ONE_over_twopifr ! See 10.1007/s11214-016-0324-6, equation (11).
+      
+ 
     endif
     
     ! Compute eta, in all cases.
@@ -1897,6 +1942,10 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   etaext = ZERO
   muext = ZERO
   kappa_DG = ZERO
+  if(IONOSPHERIC_COUPLING) then
+  Bxext = 1.
+  Bzext = 1.
+  endif
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
@@ -1965,6 +2014,12 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             kappa_DG(i, j, ispec) = kappa_model(1)
             tau_sigma(i, j, ispec) = tau_sigma_model(i)
             tau_epsilon(i, j, ispec) = tau_epsilon_model(i)
+
+            if(IONOSPHERIC_COUPLING) then
+            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(1)
+            Bzext(ibool_DG(i,j,ispec))  = Bz_atmos(1)
+            N0ext(i,j,ispec)  = N0_atmos(1)
+            endif
           elseif (ii == 2) then
             ! Altitude of point is > 1st line of model, and <= 2nd line of model.
             ! Interpolate using the values at lines 1 (ii-1) and 2 (ii) of model.
@@ -1989,6 +2044,13 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             kappa_DG(i, j, ispec)  = kappa_model(ii-1) + frac*(kappa_model(ii)-kappa_model(ii-1))
             tau_sigma(i, j, ispec) = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
             tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
+            
+            if(IONOSPHERIC_COUPLING) then
+            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii-1) + frac*(Bx_atmos(ii)-Bx_atmos(ii-1))
+            Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii-1) + frac*(Bz_atmos(ii)-Bz_atmos(ii-1))
+            N0ext(i,j,ispec) = N0_atmos(ii-1) + frac*(N0_atmos(ii)-N0_atmos(ii-1))
+            endif
+
           else
             ! Altitude of point is > (ii-1)-th line of model, and <= (ii)-th line of model.
             ! Interpolate using the values at lines (ii-2), (ii-1), and ii of model.
@@ -2025,6 +2087,13 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             kappa_DG(i, j, ispec)  = kappa_model(ii)*pii + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
             tau_sigma(i, j, ispec) = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
             tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
+
+            if(IONOSPHERIC_COUPLING) then
+            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii-1) + frac*(Bx_atmos(ii)-Bx_atmos(ii-1))
+            Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii-1) + frac*(Bz_atmos(ii)-Bz_atmos(ii-1))
+            N0ext(i,j,ispec) = N0_atmos(ii)*pii + N0_atmos(ii-1)*piim1 + N0_atmos(ii-2)*piim2
+            endif
+
           endif ! Endif on ii.
           
           if(rhoext(i, j, ispec) <= TINYVAL) then
@@ -2117,6 +2186,11 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     !endif
   enddo ! Enddo on ispec.
   
+  if(IONOSPHERIC_COUPLING) then
+  where(abs(Bxext) > 0._CUSTOM_REAL) Bxext = Bxext / sqrt(Bxext**2 + Bzext**2)
+  where(abs(Bzext) > 0._CUSTOM_REAL) Bzext = Bzext / sqrt(Bxext**2 + Bzext**2)
+  endif
+
   call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile.
   !call define_external_model_PREM()
   

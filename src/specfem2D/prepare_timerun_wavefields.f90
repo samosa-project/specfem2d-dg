@@ -327,18 +327,22 @@
   ! TODO: why allocate when not even using DG?
   ! RHS.
   allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc))
+  if(IONOSPHERIC_COUPLING) allocate(dot_Ni(nglob_DG_loc))
   ! Auxiliary registers.
-  allocate(resu_rho(nglob_DG_loc), resu_rhovx(nglob_DG_loc), resu_rhovz(nglob_DG_loc), resu_E(nglob_DG_loc), resu_e1(nglob_DG_loc))
+  allocate(resu_rho(nglob_DG_loc), resu_rhovx(nglob_DG_loc), resu_rhovz(nglob_DG_loc), resu_E(nglob_DG_loc), &
+    resu_e1(nglob_DG_loc), resu_Ni(nglob_DG_loc))
    ! State.
   allocate(rho_DG(nglob_DG_loc), p_DG(nglob_DG_loc), rhovx_DG(nglob_DG_loc), rhovz_DG(nglob_DG_loc), &
         veloc_x_DG(nglob_DG_loc), veloc_z_DG(nglob_DG_loc), E_DG(nglob_DG_loc), e1_DG(nglob_DG_loc))
   allocate(p_DG_init(nglob_DG_loc), T_init(nglob_DG_loc), V_DG(2,2,nglob_DG_loc), T_DG(2,nglob_DG_loc), &
     drho_DG(nglob_DG_loc), dEp_DG(nglob_DG_loc))
+  if(IONOSPHERIC_COUPLING) allocate(Ni_DG(nglob_DG_loc))
   allocate(rmass_inverse_acoustic_DG(nglob_DG_loc))
   rho_DG   = 0.
   rhovx_DG = 0.
   rhovz_DG = 0.
   E_DG     = 0.
+  if(IONOSPHERIC_COUPLING) Ni_DG    = 0.
   
   ! MODIFICATION FOR LNS.
   if (USE_DISCONTINUOUS_METHOD .and. USE_LNS) then

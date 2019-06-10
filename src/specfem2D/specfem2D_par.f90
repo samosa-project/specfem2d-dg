@@ -124,11 +124,15 @@ module specfem_par
              CONSTRAIN_HYDROSTATIC, USE_ISOTHERMAL_MODEL
   ! Characterise the simulation. only_DG_acoustic==.true. means all acoustic elements are DG, not that the whole simulation is DG. any_acoustic_DG==.true. means there exists DG elements.
   logical :: only_DG_acoustic, any_acoustic_DG
+  logical :: IONOSPHERIC_COUPLING
   
   ! Constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
         veloc_x_DG, veloc_z_DG, p_DG, potential_dphi_dx_DG, potential_dphi_dz_DG, &
-        p_DG_init, T_init
+        p_DG_init, T_init, &
+        Ni_DG
+  ! Total electron density perturbation
+  real(kind=CUSTOM_REAL) :: VTECZ, VTECZ_tot
   ! Initial values of the constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_init, rhovx_init, rhovz_init, E_init
   ! Gradients of temperature and velocities.
@@ -137,9 +141,9 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: drho_DG
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dEp_DG
   ! "Time derivatives" of the constitutive variables.
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, dot_Ni
   ! Variables to store numerical time scheme temporary results.
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rho, resu_rhovx, resu_rhovz, resu_E, resu_e1, resu_Ni
   ! Backward simulation constitutive variables and their "time derivatives".
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
                                                        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E, &
@@ -179,11 +183,11 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, buffer_DG_Vzz_P, &
                                                           buffer_DG_Vzx_P, buffer_DG_Vxz_P, buffer_DG_drho_P, buffer_DG_dEp_P, &
                                                           ! TEST
-                                                          buffer_DG_gamma_P, buffer_DG_e1_P
+                                                          buffer_DG_gamma_P, buffer_DG_e1_P, buffer_DG_Ni_P
   
   ! Fluid parameters from external file.
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG, N0ext
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG, Bxext, Bzext
   ! Fluid parameters from parameter file.
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: kappa_DG, tau_sigma, tau_epsilon
   real(kind=CUSTOM_REAL) :: SCALE_HEIGHT, gravity_cte_DG, &

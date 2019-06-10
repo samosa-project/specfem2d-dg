@@ -1242,6 +1242,8 @@ subroutine setup_mesh_surface_DG_coupling()
            gammaext_DG(nglob_DG), &
            !Htabext_DG(nglob_DG), &
            kappa_DG(NGLLX,NGLLZ,nspec_ext), stat=ier) 
+           if(IONOSPHERIC_COUPLING) allocate(N0ext(NGLLX,NGLLZ,nspec_ext), &
+            Bxext(nglob_DG), Bzext(nglob_DG), stat=ier)
   else
         allocate(gammaext_DG(1))
   endif
