@@ -171,8 +171,14 @@
   call read_value_logical_p(CONSTRAIN_HYDROSTATIC, 'solver.CONSTRAIN_HYDROSTATIC')
   if (err_occurred() /= 0) stop 'error reading parameter CONSTRAIN_HYDROSTATIC in Par_file'
   
-  call read_value_logical_p(IONOSPHERIC_COUPLING, 'solver.IONOSPHERIC_COUPLING')
-  if (err_occurred() /= 0) stop 'error reading parameter IONOSPHERIC_COUPLING in Par_file'
+  !call read_value_logical_p(IONOSPHERIC_COUPLING, 'solver.IONOSPHERIC_COUPLING')
+  !if (err_occurred() /= 0) stop 'error reading parameter IONOSPHERIC_COUPLING in Par_file'
+  IONOSPHERIC_COUPLING = .false. ! Default value.
+  if(USE_DISCONTINUOUS_METHOD) then
+    call read_value_logical_p(IONOSPHERIC_COUPLING, 'solver.IONOSPHERIC_COUPLING')
+    if (err_occurred() /= 0) write(*,*) 'Error reading parameter IONOSPHERIC_COUPLING in Par_file. '&
+                                        'Setting to .false., do not worry.'
+  endif
   
   call read_value_logical_p(USE_ISOTHERMAL_MODEL, 'solver.USE_ISOTHERMAL_MODEL')
   if (err_occurred() /= 0) stop 'error reading parameter USE_ISOTHERMAL_MODEL in Par_file'
