@@ -1435,12 +1435,9 @@ end subroutine prepare_external_forcing
       ! The setting of the boundary conditions is thus made here.
       tx = -nz
       tz =  nx
-      normal_v = (veloc_x_DG_iM*nx + veloc_z_DG_iM*nz)
-      tangential_v = (veloc_x_DG_iM*tx + veloc_z_DG_iM*tz)
+      normal_v = (veloc_x_DG_P*nx + veloc_z_DG_P*nz)
+      tangential_v = (veloc_x_DG_P*tx + veloc_z_DG_P*tz)
       
-      rho_DG_P = rho_DG_iM
-      p_DG_P = p_DG_iM
-
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
       !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
