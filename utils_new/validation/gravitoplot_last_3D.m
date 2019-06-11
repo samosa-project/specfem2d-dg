@@ -41,44 +41,22 @@ prefix = 'validation_lns_fk';
 savefigname = ['compare2FKanalytic'];
 savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',prefix,'_info/'];
 
-% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_1.00dt/']; % EXAMPLE path
+rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_1.00dt/']; % EXAMPLE path
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_0.50dt/']; % EXAMPLE path
-rootd=[SPCFMloc,'EXAMPLES/',prefix,'_0.50dx_0.50dt/']; % EXAMPLE path
+% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_0.50dx_0.50dt/']; % EXAMPLE path
 % OFd = [rootd,'OUTPUT_FILES/'];
-% OFd = [rootd,'OUTPUT_FILES_long/'];
-% OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
-% OFd = [rootd,'OUTPUT_FILES_1904171808_vel_isobaric/'];
-% OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
-% OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected']; % this is p', we want v'
-OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_st1'];
-% OFd = [rootd,'OUTPUT_FILES_isobaric_FNS_190603_st1'];
+% OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_st1'];
+OFd = [rootd,'OUTPUT_FILES_isothermal_LNS_st1'];
 
 data_test0_or_readRun1 = 1;
-subsample = 1; % subsample synthetics? see sumsamble_dt below, near T_0
+subsample = 1; % Subsample synthetics? See sumsamble_dt below, near T_0.
 
 %%%%%%%%%
 % Display
 subtitle = strcat('Forcing with the whole surface moving at the bottom of a fluid medium');
 subtitle2 = strcat([' with a variable density profile and a sound speed equal to ',num2str(639.52),' m.s^{-1}']) ;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-% Directory of semd files
-% directory = strcat('/home/garcia/SATGRAVI/Brissaud/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/') ;
-% directory = strcat('/home/garcia/SATGRAVI/Brissaud/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_LDDRK/') ;
-% directory2 = strcat('/home/garcia/SATGRAVI/Brissaud/test_solution_analytique_gravi/Results.semd/') ;
-% directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/gravi_forcing_nowind/') ; 
-%directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/forcing_gravi_1Diso_windcte_noatten/') ; 
-%  directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/FG1_1Diso_wind_noatten/') ; 
-% directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/FG1_1Diso_nowind_noatten/') ; 
-% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4_3D/');
-% directory = strcat('/home/qbrissaud/Documents/Results/LAST_GRAVI_Roland/200PROCS/');
-% directory = strcat('./');
-% OFd = [rootd,'OUTPUT_FILES/'];
 simuType = 1; % 1 for forcing and 2 for attenuation
-% directory = strcat('/home/qbrissaud/Documents/FD/FD_14/');
-% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4_3D/');
-% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/') ; 
-% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/');
 
 if(not(OFd(end)=='/')); OFd = [OFd,'/']; end;
 % atmmodelfile=[directory,'1D_iso_enhanced.txt'];
@@ -88,15 +66,6 @@ int_file=[OFd,'input_interfaces'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Beginning of the program %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%
-% Stations parameters
-% nstat      = 7 ;             % Number of station.
-% dx_station = 60000; %58333.3333333;   % x-distance between stations
-% z_station  = 100250.0;        % Height along z of stations
-% % x_0        = 150000.0; % first station along x
-% x_0        = 600250.0; % first station along x
-% istattab=[6:7:48]
-% xstattab=[450250.0:50000.0:750250.0]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time and space domain
@@ -125,7 +94,7 @@ switch(readExampleFiles_extractParam(parfile, 'MODEL', 'string'))
   case 'external_DG'
     externalDGAtmosModel = 1;
   otherwise
-    error('kok');
+    error('MODEL not implemented.');
 end
 % Deduce other useful parameters.
 dx = (xmax-xmin)/nx;
@@ -162,10 +131,8 @@ if(externalDGAtmosModel)
   disp(['[',mfilename,'] Scale height computed,         = ',num2str(H),'.']);
 %   rho_0    = RHO(1); % used nowhere
 %   Nsqt      = -(GRA(1)*( -1/H - GRA(1)/(velocity(1)^2) )); % used nowhere
-
   % Set NSQ.
   error(['[',mfilename,', ERROR] N^2 computation for external models not implemented yet.']);
-  
   % Set wind_x.
   if(max(abs(diff(WIND)))==0)
     wind_x = WIND(1);
@@ -174,35 +141,31 @@ if(externalDGAtmosModel)
     wind_x = WIND(1);
     disp(['[',mfilename,'] Wind_x loaded,                 = ',num2str(wind_x),'. Not constant with altitude, setting wind_x as wind at altitude 0.']);
   end
-  
 else
   % Internal model, load it.
   disp(['[',mfilename,'] Building atmospheric model from parfile in ''',OFd,'''.']);
-  
   % Set H.
   H = readExampleFiles_extractParam(parfile, 'SCALE_HEIGHT', 'float'); % NEEDED FOR NSQ AND ANALYTIC SOLUTION
   disp(['[',mfilename,'] Scale height loaded,           = ',num2str(H),'.']);
-  
   USE_ISOTHERMAL_MODEL = readExampleFiles_extractParam(parfile, 'USE_ISOTHERMAL_MODEL', 'bool');
   if(USE_ISOTHERMAL_MODEL)
     % isothermal case
     disp(['[',mfilename,'] Isothermal case.']);
-    error(['[',mfilename,', ERROR] Isothermal case not implemented yet.']);
-    % need to produce SOUNDSPEED
-    GRA = readExampleFiles_extractParam(parfile, 'gravity', 'float'); % ONLY NEEDED FOR NSQ
+%     error(['[',mfilename,', ERROR] Isothermal case not implemented yet.']);
+    GAM = readExampleFiles_extractParam(parfile, 'constant_p', 'float') / readExampleFiles_extractParam(parfile, 'constant_v', 'float');
+    GRA = readExampleFiles_extractParam(parfile, 'gravity', 'float'); % NEEDED FOR NSQ
+    SOUNDSPEED = sqrt(GAM .* GRA .* H); % c^2=\gamma*p/\rho, but p=rho*g*H (hydrostaticity) thus c^2=\gamma*rho*g*h/rho=\gamma*g*h
   else
     % isobaric case
     disp(['[',mfilename,'] Isobaric case.']);
     SOUNDSPEED = readExampleFiles_extractParam(parfile, 'sound_velocity', 'float');
     disp(['[',mfilename,'] Speed of sound loaded,         = ',num2str(SOUNDSPEED),'.']);
-    GRA = 0; % ONLY NEEDED FOR NSQ
+    GRA = 0; % NEEDED FOR NSQ
     disp(['[',mfilename,'] Gravity set for isobaric case, = ',num2str(GRA),'.']);
   end
-  
   % Set NSQ.
   NSQ = -(GRA*( -1/H - GRA/(SOUNDSPEED^2) )); % NOT SURE ABOUT THAT FORMULA, CHECK
   disp(['[',mfilename,'] N^2 computed,                  = ',num2str(NSQ),'.']);
-  
   % Set wind_x.
   wind_x = readExampleFiles_extractParam(parfile, 'wind', 'float');
   disp(['[',mfilename,'] Wind_x loaded,                 = ',num2str(wind_x),'.']);
@@ -272,8 +235,6 @@ disp(['[',mfilename,', INFO] Loading synthetics.']);
 % gravity  = atmos(:,4) ;
 % Nsq      = atmos(:,5) ;
 % Pressure = atmos(:,6) ;
-
-
 
 if(data_test0_or_readRun1 == 1)
   %%%%%%%%%%%%%%%%%%%%%%
@@ -362,13 +323,13 @@ if(data_test0_or_readRun1 == 1)
 %   nsub=100;
   for locStatNumber = 1:nstat
       gloStatNumber = istattab(locStatNumber);
-      if(gloStatNumber < 10)
-         prefix = 'S000';
-      elseif(gloStatNumber < 100)
-         prefix = 'S00'; 
-      else
-         prefix = 'S0';
-      end
+%       if(gloStatNumber < 10)
+%          prefix = 'S000';
+%       elseif(gloStatNumber < 100)
+%          prefix = 'S00'; 
+%       else
+%          prefix = 'S0';
+%       end
       % reading of the horizontal component
 %       file = strcat(directory,prefix,num2str(istat),'.AA.BXX.sem',signal_type) ;
 %       file = strcat(OFd,'AA.',prefix,num2str(gloStatNumber),'.BXX.sem',signal_type) ;
@@ -401,7 +362,7 @@ if(data_test0_or_readRun1 == 1)
 %   dt = subsampledDt; % update dt
 else % Else on data_test0_or_readRun1.
   % Test data.
-  error('not implemented')
+  error('not implemented');
   % nSamp=10000;
   % xstattab = [5000];
   % zstattab = [10000];
@@ -410,9 +371,7 @@ else % Else on data_test0_or_readRun1.
   % Ztime(1,:) = linspace(0,nSamp,dt);
 end % Endif on data_test0_or_readRun1.
 
-disp(['[',mfilename,'] Synthetics loaded: ', num2str(nSamp), ' samples each.']);
-% 
-
+disp(['[',mfilename,'] ',num2str(size(Ztime,1)),' synthetics loaded: ', num2str(nSamp), ' samples each.']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialization of the analytical solution.
@@ -542,8 +501,20 @@ Omega_intrinsic = Omega - wind_x*KX - wind_y*KY;
 % Old formula.
 % KZ = sqrt( Nsqtab.*(KX.*KX + KY.*KY)./(Omega_intrinsic.*Omega_intrinsic)-(KX.*KX + KY.*KY) - onestab/(4*H*H) + (Omega_intrinsic.*Omega_intrinsic)/(SOUNDSPEED(1)^2) );
 
-% Test new formula (WORKS QUITE GOOD ON ISOBARIC, WITH Mz = ifftn(filt.*TFMo);)
-KZ = sqrt( (wind_x.^2 - SOUNDSPEED.^2).*KX.^2 - 2*KX.*Omega + Omega.^2) ./ SOUNDSPEED;
+% Test new formula 
+if(externalDGAtmosModel)
+  error('no formula for external atmos model');
+else
+  if(USE_ISOTHERMAL_MODEL)
+    % isothermal
+%     error('no analytical formula for isothermal');
+    KZ = sqrt( (Omega_intrinsic ./ SOUNDSPEED).^2 - KX.^2 - (1./(2*H.*GAM)).^2) + (2*GAM-1)*1j/(2*GAM*H);
+  else
+    % Test new formula (WORKS QUITE GOOD ON ISOBARIC, WITH Mz = ifftn(filt.*TFMo);)
+%     KZ = sqrt( (wind_x.^2 - SOUNDSPEED.^2).*KX.^2 - 2*KX.*Omega + Omega.^2) ./ SOUNDSPEED;
+    KZ = sqrt( (Omega_intrinsic ./ SOUNDSPEED).^2 - KX.^2);
+  end
+end
 
 ind1=find(isnan(KZ));
 ind2=find(isinf(KZ));
@@ -580,12 +551,8 @@ KZ=KZnew;
 % representation of the solution in the case of an harmonic source or
 % forcing term (see Appendix B for more details)."
 
-
 % if(seismotype == 1) % REMOVED FOR TESTS
 %   if(simuType == 1)   % forcing% REMOVED FOR TESTS
-
-
-
 %         z_station = zstattab(istat);
 %         shifttime=0.0-real(KZ*z_station)./Omega;
 %         KZ(1,1,:) = 0;
@@ -593,7 +560,6 @@ KZ=KZnew;
 %         filt=exp(i*(KZ*z_station));
 %       filt=exp(i*(KZ*z_station)).*(shifttime>=0);
 %         filt(1,1,:)=0.0;
-
 % remove waves assumed to propagate downward
 %       indw=find((real(KZ)>0.0));
 %      indw=find((real(KZ)<0.0));
@@ -617,27 +583,45 @@ KZ=KZnew;
     synf = [];
     for locStatNumber = 1:nstat
       gloStatNumber = istattab(locStatNumber);
+      x_station = xstattab(gloStatNumber);
       z_station = zstattab(gloStatNumber);
-      filt = exp(1i*(KZ*z_station));
+      
+      % MAYBE THIS FILTER TO TO BRING BACK TO ACTUAL TIME SERIES, would make sense
+      %filt = exp(1i*(KZ*z_station));
+      if(externalDGAtmosModel)
+        error('no filter for external atmos model');
+      else
+        if(USE_ISOTHERMAL_MODEL)
+          % isothermal
+          filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H);
+%           filt = exp(1i*(KX*x_station + KZ*z_station));
+%           filt = exp(1i*(KX*x_station + KZ*z_station) - z_station/H);
+        else
+          % isobaric
+          filt = exp(1i*(KX*x_station + KZ*z_station));
+        end
+      end
+%       filt = exp(1i*(KX*x_station + KZ*z_station));
+%       filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H);
 %       shifttime=0.0-real(KZ*z_station)./Omega;
 %       filt = exp(1i*KZ*z_station).*(shifttime>=0);
-%       
       % what
 %       filt(1, 1, :) = 0.0; % why
-
       % remove waves assumed to propagate downward
 %       indw=find((real(KZ)>0.0));
 %       indw=find((real(KZ)<0.0));
 %       filt(indw)=0.0;
-
+%       Mz = exp(-z_station/(2*H)) * ifftn(filt.*TFMo);
 %       Mz = exp(z_station/(2*H)) * ifftn(filt.*TFMo);
+%       Mz = exp(z_station/(H)) * ifftn(filt.*TFMo);
 %       Mz = 0.5*exp(z_station/(2*H)) * ifftn(filt.*TFMo);
+      %Mz = exp(z_station/69109) * ifftn(filt.*TFMo);
+%       Mz = exp(z_station/68719) * ifftn(filt.*TFMo);
       Mz = ifftn(filt.*TFMo);
 %           xcoord(istat) = xstattab(istat);
       ix = round((xstattab(gloStatNumber)-xmin)/dx) + 1; % first guess for x
       iy = round((ystattab(gloStatNumber)-zmin)/dy) + 1; % first guess for y
 %           iy=round((ystattab(istat)-ymin)/dy) + 1;
-
       % GET X LOCATION OF STATION
 %       ACHECK = xstattab(gloStatNumber); positionInMeshgrid = X(1, ix, 1); positionInMeshgrid_p1 = X(1, ix+1, 1); positionInMeshgrid_m1 = X(1, ix-1, 1);
       toCheck = xstattab(gloStatNumber); positionInMeshgrid = x(ix); positionInMeshgrid_p1 = x(ix+1); positionInMeshgrid_m1 = x(ix-1);
@@ -693,9 +677,23 @@ f=figure();
 % colours=jet(nstat);
 % colours=prism(nstat);
 colours=winter(nstat);
+if(externalDGAtmosModel)
+  error('no th value for external atmos model');
+else
+  if(USE_ISOTHERMAL_MODEL)
+    th_vz_v0 = exp( zstattab(end)/(2*H) );
+    factor = 1;
+    factor = 1;
+%     isothDecay = [zstattab, factor* peak2peak(synf(:,:),2)./peak2peak(synf(1,:)), exp( zstattab/(2*H) ), peak2peak(Zamp(:,:),2)/peak2peak(Zamp(1,:))];
+%     figure(); plot(zstattab, isothDecay(:,2)); hold on; plot(zstattab, isothDecay(:,3)); plot(zstattab, isothDecay(:,4));
+  else
+    th_vz_v0 = 1;
+  end
+end
 for i = 1:nstat;
   plot(t,synf(i,:),'displayname',num2str(zstattab(istattab(i))),'color',colours(i,:)); hold on;
 end
+title({['This analytical solution: $v(z=z_{max})/v(z=0)$=',num2str(peak2peak(synf(end,:))/peak2peak(synf(1,:))),'.'],['Theoretical value: =$e^{z/(2H)}$=',num2str(th_vz_v0),'.'],['Current simulation: =',num2str(peak2peak(Zamp(end,:))/peak2peak(Zamp(1,:))),'.']},'fontsize',14);
 legend();
 prettyAxes(f);
 isThisOk=-1;
@@ -751,6 +749,8 @@ for locStatNumber = 1 : nstat
 %   DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
   plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2,'displayname','synthetic');
   
+  ylimb4err = get(gca,'ylim');
+  
   % Produce and plot difference.
   if(min(diff(Ztime(1,:))) < min(diff(t)))
     % if dt_sythetic < dt_analytic, interpolate analytic on synthetic t (Ztime)
@@ -768,6 +768,9 @@ for locStatNumber = 1 : nstat
   max_relative_err_all_stats(locStatNumber) = (max(err_v)/100)/peak2peak(synf(locStatNumber,:));
   
   plot(err_t,err_v,':k','LineWidth',1.5,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']);
+  
+%   ylim([min([min(Zamp(locStatNumber,1:nt))+min(synf(locStatNumber,:))]), max([max(Zamp(locStatNumber,1:nt))+max(synf(locStatNumber,:))])] * 1.05);
+  ylim([ylimb4err]);
   
   % x-y labels.
   if (locStatNumber == round(nstat/2))
@@ -795,7 +798,8 @@ title(['Sound Speed = ',num2str(SOUNDSPEED),' [m/s]. Stations'' Altitudes = [', 
 addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
 prettyAxes(f);
 savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
-customSaveFig(savefigfullpath,{'fig','eps','jpg'});
+% customSaveFig(savefigfullpath,{'fig','eps','jpg'});
+customSaveFig(savefigfullpath,{'fig','jpg'});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 
@@ -837,4 +841,39 @@ customSaveFig(savefigfullpath,{'fig','eps','jpg'});
 % title(strcat('Gravito-acoustic wave propagation. Stations at altitude : ', num2str(z_station/1000),'km (along z)'),'FontSize',24)
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Directory of semd files
+% directory = strcat('/home/garcia/SATGRAVI/Brissaud/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/') ;
+% directory = strcat('/home/garcia/SATGRAVI/Brissaud/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_LDDRK/') ;
+% directory2 = strcat('/home/garcia/SATGRAVI/Brissaud/test_solution_analytique_gravi/Results.semd/') ;
+% directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/gravi_forcing_nowind/') ; 
+%directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/forcing_gravi_1Diso_windcte_noatten/') ; 
+%  directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/FG1_1Diso_wind_noatten/') ; 
+% directory = strcat('/home/garcia/SATGRAVI/Brissaud/files_wind_quentin/FG1_1Diso_nowind_noatten/') ; 
+% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4_3D/');
+% directory = strcat('/home/qbrissaud/Documents/Results/LAST_GRAVI_Roland/200PROCS/');
+% directory = strcat('./');
+% OFd = [rootd,'OUTPUT_FILES/'];
+% directory = strcat('/home/qbrissaud/Documents/FD/FD_14/');
+% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4_3D/');
+% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/') ; 
+% directory = strcat('/home/qbrissaud/Documents/Results/GJI_PAPER/1Diso_rhovar_grav_noatten_wind_wx10_graviForc_RK4/');
 
+% OFd = [rootd,'OUTPUT_FILES_long/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171716_redone_velocity/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171808_vel_isobaric/'];
+% OFd = [rootd,'OUTPUT_FILES_1904171832_vel_isobaric_LNS/'];
+% OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_190603_st2_morestations_corrected']; % this is p', we want v'
+% OFd = [rootd,'OUTPUT_FILES_isobaric_FNS_190603_st1'];
+
+
+
+%%%%%%%%%%%%%%%%%%%%%
+% Stations parameters
+% nstat      = 7 ;             % Number of station.
+% dx_station = 60000; %58333.3333333;   % x-distance between stations
+% z_station  = 100250.0;        % Height along z of stations
+% % x_0        = 150000.0; % first station along x
+% x_0        = 600250.0; % first station along x
+% istattab=[6:7:48]
+% xstattab=[450250.0:50000.0:750250.0]
