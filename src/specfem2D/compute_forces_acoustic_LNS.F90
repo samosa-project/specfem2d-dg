@@ -1055,6 +1055,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Notes:
         !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
         !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
+        !   These outer boundary conditions agree with the current state of the classical DG (FNS) outer boundary conditions. It is recommended to check wether or not the two outer boundary conditions agree. To do so, compare these lines to the corresponding ones (search 'outer boundary conditions' or something like that) in 'boudnary_terms_DG.f90'. TODO: maybe a unified subroutine between FNS and LNS for far-field BC.
         ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
         do SPCDM = 1, NDIM
           velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
