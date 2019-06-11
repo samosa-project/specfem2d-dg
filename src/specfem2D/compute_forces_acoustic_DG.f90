@@ -176,7 +176,7 @@ subroutine compute_forces_acoustic_DG(rho_DG_main, rhovx_DG_main, rhovz_DG_main,
   dot_e1    = ZERO
   if(IONOSPHERIC_COUPLING) then
   dot_Ni    = ZERO
-  VTECZ = ZERO
+  VTECZ     = ZERO
   endif
   
   ! Start by adding source terms.
@@ -1200,14 +1200,14 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
               temp_Tx_1(i,j)  = wzl * jacobianl * (xixl * (T(iglob) - T_init(iglob)))
               temp_Tz_1(i,j)  = wzl * jacobianl * (xizl * (T(iglob) - T_init(iglob)))
               temp_Vxx_1(i,j) = wzl * jacobianl * (xixl * (veloc_x_DG(iglob) - vx_init))
-              temp_Vxz_1(i,j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob))) ! Some hypothesis on initial velocity is used here.
+              temp_Vxz_1(i,j) = wzl * jacobianl * (xizl * (veloc_x_DG(iglob) - vx_init)) ! Some hypothesis on initial velocity is used here.
               temp_Vzx_1(i,j) = wzl * jacobianl * (xixl * (veloc_z_DG(iglob) - vz_init))
               temp_Vzz_1(i,j) = wzl * jacobianl * (xizl * (veloc_z_DG(iglob) - vz_init))
               
               temp_Tx_2(i,j)  = wxl * jacobianl * (gammaxl * (T(iglob) - T_init(iglob)))
               temp_Tz_2(i,j)  = wxl * jacobianl * (gammazl * (T(iglob) - T_init(iglob)))
               temp_Vxx_2(i,j) = wxl * jacobianl * (gammaxl * (veloc_x_DG(iglob) - vx_init))
-              temp_Vxz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob))) ! Some hypothesis on initial velocity is used here.
+              temp_Vxz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_x_DG(iglob) - vx_init)) ! Some hypothesis on initial velocity is used here.
               temp_Vzx_2(i,j) = wxl * jacobianl * (gammaxl * (veloc_z_DG(iglob) - vz_init))
               temp_Vzz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init))
 
@@ -1446,7 +1446,7 @@ subroutine compute_viscous_tensors(T_DG, V_DG, drho_DG, dEp_DG, rho_DG, rhovx_DG
             grad_Vxx(iglobM) = grad_Vxx(iglobM) + weight*flux_n*HALF
             
             flux_z = veloc_x_DG(iglobM) + veloc_x_DG_P
-            !if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
+            if(CONSTRAIN_HYDROSTATIC) flux_z = flux_z - 2*vx_init
             flux_n = flux_z*nz
             grad_Vxz(iglobM) = grad_Vxz(iglobM) + weight*flux_n*HALF
             

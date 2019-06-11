@@ -1567,7 +1567,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HUGEVAL = 9999._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: THRSHLD_CO2 = 10._CUSTOM_REAL ! Threshold for CO2 relaxation parameters.
+  real(kind=CUSTOM_REAL), parameter :: THRSHLD_CO2 = 1000000._CUSTOM_REAL ! Threshold for CO2 relaxation parameters.
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: z_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: density_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: vp_model
@@ -1666,7 +1666,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   endif
   
   call external_model_DG_only_find_nbcols(nlines_header,ncolz)
-  if(ncolz/=17 .and. ncolz/=19) then
+  if(ncolz/=17 .and. ncolz/=19 .and. ncolz/=20) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
     write(*,*) "********************************"
@@ -1777,22 +1777,25 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       !    endif
       !  !endif
       !endif
-    elseif(IONOSPHERIC_COUPLING) then
+    elseif(ncolz==20) then
       ! Read also fr and svib.
       read(100,*,iostat=io) z_model(i),density_model(i),dummy1,&
                             vp_model(i),p_model(i),dummy2,&
                             gravity_model(i),dummy6,&!Nsq_model(i),&
                             kappa_model(i),mu_model(i),dummy3,&
-                            dummy4,dummy5,wx_model(i),&
+                            dummy4,wx_model(i),dummy5,&
                             cp_model(i),cv_model(i),gamma_model(i),&
-                            fr_model(i), svib_model(i),&
+                            !fr_model(i), svib_model(i),&
                             Bx_atmos(i), Bz_atmos(i), N0_atmos(i)
 
-      ONE_over_twopifr = ONE/(2.*PI*fr_model(i))
-      tau_sigma_model(i) = 0.5*ONE_over_twopifr*(-svib_model(i) + sqrt(svib_model(i)**2.+4.)) ! See 10.1007/s11214-016-0324-6, equation (11).
-      tau_epsilon_model(i) = tau_sigma_model(i) + svib_model(i)*ONE_over_twopifr ! See 10.1007/s11214-016-0324-6, equation (11).
-      
- 
+      tau_epsilon_model(i) = 1.
+      tau_sigma_model(i)   = 1.
+
+      !if(density_model(i) < 0.) then
+      !WRITE(*,*) "density_model",i, z_model(i), density_model(i)
+      !stop 'ToTO'
+      !endif
+
     endif
     
     ! Compute eta, in all cases.
@@ -1817,7 +1820,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     !endif
   ENDDO 
   CLOSE(100)
-  
+
   ! Quickly check values of the model.
   if(myrank==0) then
     if(mesh_zmax-coord_interface>z_model(nlines_model)-z_model(1)) then
@@ -1945,6 +1948,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   if(IONOSPHERIC_COUPLING) then
   Bxext = 1.
   Bzext = 1.
+  N0ext = 0.
   endif
   
   do ispec = 1, nspec
@@ -2042,7 +2046,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             muext(i, j, ispec)  = mu_model(ii-1) + frac*(mu_model(ii)-mu_model(ii-1))
             !Htabext_DG(indglob_DG) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
             kappa_DG(i, j, ispec)  = kappa_model(ii-1) + frac*(kappa_model(ii)-kappa_model(ii-1))
-            tau_sigma(i, j, ispec) = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
+            tau_sigma(i, j, ispec)   = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
             tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
             
             if(IONOSPHERIC_COUPLING) then
@@ -2085,12 +2089,12 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             muext(i, j, ispec)  = mu_model(ii)*pii + mu_model(ii-1)*piim1 + mu_model(ii-2)*piim2
             !Htabext_DG(indglob_DG) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
             kappa_DG(i, j, ispec)  = kappa_model(ii)*pii + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
-            tau_sigma(i, j, ispec) = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
-            tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
+            tau_sigma(i, j, ispec)   = tau_sigma_model(ii)*pii + tau_sigma_model(ii-1)*piim1 + tau_sigma_model(ii-2)*piim2
+            tau_epsilon(i, j, ispec) = tau_epsilon_model(ii)*pii + tau_epsilon_model(ii-1)*piim1 + tau_epsilon_model(ii-2)*piim2
 
             if(IONOSPHERIC_COUPLING) then
-            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii-1) + frac*(Bx_atmos(ii)-Bx_atmos(ii-1))
-            Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii-1) + frac*(Bz_atmos(ii)-Bz_atmos(ii-1))
+            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii)*pii + Bx_atmos(ii-1)*piim1 + Bx_atmos(ii-2)*piim2
+            Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii)*pii + Bz_atmos(ii-1)*piim1 + Bz_atmos(ii-2)*piim2
             N0ext(i,j,ispec) = N0_atmos(ii)*pii + N0_atmos(ii-1)*piim1 + N0_atmos(ii-2)*piim2
             endif
 

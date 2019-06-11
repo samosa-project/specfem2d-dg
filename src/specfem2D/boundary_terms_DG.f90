@@ -240,9 +240,9 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
     if(timelocal == 0) then
       !gravityext(i, j, ispec) = G!9.831
       !gammaext_DG(ibool_DG(i, j, ispec)) = 1.4!(rho_DG_P/p_DG_P)*(vpext(i, j, ispec)**2)!gamma_euler!
-      !muext(i, j, ispec) = 1.0d-05
-      !etaext(i, j, ispec) = (4/3)*muext(i, j, ispec)
-      !kappa_DG(i, j, ispec) = 0.025!kappa_DG(i, j, ispec) / 10.!0.2
+      !muext(i, j, ispec) = 0.0
+      !etaext(i, j, ispec) = 0.*(4/3)*muext(i, j, ispec)
+      !kappa_DG(i, j, ispec) = 0.!kappa_DG(i, j, ispec) / 10.!0.2
       !cp = 7/2
       !c_V = 5/2
       !tau_epsilon(i, j, ispec) = 1.
@@ -1142,7 +1142,7 @@ end subroutine prepare_external_forcing
   ! Electron density
   Vix_P = Vix_iM
   Viz_P = Viz_iM
-  Ni_P     = Ni_iM
+  Ni_P  = Ni_iM
   
   gamma_P = gammaext_DG(iglobM)
   
@@ -1403,7 +1403,7 @@ end subroutine prepare_external_forcing
       
       ! No stress continuity.
       !p_DG_P = p_DG_iM
-      p_DG_P = p_DG_iM + 0*( (tauac(1)*(veloc_x_DG_iM - veloc_x) + tauac(2)*(veloc_z_DG_iM - veloc_z)) * nx  &
+      p_DG_P = p_DG_iM + 1*( (tauac(1)*(veloc_x_DG_iM - veloc_x) + tauac(2)*(veloc_z_DG_iM - veloc_z)) * nx  &
         + (tauac(3)*(veloc_x_DG_iM - veloc_x) + tauac(4)*(veloc_z_DG_iM - veloc_z)) * nz )
 
       ! Deduce energy.
@@ -1435,9 +1435,12 @@ end subroutine prepare_external_forcing
       ! The setting of the boundary conditions is thus made here.
       tx = -nz
       tz =  nx
-      normal_v = (veloc_x_DG_P*nx + veloc_z_DG_P*nz)
-      tangential_v = (veloc_x_DG_P*tx + veloc_z_DG_P*tz)
+      normal_v = (veloc_x_DG_iM*nx + veloc_z_DG_iM*nz)
+      tangential_v = (veloc_x_DG_iM*tx + veloc_z_DG_iM*tz)
       
+      rho_DG_P = rho_DG_iM
+      p_DG_P = p_DG_iM
+
       ! Notes:
       !   At that point, normal_v and tangential_v are set to their "background" (or "far-field", or "unperturbed") values.
       !   Treatment of boundary conditions based on normal/tangential velocities should be done here. The "free slip" condition and the "normal velocity continuity" conditions can be set here.
@@ -1621,11 +1624,13 @@ end subroutine prepare_external_forcing
     veloc_z_DG_P = rhovz_DG_P/rho_DG_P
     p_DG_P       = (gamma_P - ONE)*( E_DG_P &
                    - (HALF)*rho_DG_P*( veloc_x_DG_P**2 + veloc_z_DG_P**2 ) )
-    
+
+    if(IONOSPHERIC_COUPLING) then
     ! Electron density
     Vix_P = Vix_iP
     Viz_P = Viz_iP
     Ni_P = Ni_iP
+    endif
     
     if(muext(i, j, ispec) > 0 .OR. &
        etaext(i, j, ispec) > 0 .OR. &
