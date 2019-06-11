@@ -1596,7 +1596,7 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   integer ncolz
   real(kind=CUSTOM_REAL) dummy1, dummy2, dummy3, dummy4, dummy5, dummy6 ! Dummy reals for reading parameters which we do not care about.
   real(kind=CUSTOM_REAL) ONE_over_twopifr ! For CO2 relaxation.
-  double precision :: z, frac, pii, piim1, piim2, piip1!,tmp1, gamma_temp,gamma_temp_prev,x,max_z
+  double precision :: z, frac, pii, piim1, piim2!, piip1!,tmp1, gamma_temp,gamma_temp_prev,x,max_z
   
   z_model=ZERO
   density_model=ZERO
@@ -2030,72 +2030,72 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
             
             frac = (z-z_model(ii-1))/(z_model(ii)-z_model(ii-1))
 
-            rhoext(i, j, ispec) = density_model(ii-1) + frac*(density_model(ii)-density_model(ii-1))
-            !rhoext(i, j, ispec) = exp(log(density_model(ii-1)) + frac*(log(density_model(ii))-log(density_model(ii-1)))) ! DEBUG: exponential interpolation
-            vpext(i, j, ispec) = vp_model(ii-1) + frac*(vp_model(ii)-vp_model(ii-1))
-            gravityext(i, j, ispec) = gravity_model(ii-1) + frac*(gravity_model(ii)-gravity_model(ii-1))
-            !Nsqext(i, j, ispec) = Nsq_model(ii-1) + frac*(Nsq_model(ii)-Nsq_model(ii-1))
-            vsext(i, j, ispec) = ZERO
+            rhoext(i, j, ispec)          = density_model(ii-1)     + frac*(density_model(ii)-density_model(ii-1))
+            !rhoext(i, j, ispec)          = exp(log(density_model(ii-1)) + frac*(log(density_model(ii))-log(density_model(ii-1)))) ! DEBUG: exponential interpolation
+            vpext(i, j, ispec)           = vp_model(ii-1)          + frac*(vp_model(ii)-vp_model(ii-1))
+            gravityext(i, j, ispec)      = gravity_model(ii-1)     + frac*(gravity_model(ii)-gravity_model(ii-1))
+            !Nsqext(i, j, ispec)          = Nsq_model(ii-1) + frac*(Nsq_model(ii)-Nsq_model(ii-1))
+            vsext(i, j, ispec)           = ZERO
             Qmu_attenuationext(i, j, ispec) = HUGEVAL
             QKappa_attenuationext(i, j, ispec) = HUGEVAL
-            windxext(i, j, ispec) = wx_model(ii-1) + frac*(wx_model(ii)-wx_model(ii-1))
-            !windzext(i, j, ispec) = wz_model(ii-1) + frac*(wz_model(ii)-wz_model(ii-1))
-            pext_DG(i, j, ispec) = p_model(ii-1) + frac*(p_model(ii)-p_model(ii-1))
-            gammaext_DG(indglob_DG) = gamma_model(ii-1) + frac*(gamma_model(ii)-gamma_model(ii-1))
-            etaext(i, j, ispec) = eta_model(ii-1) + frac*(eta_model(ii)-eta_model(ii-1))
-            muext(i, j, ispec)  = mu_model(ii-1) + frac*(mu_model(ii)-mu_model(ii-1))
-            !Htabext_DG(indglob_DG) = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
-            kappa_DG(i, j, ispec)  = kappa_model(ii-1) + frac*(kappa_model(ii)-kappa_model(ii-1))
-            tau_sigma(i, j, ispec)   = tau_sigma_model(ii-1) + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
-            tau_epsilon(i, j, ispec) = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
+            windxext(i, j, ispec)        = wx_model(ii-1)          + frac*(wx_model(ii)-wx_model(ii-1))
+            !windzext(i, j, ispec)        = wz_model(ii-1)          + frac*(wz_model(ii)-wz_model(ii-1))
+            pext_DG(i, j, ispec)         = p_model(ii-1)           + frac*(p_model(ii)-p_model(ii-1))
+            gammaext_DG(indglob_DG)      = gamma_model(ii-1)       + frac*(gamma_model(ii)-gamma_model(ii-1))
+            etaext(i, j, ispec)          = eta_model(ii-1)         + frac*(eta_model(ii)-eta_model(ii-1))
+            muext(i, j, ispec)           = mu_model(ii-1)          + frac*(mu_model(ii)-mu_model(ii-1))
+            !Htabext_DG(indglob_DG)      = Htab_model(ii-1) + frac*(Htab_model(ii)-Htab_model(ii-1))
+            kappa_DG(i, j, ispec)        = kappa_model(ii-1)       + frac*(kappa_model(ii)-kappa_model(ii-1))
+            tau_sigma(i, j, ispec)       = tau_sigma_model(ii-1)   + frac*(tau_sigma_model(ii)-tau_sigma_model(ii-1))
+            tau_epsilon(i, j, ispec)     = tau_epsilon_model(ii-1) + frac*(tau_epsilon_model(ii)-tau_epsilon_model(ii-1))
             
             if(IONOSPHERIC_COUPLING) then
-            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii-1) + frac*(Bx_atmos(ii)-Bx_atmos(ii-1))
-            Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii-1) + frac*(Bz_atmos(ii)-Bz_atmos(ii-1))
-            N0ext(i,j,ispec) = N0_atmos(ii-1) + frac*(N0_atmos(ii)-N0_atmos(ii-1))
+              Bxext(ibool_DG(i, j, ispec)) = Bx_atmos(ii-1)          + frac*(Bx_atmos(ii)-Bx_atmos(ii-1))
+              Bzext(ibool_DG(i, j, ispec)) = Bz_atmos(ii-1)          + frac*(Bz_atmos(ii)-Bz_atmos(ii-1))
+              N0ext(i, j, ispec)           = N0_atmos(ii-1)          + frac*(N0_atmos(ii)-N0_atmos(ii-1))
             endif
 
           else
             ! Altitude of point is > (ii-1)-th line of model, and <= (ii)-th line of model.
             ! Interpolate using the values at lines (ii-2), (ii-1), and ii of model.
             
-            if(.false.) then ! DEBUG
-            pii   = (z-z_model(ii+1))*(z-z_model(ii-1))*(z-z_model(ii-2))&
-            /((z_model(ii)-z_model(ii-1))*(z_model(ii)-z_model(ii-2))*(z_model(ii)-z_model(ii+1)))
-            piim1 = (z-z_model(ii+1))*(z-z_model(ii))*(z-z_model(ii-2))&
-            /((z_model(ii-1)-z_model(ii))*(z_model(ii-1)-z_model(ii-2))*(z_model(ii-1)-z_model(ii+1)))
-            piim2 = (z-z_model(ii+1))*(z-z_model(ii-1))*(z-z_model(ii))&
-            /((z_model(ii-2)-z_model(ii))*(z_model(ii-2)-z_model(ii-1))*(z_model(ii-2)-z_model(ii+1)))
-            piip1 = (z-z_model(ii-2))*(z-z_model(ii-1))*(z-z_model(ii))&
-            /((z_model(ii+1)-z_model(ii))*(z_model(ii+1)-z_model(ii-1))*(z_model(ii+1)-z_model(ii-2)))
-            endif
+            !if(.false.) then ! DEBUG
+            !pii   = (z-z_model(ii+1))*(z-z_model(ii-1))*(z-z_model(ii-2))&
+            !/((z_model(ii)-z_model(ii-1))*(z_model(ii)-z_model(ii-2))*(z_model(ii)-z_model(ii+1)))
+            !piim1 = (z-z_model(ii+1))*(z-z_model(ii))*(z-z_model(ii-2))&
+            !/((z_model(ii-1)-z_model(ii))*(z_model(ii-1)-z_model(ii-2))*(z_model(ii-1)-z_model(ii+1)))
+            !piim2 = (z-z_model(ii+1))*(z-z_model(ii-1))*(z-z_model(ii))&
+            !/((z_model(ii-2)-z_model(ii))*(z_model(ii-2)-z_model(ii-1))*(z_model(ii-2)-z_model(ii+1)))
+            !piip1 = (z-z_model(ii-2))*(z-z_model(ii-1))*(z-z_model(ii))&
+            !/((z_model(ii+1)-z_model(ii))*(z_model(ii+1)-z_model(ii-1))*(z_model(ii+1)-z_model(ii-2)))
+            !endif
 
             pii   = (z-z_model(ii-1))*(z-z_model(ii-2))/((z_model(ii)-z_model(ii-1))*(z_model(ii)-z_model(ii-2)))
-            piim1 = (z-z_model(ii))*(z-z_model(ii-2))/((z_model(ii-1)-z_model(ii))*(z_model(ii-1)-z_model(ii-2)))
-            piim2 = (z-z_model(ii-1))*(z-z_model(ii))/((z_model(ii-2)-z_model(ii))*(z_model(ii-2)-z_model(ii-1)))
+            piim1 = (z-z_model(ii))  *(z-z_model(ii-2))/((z_model(ii-1)-z_model(ii))*(z_model(ii-1)-z_model(ii-2)))
+            piim2 = (z-z_model(ii-1))*(z-z_model(ii))  /((z_model(ii-2)-z_model(ii))*(z_model(ii-2)-z_model(ii-1)))
 
-            rhoext(i, j, ispec) = density_model(ii)*pii + density_model(ii-1)*piim1 + density_model(ii-2)*piim2
-            vpext(i, j, ispec) = vp_model(ii)*pii + vp_model(ii-1)*piim1 + vp_model(ii-2)*piim2
-            gravityext(i, j, ispec) = gravity_model(ii)*pii + gravity_model(ii-1)*piim1 + gravity_model(ii-2)*piim2
-            !Nsqext(i, j, ispec) = Nsq_model(ii)*pii + Nsq_model(ii-1)*piim1 + Nsq_model(ii-2)*piim2
-            vsext(i, j, ispec) = ZERO
+            rhoext(i, j, ispec)          = density_model(ii)*pii     + density_model(ii-1)*piim1 + density_model(ii-2)*piim2
+            vpext(i, j, ispec)           = vp_model(ii)*pii          + vp_model(ii-1)*piim1 + vp_model(ii-2)*piim2
+            gravityext(i, j, ispec)      = gravity_model(ii)*pii     + gravity_model(ii-1)*piim1 + gravity_model(ii-2)*piim2
+            !Nsqext(i, j, ispec)          = Nsq_model(ii)*pii + Nsq_model(ii-1)*piim1 + Nsq_model(ii-2)*piim2
+            vsext(i, j, ispec)           = ZERO
             Qmu_attenuationext(i, j, ispec) = HUGEVAL
             QKappa_attenuationext(i, j, ispec) = HUGEVAL
-            windxext(i, j, ispec) = wx_model(ii)*pii + wx_model(ii-1)*piim1 + wx_model(ii-2)*piim2
-            !windzext(i, j, ispec) = wz_model(ii)*pii + wz_model(ii-1)*piim1 + wz_model(ii-2)*piim2
-            pext_DG(i, j, ispec) = p_model(ii)*pii + p_model(ii-1)*piim1 + p_model(ii-2)*piim2
-            gammaext_DG(indglob_DG) = gamma_model(ii)*pii + gamma_model(ii-1)*piim1 + gamma_model(ii-2)*piim2
-            etaext(i, j, ispec) = eta_model(ii)*pii + eta_model(ii-1)*piim1 + eta_model(ii-2)*piim2
-            muext(i, j, ispec)  = mu_model(ii)*pii + mu_model(ii-1)*piim1 + mu_model(ii-2)*piim2
-            !Htabext_DG(indglob_DG) = Htab_model(ii)*pii + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
-            kappa_DG(i, j, ispec)  = kappa_model(ii)*pii + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
-            tau_sigma(i, j, ispec)   = tau_sigma_model(ii)*pii + tau_sigma_model(ii-1)*piim1 + tau_sigma_model(ii-2)*piim2
-            tau_epsilon(i, j, ispec) = tau_epsilon_model(ii)*pii + tau_epsilon_model(ii-1)*piim1 + tau_epsilon_model(ii-2)*piim2
+            windxext(i, j, ispec)        = wx_model(ii)*pii          + wx_model(ii-1)*piim1 + wx_model(ii-2)*piim2
+            !windzext(i, j, ispec)        = wz_model(ii)*pii          + wz_model(ii-1)*piim1 + wz_model(ii-2)*piim2
+            pext_DG(i, j, ispec)         = p_model(ii)*pii           + p_model(ii-1)*piim1 + p_model(ii-2)*piim2
+            gammaext_DG(indglob_DG)      = gamma_model(ii)*pii       + gamma_model(ii-1)*piim1 + gamma_model(ii-2)*piim2
+            etaext(i, j, ispec)          = eta_model(ii)*pii         + eta_model(ii-1)*piim1 + eta_model(ii-2)*piim2
+            muext(i, j, ispec)           = mu_model(ii)*pii          + mu_model(ii-1)*piim1 + mu_model(ii-2)*piim2
+            !Htabext_DG(indglob_DG)       = Htab_model(ii)*pii        + Htab_model(ii-1)*piim1 + Htab_model(ii-2)*piim2
+            kappa_DG(i, j, ispec)        = kappa_model(ii)*pii       + kappa_model(ii-1)*piim1 + kappa_model(ii-2)*piim2
+            tau_sigma(i, j, ispec)       = tau_sigma_model(ii)*pii   + tau_sigma_model(ii-1)*piim1 + tau_sigma_model(ii-2)*piim2
+            tau_epsilon(i, j, ispec)     = tau_epsilon_model(ii)*pii + tau_epsilon_model(ii-1)*piim1 + tau_epsilon_model(ii-2)*piim2
 
             if(IONOSPHERIC_COUPLING) then
-            Bxext(ibool_DG(i,j,ispec)) = Bx_atmos(ii)*pii + Bx_atmos(ii-1)*piim1 + Bx_atmos(ii-2)*piim2
-            Bzext(ibool_DG(i,j,ispec)) = Bz_atmos(ii)*pii + Bz_atmos(ii-1)*piim1 + Bz_atmos(ii-2)*piim2
-            N0ext(i,j,ispec) = N0_atmos(ii)*pii + N0_atmos(ii-1)*piim1 + N0_atmos(ii-2)*piim2
+              Bxext(ibool_DG(i, j, ispec)) = Bx_atmos(ii)*pii          + Bx_atmos(ii-1)*piim1 + Bx_atmos(ii-2)*piim2
+              Bzext(ibool_DG(i, j, ispec)) = Bz_atmos(ii)*pii          + Bz_atmos(ii-1)*piim1 + Bz_atmos(ii-2)*piim2
+              N0ext(i, j, ispec)           = N0_atmos(ii)*pii          + N0_atmos(ii-1)*piim1 + N0_atmos(ii-2)*piim2
             endif
 
           endif ! Endif on ii.
@@ -2191,8 +2191,8 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
   enddo ! Enddo on ispec.
   
   if(IONOSPHERIC_COUPLING) then
-  where(abs(Bxext) > 0._CUSTOM_REAL) Bxext = Bxext / sqrt(Bxext**2 + Bzext**2)
-  where(abs(Bzext) > 0._CUSTOM_REAL) Bzext = Bzext / sqrt(Bxext**2 + Bzext**2)
+    where(abs(Bxext) > 0._CUSTOM_REAL) Bxext = Bxext / sqrt(Bxext**2 + Bzext**2)
+    where(abs(Bzext) > 0._CUSTOM_REAL) Bzext = Bzext / sqrt(Bxext**2 + Bzext**2)
   endif
 
   call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile.

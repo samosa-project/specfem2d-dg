@@ -276,9 +276,9 @@ subroutine compute_forces_acoustic_DG_main()
     rhovz_DG   = rhovz_DG + scheme_B(i_stage)*resu_rhovz
     E_DG       = E_DG     + scheme_B(i_stage)*resu_E
     e1_DG      = e1_DG    + scheme_B(i_stage)*resu_e1
-    if(IONOSPHERIC_COUPLING) Ni_DG      = Ni_DG    + scheme_B(i_stage)*resu_Ni
-    
-
+    if(IONOSPHERIC_COUPLING) then
+      Ni_DG    = Ni_DG    + scheme_B(i_stage)*resu_Ni
+    endif
 
     !E_int = (rhovx_init/rho_init)
     !if(.false.) then
