@@ -37,22 +37,28 @@ nelemacous=$(grep "Total number of acoustic elements:" $slurm | grep -o "[0-9]*"
 echo "  Total elements:    $nelemtot."
 echo "  Acoustic elements: $nelemacous (included above)."
 
+echo "> trying to find CFL <"
 cfl=$(grep "Max CFL stability condition" $slurm -A2 | grep -oP "[0-9]\.[0-9]*[E|e|D|d]?\-?\+?[0-9]*" | head -2 | tail -1)
-
 echo "  CFL:               $cfl."
 
+echo "> trying to find last time step <"
 lasttimestep=$(grep -e "Timestep" $slurm | tail -1 | grep -o "[0-9]* (" | grep -o "[0-9]*")
 echo "  Last time step:    $lasttimestep."
 
+echo "> trying to find NPROC <"
 NPROC=$(grep -e "NPROC *= *[0-9]*" $parfile | grep -oe "[0-9]*")
 echo "  CPUs:              $NPROC."
 
+echo "> trying to find NSTEP_BETWEEN_OUTPUT_IMAGES <"
 snapfreq=$(grep -e "NSTEP_BETWEEN_OUTPUT_IMAGES *= *[0-9]*" $parfile | grep -oe "[0-9]*" | head -1)
 echo "  Snapshots saving:  $snapfreq timesteps."
 
+
+echo "> trying to find number of stations <"
 nbstations=$(grep "Station" $slurm | tail -1 | grep -P -o "[0-9]?[0-9]?[0-9]" | head -1)
 echo "  Receivers:         $nbstations."
 
+echo "> trying to find NSTEP_BETWEEN_OUTPUT_SEISMOS <"
 synthfreq=$(grep -e "NSTEP_BETWEEN_OUTPUT_SEISMOS *= *[0-9]*" $parfile | grep -oe "[0-9]*")
 echo "  Synthetics saving: $synthfreq timesteps."
 

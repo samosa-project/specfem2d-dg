@@ -392,6 +392,7 @@ function [x, t, RUNINFO, RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[1702000 1602000 0.469 486400 1680 5000  494 100   86386]; RUNINFO{i}={1682282,'FNS mars insight 20h 3hz w/  perioBC hardsoil z12k'}; i=i+1;
   RUN_RAWDATA(i,:)=[900000   853000 0.469 110500 1536 5000  397 100   17985]; RUNINFO{i}={1691823,'FNS mars insight impact'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 14228     8005 0.482  64000   64 1000   14  25    1789]; RUNINFO{i}={1939115,'FNS tir de mine 40Hz redone'}; i=i+1;
+  RUN_RAWDATA(i,:)=[733000 682000   0.469 204500  384 5000  157 100   43188]; RUNINFO{i}={1996492,'FNS mars insight waveguide excitation'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

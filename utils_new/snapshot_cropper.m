@@ -32,7 +32,11 @@ suffix="_crop";
 % FOLDER='/home/l.martire/Documents/SPECFEM/Ongoing_Work/18_microbaroms/microbaroms_patch/OUTPUT_FILES_668482_disp7_isp6_full/cropppp';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_826213/croppp';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_lnsf2s_local/croppp';
-FOLDER='/home/l.martire/Documents/Ongoing_Work/1811_glanes/190116_presentation_JPL/simulation';
+% FOLDER='/home/l.martire/Documents/Ongoing_Work/1811_glanes/190116_presentation_JPL/simulation';
+
+if(not(exist('FOLDER','var')))
+  FOLDER = input(['folder to treat? > '],'s');
+end
 
 if(not(strcmp(FOLDER(end),'/'))); FOLDER=[FOLDER,'/']; end;
 list=dir(strcat(FOLDER, '*.jpg'));
@@ -141,7 +145,11 @@ for s=1:size(list,1)
       yticks([1,nNZ]);
     end
     yticklabels({strcat(" $",sprintf("%.1f",top_zval-zint),"$")," $0$",strcat(" $",sprintf("%.1f",bottom_zval-zint),"$")});
-    xticks([1,source_nx_from_left,nNX]);
+    if(source_nx_from_left<1 || source_nx_from_left>nNX)
+      xticks([1,nNX]);
+    else
+      xticks([1,source_nx_from_left,nNX]);
+    end
     xticklabels({strcat(" $",sprintf("%.1f",left_xval-xs),"$")," $0$",strcat("$",sprintf("%.1f",right_xval-xs),"$ ")});
 
     xlp = get(get(gca, 'XLabel'), 'Position'); zlp = get(get(gca, 'YLabel'), 'Position');

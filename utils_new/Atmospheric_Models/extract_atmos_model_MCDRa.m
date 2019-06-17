@@ -13,6 +13,9 @@
 
 function [Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUvol, Wnorth, Weast, ...
           Cp, Cv, GAM, FR, SVIB] = extract_atmos_model_MCDRa(DATAFILE)
+  if(not(exist(DATAFILE,'file')))
+    error(['[',mfilename,', ERROR] File ''',DATAFILE,''' does not exist. Aborting.']);
+  end
   model = importdata(DATAFILE, ' ', 1);
   Z = model.data(:, 1);
   RHO = model.data(:, 2);

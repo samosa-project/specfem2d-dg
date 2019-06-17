@@ -42,15 +42,15 @@ if(not(all(size(raw_t) == size(raw_s))))
   error(['[(',mfilename,', ERROR] time data and amplitude should have the same size, but right now do not.']);
 end
 
-doWindowSignal = -1;
-while (not((numel(doWindowSignal)==1 && doWindowSignal==0) || (numel(doWindowSignal)==2)))
-  doWindowSignal = input(['[', mfilename, '] Window signal ([t1 t2] vector for yes, 0 for no)? > ']);
-end
-if(any(doWindowSignal))
-  sel = (raw_t(1,:)>=min(doWindowSignal) & raw_t(1,:)<=max(doWindowSignal));
-  raw_t = raw_t(:,sel);
-  raw_s = raw_s(:,sel);
-end
+% doWindowSignal = -1;
+% while (not((numel(doWindowSignal)==1 && doWindowSignal==0) || (numel(doWindowSignal)==2)))
+%   doWindowSignal = input(['[', mfilename, '] Window signal ([t1 t2] vector for yes, 0 for no)? > ']);
+% end
+% if(any(doWindowSignal))
+%   sel = (raw_t(1,:)>=min(doWindowSignal) & raw_t(1,:)<=max(doWindowSignal));
+%   raw_t = raw_t(:,sel);
+%   raw_s = raw_s(:,sel);
+% end
 
 nstat = min(size(Ztime));
 
@@ -124,16 +124,30 @@ WPSD_tab = [];
 for i = IDs_to_process
   % Set signal to be used.
   signal = raw_s(i, :);
-
+  
   % Select time frame.
-  % TODO: ask for user input.
-  select_time_l = raw_t(i, 1); select_time_u = raw_t(i, end);
+  doWindowSignal = -1;
+  while (not((numel(doWindowSignal)==1 && doWindowSignal==0) || (numel(doWindowSignal)==2)))
+    disp(['[', mfilename, '] Window signal for S',num2str(istattab(i)),' @[',num2str(xstattab(istattab(i))),',',num2str(ystattab(istattab(i))),'] ([t1 t2] vector for yes, 0 for no)?']);
+    disp(['[', mfilename, ', INFO] You may use ''xstattab(istattab(i))'' to get the value of the the station''s x position.']);
+    doWindowSignal = input(['[', mfilename, '] > ']);
+  end
+  if(any(doWindowSignal))
+    sel = (raw_t(1,:)>=min(doWindowSignal) & raw_t(1,:)<=max(doWindowSignal));
+%     raw_t = raw_t(:,sel);
+%     raw_s = raw_s(:,sel);
+    disp(['[',mfilename,', INFO] Windowing: [',num2str(doWindowSignal),'] [s].']);
+    select_time_l = min(doWindowSignal); select_time_u = max(doWindowSignal); % no window
+  else
+    select_time_l = raw_t(i, 1); select_time_u = raw_t(i, end); % no window
+  end
   % select_time_l = raw_t(1); select_time_u = 48;
   % select_time_l = 0; select_time_u = 2.9;
 
   % Select.
   % time = raw_t; time = time(select_time_l<= time); time = time(time<= select_time_u); signal = signal(time<= select_time_u); % Cut signal and time around selection window.
-  time = raw_t(i, :); signal(select_time_l >=  time) = 0; signal(time >=  select_time_u) = 0; % Zero signal value around selection window.
+%   time = raw_t(i, :); signal(select_time_l >=  time) = 0; signal(time >=  select_time_u) = 0; % Zero signal value around selection window.
+  time = raw_t(i, :); signal(time <= select_time_l) = 0; signal(time >=  select_time_u) = 0; % Zero signal value around selection window.
   % signal = [signal, zeros(1,size(time,2))]; time = [time-time(1), time(end)-2*time(1)+time]; % Zero signal value around selection window and add zeros at the end.
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

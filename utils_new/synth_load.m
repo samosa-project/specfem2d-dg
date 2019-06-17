@@ -42,22 +42,14 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars.
-% fig_title = strcat('Mars InSIGHT Impact');
+fig_title = strcat('Mars InSIGHT');
+% rootd = strcat(SPCFMEXloc,'mars_insight_waveguide_excitation/'); OFd = strcat(rootd, 'OUTPUT_FILES_1996492/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_impact/'); OFd = strcat(rootd, 'OUTPUT_FILES_1691823_reachedtimelimit/'); subsample = 1; wanted_dt = 0.01;
-
-% Aarhus
-% /home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/aarhus/OUTPUT_FILES_172328
-% fig_title = strcat('Aarhus');
-% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172328_900hz/');
-% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172340_2000hz/');
-% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_173861_2090hz/');
-
-% fig_title = strcat('Mars InSIGHT Guided');
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1689947_z12k_hardsoil_goodstations/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
-% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
+rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
@@ -66,9 +58,16 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1484867/');
 % rootd = strcat(SPCFMEXloc,'mars_insight_cut/'); OFd = strcat(rootd, 'OUTPUT_FILES_1486113/');
 
+% Aarhus
+% /home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/aarhus/OUTPUT_FILES_172328
+% fig_title = strcat('Aarhus');
+% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172328_900hz/');
+% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_172340_2000hz/');
+% rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_173861_2090hz/');
+
 % TNTGlanes
-fig_title = strcat('Tirs de Mine Glanes');
-rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1939115_40hz_neweststations/');
+% fig_title = strcat('Tirs de Mine Glanes');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1939115_40hz_neweststations/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1508049_40hz/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479543_clean/');
 % rootd = strcat(SPCFMEXloc,'tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
@@ -333,6 +332,40 @@ disp([' ']);
 global synth_load_was_ran
 synth_load_was_ran = 1;
 
+% Eventually periodize distances.
+%   xstattab4dist = xstattab;
+xstattab_save = xstattab;
+
+if(readExampleFiles_extractParam([OFd,'input_parfile'], 'ADD_PERIODIC_CONDITIONS', 'bool')) % if periodic boundary conditions in input_parfile found, ask if we should periodize X
+  periodizechoice = - 1;
+  while (~ ismember(periodizechoice, [0, 1, 2]))
+    disp(['[', mfilename, '] Periodic boundary conditions found in input_parfile. Periodize signal w.r.t. x=0 (0 for no, 1 for right side, 2 for left side)?']);
+    disp(['[', mfilename, ']   1 (right side) will put all stations with x<0 as if they were to the right of the right boundary.']);
+    disp(['[', mfilename, ']   2 (left side)  will put all stations with x>0 as if they were to the left  of the left  boundary.']);
+    periodizechoice = input(['[', mfilename, '] > ']);
+  end
+  if(periodizechoice)
+    [xminmax, ~, ~] = readExampleFiles([OFd,'input_parfile'], [], []);
+  end
+  switch periodizechoice
+    case 0
+      % nothing
+    case 1
+      selection = istattab(xstattab(istattab)<0);
+%         distance(istattab(xstattab(istattab)<0))=40e3 + 160e3-distance(istattab(xstattab(istattab)<0))
+%         xstattab4dist(selection) = max(xminmax) - min(xminmax) + xstattab4dist(selection);
+      xstattab(selection) = max(xminmax) - min(xminmax) + xstattab(selection);
+    case 2
+%       error('not implemented');
+      selection = istattab(xstattab(istattab)>0);
+      xstattab(selection) = - max(xminmax) + min(xminmax) + xstattab(selection);
+    otherwise
+      error('should not have come here');
+  end
+else
+  periodizechoice = 0;
+end
+
 if (behaviour == 0) % Eventually, plot one by one in subplots.
   plotOneByOne(Ztime, Zamp, istattab, xstattab(istattab), ystattab(istattab), normalise_ylims, fig_title, ylabel_unknown);
   
@@ -342,40 +375,13 @@ elseif (behaviour == 2) % Eventually, plot as time-distance.
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
   end
   
-  xstattab4dist = xstattab;
-  
-  if(readExampleFiles_extractParam([OFd,'input_parfile'], 'ADD_PERIODIC_CONDITIONS', 'bool')) % if periodic boundary conditions in input_parfile found, ask if we should periodize X
-    periodizechoice = - 1;
-    while (~ ismember(periodizechoice, [0, 1, 2]))
-      disp(['[', mfilename, '] Periodic boundary conditions found in input_parfile. Periodize signal w.r.t. x=0 (0 for no, 1 for right-side, 2 for left-side)?']);
-      disp(['[', mfilename, ']   ''right-side'' will put all stations with x<0 as if they were to the right of the right boundary.']);
-      disp(['[', mfilename, ']   ''left-side''  will put all stations with x>0 as if they were to the left  of the left  boundary.']);
-      periodizechoice = input(['[', mfilename, '] > ']);
-    end
-    if(periodizechoice)
-      [xminmax, ~, ~] = readExampleFiles([OFd,'input_parfile'], [], []);
-    end
-    switch periodizechoice
-      case 0
-        % nothing
-      case 1
-        selection = istattab(xstattab4dist(istattab)<0);
-%         distance(istattab(xstattab(istattab)<0))=40e3 + 160e3-distance(istattab(xstattab(istattab)<0))
-        xstattab4dist(selection) = max(xminmax) - min(xminmax) + xstattab4dist(selection);
-      case 2
-        error('not implemented');
-      otherwise
-        error('should not have come here');
-    end
-  else
-    periodizechoice = 0;
-  end
-  
   switch distancechoice
     case 1
-      distance = xstattab4dist; dist_symbol = "x"; dist_name = "horizontal distance";
+%       distance = xstattab4dist; dist_symbol = "x"; dist_name = "horizontal distance";
+      distance = xstattab; dist_symbol = "x"; dist_name = "horizontal distance";
     case 2
-      distance = abs(xstattab4dist); dist_symbol = "|x|"; dist_name = "horizontal distance";
+%       distance = abs(xstattab4dist); dist_symbol = "|x|"; dist_name = "horizontal distance";
+      distance = abs(xstattab); dist_symbol = "|x|"; dist_name = "horizontal distance";
     case 3
       distance = ystattab; dist_symbol = "z"; dist_name = "altitude";
     case 4

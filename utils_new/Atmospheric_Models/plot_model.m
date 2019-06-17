@@ -6,22 +6,29 @@
 %                  1) extract_atmos_model.m
 %
 % Usage:
-%   plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW)
+%   plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt, LRorDWUW, plot_nosave0_save1)
 % with:
 %   TODO.
 % yields:
 %   TODO.
 
-function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDWUW, plot_nosave0_save1)
+function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt, LRorDWUW, plot_nosave0_save1)
   if(nargin<4)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
   end
   addpath('/home/l.martire/Documents/work/mars/mars_is'); % customSaveFig
   
-  if(not(exist('LRorDWUW')))
+  if(not(exist('maxalt','var')))
+    maxalt_provided = 0;
+  else
+    maxalt_provided = 1;
+  end
+  
+  if(not(exist('LRorDWUW','var')))
     % not found, make default: LR
     LRorDWUW='LR';
   else
+    LRorDWUW = upper(LRorDWUW); % safeguard
     if(strcmp(LRorDWUW,'DWUW'))
       % found alright
     elseif(strcmp(LRorDWUW,'LR'))
@@ -31,7 +38,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
       LRorDWUW='LR';
     end
   end
-  if(not(exist('plot_nosave0_save1')))
+  if(not(exist('plot_nosave0_save1','var')))
     plot_nosave0_save1 = 1;
   end
   
@@ -44,7 +51,17 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
   [Z, RHO, T, C, ~, ~, ...
    ~, NSQ, ~, ~, ~, ~, ~, W, ~, ~, ~] = ...
    extract_atmos_model(atmospheric_model_file, 3, 0, 0);
-
+  
+  if(maxalt_provided)
+    sel = (Z<maxalt);
+    Z = Z(sel);
+    RHO = RHO(sel);
+    T = T(sel);
+    C = C(sel);
+    NSQ = NSQ(sel);
+    W = W(sel);
+  end
+  
   [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
   
   T=T-273.15;
@@ -141,6 +158,23 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, LRorDW
   end
   
   linkaxes(axxx,'y');
+  linkprop(axxx,'ytick');
+  
+%   % find closest multiple of 3 under log10(max(Z))
+%   Nticks = 6;
+%   nearestPow = log10(max(Z)) - mod(log10(max(Z)),3);
+% %   yticks(linspace(min(Z),max(Z),7));
+%   tentativeYticks = 10^nearestPow * floor(linspace(min(Z),max(Z),Nticks)/(10^nearestPow));
+%   definitiveYticks = min(tentativeYticks) + min(diff(tentativeYticks))*linspace(0,Nticks-1,Nticks); % correct to have same dz between ticks
+%   if(definitiveYticks(1)<min(Z))
+%     definitiveYticks(1)=min(Z);
+%   end
+%   yticks(definitiveYticks);
+%   set(axxx, 'yTickMode', 'auto', 'yTickLabelMode', 'auto'); % reset to auto in case user zooms
+  set(axxx, 'yTickMode', 'auto'); % reset to auto in case user zooms
+%   if(maxalt_provided)
+%     ylim([0,maxalt]);
+%   end
   
 %   spl=split(atmospheric_model_file,'.');
 %   spl{length(spl)+1}='jpg';

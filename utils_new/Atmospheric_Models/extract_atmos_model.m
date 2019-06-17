@@ -12,9 +12,7 @@
 % yields:
 %   TODO.
 
-function [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, ...
-          EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = ...
-         extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
+function [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND, WIND, CP, CV, GAMMA, FR, SVIB] = extract_atmos_model(DATAFILE, headerlines, interpolate, interp_delta)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load and store data.        %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
