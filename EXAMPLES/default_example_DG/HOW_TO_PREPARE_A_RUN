@@ -1,0 +1,48 @@
+1) Configure parfile_input, mainly (in that order):
+  ) "Discontinuous Galerkin"
+  ) "Velocity and Density Models"
+  ) Mesh, either of those options:
+     i) "Parameters for External Meshing" (go to "GMSH preparation" below).
+    ii) "Parameters for Internal Meshing" (but not "Definition of the different regions" yet), especially xmin, xmax, and nx.
+  ) "Boundary Conditions".
+    ) If you set ADD_PERIODIC_CONDITIONS=.true., make sure PERIODIC_HORIZ_DIST is set to a value which agrees with your mesh.
+  ) Eventually, "Display Parameters", "Movies, Images, and Snaphots Parameters", "JPEG Snapshots", and/or "PostScript Snapshots". But you can leave those to default values if you don't know yet what to do with those.
+  ) "Sources"
+
+2) Following the configuration of "Sources" in parfile_input, configure source_input.
+
+3) Configure interfaces_input, and "Definition of the different regions" in parfile_input:
+  ) Either you do it manually.
+  ) Or you can run the script "utils_new/Atmospheric_Models/model_getdxdt.m" and copy-paste the results to the relevant sections.
+
+4) Configure "Receivers" in parfile_input:
+  ) Either you do it manually.
+  ) Or you can run the script "utils_new/prepare_stations.m" and copy-paste the results to the relevant sections.
+    You may have to define a function specifically for your case, depending on where you want to have stations, but default cases which are already implemented may be enough for common applications.
+
+5) Now is a good time to do a test run (if your local computer allows it):
+  ) Set NPROC=4 in parfile_input (or =#, # the number of available cores on your local CPU).
+  ) Run ./run_this_example.sh
+  ) Correct your mistakes, which hopefully the software found by parsing the input files.
+
+6) Estimate the run time, using the script "utils_new/estimate_run_time.m".
+  ) Retrieve from your configuration and/or the test run:
+    ) nstations, which is   the total number of receivers (given by "utils_new/prepare_stations.m" if you used it)
+    ) nstepseismo, which is NSTEP_BETWEEN_OUTPUT_SEISMOS in parfile_input
+    ) neltot, which is      the "Total number of elements" of the test run (or computed from the "Definition of the different regions" from "Parameters for Internal Meshing" in parfile_input)
+    ) neldg, which is       neltot - the number of DG elements
+    ) nstepsnap, which is   NSTEP_BETWEEN_OUTPUT_IMAGES in parfile_input
+    ) nsteptot, which is    NSTEP in parfile_input
+    ) nproc, which is       your choice
+
+
+
+
+
+
+
+
+
+
+*) GMSH preparation:
+  TODO
