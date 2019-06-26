@@ -72,8 +72,12 @@ function [X,Y,V] = readDumps(OFD, IT, verbose)
   XY = reshape(XY,max(size(XY)),2);
   V = reshape(V,max(size(V)),1);
   % check
-  if(not(size(XY,1)==size(V,1)))
-    error(['DID NOT LOAD AS MANY POINTS (',num2str(size(XY,1)),') AS VALUES (',num2str(size(V,1)),')']);
+  if(size(V,1)==0)
+    error(['NO VALUE LOADED, MAYBE DUMPS FOR THIS ITERATION (',num2str(IT),') DO NOT EXIST']);
+  else
+    if(not(size(XY,1)==size(V,1)))
+      error(['DID NOT LOAD AS MANY POINTS (',num2str(size(XY,1)),') AS VALUES (',num2str(size(V,1)),')']);
+    end
   end
   X = reshape(XY(:,1),max(size(XY)),1);
   Y = reshape(XY(:,2),max(size(XY)),1);
