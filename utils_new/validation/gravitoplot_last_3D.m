@@ -49,7 +49,7 @@ rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_1.00dt/']; % EXAMPLE path
 OFd = [rootd,'OUTPUT_FILES_isothermal_LNS_st1'];
 
 data_test0_or_readRun1 = 1;
-subsample = 1; % Subsample synthetics? See sumsamble_dt below, near T_0.
+subsample = 0; % Subsample synthetics? See sumsamble_dt below, near T_0.
 
 %%%%%%%%%
 % Display
@@ -86,7 +86,7 @@ xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
 xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
 ymin = 0; ymax = 0; % Setting this for 2D simulations. For 3D simulations, another call to readExampleFiles_extractParam would be needed.
 nx = readExampleFiles_extractParam(parfile, 'nx', 'int');
-subsample_dt = T_0/30; % if subsample == 1, wanted dt for subsampling: ~30 pts/period or higher is safe
+subsample_dt = T_0/100; % if subsample == 1, wanted dt for subsampling: ~30 pts/period or higher is safe
 % Atmospheric model.
 switch(readExampleFiles_extractParam(parfile, 'MODEL', 'string'))
   case 'default'
@@ -109,9 +109,9 @@ end
 % Analytical solution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Choices
-mult_tSpan = 1; % multiplier for time span (used for analytical solution)
-mult_xSpan = 1; % multiplier for x span (used for analytical solution)
-mult_ySpan = 1; % multiplier for y span (used for analytical solution)
+mult_tSpan = 1; % multiplier for time span (used for analytical solution), must be whole numbers
+mult_xSpan = 1; % multiplier for x span (used for analytical solution), must be whole numbers
+mult_ySpan = 1; % multiplier for y span (used for analytical solution), must be whole numbers, if 2D simulation leave this to 1
 % fs   = 1/dt ; %not used anywhere
 % fmax = 1; %not used ??
 % fmin = -fmax; %not used ??
@@ -378,7 +378,8 @@ disp(['[',mfilename,'] ',num2str(size(Ztime,1)),' synthetics loaded: ', num2str(
 disp([' ']);
 disp(['[',mfilename,', INFO] Building analytical solution.']);
 tmax_anal = t_0 + max(zstattab)/SOUNDSPEED(1) + 0.5*T_0 + 1*T_0; % go as far as 2 times the time necessary (roughly) for the signal to pass last station (t_0 + travel time + half period), + full period for safety
-dt_anal   = T_0 / (2*100); % ensure fmax=1/dt >> 2*f0=2/T_0 by setting 1/dt = (2*2.5)/T_0
+% dt_anal   = T_0 / (2*100); % ensure fmax=1/dt >> 2*f0=2/T_0 by setting 1/dt = (2*2.5)/T_0
+dt_anal   = min(diff(Ztime(1,:))); % Choose a dt corresponding to the dt of the simulation.
 dx_anal = dx;
 dy_anal = dy;
 
@@ -507,27 +508,45 @@ if(externalDGAtmosModel)
 else
   if(USE_ISOTHERMAL_MODEL)
     % isothermal
-%     error('no analytical formula for isothermal');
-    KZ = sqrt( (Omega_intrinsic ./ SOUNDSPEED).^2 - KX.^2 - (1./(2*H.*GAM)).^2) + (2*GAM-1)*1j/(2*GAM*H);
+    disp(['[',mfilename,', WARNING] ISOTHERMAL VERIFICATION IS NOT FUNCTIONNAL YET.']);
+    disp(['[',mfilename,', WARNING] ISOTHERMAL VERIFICATION IS NOT FUNCTIONNAL YET.']);
+    disp(['[',mfilename,', WARNING] ISOTHERMAL VERIFICATION IS NOT FUNCTIONNAL YET.']);
+    
+%     % isothdecay = z/H. First try somewhat working. Needs correcting factor 1 (see below).
+%     KZ = sqrt( (Omega_intrinsic ./ SOUNDSPEED).^2 - KX.^2 - (1./(2*H.*GAM)).^2 ) + (2*GAM-1)*1j/(2*GAM*H);
+%     corrFact=1;
+
+%     % isothDecay = 0. Needs correcting factor 2 (see below).
+%     KZ = 0.5 * ( -1j/(H*GAM) + sqrt( 4*( KX.^2 + (Omega_intrinsic/SOUNDSPEED).^2 ) - (H*GAM)^(-2) ) );
+%     KZ = 1 / GRA / H / GAM * (-1j * GRA + sqrt(-GRA * (4 * H ^ 2 * GRA * GAM ^ 2 * KX .^ 2 - 4 * H * GAM * wind_x ^ 2 * KX .^ 2 + 8 * H * GAM .* Omega .* wind_x .* KX - 4 * H * GAM * Omega .^ 2 + GRA))) / 2;
+%     corrFact=2;
+    
+    % isothdecay = z/(2H). Needs correcting factor 3 (see below).
+    KZ = (1j * GAM * GRA + -1j * GRA + sqrt(-GRA * (4 * H ^ 2 * GRA * GAM ^ 2 * KX .^ 2 - 4 * H * GAM * wind_x ^ 2 * KX .^ 2 + 8 * H * GAM * Omega .* wind_x .* KX - 4 * H * GAM * Omega .^ 2 + GRA))) / GRA / GAM / H / 2;
+    corrFact=3;
+    
   else
     % Test new formula (WORKS QUITE GOOD ON ISOBARIC, WITH Mz = ifftn(filt.*TFMo);)
 %     KZ = sqrt( (wind_x.^2 - SOUNDSPEED.^2).*KX.^2 - 2*KX.*Omega + Omega.^2) ./ SOUNDSPEED;
-    KZ = sqrt( (Omega_intrinsic ./ SOUNDSPEED).^2 - KX.^2);
+    
+    % Working formula. Nothing else needed.
+    KZ = sqrt( (Omega_intrinsic ./ SOUNDSPEED).^2 - KX.^2); corrFact=0;
+%     KZ = sqrt(-(SOUNDSPEED * KX - wind_x * KX + Omega) .* (SOUNDSPEED * KX + wind_x * KX - Omega)) / SOUNDSPEED; % Maple raw input works as well.
   end
 end
 
 ind1=find(isnan(KZ));
 ind2=find(isinf(KZ));
 disp(['[',mfilename,'] Number of NaNs in KZ: ',num2str(numel(ind1)),'.']);
-disp(['[',mfilename,'] Setting those NaNs to zeros.']);
+disp(['[',mfilename,']   Setting those NaNs to zeros.']);
 KZ(ind1)=0.0;
 disp(['[',mfilename,'] Number of Infs in KZ: ',num2str(numel(ind2)),'.']);
-disp(['[',mfilename,'] Setting those Infs to zeros.']);
+disp(['[',mfilename,']   Setting those Infs to zeros.']);
 KZ(ind2)=0.0;
 % imaginary part of KZ should be positive in order to attenuate the signal
 indimag = find(imag(KZ)<0);
 disp(['[',mfilename,'] Number of KZ such that Im(KZ)<0: ',num2str(numel(indimag)),'.']);
-disp(['[',mfilename,'] Setting those to their conjugate (only flips the sign of the imaginary part).']);
+disp(['[',mfilename,']   Setting those to their conjugate (only flips the sign of the imaginary part).']);
 KZ(indimag) = conj(KZ(indimag));
 % real(KZ) should be positive for positive frequencies and negative for
 % negative frequencies in order to shift signal in positive times
@@ -537,6 +556,29 @@ KZ(indimag) = conj(KZ(indimag));
 % => because vg perpendicular to Vphi ?
 KZnew = 0.0 - real(KZ).*sign(Omega_intrinsic) + 1i*imag(KZ);
 KZ=KZnew;
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% CORRECTING FACTORS. %
+%%%%%%%%%%%%%%%%%%%%%%%
+switch corrFact
+  case 1
+    % Correcting factor 1 for isothermal case (use it with the Maple script configured with the isothermal decay = z/H).
+    KZ = KZ -1j*(1/H + 2/(SOUNDSPEED^2));
+    % 1/H comes from the fact that isothDecay=1/H (developing K \cdot X makes this 1/H go outside the i and finds back its place). TBH I do not remember how I found the second factor, sheer luck is not excluded.
+  case 2
+    % Correcting factor 2 for isothermal case (use it with the Maple script configured without the isothermal decay).
+    KZ = KZ -1j*(8.589e-05);
+    % Cannot explain why this value.
+  case 3
+    % Correcting factor 3 for isothermal case (use it with the Maple script configured with isothermal decay = z/(2H)).
+%     KZ = KZ -1j*(6.449e-05);
+    KZ = KZ -1j*(1/(2*H) + 2/(SOUNDSPEED^2));
+    % Same rationale as case 1.
+end
+% KZ = KZ -1j*(2/(SOUNDSPEED^2)); % Test correcting factor for isothermal case.
+% KZ = KZ -1j*(1.1643e+05); % Test correcting factor for isothermal case.
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
 
 % restore negative frequencies from postive ones:
 %      KZ(:,NFFT2/2+2:NFFT2)=0.0-real(KZ(:,NFFT2/2:-1:2))+1i*imag(KZ(:,NFFT2/2:-1:2));
@@ -589,12 +631,16 @@ KZ=KZnew;
       % MAYBE THIS FILTER TO TO BRING BACK TO ACTUAL TIME SERIES, would make sense
       %filt = exp(1i*(KZ*z_station));
       if(externalDGAtmosModel)
-        error('no filter for external atmos model');
+        error('no filter implemented for external atmos model');
       else
         if(USE_ISOTHERMAL_MODEL)
           % isothermal
-          filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H);
-%           filt = exp(1i*(KX*x_station + KZ*z_station));
+          filt = exp(1i*(KX*x_station + KZ*z_station));
+%           filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H);
+%           filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/(2*H));
+%           filt = exp(1i*(KX*x_station + KZ*z_station) - 2*z_station/H);
+%           filt = exp(1i*(KX*x_station + KZ*z_station) - z_station/(2*H));
+%           filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H + 2*z_station/(SOUNDSPEED^2));
 %           filt = exp(1i*(KX*x_station + KZ*z_station) - z_station/H);
         else
           % isobaric
@@ -618,6 +664,7 @@ KZ=KZnew;
       %Mz = exp(z_station/69109) * ifftn(filt.*TFMo);
 %       Mz = exp(z_station/68719) * ifftn(filt.*TFMo);
       Mz = ifftn(filt.*TFMo);
+%       Mz = ifftn(filt.*TFMo) * exp(2*z_station/SOUNDSPEED);
 %           xcoord(istat) = xstattab(istat);
       ix = round((xstattab(gloStatNumber)-xmin)/dx) + 1; % first guess for x
       iy = round((ystattab(gloStatNumber)-zmin)/dy) + 1; % first guess for y
@@ -673,7 +720,7 @@ KZ=KZnew;
 % test to see what forms has the analytic solution.
 disp([' ']);
 disp(['[',mfilename,', INFO] Checking analytical solution.']);
-f=figure();
+figcheckhandle=figure();
 % colours=jet(nstat);
 % colours=prism(nstat);
 colours=winter(nstat);
@@ -682,20 +729,34 @@ if(externalDGAtmosModel)
 else
   if(USE_ISOTHERMAL_MODEL)
     th_vz_v0 = exp( zstattab(end)/(2*H) );
-    factor = 1;
-    factor = 1;
-%     isothDecay = [zstattab, factor* peak2peak(synf(:,:),2)./peak2peak(synf(1,:)), exp( zstattab/(2*H) ), peak2peak(Zamp(:,:),2)/peak2peak(Zamp(1,:))];
-%     figure(); plot(zstattab, isothDecay(:,2)); hold on; plot(zstattab, isothDecay(:,3)); plot(zstattab, isothDecay(:,4));
+    
+    % Look at agreement with exponential decay.
+    factor = 1; facttxt = '1';
+%     factor = exp(2*zstattab/(SOUNDSPEED^2)); facttxt = 'exp(2*z/c$^2$)';
+%     factor = exp(1.446e-5 * zstattab); facttxt = 'exp(1.446e-5 * z)';
+    isothDecay = [zstattab, factor.* peak2peak(synf(:,:),2)./peak2peak(synf(1,:)), exp( zstattab/(2*H) ), peak2peak(Zamp(:,:),2)/peak2peak(Zamp(1,:))];
+    x=zstattab; y=isothDecay(:,3)./isothDecay(:,2); lel = fit(x,y,'exp1');
+    if(log10(abs(lel.b))>=-6)
+      % If a non-negligible multiplying factor fit is found, plot and display.
+      lel
+      sprintf('%.16f',lel.b)
+      figure();
+      plot(zstattab, isothDecay(:,3), 'displayname', ['exponential decay']); hold on;
+      plot(zstattab, isothDecay(:,4), 'displayname', ['synthetics']); hold on;
+      plot(zstattab, isothDecay(:,2), 'displayname', ['analytic $\times$',facttxt]); hold on;
+      legend();
+    end
   else
     th_vz_v0 = 1;
   end
 end
+figure(figcheckhandle);
 for i = 1:nstat;
   plot(t,synf(i,:),'displayname',num2str(zstattab(istattab(i))),'color',colours(i,:)); hold on;
 end
 title({['This analytical solution: $v(z=z_{max})/v(z=0)$=',num2str(peak2peak(synf(end,:))/peak2peak(synf(1,:))),'.'],['Theoretical value: =$e^{z/(2H)}$=',num2str(th_vz_v0),'.'],['Current simulation: =',num2str(peak2peak(Zamp(end,:))/peak2peak(Zamp(1,:))),'.']},'fontsize',14);
 legend();
-prettyAxes(f);
+prettyAxes(figcheckhandle);
 isThisOk=-1;
 while(not(ismember(isThisOk,[0,1])))
   isThisOk=input(['[',mfilename,'] Does this analytical solution look ok (0 for no, 1 for yes)? > ']);
@@ -722,17 +783,17 @@ timef = t;
 % time
 disp([' ']);
 disp(['[',mfilename,'] Plotting everything.']);
-f=figure('units','normalized','outerposition',[0 0 1 1]);
+fh = figure('units','normalized','outerposition',[0 0 1 1]);
 ax = [];
 
 max_relative_err_all_stats = []; % save maximum error
 for locStatNumber = 1 : nstat
-  ax(locStatNumber) = subplot(nstat,1,nstat-locStatNumber+1); 
+  ax(locStatNumber) = subplot(nstat,1,nstat-locStatNumber+1);
   hold on
   if(seismotype == 1)
-    ID_t_anal_end = find(timef<=Ztime(locStatNumber,end), 1, 'last');
+    ID_t_anal_end = find(timef <= Ztime(locStatNumber,end), 1, 'last');
 %     plot(timef(1:timef_final),real(synf(locStatNumber,1:timef_final)),'Color',[0 0 0],'LineWidth',1)
-    plot(timef(1:ID_t_anal_end),synf(locStatNumber, 1:ID_t_anal_end),'Color',[0 0 0],'LineWidth',1,'displayname','analytical');
+    plot(timef(1:ID_t_anal_end), synf(locStatNumber, 1:ID_t_anal_end),'Color',[0 0 0],'LineWidth',1,'displayname','analytical');
 %     plot(timef,real(synf(locStatNumber,:))/max(real(synf(locStatNumber,:))),'Color',[0 0 0],'LineWidth',1)
 %     plot(Ztime(locStatNumber,:),real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))/max(real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))),'Color',[0 0 0],'LineWidth',1)
   else
@@ -749,7 +810,7 @@ for locStatNumber = 1 : nstat
 %   DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
   plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2,'displayname','synthetic');
   
-  ylimb4err = get(gca,'ylim');
+  ylim_b4_err = get(gca,'ylim');
   
   % Produce and plot difference.
   if(min(diff(Ztime(1,:))) < min(diff(t)))
@@ -770,7 +831,8 @@ for locStatNumber = 1 : nstat
   plot(err_t,err_v,':k','LineWidth',1.5,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']);
   
 %   ylim([min([min(Zamp(locStatNumber,1:nt))+min(synf(locStatNumber,:))]), max([max(Zamp(locStatNumber,1:nt))+max(synf(locStatNumber,:))])] * 1.05);
-  ylim([ylimb4err]);
+%   ylim([ylim_b4_err]*1.05);
+  ylim([ylim_b4_err]);
   
   % x-y labels.
   if (locStatNumber == round(nstat/2))
@@ -794,12 +856,12 @@ end
 linkaxes(ax, 'x');
 xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);
 % title(['Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)']);
-title(['Sound Speed = ',num2str(SOUNDSPEED),' [m/s]. Stations'' Altitudes = [', sprintf('%.0f ',zstattab(istattab)),'] [m] - Max. Rel. Err. = ',num2str(max(max_relative_err_all_stats*100)),' \%']);
+title({['Sound Speed = ',num2str(SOUNDSPEED),' [m/s].'],['Stations'' Altitudes = [', sprintf('%.1f ',zstattab(istattab)/1000),'] [km]'],['Max. Relative Error = ',num2str(max(max_relative_err_all_stats*100)),' \%']});
 addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
-prettyAxes(f);
+prettyAxes(fh);
 savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
 % customSaveFig(savefigfullpath,{'fig','eps','jpg'});
-customSaveFig(savefigfullpath,{'fig','jpg'});
+customSaveFig(fh,savefigfullpath,{'fig','jpg'});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 
