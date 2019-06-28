@@ -6,6 +6,9 @@
 %                  1) extract_atmos_model.m
 %
 % Usage:
+%   [fh] = plot_model_wind(Z, WN, WE)
+%   [fh] = plot_model_wind(Z, WN, WE, existingfignumber)
+%   [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour)
 %   [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl)
 % with:
 %   TODO.
@@ -25,19 +28,19 @@ function [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl)%, cu
 %   if(not(exist('customcolorbar')))
 %     customcolorbar=0;
 %   end
-  [WTH, W]=cart2pol(WE, WN);
-  WTH=WTH-pi/2; % Northward <-> theta=0. Eastward <-> theta=-pi/2. Southward <-> theta=pi. Westward <-> theta=pi/2.
+  [AZIMUTH, W]=cart2pol(WN,WE);
+%   AZIMUTH = AZIMUTH-pi/2; % Northward <-> theta=0. Eastward <-> theta=pi/2. Southward <-> theta=pi. Westward <-> theta=-pi/2.
   
-  WTH(W==0)=0; % If wind is 0, zero the angle too.
+  AZIMUTH(W==0)=0; % If wind is 0, zero the angle too.
   
-  WTH=mod(WTH,2*pi);
+  AZIMUTH=mod(AZIMUTH,2*pi);
   
   rad2deg=1; unit='[rad]';
   rad2deg=180/pi; unit='[deg]';
   
 %   [WTH, W]
 
-  WTHplot=rad2deg*WTH;
+  WTHplot=rad2deg*AZIMUTH;
   
   axx = [];
   if(existingfignumber>0)
@@ -60,7 +63,7 @@ function [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl)%, cu
   xlim(rad2deg*[0,2*pi]);
   ylim([min(Z), max(Z)]);
   ylabel(['$z$ [m]']);
-  xlabel({['wind angle (from North, counter-clockwise) ',unit],['(',num2str(0*rad2deg),'=N, ',num2str(0.5*pi*rad2deg),'=W, ',num2str(1*pi*rad2deg),'=S, ',num2str(1.5*pi*rad2deg),'=E)']});
+  xlabel({['wind azimuth ',unit],['(',num2str(0*rad2deg),'=N, ',num2str(0.5*pi*rad2deg),'=E, ',num2str(1*pi*rad2deg),'=S, ',num2str(1.5*pi*rad2deg),'=W)']});
   xticks(rad2deg*2*pi*linspace(0,1,9));
   grid on; box on; set(gca,'ticklabelinterpreter','latex');
   if(labl>-1)

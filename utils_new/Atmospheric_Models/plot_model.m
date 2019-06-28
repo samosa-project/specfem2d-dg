@@ -183,7 +183,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
   figure(fh.Number);
   if(plot_nosave0_save1)
-    customSaveFig(atmospheric_model_file);
+    customSaveFig(fh,atmospheric_model_file);
   end
 end
 
