@@ -17,12 +17,19 @@ set(0, 'DefaultLegendInterpreter', 'latex');
 disp(['[',mfilename,'] 1) Find the ID of CPU which crashed. Typically, look up the error message, and remember the number of the task which is mentionned.']);
 disp(['[',mfilename,'] 2) Get the database file corresponding to that CPU.']);
 disp(['[',mfilename,'] For instance, if the error message is ''srun: error: eoscomp0: task 12: Floating point exception'', the CPU ID is 12, and you should get the Database file number 12.']);
-FILE=input(['[',mfilename,'] Database file to scan? > '],'s');
+FILE=input(['[',mfilename,'] Path to database file to scan? > '],'s');
 
-X=scan_database_file(FILE);
+if(not(exist(FILE,'file')))
+  error(['[, ERROR] File ''',FILE,''' does not exist.']);
+end
 
-disp(strcat('x_min=', sprintf("%11.3e", min(X(:,1))),', x_max=',sprintf("%11.3e", max(X(:,1)))));
-disp(strcat('z_min=', sprintf("%11.3e", min(X(:,2))),', z_max=',sprintf("%11.3e", max(X(:,2)))));
+[FOLDER,NAME,~] = fileparts(FILE);
+CPU = regexp(NAME,'[0-9]+','match'); CPU = str2num(CPU{1});
+boundary_only = 1;
+plot_partitions(1, FOLDER, boundary_only, CPU);
 
-figure();
-rectangle('Position', [min(X(:,1)), min(X(:,2)), max(X(:,1))-min(X(:,1)), max(X(:,2))-min(X(:,2))]);
+% X=scan_database_file(FILE);
+% disp(strcat('x_min=', sprintf("%11.3e", min(X(:,1))),', x_max=',sprintf("%11.3e", max(X(:,1)))));
+% disp(strcat('z_min=', sprintf("%11.3e", min(X(:,2))),', z_max=',sprintf("%11.3e", max(X(:,2)))));
+% figure();
+% rectangle('Position', [min(X(:,1)), min(X(:,2)), max(X(:,1))-min(X(:,1)), max(X(:,2))-min(X(:,2))]);
