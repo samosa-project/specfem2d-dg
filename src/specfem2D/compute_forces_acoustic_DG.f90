@@ -115,7 +115,7 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
   real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz ! Viscosity
   real(kind=CUSTOM_REAL) :: wxl, wzl ! Integration weigths.
   logical :: exact_interface_flux
-  integer :: cnst_hdrsttc ! For computationnaly better CONSTRAIN_HYDROSTATIC switches.
+  !integer :: cnst_hdrsttc ! For computationnaly better CONSTRAIN_HYDROSTATIC switches.
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
@@ -134,11 +134,12 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
 
   ! For more convinient CONSTRAIN_HYDROSTATIC switches.
   ! TODO: Replace the CONSTRAIN_HYDROSTATIC switches using this variable.
-  if(CONSTRAIN_HYDROSTATIC) then
-    cnst_hdrsttc=ONE
-  else
-    cnst_hdrsttc=ZERO
-  endif
+  ! Removed this in the meantime, to reduce number of useless variables.
+  !if(CONSTRAIN_HYDROSTATIC) then
+  !  cnst_hdrsttc=ONE
+  !else
+  !  cnst_hdrsttc=ZERO
+  !endif
   
   testCoef_removeDxV0x = 1.
   testCoef_Ni = 1.
