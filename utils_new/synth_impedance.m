@@ -49,8 +49,10 @@ sel_id_dp = abs(amp_dp) > max(abs(amp_dp))*rel_threshold;
 sel_id=logical(sel_id_vz.*sel_id_dp);
 clear('sel_id_vz', 'sel_id_dp');
 
-ratio_u=dp_ue./vz_ue;
-ratio_l=dp_le./vz_le;
+% ratio_u=dp_ue./vz_ue;
+% ratio_l=dp_le./vz_le;
+ratio_u=vz_ue./dp_ue;
+ratio_l=vz_le./dp_le;
 
 
 % figures
@@ -69,7 +71,7 @@ xlim([min(t), max(t)]); set(gca, 'TickLabelInterpreter', 'latex'); grid on;
 
 ax(3)=subplot(313);
 plot(t(sel_id), ratio_l(sel_id), t(sel_id), ratio_u(sel_id));
-ylab=['$\left|\delta P / v_z\right|$'];
+ylab=['$\left|v_z/\delta P\right|$'];
 title({['Impedance ratio ',ylab,''],['(rel. signal threshold ',num2str(rel_threshold),', min. period ',num2str(smolest_period),' s)']});
 ylabel(ylab);
 xlabel('$t$ (s)');

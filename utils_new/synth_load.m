@@ -42,7 +42,7 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Mars.
-fig_title = strcat('Mars InSIGHT');
+% fig_title = strcat('Mars InSIGHT');
 % rootd = strcat(SPCFMEXloc,'mars_insight_sol000_lmst2000/'); OFd = strcat(rootd, 'OUTPUT_FILES_2176570_z45/'); subsample = 0; wanted_dt = 0.01; % z=800 but z=45
 % rootd = strcat(SPCFMEXloc,'mars_insight_sol000_lmst2000/'); OFd = strcat(rootd, 'OUTPUT_FILES_2112987/'); subsample = 0; wanted_dt = 0.01; % z=800 but z=2000
 % rootd = strcat(SPCFMEXloc,'mars_insight_waveguide_excitation/'); OFd = strcat(rootd, 'OUTPUT_FILES_1996492/'); subsample = 1; wanted_dt = 0.01;
@@ -51,7 +51,7 @@ fig_title = strcat('Mars InSIGHT');
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 0; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 0; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
@@ -182,7 +182,10 @@ rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_16
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
 % Tests.
-% fig_title = 'test';
+fig_title = 'test';
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv1/'); fig_title = [fig_title,' LNS v1'];
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv2/'); fig_title = [fig_title,' LNS v2 Terrana w/o p'];
+rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv2_full/'); fig_title = [fig_title,' LNS v2 Terrana full'];
 % rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_FNS/'); fig_title = [fig_title,' FNS'];
 % rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title = [fig_title,' LNS'];
 
