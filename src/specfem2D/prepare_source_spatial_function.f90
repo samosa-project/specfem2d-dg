@@ -54,11 +54,16 @@ subroutine prepare_timerun_ssf()
         write(*,*) "********************************"
         write(*,*) "*           WARNING            *"
         write(*,*) "********************************"
-        write(*,*) "* No DG elements exist, spread *"
-        write(*,*) "* source spatial function(s)   *"
-        write(*,*) "* cannot be implemented. The   *"
+        write(*,*) "* No DG elements exist on      *"
+        write(*,*) "* CPU ", myrank
+        write(*,*) "* The spread source spatial    *"
+        write(*,*) "* function(s) cannot be        *"
+        write(*,*) "* implemented here. The        *"
         write(*,*) "* classical spatial source     *"
-        write(*,*) "* function(s) will be used.    *"
+        write(*,*) "* function(s) will be used. If *"
+        write(*,*) "* the source is elsewhere (in  *"
+        write(*,*) "* another CPU), this poses no  *"
+        write(*,*) "* problem.                     *"
         write(*,*) "********************************"
         call flush_IMAIN()
       endif
