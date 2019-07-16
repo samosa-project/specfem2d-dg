@@ -953,22 +953,38 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! Set out_drho_P: same as other side, that is a Neumann condition.
       out_drho_P = inp_drho_M
       
-      ! Set velocity_P: get elastic medium velocities.
-      !veloc_P = veloc_elastic(:, iglob)
-      call build_trans_boundary(n_out, tang, trans_boundary)
-      !normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(NDIM, iglob)*n_out(NDIM)
-      normal_v     = DOT_PRODUCT(n_out, veloc_elastic(:,ibool(i_el, j_el, ispec_el)))
-      !tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(NDIM)
-      tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-      do SPCDM = 1, NDIM
-        velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
-      enddo
+      ! Set velocity_P.
+      !! VERSION 1 : normal velocity continuity and slip condition for tangential
+      !!veloc_P = veloc_elastic(:, iglob)
+      !call build_trans_boundary(n_out, tang, trans_boundary)
+      !!normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(NDIM, iglob)*n_out(NDIM)
+      !normal_v     = DOT_PRODUCT(n_out, veloc_elastic(:,ibool(i_el, j_el, ispec_el)))
+      !!tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(NDIM)
+      !tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
+      !do SPCDM = 1, NDIM
+      !  velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
+      !enddo
+      ! VERSION 2: TERRANA.
+      ! If you comment/uncomment this, don't forget to uncomment/comment the setting of out_dp_P below.
+      call S2F_Terrana_coupling(n_out, &
+                                LNS_rho0(iglobM)+inp_drho_M, &
+                                LNS_v0(:,iglobM)+LNS_dv(:,iglobM), &
+                                !LNS_p0(iglobM)+inp_dp_M, &
+                                inp_dp_M, &
+                                LNS_c0(iglobM), & ! either that, or recomputing using sqrt(gammaext_DG(iglobM)*(p0+dp)/rho_fluid)
+                                veloc_elastic(:,ibool(i_el, j_el, ispec_el)), &
+                                sigma_elastic(:,iglob), &
+                                i_el, j_el, ispec_el, &
+                                velocity_P, out_dp_P)
       
       ! Set out_dv_P.
       out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
       
-      ! Set out_dp_P: no stress continuity.
-      out_dp_P = inp_dp_M
+      ! Set out_dp_P.
+      ! VERSION 1: no stress continuity.
+      !out_dp_P = inp_dp_M
+      ! VERSION 2: TERRANA.
+      ! done above in the call to S2F_Terrana_coupling
 
       ! Set out_dE_P.
       call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
@@ -1278,7 +1294,138 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
   transf_matrix(NDIM,    1) = - tangential(1)
   transf_matrix(NDIM, NDIM) =   normal(1) ! Recall: normal(1)=n_x.
   transf_matrix = transf_matrix/(normal(1)*tangential(NDIM) - tangential(1)*normal(NDIM))
-end subroutine 
+end subroutine
+
+
+
+
+
+
+! ------------------------------------------------------------ !
+! S2F_Terrana_coupling                                         !
+! ------------------------------------------------------------ !
+! Implements [Terrana et al., 2018]'s (56).
+! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed, &
+                                 v_solid, sigma_elastic_iglob, i_el, j_el, ispec_el, &
+                                 v_hat, dp_hat)
+  use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: assign_external_model, density, kmato, poroelastcoef, &
+                         rhoext, vpext, vsext
+  
+  implicit none
+  
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal, v_fluid, v_solid
+  real(kind=CUSTOM_REAL), intent(in) :: rho_fluid, dp_fluid, soundspeed
+  integer, intent(in) :: i_el, j_el, ispec_el
+  real(kind=CUSTOM_REAL), dimension(NDIM*NDIM), intent(in) :: sigma_elastic_iglob
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: v_hat
+  real(kind=CUSTOM_REAL), intent(out) :: dp_hat
+  
+  ! Local.
+  real(kind=CUSTOM_REAL) :: mu_elastic_unrelaxed, rho_elastic, vp, vs
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S, SUMTAU, INV_SUMTAU
+  
+  ! Transform sigma_elastic into a nicer form for uses in this routine.
+  ! This is very suboptimal, but right now we can't afford to modify everywhere in the code the definition of sigma_elastic without having to debug many many things.
+  ! TODO: change the shape of sigma_elastic for it to be a (NDIM, NDIM, nglob_elastic). Declaration is in 'specfem2D_par.f90'. Allocation is done in 'prepare_timerun_wavefields.f90'. Attribution is in 'compute_forces_viscoelastic.F90'.
+  sigma_el_local(1, 1) = sigma_elastic_iglob(1)
+  sigma_el_local(1, 2) = sigma_elastic_iglob(2)
+  sigma_el_local(2, 1) = sigma_elastic_iglob(3)
+  sigma_el_local(2, 2) = sigma_elastic_iglob(4)
+  ! Get elastic parameters.
+  mu_elastic_unrelaxed = poroelastcoef(2, 1, kmato(ispec_el))
+  rho_elastic  = density(1, kmato(ispec_el))
+  vp = sqrt((poroelastcoef(1, 1, kmato(ispec_el)) + 2.*mu_elastic_unrelaxed)/rho_elastic) ! vp = ((lambda+2mu)/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus, poroelastcoef(1,1,kmato(ispec_el)) = lambda
+  vs = sqrt(mu_elastic_unrelaxed/rho_elastic) ! vs = (mu/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus
+  if(assign_external_model) then
+    ! TODO: NOT SURE ABOUT THAT
+    rho_elastic = rhoext(i_el, j_el, ispec_el)
+    vp = vpext(i_el, j_el, ispec_el)
+    vs = vsext(i_el, j_el, ispec_el)
+    !! TODO: EVEN LESS SURE ABOUT THIS, but not needed
+    !rho_fluid = rhoext(i,j,ispec)
+    !soundspeed = vpext(i,j,ispec)
+  endif
+  
+  ! Build tensors \tau.
+  call build_tau_s(normal, rho_elastic, vp, vs, TAU_S)
+  call build_tau_f(normal, rho_fluid, soundspeed, TAU_F)
+  ! Build inverse.
+  SUMTAU = TAU_S + TAU_F
+  INV_SUMTAU(1, 1) =  SUMTAU(2, 2)
+  INV_SUMTAU(1, 2) = -SUMTAU(1, 2)
+  INV_SUMTAU(2, 1) = -SUMTAU(2, 1)
+  INV_SUMTAU(2, 2) =  SUMTAU(1, 1)
+  INV_SUMTAU = INV_SUMTAU/(SUMTAU(1, 1)*SUMTAU(2, 2)-SUMTAU(1, 2)*SUMTAU(2, 1))
+  
+  ! Build actual velocity from [Terrana et al., 2018]'s (56).
+  v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal
+  !v_hat = matmul(TAU_F,v_fluid)
+  !v_hat = matmul(TAU_S,v_solid)
+  !v_hat = matmul(sigma_el_local,normal)
+  !v_hat = dp_fluid*normal
+  v_hat = matmul(INV_SUMTAU, v_hat)
+  
+  ! Build actual pressure perturbation from [Terrana et al., 2018]'s (51).
+  dp_hat = dp_fluid + DOT_PRODUCT(matmul(TAU_F, v_fluid - v_solid), normal)
+end subroutine S2F_Terrana_coupling
+
+! ------------------------------------------------------------ !
+! build_tau                                                    !
+! ------------------------------------------------------------ !
+! Generic tensor \tau, from [Terrana et al., 2018]'s (37).
+! Tau is a symmetric matrix. It is a bit heavy to store all components, maybe consider storing only the upper coefficients.
+! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+subroutine build_tau_s(normal, rho, vp, vs, TAU_S)
+  use constants, only: CUSTOM_REAL, NDIM
+  
+  implicit none
+  
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal
+  real(kind=CUSTOM_REAL), intent(in) :: rho, vp, vs
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: TAU_S
+  
+  ! Local.
+  ! N./A.
+  
+  TAU_S(1,1) = vp*normal(1)**2 + vs*normal(NDIM)**2
+  TAU_S(1,2) = (vp - vs)*normal(1)*normal(NDIM)
+  TAU_S(2,1) = TAU_S(1,2)
+  TAU_S(2,2) = vs*normal(1)**2 + vp*normal(NDIM)**2
+  TAU_S = rho*TAU_S
+end subroutine build_tau_s
+! ------------------------------------------------------------ !
+! build_tau_f                                                  !
+! ------------------------------------------------------------ !
+! Acoustic tensor \tau_{ac}, from [Terrana et al., 2018]'s (52).
+! Tau is a symmetric matrix. It is a bit heavy to store all components, maybe consider storing only the upper coefficients.
+! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+subroutine build_tau_f(normal, rho, c, TAU_F)
+  use constants, only: CUSTOM_REAL, NDIM
+  
+  implicit none
+  
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal
+  real(kind=CUSTOM_REAL), intent(in) :: rho, c
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: TAU_F
+  
+  ! Local.
+  ! N./A.
+  
+  ! Economic version.
+  !call build_tau_s(normal, rho, c, 0., TAU_F)
+  
+  ! Expansive version.
+  TAU_F(1,1) = normal(1)**2
+  TAU_F(1,2) = normal(1)*normal(NDIM)
+  TAU_F(2,1) = TAU_F(1,2)
+  TAU_F(2,2) = normal(NDIM)**2
+  TAU_F = rho*c*TAU_F
+end subroutine build_tau_f
 
 
 
