@@ -1310,8 +1310,6 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
                                  v_solid, sigma_el_local, i_el, j_el, ispec_el, &
                                  v_hat, dp_hat)
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par, only: assign_external_model, density, kmato, poroelastcoef, &
-                         rhoext, vpext, vsext
   use specfem_par_lns, only: inverse_2x2
   
   implicit none
@@ -1325,7 +1323,6 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   real(kind=CUSTOM_REAL), intent(out) :: dp_hat
   
   ! Local.
-  real(kind=CUSTOM_REAL) :: mu_elastic_unrelaxed, rho_elastic, vp, vs
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S!, INV_SUMTAU
   
   ! Transform sigma_elastic into a nicer form for uses in this routine.
@@ -1335,19 +1332,9 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   !sigma_el_local(1, 2) = sigma_elastic_iglob(2)
   !sigma_el_local(2, 1) = sigma_elastic_iglob(3)
   !sigma_el_local(2, 2) = sigma_elastic_iglob(4)
-  ! Get elastic parameters.
-  mu_elastic_unrelaxed = poroelastcoef(2, 1, kmato(ispec_el))
-  rho_elastic  = density(1, kmato(ispec_el))
-  vp = sqrt((poroelastcoef(1, 1, kmato(ispec_el)) + 2.*mu_elastic_unrelaxed)/rho_elastic) ! vp = ((lambda+2mu)/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus, poroelastcoef(1,1,kmato(ispec_el)) = lambda
-  vs = sqrt(mu_elastic_unrelaxed/rho_elastic) ! vs = (mu/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus
-  if(assign_external_model) then
-    rho_elastic = rhoext(i_el, j_el, ispec_el)
-    vp = vpext(i_el, j_el, ispec_el)
-    vs = vsext(i_el, j_el, ispec_el)
-  endif
   
   ! Build tensors \tau.
-  call build_tau_s(normal, rho_elastic, vp, vs, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
+  call build_tau_s(normal, i_el, j_el, ispec_el, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
   call build_tau_f(normal, rho_fluid, soundspeed, TAU_F) ! TAU_F couldn't be pre-computed, since some values change with time.
   ! Build inverse.
 !  INV_SUMTAU = inverse_2x2(TAU_S + TAU_F)
@@ -1370,18 +1357,31 @@ end subroutine S2F_Terrana_coupling
 ! Generic tensor \tau, from [Terrana et al., 2018]'s (37).
 ! Tau is a symmetric matrix. It is a bit heavy to store all components, maybe consider storing only the upper coefficients.
 ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
-subroutine build_tau_s(normal, rho, vp, vs, TAU_S)
+subroutine build_tau_s(normal, i_el, j_el, ispec_el, TAU_S)
   use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: assign_external_model, density, kmato, poroelastcoef, &
+                         rhoext, vpext, vsext
   
   implicit none
   
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal
-  real(kind=CUSTOM_REAL), intent(in) :: rho, vp, vs
+  integer, intent(in) :: i_el, j_el, ispec_el
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: TAU_S
   
   ! Local.
-  ! N./A.
+  real(kind=CUSTOM_REAL) :: mu_elastic_unrelaxed, rho, vp, vs
+  
+  ! Get elastic parameters.
+  mu_elastic_unrelaxed = poroelastcoef(2, 1, kmato(ispec_el))
+  rho = density(1, kmato(ispec_el))
+  vp = sqrt((poroelastcoef(1, 1, kmato(ispec_el)) + 2.*mu_elastic_unrelaxed)/rho) ! vp = ((lambda+2mu)/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus, poroelastcoef(1,1,kmato(ispec_el)) = lambda
+  vs = sqrt(mu_elastic_unrelaxed/rho) ! vs = (mu/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus
+  if(assign_external_model) then
+    rho = rhoext(i_el, j_el, ispec_el)
+    vp = vpext(i_el, j_el, ispec_el)
+    vs = vsext(i_el, j_el, ispec_el)
+  endif
   
   TAU_S(1,1) = vp*normal(1)**2 + vs*normal(NDIM)**2
   TAU_S(1,2) = (vp - vs)*normal(1)*normal(NDIM)
@@ -1407,9 +1407,6 @@ subroutine build_tau_f(normal, rho, c, TAU_F)
   
   ! Local.
   ! N./A.
-  
-  ! Economic version.
-  !call build_tau_s(normal, rho, c, 0., TAU_F)
   
   ! Expansive version.
   TAU_F(1,1) = normal(1)**2
