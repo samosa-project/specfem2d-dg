@@ -1340,12 +1340,15 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
 !  INV_SUMTAU = inverse_2x2(TAU_S + TAU_F)
   
   ! Build actual velocity from [Terrana et al., 2018]'s (56).
-  v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal
-  !v_hat = matmul(TAU_F,v_fluid)
-  !v_hat = matmul(TAU_S,v_solid)
-  !v_hat = matmul(sigma_el_local,normal)
-  !v_hat = dp_fluid*normal
-  v_hat = matmul(inverse_2x2(TAU_S+TAU_F), v_hat)
+  !v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal
+  !!v_hat = matmul(TAU_F,v_fluid)
+  !!v_hat = matmul(TAU_S,v_solid)
+  !!v_hat = matmul(sigma_el_local,normal)
+  !!v_hat = dp_fluid*normal
+  !v_hat = matmul(inverse_2x2(TAU_S+TAU_F), v_hat)
+  v_hat = matmul(inverse_2x2(TAU_S+TAU_F), &
+                 matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal)
+  
   
   ! Build actual pressure perturbation from [Terrana et al., 2018]'s (51).
   dp_hat = dp_fluid + DOT_PRODUCT(matmul(TAU_F, v_fluid - v_solid), normal)
