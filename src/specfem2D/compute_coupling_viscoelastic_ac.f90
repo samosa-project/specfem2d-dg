@@ -55,6 +55,7 @@
                          REMOVE_DG_FLUID_TO_SOLID, USE_DISCONTINUOUS_METHOD,&
                          ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
                          ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF,&
+                         !veloc_elastic, sigma_elastic, & ! For Terrana coupling
                          mesh_xmin, mesh_xmax
   ! PML arrays
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
@@ -75,8 +76,8 @@
   
   real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
   
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: normal_vect ! Storage for the normal vector.
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_hat ! Stress to be used in the acceleration formula.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: normal_vect!, v_hat ! Storage for the normal vector. Storage for v_hat in Terrana F2S coupling.
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_hat!, sigma_elastic_loc ! Stress to be used in the acceleration formula, and storage for TAU_S for Terrana coupling. Storage for elastic stress.
 
   ! loop on all the coupling edges
   do inum = 1,num_fluid_solid_edges
@@ -246,15 +247,40 @@
           normal_vect(1) = nx
           normal_vect(NDIM) = nz
           sigma_hat = 0. ! Initialise stress.
+          !!!!!!!!!!!!!! LNS CLASSICAL F2S COUPLING: pass \Sigma\cdot n as stress in the normal direction
           call stressBuilder_addInviscidFluid(LNS_rho0(iglob_DG), LNS_v0(:,iglob_DG), &
                                               LNS_dv(:,iglob_DG), LNS_dp(iglob_DG), sigma_hat) ! For LNS, inviscid = \rho_0v_0\otimes v' + p'I
           ! Note: for FNS, inviscid = \rho v\otimes v + pI. Maybe implement a dedicated routine.
           ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-            call stressBuilder_addViscousFluid(sigma_dv(:,iglob_DG), sigma_hat) ! Send viscous tensor.
+            call stressBuilder_addViscousFluid(-sigma_dv(:,iglob_DG), sigma_hat) ! Send viscous tensor.
             ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
           endif
-          accel_elastic(:, iglob) = accel_elastic(:, iglob) + weight*matmul(sigma_hat,normal_vect)
+          accel_elastic(:, iglob) = accel_elastic(:, iglob) + weight*matmul(sigma_hat, normal_vect) ! Add contribution to acceleration.
+          !!!!!!!!!!!!!!! LNS TERRANA F2S COUPLING: [Terrana et al., 2018]'s (53) VERSION 1 (try easymode), coupling crashes at some point
+          !! Use Terrana formula (53)
+          !call build_tau_s(normal_vect, ii2, jj2, ispec_elastic, sigma_hat) ! Use sigma_hat to store TAU_S. Use the IDs as defined above for the elastic side.
+          !!sigma_elastic_loc = sigma_elastic(:,:,iglob)
+          !! \Sigma\cdot\bm{n} becomes the formula (53) in Terrana, thus contribution to acceleration writes:
+          !accel_elastic(:, iglob) =   accel_elastic(:, iglob) &
+          !                          !+ weight*(  pressure*normal_vect & ! Since SPECFEM's classical boundary stress is pressure_solid*Id (cf. below), Terrana's "(\sigma n)^+" is simply pressure*normal_vect. This crashes the coupling.
+          !                          + weight*(  matmul(sigma_elastic(:,:,iglob), normal_vect) & ! Try with stored sigma_elastic at elastic point iglob. This crashes the coupling.
+          !                                    - matmul(sigma_hat, &
+          !                                             veloc_elastic(:,iglob) - (LNS_v0(:,iglob_DG)+LNS_dv(:,iglob_DG))) ) ! Note v_fluid = (LNS_v0(:,iglob_DG)+LNS_dv(:,iglob_DG))
+          !!!!!!!!!!!!!! LNS TERRANA F2S COUPLING: [Terrana et al., 2018]'s (53) VERSION 2 (tryhard), coupling acts as a wall on the elastic side (not transmission), but not 100% relfection on fluid side, so problem
+          !! Get v_hat.
+          !call S2F_Terrana_coupling(normal_vect, &
+          !                          LNS_rho0(iglob_DG)+LNS_drho(iglob_DG), &
+          !                          LNS_v0(:,iglob_DG)+LNS_dv(:,iglob_DG), &
+          !                          LNS_dp(iglob_DG), &
+          !                          LNS_c0(iglob_DG), & ! either that, or recomputing using sqrt(gammaext_DG(iglobM)*(p0+dp)/rho_fluid)
+          !                          veloc_elastic(:,iglob), &
+          !                          sigma_elastic(:,:,iglob), &
+          !                          ii2, jj2, ispec_elastic, &
+          !                          v_hat, LNS_dummy_1d(1))
+          !accel_elastic(:, iglob) =   accel_elastic(:, iglob) &
+          !                          + weight*(  matmul(sigma_elastic(:,:,iglob), normal_vect) &
+          !                                    - matmul(sigma_hat, veloc_elastic(:,iglob)-v_hat) )
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OLD, BUT ACTUAL LNS INVISCID TENSOR
           !if(.false.) then; write(*,*) sigma_hat,normal_vect; endif ! test purposes
           !accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
@@ -272,11 +298,11 @@
           !if(LNS_viscous) then ! Check if viscosity exists whatsoever.
           !  if(LNS_mu(iglob) > 0. .OR. LNS_eta(iglob) > 0. .OR. LNS_kappa(iglob) > 0.) then
           !    accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
-          !                             + nx*sigma_dv(1,iglob_DG) &
-          !                             + nz*sigma_dv(2,iglob_DG)
+          !                             - weight*(  nx*sigma_dv(1,iglob_DG) &
+          !                                       + nz*sigma_dv(2,iglob_DG))
           !    accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
-          !                             + nx*sigma_dv(2,iglob_DG) &
-          !                             + nz*sigma_dv(3,iglob_DG)
+          !                             - weight*(  nx*sigma_dv(2,iglob_DG) &
+          !                                       + nz*sigma_dv(3,iglob_DG))
           !  endif
           !endif
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OLD, BUT FULL INVISCID TENSOR, AS IN FNS
@@ -298,11 +324,11 @@
           !if(LNS_viscous) then ! Check if viscosity exists whatsoever.
           !  if(LNS_mu(iglob) > 0. .OR. LNS_eta(iglob) > 0. .OR. LNS_kappa(iglob) > 0.) then
           !    accel_elastic(1,iglob) =   accel_elastic(1,iglob) &
-          !                             + nx*sigma_dv(1,iglob_DG) &
-          !                             + nz*sigma_dv(2,iglob_DG)
+          !                             - weight*(  nx*sigma_dv(1,iglob_DG) &
+          !                                       + nz*sigma_dv(2,iglob_DG))
           !    accel_elastic(2,iglob) =   accel_elastic(2,iglob) &
-          !                             + nx*sigma_dv(2,iglob_DG) &
-          !                             + nz*sigma_dv(3,iglob_DG)
+          !                             - weight*(  nx*sigma_dv(2,iglob_DG) &
+          !                                       + nz*sigma_dv(3,iglob_DG))
           !  endif
           !endif
         else
