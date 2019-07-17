@@ -984,10 +984,10 @@
               sigma_xz = c15*dux_dxl + c35*duz_dzl + c55*(duz_dxl + dux_dzl)
               sigma_zx = sigma_xz
               
-              sigma_elastic(1,ibool(i,j,ispec)) = sigma_xx
-              sigma_elastic(2,ibool(i,j,ispec)) = sigma_xz
-              sigma_elastic(3,ibool(i,j,ispec)) = sigma_zx
-              sigma_elastic(4,ibool(i,j,ispec)) = sigma_zz
+              sigma_elastic(1, 1, ibool(i,j,ispec)) = sigma_xx
+              sigma_elastic(1, 2, ibool(i,j,ispec)) = sigma_xz
+              sigma_elastic(2, 1, ibool(i,j,ispec)) = sigma_zx
+              sigma_elastic(2, 2, ibool(i,j,ispec)) = sigma_zz
               
             endif
           endif

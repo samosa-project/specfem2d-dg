@@ -1337,12 +1337,12 @@ end subroutine prepare_external_forcing
       v_interface(1) = tauac(1)*veloc_x_DG_iM + tauac(2)*veloc_z_DG_iM &
         + tauplus(1)*veloc_elastic(1, iglob) + tauplus(2)*veloc_elastic(2, iglob) &
         - (p_DG_iM- p_DG_init(ibool_DG(i,j,ispec)))*nx &
-        + sigma_elastic(1,iglob)*nx + sigma_elastic(2,iglob)*nz
+        + sigma_elastic(1,1,iglob)*nx + sigma_elastic(1,2,iglob)*nz
         
       v_interface(2) = tauac(3)*veloc_x_DG_iM + tauac(4)*veloc_z_DG_iM &
         + tauplus(3)*veloc_elastic(1, iglob) + tauplus(4)*veloc_elastic(2, iglob) &
         - (p_DG_iM- p_DG_init(ibool_DG(i,j,ispec)))*nz &
-        + sigma_elastic(3,iglob)*nx + sigma_elastic(4,iglob)*nz
+        + sigma_elastic(2,1,iglob)*nx + sigma_elastic(2,2,iglob)*nz
         
       v_interface(1) = v_interface(1)*invsumtau(1) + v_interface(2)*invsumtau(2)
       v_interface(2) = v_interface(1)*invsumtau(3) + v_interface(2)*invsumtau(4)
