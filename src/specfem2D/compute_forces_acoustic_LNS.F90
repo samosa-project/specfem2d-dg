@@ -1340,18 +1340,14 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   vp = sqrt((poroelastcoef(1, 1, kmato(ispec_el)) + 2.*mu_elastic_unrelaxed)/rho_elastic) ! vp = ((lambda+2mu)/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus, poroelastcoef(1,1,kmato(ispec_el)) = lambda
   vs = sqrt(mu_elastic_unrelaxed/rho_elastic) ! vs = (mu/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus
   if(assign_external_model) then
-    ! TODO: NOT SURE ABOUT THAT
     rho_elastic = rhoext(i_el, j_el, ispec_el)
     vp = vpext(i_el, j_el, ispec_el)
     vs = vsext(i_el, j_el, ispec_el)
-    !! TODO: EVEN LESS SURE ABOUT THIS, but not needed
-    !rho_fluid = rhoext(i,j,ispec)
-    !soundspeed = vpext(i,j,ispec)
   endif
   
   ! Build tensors \tau.
-  call build_tau_s(normal, rho_elastic, vp, vs, TAU_S)
-  call build_tau_f(normal, rho_fluid, soundspeed, TAU_F)
+  call build_tau_s(normal, rho_elastic, vp, vs, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
+  call build_tau_f(normal, rho_fluid, soundspeed, TAU_F) ! TAU_F couldn't be pre-computed, since some values change with time.
   ! Build inverse.
   SUMTAU = TAU_S + TAU_F
   INV_SUMTAU(1, 1) =  SUMTAU(2, 2)
