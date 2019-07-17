@@ -973,7 +973,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
                                 inp_dp_M, &
                                 LNS_c0(iglobM), & ! either that, or recomputing using sqrt(gammaext_DG(iglobM)*(p0+dp)/rho_fluid)
                                 veloc_elastic(:,ibool(i_el, j_el, ispec_el)), &
-                                sigma_elastic(:,iglob), &
+                                sigma_elastic(:,:,iglob), &
                                 i_el, j_el, ispec_el, &
                                 velocity_P, out_dp_P)
       
@@ -1307,7 +1307,7 @@ end subroutine
 ! Implements [Terrana et al., 2018]'s (56).
 ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
 subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed, &
-                                 v_solid, sigma_elastic_iglob, i_el, j_el, ispec_el, &
+                                 v_solid, sigma_el_local, i_el, j_el, ispec_el, &
                                  v_hat, dp_hat)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: assign_external_model, density, kmato, poroelastcoef, &
@@ -1320,7 +1320,7 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal, v_fluid, v_solid
   real(kind=CUSTOM_REAL), intent(in) :: rho_fluid, dp_fluid, soundspeed
   integer, intent(in) :: i_el, j_el, ispec_el
-  real(kind=CUSTOM_REAL), dimension(NDIM*NDIM), intent(in) :: sigma_elastic_iglob
+  !real(kind=CUSTOM_REAL), dimension(NDIM*NDIM), intent(in) :: sigma_elastic_iglob
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: v_hat
   real(kind=CUSTOM_REAL), intent(out) :: dp_hat
   
@@ -1331,10 +1331,10 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   ! Transform sigma_elastic into a nicer form for uses in this routine.
   ! This is very suboptimal, but right now we can't afford to modify everywhere in the code the definition of sigma_elastic without having to debug many many things.
   ! TODO: change the shape of sigma_elastic for it to be a (NDIM, NDIM, nglob_elastic). Declaration is in 'specfem2D_par.f90'. Allocation is done in 'prepare_timerun_wavefields.f90'. Attribution is in 'compute_forces_viscoelastic.F90'.
-  sigma_el_local(1, 1) = sigma_elastic_iglob(1)
-  sigma_el_local(1, 2) = sigma_elastic_iglob(2)
-  sigma_el_local(2, 1) = sigma_elastic_iglob(3)
-  sigma_el_local(2, 2) = sigma_elastic_iglob(4)
+  !sigma_el_local(1, 1) = sigma_elastic_iglob(1)
+  !sigma_el_local(1, 2) = sigma_elastic_iglob(2)
+  !sigma_el_local(2, 1) = sigma_elastic_iglob(3)
+  !sigma_el_local(2, 2) = sigma_elastic_iglob(4)
   ! Get elastic parameters.
   mu_elastic_unrelaxed = poroelastcoef(2, 1, kmato(ispec_el))
   rho_elastic  = density(1, kmato(ispec_el))
@@ -1350,7 +1350,7 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   call build_tau_s(normal, rho_elastic, vp, vs, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
   call build_tau_f(normal, rho_fluid, soundspeed, TAU_F) ! TAU_F couldn't be pre-computed, since some values change with time.
   ! Build inverse.
-!  INV_SUMTAU = compute_inverse_2x2(TAU_S + TAU_F)
+!  INV_SUMTAU = inverse_2x2(TAU_S + TAU_F)
   
   ! Build actual velocity from [Terrana et al., 2018]'s (56).
   v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal
