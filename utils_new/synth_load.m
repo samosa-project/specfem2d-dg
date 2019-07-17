@@ -183,9 +183,13 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 
 % Tests.
 fig_title = 'test';
+rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,' test'];
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_vectorised_classicalF2S/'); fig_title = [fig_title,' LNS vect clas F2S'];
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_terranaF2S/'); fig_title = [fig_title,' LNS terrana F2S'];
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_unvectorised_classicalF2S_actualTensor/'); fig_title = [fig_title,' LNS unvect clas F2S'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv1/'); fig_title = [fig_title,' LNS v1'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv2/'); fig_title = [fig_title,' LNS v2 Terrana w/o p'];
-rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv2_full/'); fig_title = [fig_title,' LNS v2 Terrana full'];
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNSv2_full/'); fig_title = [fig_title,' LNS v2 Terrana full'];
 % rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_FNS/'); fig_title = [fig_title,' FNS'];
 % rootd = strcat(SPCFMEXloc,'test_coupling/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS/'); fig_title = [fig_title,' LNS'];
 
