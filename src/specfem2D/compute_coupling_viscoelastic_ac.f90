@@ -252,10 +252,10 @@
                                               LNS_dv(:,iglob_DG), LNS_dp(iglob_DG), sigma_hat) ! For LNS, inviscid = \rho_0v_0\otimes v' + p'I
           ! Note: for FNS, inviscid = \rho v\otimes v + pI. Maybe implement a dedicated routine.
           ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-          if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-            call stressBuilder_addViscousFluid(-sigma_dv(:,iglob_DG), sigma_hat) ! Send viscous tensor.
-            ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-          endif
+          !if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+          !  call stressBuilder_addViscousFluid(-sigma_dv(:,iglob_DG), sigma_hat) ! Send viscous tensor.
+          !  ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
+          !endif
           accel_elastic(:, iglob) = accel_elastic(:, iglob) + weight*matmul(sigma_hat, normal_vect) ! Add contribution to acceleration.
           !!!!!!!!!!!!!!! LNS TERRANA F2S COUPLING: [Terrana et al., 2018]'s (53) VERSION 1 (try easymode), coupling crashes at some point
           !! Use Terrana formula (53)

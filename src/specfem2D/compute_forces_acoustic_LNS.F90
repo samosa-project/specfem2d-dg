@@ -972,6 +972,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
                                 !LNS_p0(iglobM)+inp_dp_M, &
                                 inp_dp_M, &
                                 LNS_c0(iglobM), & ! either that, or recomputing using sqrt(gammaext_DG(iglobM)*(p0+dp)/rho_fluid)
+                                iglobM, &
                                 veloc_elastic(:,ibool(i_el, j_el, ispec_el)), &
                                 sigma_elastic(:,:,iglob), &
                                 i_el, j_el, ispec_el, &
@@ -1306,24 +1307,24 @@ end subroutine
 ! ------------------------------------------------------------ !
 ! Implements [Terrana et al., 2018]'s (56).
 ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
-subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed, &
-                                 v_solid, sigma_el_local, i_el, j_el, ispec_el, &
-                                 v_hat, dp_hat)
+subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed, iglob_DG, &
+                                v_solid, sigma_el_local, i_el, j_el, ispec_el, &
+                                v_hat, dp_hat)
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par_lns, only: inverse_2x2
+  use specfem_par_lns, only: inverse_2x2, LNS_rho0, LNS_v0, LNS_dv!, LNS_viscous, sigma_dv
   
   implicit none
   
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal, v_fluid, v_solid
   real(kind=CUSTOM_REAL), intent(in) :: rho_fluid, dp_fluid, soundspeed
-  integer, intent(in) :: i_el, j_el, ispec_el
+  integer, intent(in) :: iglob_DG, i_el, j_el, ispec_el
   !real(kind=CUSTOM_REAL), dimension(NDIM*NDIM), intent(in) :: sigma_elastic_iglob
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: v_hat
   real(kind=CUSTOM_REAL), intent(out) :: dp_hat
   
   ! Local.
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S!, INV_SUMTAU
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S, sigma_fluid!, INV_SUMTAU
   
   ! Transform sigma_elastic into a nicer form for uses in this routine.
   ! This is very suboptimal, but right now we can't afford to modify everywhere in the code the definition of sigma_elastic without having to debug many many things.
@@ -1339,8 +1340,16 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   ! Build inverse.
 !  INV_SUMTAU = inverse_2x2(TAU_S + TAU_F)
   
+  ! Prepare fluid stress tensor.
+  sigma_fluid = 0. ! Initialise stress.
+  call stressBuilder_addInviscidFluid(LNS_rho0(iglob_DG), LNS_v0(:,iglob_DG), &
+                                      LNS_dv(:,iglob_DG), dp_fluid, sigma_fluid)
+  !if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+  !  call stressBuilder_addViscousFluid(-sigma_dv(:,iglob_DG), sigma_fluid) ! Send viscous tensor.
+  !endif
   ! Build actual velocity from [Terrana et al., 2018]'s (56).
-  v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal
+  !v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) - dp_fluid*normal
+  v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local - sigma_fluid,normal)
   ! TODO: code sometimes segfault at line above, suspected is a problem with sigma_el_local, maybe not correctly allocated or not correctly valued. Or maybe this is done, just not in time (early enough to query it).
   !v_hat = matmul(TAU_F,v_fluid)
   !v_hat = matmul(TAU_S,v_solid)
