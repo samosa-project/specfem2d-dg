@@ -1664,6 +1664,84 @@ end subroutine compute_dE_i
 
 
 ! ------------------------------------------------------------ !
+! stressBuilder_addInviscidFluid                               !
+! ------------------------------------------------------------ !
+! Routine building on top of a stress tensor, adding the inviscid part of the fluid stress.
+subroutine stressBuilder_addInviscidFluid(rho, v1, v2, pressure, out_sigma)
+  use constants, only: CUSTOM_REAL, NDIM
+  
+  implicit none
+  
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: rho, pressure
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: v1, v2
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: out_sigma
+  
+  ! Local.
+  integer :: i, j
+  
+  !out_sigma(1, 1) = out_sigma(1, 1) + rho*v1(1)*v2(1) + pressure
+  !out_sigma(1, 2) = out_sigma(1, 2) + rho*v1(1)*v2(2)
+  !out_sigma(2, 1) = out_sigma(2, 1) + rho*v1(2)*v2(1)
+  !out_sigma(2, 2) = out_sigma(2, 2) + rho*v1(2)*v2(2) + pressure
+  do i=1, NDIM
+    do j=1, NDIM
+      out_sigma(i, j) = out_sigma(i, j) + rho*v1(i)*v2(j)
+      if(i==j) then
+        out_sigma(i, j) = out_sigma(i, j) + pressure
+      endif
+    enddo
+  enddo
+end subroutine stressBuilder_addInviscidFluid
+! ------------------------------------------------------------ !
+! stressBuilder_addViscousFluid                                !
+! ------------------------------------------------------------ !
+! Routine building on top of a stress tensor, adding the viscous part of the fluid stress.
+subroutine stressBuilder_addViscousFluid(viscous_tensor_local, out_sigma)
+  use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par_lns, only: NVALSIGMA
+  
+  implicit none
+  
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(in) :: viscous_tensor_local
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: out_sigma
+  
+  ! Local.
+  ! N./A.
+  
+  out_sigma(1, 1) = out_sigma(1, 1) + viscous_tensor_local(1)
+  out_sigma(1, 2) = out_sigma(1, 2) + viscous_tensor_local(2)
+  out_sigma(2, 1) = out_sigma(2, 1) + viscous_tensor_local(2)
+  out_sigma(2, 2) = out_sigma(2, 2) + viscous_tensor_local(3)
+end subroutine stressBuilder_addViscousFluid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! ------------------------------------------------------------ !
 ! LNS_prevent_nonsense                                         !
 ! ------------------------------------------------------------ !
 ! Attempts to detect nonsense in LNS variables, and stop program if they are found.
