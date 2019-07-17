@@ -1299,19 +1299,19 @@ end subroutine prepare_external_forcing
       mul_unrelaxed_elastic = poroelastcoef(2,1,kmato(ispec_el))
       rhol  = density(1,kmato(ispec_el))
       kappal  = lambdal_unrelaxed_elastic + mul_unrelaxed_elastic
-
+      ! TODO: wouldn't it be kappa = lambda + (2/3)*mu? http://www.subsurfwiki.org/wiki/P-wave_modulus
       cpl = sqrt((kappal + FOUR_THIRDS * mul_unrelaxed_elastic)/rhol) ! Check kappa
       csl = sqrt(mul_unrelaxed_elastic/rhol)
       
-      rhoal = surface_density
-      cpal  = sound_velocity
+      rhoal = surface_density ! This is an approximation, valid unless we have very large topographies (>few km).
+      cpal  = sound_velocity ! This is an approximation, valid unless we have very large topographies (>few km).
       if(assign_external_model) then
         rhol = rhoext(i_el,j_el,ispec_el)
         cpl  = vpext(i_el,j_el,ispec_el)
         csl  = vsext(i_el,j_el,ispec_el)
-        
         rhoal = rhoext(i,j,ispec)
         cpal  = vpext(i,j,ispec)
+        ! Yes, both fluid and solid external values are stored in the same array, this is not an error.
       endif
       
       ! From Terrana (2017) eq. 56
