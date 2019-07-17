@@ -161,6 +161,22 @@ module specfem_par_LNS
     !N./A.
     norm2r1 = sum(r1arr**2)
   end function norm2r1
+  
+  ! Implement explicitely the inverse of a 2x2 matrix.
+  function inverse_2x2(A) result(Am1)
+    use constants, only: CUSTOM_REAL
+    implicit none
+    ! Input/Output.
+    real(kind=CUSTOM_REAL), dimension(2,2), intent(in) :: A
+    real(kind=CUSTOM_REAL), dimension(2,2) :: Am1
+    ! Local.
+    !N./A.
+    Am1(1, 1) =  A(2, 2)
+    Am1(1, 2) = -A(1, 2)
+    Am1(2, 1) = -A(2, 1)
+    Am1(2, 2) =  A(1, 1)
+    Am1 = Am1/(A(1, 1)*A(2, 2)-A(1, 2)*A(2, 1))
+  end function inverse_2x2
   ! ------------------------------------------------------------ !
   
 end module specfem_par_LNS

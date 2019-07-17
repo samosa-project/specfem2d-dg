@@ -1312,6 +1312,7 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: assign_external_model, density, kmato, poroelastcoef, &
                          rhoext, vpext, vsext
+  use specfem_par_lns, only: inverse_2x2
   
   implicit none
   
@@ -1325,7 +1326,7 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   
   ! Local.
   real(kind=CUSTOM_REAL) :: mu_elastic_unrelaxed, rho_elastic, vp, vs
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S, SUMTAU, INV_SUMTAU
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S!, INV_SUMTAU
   
   ! Transform sigma_elastic into a nicer form for uses in this routine.
   ! This is very suboptimal, but right now we can't afford to modify everywhere in the code the definition of sigma_elastic without having to debug many many things.
@@ -1349,12 +1350,7 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   call build_tau_s(normal, rho_elastic, vp, vs, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
   call build_tau_f(normal, rho_fluid, soundspeed, TAU_F) ! TAU_F couldn't be pre-computed, since some values change with time.
   ! Build inverse.
-  SUMTAU = TAU_S + TAU_F
-  INV_SUMTAU(1, 1) =  SUMTAU(2, 2)
-  INV_SUMTAU(1, 2) = -SUMTAU(1, 2)
-  INV_SUMTAU(2, 1) = -SUMTAU(2, 1)
-  INV_SUMTAU(2, 2) =  SUMTAU(1, 1)
-  INV_SUMTAU = INV_SUMTAU/(SUMTAU(1, 1)*SUMTAU(2, 2)-SUMTAU(1, 2)*SUMTAU(2, 1))
+!  INV_SUMTAU = compute_inverse_2x2(TAU_S + TAU_F)
   
   ! Build actual velocity from [Terrana et al., 2018]'s (56).
   v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) + dp_fluid*normal
@@ -1362,7 +1358,7 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   !v_hat = matmul(TAU_S,v_solid)
   !v_hat = matmul(sigma_el_local,normal)
   !v_hat = dp_fluid*normal
-  v_hat = matmul(INV_SUMTAU, v_hat)
+  v_hat = matmul(inverse_2x2(TAU_S+TAU_F), v_hat)
   
   ! Build actual pressure perturbation from [Terrana et al., 2018]'s (51).
   dp_hat = dp_fluid + DOT_PRODUCT(matmul(TAU_F, v_fluid - v_solid), normal)
