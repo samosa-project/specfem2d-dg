@@ -13,11 +13,12 @@ addpath(genpath('../../utils_new'));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OFD='OUTPUT_FILES_FNS_F2S_1.0dx_1.0dt';
-% OFD='OUTPUT_FILES_FNS_F2S_0.5dx_0.5dt';
-% OFD='OUTPUT_FILES_LNS_F2S_1.0dx_1.0dt';
-% OFD='OUTPUT_FILES_LNS_F2S_1.0dx_0.5dt';
-% OFD='OUTPUT_FILES_LNS_F2S_0.5dx_0.5dt';
+% OFD='OUTPUT_FILES_S2F_FNS_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_S2F_LNS_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_S2F_LNS_0.5dx_0.5dt';
+% OFD='OUTPUT_FILES_F2S_FNS_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_F2S_LNS_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_F2S_LNS_0.5dx_0.5dt';
 OFD='OUTPUT_FILES';
 
 % Plots?
@@ -128,8 +129,8 @@ else
   % pt = Tpi, pr=Rpi
   % pt=vtZs => vtZs=Tpi => vt/pi=T/Zs
   % (pi+pr) = (1+R)pi => vt/(pi+pr)=T/(Zs*(1+R))
-  Vt_over_Pi_th = -T/Z_s; % v transmitted over p incident
-  Vt_over_PiPr_th = -T/(Z_s*(1+R)); % if too close to interface, v transmitted over (p incident + p reflected)
+  Vt_over_Pi_th = T/Z_s; % v transmitted over p incident
+  Vt_over_PiPr_th = T/(Z_s*(1+R)); % if too close to interface, v transmitted over (p incident + p reflected)
 end
 disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T), ', R = ',num2str(R), '.']);
 
