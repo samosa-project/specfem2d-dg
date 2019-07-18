@@ -183,7 +183,8 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 
 % Tests.
 fig_title = 'test';
-rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,' test'];
+rootd = strcat(SPCFMEXloc,'test_transmission/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,''];
+% rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,' test'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_vectorised_classicalF2S/'); fig_title = [fig_title,' LNS vect clas F2S'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_terranaF2S/'); fig_title = [fig_title,' LNS terrana F2S'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_unvectorised_classicalF2S_actualTensor/'); fig_title = [fig_title,' LNS unvect clas F2S'];
@@ -688,43 +689,6 @@ function pos_sources = loadSources(OFdir)
     end
   end
   fclose('all');
-end
-
-function [ext, chantxt] = getUnknowns(type_displ, chan)
-  % Switch on type of display.
-  switch type_displ
-%   if (type_display == 1) % Original SPECFEM2D's synthetic is displacement.
-    case 1 % Original SPECFEM2D's synthetic is displacement.
-      ext = 'semd'; % Because original SPECFEM2D's synthetic is displacement.
-      % For stations in solid zones it's displacement. For stations in DG zones it's velocity.
-      if (strcmp(chan, 'BXZ'))
-        chantxt = 'vertical {$u_z$ (m), $v_z$ [m/s]}';
-      elseif (strcmp(chan, 'BXX'))
-        chantxt = 'horizontal {$u_x$ (m), $v_x$ [m/s]}';
-      else
-        error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
-      end
-%   elseif (type_display == 2) % Original SPECFEM2D's synthetic is velocity.
-    case 2 % Original SPECFEM2D's synthetic is velocity.
-      ext = 'semv'; % Because original SPECFEM2D's synthetic is velocity.
-      if (strcmp(chan, 'BXZ'))
-        chantxt = '{$v_z$ [m/s], $\delta P$ [Pa]}';
-      elseif (strcmp(chan, 'BXX'))
-        chantxt = '{$v_x$ [m/s], $\delta P$ [Pa]}';
-      else
-        error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
-      end
-%   elseif (type_display == 4) % Original SPECFEM2D's synthetic is pressure.
-    case 4 % Original SPECFEM2D's synthetic is pressure.
-      ext = 'semp'; % Because original SPECFEM2D's synthetic is pressure.
-      if (strcmp(chan, 'PRE'))
-        chantxt = '$\delta P$ [Pa]';
-      else
-        error(['[',mfilename,', ERROR] The variable ''unknown'' has a non-standard value.']);
-      end
-    otherwise
-      error(['[',mfilename,', ERROR] This type_display (',num2str(type_displ),') is not implemented for this script.']);
-  end
 end
 
 function factor = getScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, rescale_fact)

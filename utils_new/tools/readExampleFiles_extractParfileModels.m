@@ -9,7 +9,10 @@
 % yields:
 %   TODO.
 
-function [models] = readExampleFiles_extractParfileModels(parfile)
+function [models, models_as_struct] = readExampleFiles_extractParfileModels(parfile)
+  if(not(exist(parfile,'file')))
+    error([' file ''',parfile,''' does not exist']);
+  end
   tag_before='^nbmodels';
   tag_after='^TOMOGRAPHY';
   hugenumberoflines=1e5;
@@ -43,11 +46,28 @@ function [models] = readExampleFiles_extractParfileModels(parfile)
       if(txt(end)==' ')
         txt=txt(1:end-1);
       end
+      
+      % print
+%       txt
+      
       % Convert to array.
       models(j,:)=str2double(split(txt,' '));
       j=j+1;
     end
     strt=returnsfoundIDs(i)+1;
+  end
+  
+  for m=1:size(models,1)
+    i=1;
+    models_as_struct(m).N=models(m,i); i=i+1;
+    models_as_struct(m).type=models(m,i); i=i+1;
+    models_as_struct(m).rho=models(m,i); i=i+1;
+    models_as_struct(m).vp=models(m,i); i=i+1;
+    models_as_struct(m).vs=models(m,i); i=i+1;
+    models_as_struct(m).zero1=models(m,i); i=i+1;
+    models_as_struct(m).zero2=models(m,i); i=i+1;
+    models_as_struct(m).qkappa=models(m,i); i=i+1;
+    models_as_struct(m).qmu=models(m,i); i=i+1;
   end
 end
 
