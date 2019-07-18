@@ -343,9 +343,9 @@ nx                              =  50
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .false.
-absorbright                     = .false.
+absorbright                     = .false. # Left/right ABC override periodic boundary conditions, be sure of what you do if you use both at the same time.
 absorbtop                       = .false.
-absorbleft                      = .false. # Absorbing boundary conditions on the left side are not supported for AXISYM, since the left boundary is the axis of symmetry.
+absorbleft                      = .false. # Left/right ABC override periodic boundary conditions, be sure of what you do if you use both at the same time. Left ABC is not supported for AXISYM, since the left boundary is defined as the axis of symmetry.
 
 #-----------------------------#
 # Definition of the different #
