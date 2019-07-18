@@ -974,7 +974,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
                                 LNS_c0(iglobM), & ! either that, or recomputing using sqrt(gammaext_DG(iglobM)*(p0+dp)/rho_fluid)
                                 iglobM, &
                                 veloc_elastic(:,ibool(i_el, j_el, ispec_el)), &
-                                sigma_elastic(:,:,iglob), &
+                                sigma_elastic(:,:,ibool(i_el, j_el, ispec_el)), &
                                 i_el, j_el, ispec_el, &
                                 velocity_P, out_dp_P)
       
@@ -1319,20 +1319,12 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal, v_fluid, v_solid
   real(kind=CUSTOM_REAL), intent(in) :: rho_fluid, dp_fluid, soundspeed
   integer, intent(in) :: iglob_DG, i_el, j_el, ispec_el
-  !real(kind=CUSTOM_REAL), dimension(NDIM*NDIM), intent(in) :: sigma_elastic_iglob
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(in) :: sigma_el_local
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: v_hat
   real(kind=CUSTOM_REAL), intent(out) :: dp_hat
   
   ! Local.
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_el_local, TAU_F, TAU_S, sigma_fluid!, INV_SUMTAU
-  
-  ! Transform sigma_elastic into a nicer form for uses in this routine.
-  ! This is very suboptimal, but right now we can't afford to modify everywhere in the code the definition of sigma_elastic without having to debug many many things.
-  ! TODO: change the shape of sigma_elastic for it to be a (NDIM, NDIM, nglob_elastic). Declaration is in 'specfem2D_par.f90'. Allocation is done in 'prepare_timerun_wavefields.f90'. Attribution is in 'compute_forces_viscoelastic.F90'.
-  !sigma_el_local(1, 1) = sigma_elastic_iglob(1)
-  !sigma_el_local(1, 2) = sigma_elastic_iglob(2)
-  !sigma_el_local(2, 1) = sigma_elastic_iglob(3)
-  !sigma_el_local(2, 2) = sigma_elastic_iglob(4)
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: TAU_F, TAU_S, sigma_fluid
   
   ! Build tensors \tau.
   call build_tau_s(normal, i_el, j_el, ispec_el, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
@@ -1349,13 +1341,11 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   !endif
   ! Build actual velocity from [Terrana et al., 2018]'s (56).
   !v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) - dp_fluid*normal
-  v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local - sigma_fluid,normal)
-  ! TODO: code sometimes segfault at line above, suspected is a problem with sigma_el_local, maybe not correctly allocated or not correctly valued. Or maybe this is done, just not in time (early enough to query it).
-  !v_hat = matmul(TAU_F,v_fluid)
-  !v_hat = matmul(TAU_S,v_solid)
-  !v_hat = matmul(sigma_el_local,normal)
-  !v_hat = dp_fluid*normal
-  v_hat = matmul(inverse_2x2(TAU_S+TAU_F), v_hat)
+  !v_hat = matmul(TAU_F, v_fluid) + matmul(TAU_S, v_solid) + matmul(sigma_el_local - sigma_fluid, normal)
+  !v_hat = matmul(inverse_2x2(TAU_S+TAU_F), v_hat)
+  ! Do everything inline. Four 2x2 little matrix-vector products won't crash the stack.
+  v_hat = matmul(inverse_2x2(TAU_S+TAU_F), &
+                 matmul(TAU_F, v_fluid) + matmul(TAU_S, v_solid) + matmul(sigma_el_local - sigma_fluid, normal))
   
   ! Build actual pressure perturbation from [Terrana et al., 2018]'s (51).
   dp_hat = dp_fluid + DOT_PRODUCT(matmul(TAU_F, v_fluid - v_solid), normal)
