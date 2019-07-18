@@ -35,9 +35,9 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 2000
+NSTEP                           = 4000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 1.7d-4
+DT                              = 0.85d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -359,7 +359,7 @@ interfacesfile                  = ../interfaces_input
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 xmin                            = -30.d0
 xmax                            =  30.d0
-nx                              =  12
+nx                              =  24
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .true.
@@ -377,8 +377,8 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 nbregions                       = 2
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 12  1 40 2
-1 12 41 70 1
+1 24  1  80 2
+1 24 81 140 1
 
 #---------------------------------------------------------------------#
 #                                                                     #

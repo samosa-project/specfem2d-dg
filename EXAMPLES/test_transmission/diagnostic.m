@@ -7,14 +7,15 @@
 
 clear all;
 % close all;
-clc;
+% clc;
 addpath(genpath('../../utils_new'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-OFD='OUTPUT_FILES_FNS_F2S_1.0dx_1.0dt';
-% OFD='OUTPUT_FILES_LNS_F2S_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_FNS_F2S_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_FNS_F2S_0.5dx_0.5dt';
+OFD='OUTPUT_FILES_LNS_F2S_1.0dx_1.0dt';
 % OFD='OUTPUT_FILES_LNS_F2S_1.0dx_0.5dt';
 % OFD='OUTPUT_FILES_LNS_F2S_0.5dx_0.5dt';
 
@@ -25,6 +26,8 @@ normalise_ylims = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(['**************** ', OFD, ' ****************']);
+
 % Filename for report.
 reportname = [OFD,'_report'];
 if(exist(reportname,'file'))
