@@ -1,0 +1,7 @@
+For now, a switch to produce plane waves in the middle of the domains (fluid or solid) does not exist in the parfile.
+
+For the fluid part, you have to go in:
+  prepare_source_spatial_function.f90
+and play with the 'Plane waves tests.' section. Simply setting 'if(.false.)' to 'if(.true.)' should be sufficient with this EXAMPLE.
+
+For the solid part, TODO
