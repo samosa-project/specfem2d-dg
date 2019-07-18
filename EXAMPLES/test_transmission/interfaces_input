@@ -1,0 +1,16 @@
+# Number of interfaces:
+ 3
+
+# For each interface, give the number of points defining it, and coordinates (x, z) for each point.
+2
+ -1.d10 -200.d0
+  1.d10 -200.d0
+2
+ -1.d10 0.d0
+  1.d10 0.d0
+2
+ -1.d10 150.d0
+  1.d10 150.d0
+
+80
+60
