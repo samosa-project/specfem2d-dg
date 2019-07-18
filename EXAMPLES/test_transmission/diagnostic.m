@@ -15,9 +15,10 @@ addpath(genpath('../../utils_new'));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES_FNS_F2S_1.0dx_1.0dt';
 % OFD='OUTPUT_FILES_FNS_F2S_0.5dx_0.5dt';
-OFD='OUTPUT_FILES_LNS_F2S_1.0dx_1.0dt';
+% OFD='OUTPUT_FILES_LNS_F2S_1.0dx_1.0dt';
 % OFD='OUTPUT_FILES_LNS_F2S_1.0dx_0.5dt';
 % OFD='OUTPUT_FILES_LNS_F2S_0.5dx_0.5dt';
+OFD='OUTPUT_FILES';
 
 % Plots?
 plot_timeseries = 0;
@@ -70,9 +71,25 @@ Z_s = rho_s*vp_s;
 % Compute wavelengths.
 zinterface = readExampleFiles_extractParam(parfile,'coord_interface','float');
 zs = readExampleFiles_extractParam(sourcefile,'zs','float');
+if(numel(zs)>1)
+  % If many sources found (in the case of S2F coupling), check if all same altitude and keep only one.
+  if(numel(unique(zs))==1)
+    zs = zs(1);
+  else
+    error(['Sources must be at same altitude.']);
+  end
+end
 f0 = readExampleFiles_extractParam(sourcefile,'f0','float');
+if(numel(f0)>1)
+  % If many f0 found (in the case of S2F coupling), check if all same and keep only one.
+  if(numel(unique(f0))==1)
+    f0 = f0(1);
+  else
+    error(['Sources must have same frequency.']);
+  end
+end
 spatial_wavelength_f = vp_f/f0;
-spatial_wavelength_s = vp_f/f0; % maybe will be useful
+spatial_wavelength_s = vp_s/f0; % maybe will be useful
 
 % Load stations.
 STATIONS = importdata([OFD,'STATIONS']);
@@ -89,14 +106,20 @@ else
     error(['source must not be on interface']);
   end
   % source is above ground, coupling is thus solid to fluid
-  f2s0_or_s2f1 = 0;
+  f2s0_or_s2f1 = 1;
 end
 
 % Set title, RT coeffs, and theoretical values for conversion.
 if(f2s0_or_s2f1)
   fig_title = ['S2F'];
   [R, T] = ReflexionTransmissionCoefs(Z_s, Z_f);
-  Vi_over_Pt_th = -T*Z_s; % v incident over p transmitted
+  R = abs(R); % work in magnitude only
+  % Rationale:
+  % pt = T*pi, pr = R*pi
+  % pt = Zs*vi => pt = T*Zs*vi => vi/pt = 1/(T*Zs)
+  % (vi+vr) = (1+R)*vi => (vi+vr)/pt = T*Zs/(1+R)
+  Vi_over_Pt_th = 1/(T*Z_s); % v incident over p transmitted
+  ViVr_over_Pt = (1+R)/(T*Z_s); % If too close to interface, v transmitted over (p incident + p reflected)
   disp(['CONVERSION COEFFICIENT NOT SURE']);
 else
   fig_title = ['F2S'];
@@ -151,72 +174,73 @@ format_values = ['%11.4e'];
 for i=1:numel(zlist)
 % for i=1
   ztotest=zlist(i);
-  correspondingStations = find(abs(STATPOS(:,2))==ztotest);
+  correspondingIDs = find(abs(STATPOS(:,2))==ztotest);
+  % with sorting above, first of correspondingIDs is incoming and last is transmitted
+  incoming_reflected = Zamp(correspondingIDs(1),:);
+  incoming_reflected_t = Ztime(correspondingIDs(1),:);
+  transmitted = Zamp(correspondingIDs(2),:);
+  transmitted_t = Ztime(correspondingIDs(1),:);
+  
+  incoming_reflected = abs(incoming_reflected); % work in magnitude
+  transmitted = abs(transmitted); % work in magnitude
+  
+  inc_peak = incoming_reflected(incoming_reflected_t==findFirstPeak(incoming_reflected_t,incoming_reflected));
+  transm_peak = transmitted(transmitted_t==findFirstPeak(transmitted_t,transmitted));
+  
   if(f2s0_or_s2f1)
-    error(['not implementd']);
+    % s2f
+    spatial_wavelength = spatial_wavelength_s;
+    voverpname = 'Vi/Pt     ';
+    roveriname = 'Vr/Vi     ';
+    V_over_P_ex = inc_peak/transm_peak; % transmitted is pressure, incoming is velocity
+    localV_over_P_th = Vi_over_Pt_th;
   else
-    % with sorting above, first of correspondingStations is incoming and last is transmitted
-    incoming_reflected = Zamp(correspondingStations(1),:);
-    incoming_reflected_t = Ztime(correspondingStations(1),:);
-    transmitted = Zamp(correspondingStations(2),:);
-    transmitted_t = Ztime(correspondingStations(1),:);
-    
-%     t_inc_peak = findFirstPeak(incoming_reflected_t,incoming_reflected);
-%     findFirstPeak(incoming_reflected_t,incoming_reflected,0.5,2,10,1,1); % verbose
-    inc_peak = incoming_reflected(incoming_reflected_t==findFirstPeak(incoming_reflected_t,incoming_reflected));
-    
-%     findFirstPeak(incoming_reflected_t,incoming_reflected,0.5,2,10,1,1); % verbose
-    transm_peak = transmitted(transmitted_t==findFirstPeak(transmitted_t,abs(transmitted)));
-    
-    V_over_P_ex = transm_peak/inc_peak;
+    % f2s
+    spatial_wavelength = spatial_wavelength_f;
+    voverpname = 'Vt/Pi     ';
+    roveriname = 'Pr/Pi     ';
+    V_over_P_ex = transm_peak/inc_peak; % transmitted is velocity, incoming is pressure
     localV_over_P_th = Vt_over_Pi_th;
-    
-    if(f2s0_or_s2f1)
-      voverpname = 'Vi/Pt     ';
-      roveriname = 'Vr/Vi     ';
-      spatial_wavelength = spatial_wavelength_s;
-    else
-      voverpname = 'Vt/Pi     ';
-      roveriname = 'Pr/Pi     ';
-      spatial_wavelength = spatial_wavelength_f;
-    end
-    
-    % Boundary cases.
-    if(ztotest<0.5*spatial_wavelength)
-      % If distance is under the wavelength, 'incident' peak felt is in fact some combination of incident+reflected
-      if(ztotest>0.15*spatial_wavelength)
-        % if somewhat too far from interface, skip it because the combination is composite
-        disp(['@z=+/-',sprintf(format_positions,ztotest),': Skipping this station, because neither can separate the 2 peaks, nor can consider they form 1.']);
-        continue;
-      else
-        if(f2s0_or_s2f1)
-          % s2f
-          error(['not implemented'])
-          voverpname = '(Vi+Vr)/Pt';
-        else
-          % f2s
-          localV_over_P_th = Vt_over_PiPr_th;
-          voverpname = 'Vt/(Pi+Pr)';
-        end
-      end
-    end
-    
-    % Display.
-    disp(['@z=+/-',sprintf(format_positions,ztotest),', TRANSMISSION: ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, theoretical value = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
-    
-    % Reflection, only if >0.5*spatial_wavelength
-    if(ztotest>0.5*spatial_wavelength)
-      % Find peak. Method below assumes there is exactly two peaks in the signal (tries to find 'first' peak of flipped array).
-      refl_peak = incoming_reflected(incoming_reflected_t==findFirstPeak(fliplr(incoming_reflected_t),fliplr(incoming_reflected)));
-      
-      RoverI = refl_peak/inc_peak;
-      
-      % Display.
-      disp(['@z=+/-',sprintf(format_positions,ztotest),', REFLEXION:    ',roveriname,' = ',sprintf(format_values,RoverI),'       , theoretical value = ',sprintf(format_values,R),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-R)/abs(R)),'%.'])
-    end
-    
-    % TODO: save agreements.
   end
+
+  threshold_1_peak = 0.1; % (* spatial_wavelength)
+  threshold_2_peaks = 0.5; % (* spatial_wavelength)
+
+  % Boundary cases.
+  if(ztotest<threshold_1_peak*spatial_wavelength)
+    % close enough to boundary, consider double peak (incoming + reflected)
+    if(f2s0_or_s2f1)
+      % s2f
+      localV_over_P_th = ViVr_over_Pt;
+      voverpname = '(Vi+Vr)/Pt';
+    else
+      % f2s
+      localV_over_P_th = Vt_over_PiPr_th;
+      voverpname = 'Vt/(Pi+Pr)';
+    end
+  elseif(ztotest<threshold_2_peaks*spatial_wavelength)
+    % far from boundary, but not far enough to separate the two peaks
+    disp(['@z=+/-',sprintf(format_positions,ztotest),': Skipping this station, because we can neither separate 2 peaks nor consider they form only 1. Incoming spatial wavelength = ',num2str(spatial_wavelength),' m.']);
+    continue;
+  else
+    % okay, change nothing (use first detected peak)
+  end
+
+  % Display.
+  disp(['@z=+/-',sprintf(format_positions,ztotest),', TRANSMISSION: ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, theoretical value = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
+
+  % Reflection, only if >0.5*spatial_wavelength
+  if(ztotest>threshold_2_peaks*spatial_wavelength)
+    % Find peak. Method below assumes there is exactly two peaks in the signal (tries to find 'first' peak of flipped array).
+    refl_peak = incoming_reflected(incoming_reflected_t==findFirstPeak(fliplr(incoming_reflected_t),fliplr(incoming_reflected)));
+
+    RoverI = refl_peak/inc_peak;
+
+    % Display.
+    disp(['@z=+/-',sprintf(format_positions,ztotest),', REFLEXION:    ',roveriname,' = ',sprintf(format_values,RoverI),'       , theoretical value = ',sprintf(format_values,R),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-R)/abs(R)),'%.'])
+  end
+
+  % TODO: save agreements.
 end
 
 % TODO: plot of saved agreements.
