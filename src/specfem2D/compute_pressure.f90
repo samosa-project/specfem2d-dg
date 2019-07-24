@@ -44,7 +44,9 @@
   integer :: i,j,ispec,iglob
   ! pressure in an element
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: pressure_element
-
+  
+  vector_field_display = 0.
+  
   ! loop over spectral elements
   do ispec = 1,nspec
 
@@ -538,40 +540,43 @@
 ! pressure = - Chi_dot_dot if acoustic element
   else if (ispec_is_acoustic(ispec)) then
     ! acoustic element
-    
     if(USE_DISCONTINUOUS_METHOD) then
-      if(USE_LNS) then
-        pressure_element(i,j) = LNS_dp(ibool_DG(i,j,ispec))
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          if(USE_LNS) then
+            pressure_element(i,j) = LNS_dp(ibool_DG(i,j,ispec))
+          else
+            stop 'pressure computation for DG FNS not tested'
+            !pressure_element(i,j) = 0.
+          endif
+        enddo
+      enddo
+    else
+      if (USE_TRICK_FOR_BETTER_PRESSURE) then
+        ! use a trick to increase accuracy of pressure seismograms in fluid (acoustic) elements:
+        ! use the second derivative of the source for the source time function instead of the source itself,
+        ! and then record -potential_acoustic() as pressure seismograms instead of -potential_dot_dot_acoustic();
+        ! this is mathematically equivalent, but numerically significantly more accurate because in the explicit
+        ! Newmark time scheme acceleration is accurate at zeroth order while displacement is accurate at second order,
+        ! thus in fluid elements potential_dot_dot_acoustic() is accurate at zeroth order while potential_acoustic()
+        ! is accurate at second order and thus contains significantly less numerical noise.
+        ! compute pressure on the fluid/porous medium edge
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            iglob = ibool(i,j,ispec)
+            ! store pressure
+            pressure_element(i,j) = - potential_acoustic(iglob)
+          enddo
+        enddo
       else
-        stop 'pressure computation for DG FNS not tested'
-        !pressure_element(i,j) = 0.
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            iglob = ibool(i,j,ispec)
+            ! store pressure
+            pressure_element(i,j) = - potential_dot_dot_acoustic(iglob)
+          enddo
+        enddo
       endif
-    else
-    if (USE_TRICK_FOR_BETTER_PRESSURE) then
-      ! use a trick to increase accuracy of pressure seismograms in fluid (acoustic) elements:
-      ! use the second derivative of the source for the source time function instead of the source itself,
-      ! and then record -potential_acoustic() as pressure seismograms instead of -potential_dot_dot_acoustic();
-      ! this is mathematically equivalent, but numerically significantly more accurate because in the explicit
-      ! Newmark time scheme acceleration is accurate at zeroth order while displacement is accurate at second order,
-      ! thus in fluid elements potential_dot_dot_acoustic() is accurate at zeroth order while potential_acoustic()
-      ! is accurate at second order and thus contains significantly less numerical noise.
-      ! compute pressure on the fluid/porous medium edge
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-          iglob = ibool(i,j,ispec)
-          ! store pressure
-          pressure_element(i,j) = - potential_acoustic(iglob)
-        enddo
-      enddo
-    else
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-          iglob = ibool(i,j,ispec)
-          ! store pressure
-          pressure_element(i,j) = - potential_dot_dot_acoustic(iglob)
-        enddo
-      enddo
-    endif
     endif
 
   else if (ispec_is_gravitoacoustic(ispec)) then

@@ -43,8 +43,10 @@
                          potential_dot_acoustic,veloc_elastic,velocs_poroelastic,  &
                          potential_dot_dot_acoustic,accel_elastic,accels_poroelastic, &
                          rho_DG, rhovx_DG, rhovz_DG, E_DG, c_V,T_init, &
-                         potential_dphi_dx_DG!, potential_dphi_dz_DG ! Modification for DG.
-
+                         potential_dphi_dx_DG, USE_DISCONTINUOUS_METHOD!, potential_dphi_dz_DG ! Modification for DG.
+  
+  use specfem_par_lns, only: USE_LNS, LNS_dv
+  
   use specfem_par_movie,only: this_is_the_first_time_we_dump,mask_ibool,imagetype_wavefield_dumps, &
     use_binary_for_wavefield_dumps,vector_field_display
 
@@ -121,17 +123,34 @@
     !call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
     !                                 potential_gravito,veloc_elastic,velocs_poroelastic)
     ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
-    ! TODO: Do something here instead of this poor patch.
-    call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
-                                     potential_gravito,veloc_elastic,velocs_poroelastic, &
-                                     potential_dphi_dx_DG)
+    if(USE_DISCONTINUOUS_METHOD) then
+      if(USE_LNS) then
+        ! Send vx at least.
+        ! LM: This is not a very complete method, since compute_vector_whole_medium has the capability of sending a vector to vector_field_display. However for DG, compute_vector_whole_medium is implemented in such a way that this becomes impossible, and duplicates a scalar value over the whole vector attributed variable. This is convoluted, and should be modified. I do not have the time to do it right now.
+        call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
+                                         potential_gravito,veloc_elastic,velocs_poroelastic, &
+                                         LNS_dv(1, :))
+      else
+        ! Send vx at least.
+        ! LM: This is not a very complete method, since compute_vector_whole_medium has the capability of sending a vector to vector_field_display. However for DG, compute_vector_whole_medium is implemented in such a way that this becomes impossible, and duplicates a scalar value over the whole vector attributed variable. This is convoluted, and should be modified. I do not have the time to do it right now.
+        call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
+                                         potential_gravito,veloc_elastic,velocs_poroelastic, &
+                                         rhovx_DG/rho_DG)
+      endif
+    else
+      ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
+      call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
+                                       potential_gravito,veloc_elastic,velocs_poroelastic, &
+                                       potential_dphi_dx_DG)
+    endif
 
   else if (imagetype_wavefield_dumps == 3) then
     if (myrank == 0) write(IMAIN,*) 'dumping the acceleration vector...'
     !call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_gravitoacoustic, &
     !                                 potential_gravito,accel_elastic,accels_poroelastic)
     ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
-    ! TODO: Do something here instead of this poor patch.
+    ! TODO: Switches as above (imagetype_wavefield_dumps == 2) for DG.
+    ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,accel_elastic,accels_poroelastic, &
                                      potential_dphi_dx_DG)
@@ -190,8 +209,7 @@
               ! P-SV waves
               if (imagetype_wavefield_dumps == 4) then
                 ! by convention we use the 2. component of the array to store the pressure above
-                !write(27,*) sngl(vector_field_display(2,iglob)) ! does not work for some reason (this writes zeros)
-                write(27,*) sngl(vector_field_display(1,iglob))
+                write(27,*) sngl(vector_field_display(2,iglob))
               else
                 write(27,*) sngl(vector_field_display(1,iglob)),sngl(vector_field_display(2,iglob))
               endif
