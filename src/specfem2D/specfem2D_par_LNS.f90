@@ -177,6 +177,30 @@ module specfem_par_LNS
     Am1(2, 2) =  A(1, 1)
     Am1 = Am1/(A(1, 1)*A(2, 2)-A(1, 2)*A(2, 1))
   end function inverse_2x2
+
+!  ! ------------------------------------------------------------ !
+!  ! RusanovFlux                                                  !
+!  ! ------------------------------------------------------------ !
+!  ! Implements the Rusanov approximation for the computation of the flux across an interface where the following Riemann problem is posed:
+!  !   \partial_t q + \nabla\cdot\Sigma = S
+!  function RusanovFlux(Sigma_M, Sigma_P, q_M, q_P, normal_vec, exact_interface_flux, lambda) result(flux)
+!    use constants, only: CUSTOM_REAL, NDIM
+!    implicit none
+!    ! Input/Output.
+!    real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: Sigma_M, Sigma_P ! tensor field on either side
+!    real(kind=CUSTOM_REAL), intent(in) :: q_M, q_P ! constitutive variable on either side
+!    real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal_vec ! normal vector at the interface
+!    logical, intent(in) :: exact_interface_flux ! whether to implement a jump or not
+!    real(kind=CUSTOM_REAL), intent(in) :: lambda ! a pre-computed approximate maximum linearised acoustic wave speed
+!    real(kind=CUSTOM_REAL) :: flux
+!    ! Local.
+!    !N./A.
+!    if(exact_interface_flux) then
+!      flux = 0.5_CUSTOM_REAL * DOT_PRODUCT(normal_vec, Sigma_M+Sigma_P)
+!    else
+!      flux = 0.5_CUSTOM_REAL * (DOT_PRODUCT(normal_vec, Sigma_M+Sigma_P) - lambda*(q_P-q_M))
+!    endif
+!  end function RusanovFlux
   ! ------------------------------------------------------------ !
   
 end module specfem_par_LNS
