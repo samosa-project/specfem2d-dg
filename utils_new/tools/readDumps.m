@@ -1,4 +1,4 @@
-function [X,Y,V] = readDumps(OFD, IT, verbose)
+function [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
   if(not(exist('verbose')))
     verbose=0;
   end
@@ -13,6 +13,20 @@ function [X,Y,V] = readDumps(OFD, IT, verbose)
 
   % try identifying NPROC, for safety checks later.
   NPROC = readExampleFiles_extractParam([OFD,'input_parfile'],'NPROC','int');
+  
+  % check dump type
+  imagetype_wavefield_dumps = readExampleFiles_extractParam([OFD,'input_parfile'],'imagetype_wavefield_dumps','int');
+  switch(imagetype_wavefield_dumps)
+    case {1,2,3}
+      nvalues_dumped = 2; % vector dump, 2 values per point
+    case 4
+      nvalues_dumped = 1; % scalar dump, 1 value per point
+    otherwise
+      error(['[] imagetype_wavefield_dumps not implemented']);
+  end
+  if(verbose)
+    disp(['[] imagetype_wavefield_dumps = ',num2str(imagetype_wavefield_dumps), ', ',num2str(nvalues_dumped),' to be read per mesh point']);
+  end
 
   wavefield_dump_wildcard = [OFD, 'wavefield*.txt'];
 
@@ -69,8 +83,16 @@ function [X,Y,V] = readDumps(OFD, IT, verbose)
   end
   disp(['finished loading']);
 
-  XY = reshape(XY,max(size(XY)),2);
-  V = reshape(V,max(size(V)),1);
+%   XY = reshape(XY,max(size(XY)),nvalues_dumped);
+  if(all(size(V)==[max(size(XY)), nvalues_dumped]) && all(size(XY)==[max(size(XY)), 2]))
+    % ok
+    if(verbose)
+      disp(['[] Shapes are ok, considering dump reading done.']);
+    end
+  else
+    error(['[, ERROR] Shapes (XY=',num2str(size(XY)),', V=',num2str(size(V)),') is wrong w.r.t. nvalues_dumped (=',num2str(nvalues_dumped),')']);
+  end
+%   V = reshape(V,max(size(V)),1);
   % check
   if(size(V,1)==0)
     error(['NO VALUE LOADED, MAYBE DUMPS FOR THIS ITERATION (',num2str(IT),') DO NOT EXIST']);

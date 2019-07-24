@@ -136,7 +136,7 @@ function plot_partitions(PseudoGMSH0orDATABASE1, path_to_mesh, boundary_only, id
 
       if(not(ids_choice_provided))
         ids_choice=-10;
-        while(not((numel(ids_choice)==1 & ids_choice==-1) || all(ismember(ids_choice,arr_ids_cpus_original))))
+        while(not((numel(ids_choice)==1 && ids_choice==-1) || all(ismember(ids_choice,arr_ids_cpus_original))))
           disp(['[',mfilename,'] Database to plot ? Must be either -1 to plot all, or an array of IDs in']);
           disp(['[',mfilename,']   CPU = ',sprintf('%5d',CPUs)]);
           disp(['[',mfilename,']   ID  = ',sprintf('%5d',arr_ids_cpus_original), ' <- choose among those']);
