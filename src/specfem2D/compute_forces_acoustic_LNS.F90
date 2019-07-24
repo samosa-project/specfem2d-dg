@@ -94,7 +94,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   d0cntrb_dE     = ZEROcr
   
   ! Start by adding source terms.
-!  if(.false.) then ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  if(.false.) then ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   select case (TYPE_SOURCE_DG)
     case (1)
       call LNS_mass_source(outrhs_drho, outrhs_rho0dv, outrhs_dE, it, i_stage)
@@ -107,30 +107,42 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
     case default
       stop "TYPE_SOURCE_DG not implemented."
   end select
-!  endif ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  !do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-!  do ispec = 1, nspec; do j = 2,4; do i = 2,4 ! V2: get on center GLL point only
+!  endif ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+!  !do ispec = 1, nspec; do j = 2,4; do i = 2,4 ! V2: get on center GLL point only
 !    iglob = ibool_DG(i,j,ispec)
 !#define DEX 1.5
 !#define DEZ 1.5
-!    outrhs_drho = 0. * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!    outrhs_drho(iglob) = &!outrhs_drho(iglob) + &
+!                           0. &
+!                         * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!    
 !    !outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + 1.
-!    outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + (gammaext_DG(iglob)-1.)*DEX*PI& ! V1: add
-!    !outrhs_rho0dv(1, iglob) = (gammaext_DG(iglob)-1.)*DEX*PI& ! V2: overwrite
-!                              *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec)))&
+!    outrhs_rho0dv(1, iglob) = &!outrhs_rho0dv(1, iglob) + &
+!                                !(gammaext_DG(iglob)-1.)*DEX*PI &
+!                                !  *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!                                !(gammaext_DG(iglob)-1.) &
+!                                0. &
 !                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
-!    outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) + (gammaext_DG(iglob)-1.)*DEZ*PI& ! V1: add
-!    !outrhs_rho0dv(2, iglob) = (gammaext_DG(iglob)-1.)*DEZ*PI& ! V2: overwrite
-!                              *cos(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))&
+!    
+!    outrhs_rho0dv(2, iglob) = &!outrhs_rho0dv(2, iglob) + &
+!                                !(gammaext_DG(iglob)-1.)*DEZ*PI &
+!                                !  *cos(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec))) &
+!                                !0. &
+!                                (gammaext_DG(iglob)-1.) &
 !                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
-!    outrhs_dE =   LNS_v0(1,iglob)*gammaext_DG(iglob)*DEX*PI &
-!                * cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-!                * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!    
+!    outrhs_dE(iglob) = &!outrhs_dE(iglob) + &
+!                         !LNS_v0(1,iglob)*gammaext_DG(iglob)*DEX*PI &
+!                         !  *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!                         !LNS_v0(1,iglob)*gammaext_DG(iglob) &
+!                         0. &
+!                       * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
 !  enddo; enddo; enddo
-!  !! DO NOT FORGET TO UPDATE BOUNDARY TERMS BELOW.
-!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  !! DO NOT FORGET TO UPDATE BOUNDARY TERMS BELOW, lines ~1100.
+!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  ! Look what's inside source
 !  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
 !    iglob = ibool_DG(i,j,ispec)
@@ -142,7 +154,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
 !    endif
 !  enddo; enddo; enddo
 !  stop
-!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, LNS_MODPRINT) == 0) then
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
@@ -511,10 +523,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
-          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
-                       + LNS_c0(iglobM) & ! Local sound speed, side "M".
-                       , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
-                       + LNS_c0(iglobP) & ! Local sound speed, side "P".
+          !lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
+          !             + LNS_c0(iglobM) & ! Local sound speed, side "M".
+          !             , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
+          !             + LNS_c0(iglobP) & ! Local sound speed, side "P".
+          !             )
+          ! Exact lambda (i.e. with exact full v=v0+v' and c=c0+c').
+          ! This may be important for manufactured solutions' validation with non-zero (non-negligible) dv field.
+          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))) &
+                       + sqrt(gammaext_DG(iglobM)*(LNS_p0(iglobM)+in_dp(iglobM))/(LNS_rho0(iglobM)+cv_drho(iglobM))) &
+                       , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
+                       + sqrt(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)) &
                        )
           
           ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
@@ -539,9 +558,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                 - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglobM)+dm_P) + lambda*jump)
           ! 1.2) x-Momentum inviscid contributions.
           locSigma(1)    =   cv_rho0dv(1,iglobM)*LNS_v0(1,iglobM) + in_dp(iglobM) & ! "M" side.
-                           + rho0dv_P(1)*LNS_v0(1,iglobP) + dp_P ! "P" side.
+                           + rho0dv_P(1)        *LNS_v0(1,iglobP) + dp_P ! "P" side.
           locSigma(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(1,iglobM) & ! "M" side.
-                           + rho0dv_P(NDIM)*LNS_v0(1,iglobP) ! "P" side.
+                           + rho0dv_P(NDIM)        *LNS_v0(1,iglobP) ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, locSigma)
           if(exact_interface_flux) then
             jump = ZERO
@@ -553,9 +572,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                     - halfWeight*(DOT_PRODUCT(n_out, locSigma) + lambda*jump)
           ! 1.2) z-Momentum inviscid contributions.
           locSigma(1)    =   cv_rho0dv(1,iglobM)*LNS_v0(NDIM,iglobM) & ! "M" side.
-                           + rho0dv_P(1)*LNS_v0(NDIM,iglobP) ! "P" side.
+                           + rho0dv_P(1)        *LNS_v0(NDIM,iglobP) ! "P" side.
           locSigma(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(NDIM,iglobM) + in_dp(iglobM) & ! "M" side.
-                           + rho0dv_P(NDIM)*LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
+                           + rho0dv_P(NDIM)        *LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, locSigma)
           if(exact_interface_flux) then
             jump = ZERO
@@ -1098,12 +1117,15 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
         
         
-!        ! TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        exact_interface_flux = .true.
+!        ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        exact_interface_flux = .false. ! Do not force jump to zero.
+!        !exact_interface_flux = .true. ! Force jump to zero. We are on the boundary, this is needed.
 !        out_drho_P = 0.
 !        out_dv_P = 0.*out_dv_P
-!        out_dE_P =   sin(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-!                   + sin(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))
+!        !out_dE_P =   sin(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!        !           + sin(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))
+!        !out_dE_P = 1.
+!        out_dE_P = coord(2,ibool_before_perio(i,j,ispec)) - 0.5
 !        out_dp_P = (gammaext_DG(iglobM)-1.)*out_dE_P
 !        out_rho0dv_P = LNS_rho0(iglobM)*out_dv_P
 !        if(swCompVisc) then
@@ -1114,8 +1136,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
 !          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
 !          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
 !        endif
-!        !! DO NOT FORGET TO UPDATE SOURCE TERM ABOVE.
-!        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        !! DO NOT FORGET TO UPDATE SOURCE TERM ABOVE, lines ~110.
+!        ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
 !      endif ! Endif on PML.
     endif ! Endif on ipoin.
@@ -1215,7 +1237,6 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     endif
     ! Set out_dT_P.
     if(swCompdT) then
-      !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
       call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
     endif
     
@@ -1247,18 +1268,21 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     out_dv_P(:) = out_rho0dv_P(:)/LNS_rho0(iglobP)
     
     ! Set out_dp_P.
-    call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+    ! iglobP exists and has meaning.
+    call compute_dp_i(LNS_rho0(iglobP)+out_drho_P, LNS_v0(:,iglobP)+out_dv_P, LNS_E0(iglobP)+out_dE_P, out_dp_P, iglobP)
     
     ! Set out_dm_P: see bottom of routine.
     if(swCompVisc) then
-      out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
-      out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
+    ! iglobP exists and has meaning.
+      out_nabla_dT_P = nabla_dT(:,iglobP) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
+      out_sigma_dv_P = sigma_dv(:,iglobP) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
     endif
     
     ! Set out_dT_P.
     if(swCompdT) then
+      ! iglobP exists and has meaning.
       !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+      call compute_dT_i(LNS_rho0(iglobP)+out_drho_P, LNS_p0(iglobP)+out_dp_P, out_dT_P, iglobP)
     endif
     !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
     

@@ -21,7 +21,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
-  integer :: ier, i_aux
+  integer :: ier, i_aux!, i, j, ispec, iglob
   logical check_linearHypothesis
   
   ! Checks if anything has to be done.
@@ -97,6 +97,24 @@ subroutine compute_forces_acoustic_LNS_main()
     where(LNS_rho0/=ZEROcr) LNS_dv(i_aux, :) = LNS_rho0dv(i_aux, :)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
   call compute_dp(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dp)
+!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! Exact formulas, for manufactured solutions' validation check.
+!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+!    if(     abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
+!       .or. abs(coord(1,ibool_before_perio(i,j,ispec))-1.)<TINYVAL &
+!       .or. abs(coord(2,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
+!       .or. abs(coord(2,ibool_before_perio(i,j,ispec))-1.)<TINYVAL) then
+!      iglob = ibool_DG(i,j,ispec)
+!      LNS_drho(iglob) = 0.
+!      LNS_dv(:,iglob) = 0.
+!      LNS_rho0dv(:,iglob) = LNS_rho0(iglob)*LNS_dv(:,iglob)
+!      LNS_dE(iglob) = coord(2,ibool_before_perio(i,j,ispec)) - 0.5
+!      !LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*(  sin(1.5*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!      !                                         + sin(1.5*PI*coord(2,ibool_before_perio(i,j,ispec))))
+!      LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*LNS_dE(iglob)
+!    endif
+!  enddo; enddo; enddo
+!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
   
   ! Precompute gradients, only if viscosity exists whatsoever.
