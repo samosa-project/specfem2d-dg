@@ -1,16 +1,21 @@
-1) Go into 'compute_forces_acoustic_LNS.F90'.
+1) Choose a couple of 'parfile_input_*' and a 'interfaces_input_*' based on the Dx you want.
+   That is, copy-paste and rename them to 'parfile_input' and 'interfaces_input' (and replace any other '*_input' used before).
 
-2) Uncomment the blocks at lines ~95 (variables needed), ~110 (manufactured source), and ~1100 (boundary conditions). They encode the manufactured solutions' forcing.
+2) Go into 'compute_forces_acoustic_LNS.F90'.
+
+3) Uncomment the blocks at lines ~95 (variables needed), ~110 (manufactured source), and ~1100 (boundary conditions). They encode the manufactured solutions' forcing.
    Note: this is done like this for now, but later a parameter will be introduced.
 
-3) Recompile code.
+4) Recompile code.
 
-4) Run this EXAMPLE.
+5) Run this EXAMPLE.
    Eventually, change dx and/or dt to check convergence.
 
-5) Use the Matlab script './utils_new/validation/manufactured.m' on some produced OUTPUT_FILES to check the results:
+6) Use the Matlab script './utils_new/validation/manufactured.m' on some produced OUTPUT_FILES to check the results:
    a) Make sure the solution implemented in the Matlab script corresponds to the solution implemented in compute_forces_acoustic_LNS.
       For this, look at the boundary conditions (lines ~1100) because they encode the solution itself.
       You can also use the Maple script './utils_new/validation/LNS_manufactured_solutions.mw' to check it.
       The last version of each of those should implement the same solution and agree with each other, but better make sure before tests.
    b) Run the script by specifying the path to the 'OUTPUT_FILES' directory to be tested.
+
+7) Don't forget to comment out back the lines in 'compute_forces_acoustic_LNS.F90' before doing anything else (you'll regret not doing it otherwise).

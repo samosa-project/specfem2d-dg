@@ -35,9 +35,9 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 10000
+NSTEP                           = 20000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 8e-6
+DT                              = 1.25e-6
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -333,7 +333,7 @@ interfacesfile                  = ../interfaces_input
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 xmin                            =  0.0d0
 xmax                            =  1.0d0
-nx                              = 25
+nx                              = 100
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .false.
@@ -351,7 +351,7 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 nbregions                       = 1
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 25 1 25 1
+1 100 1 100 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -381,7 +381,7 @@ ENERGYBOX_ZMAX = 0.
 #---------------------------------------------------------------------#
 
 # Time steps between JPEG and/or PostScript snapshots.
-NSTEP_BETWEEN_OUTPUT_IMAGES     = 50
+NSTEP_BETWEEN_OUTPUT_IMAGES     = 1000
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
 NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 1000
@@ -414,11 +414,11 @@ boundvect                       = .true.         # display boundary conditions o
 interpol                        = .true.         # interpolation of the PostScript display on a regular grid inside each spectral element, or use the non-evenly spaced GLL points
 pointsdisp                      = 6              # number of points in each direction for interpolation of PostScript snapshots (set to 1 for lower-left corner only)
 subsamp_postscript              = 1              # subsampling of background velocity model in PostScript snapshots
-sizemax_arrows                  = 1.0d0           # maximum size of arrows on PostScript plots in centimeters
+sizemax_arrows                  = 1.0d0          # maximum size of arrows on PostScript plots in centimeters
 US_LETTER                       = .false.        # use US letter or European A4 paper for PostScript plots
 
 #### for wavefield dumps ####
-output_wavefield_dumps          = .true.        # output wave field to a text file every NSTEP_BETWEEN_OUTPUT_TEXT_DUMPS time steps (creates very big files)
+output_wavefield_dumps          = .true.         # output wave field to a text file every NSTEP_BETWEEN_OUTPUT_TEXT_DUMPS time steps (creates very big files)
 imagetype_wavefield_dumps       = 4              # display 1=displ vector 2=veloc vector 3=accel vector 4=pressure
 use_binary_for_wavefield_dumps  = .false.        # use ASCII or single-precision binary format for the wave field dumps
 
