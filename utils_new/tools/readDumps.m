@@ -1,3 +1,5 @@
+% Function coded quickly, maybe to be redone cleaner some day.
+
 function [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
   if(not(exist('verbose')))
     verbose=0;
@@ -49,7 +51,7 @@ function [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
       % grid, load it;
       inp = importdata(wavefield_file_path);
       if(verbose)
-        disp(['grid  file ''',wavefield_file_name,''' needs to be loaded, will be, needs to be loaded, will be, contains [',num2str(size(inp)),'] values.']);
+        disp(['grid  file ''',wavefield_file_name,''' needs to be loaded, will be, contains [',num2str(size(inp)),'] values.']);
       end
       XY = [XY; importdata(wavefield_file_path)];
 %       size(XY)
@@ -83,6 +85,15 @@ function [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
   end
   disp(['finished loading']);
 
+  % check
+  if(size(V,1)==0)
+    error(['[, ERROR] No value has been loaded. Maybe dumps for this iteration (',num2str(IT),') do not exist.']);
+  else
+    if(not(size(XY,1)==size(V,1)))
+      error(['DID NOT LOAD AS MANY POINTS (',num2str(size(XY,1)),') AS VALUES (',num2str(size(V,1)),')']);
+    end
+  end
+  
 %   XY = reshape(XY,max(size(XY)),nvalues_dumped);
   if(all(size(V)==[max(size(XY)), nvalues_dumped]) && all(size(XY)==[max(size(XY)), 2]))
     % ok
@@ -93,14 +104,6 @@ function [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
     error(['[, ERROR] Shapes (XY=',num2str(size(XY)),', V=',num2str(size(V)),') is wrong w.r.t. nvalues_dumped (=',num2str(nvalues_dumped),')']);
   end
 %   V = reshape(V,max(size(V)),1);
-  % check
-  if(size(V,1)==0)
-    error(['NO VALUE LOADED, MAYBE DUMPS FOR THIS ITERATION (',num2str(IT),') DO NOT EXIST']);
-  else
-    if(not(size(XY,1)==size(V,1)))
-      error(['DID NOT LOAD AS MANY POINTS (',num2str(size(XY,1)),') AS VALUES (',num2str(size(V,1)),')']);
-    end
-  end
   X = reshape(XY(:,1),max(size(XY)),1);
   Y = reshape(XY(:,2),max(size(XY)),1);
 end
