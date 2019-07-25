@@ -69,11 +69,19 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   integer :: iglobM, iglobP
   integer, dimension(3) :: neighbor
   
-  ! Variables specifically for PML.
-  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
-  integer :: ispec_PML, iglobPML
-  real(kind=CUSTOM_REAL) :: pml_a0,pml_a1
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa, pml_alp!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
+!  ! Variables specifically for PML.
+! 
+!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ! IMPORTANT INFORMATION:
+!  ! The following block of code is commented out to prevent confusion.
+!  ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
+!  ! Please do not remove those lines, even if they are commented out for now.
+!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
+!  integer :: ispec_PML, iglobPML
+!  real(kind=CUSTOM_REAL) :: pml_a0,pml_a1
+!  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa, pml_alp!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P
@@ -89,7 +97,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   outrhs_drho    = ZEROcr
   outrhs_rho0dv  = ZEROcr
   outrhs_dE      = ZEROcr
-  d0cntrb_drho   = ZEROcr
+!  d0cntrb_drho   = ZEROcr
   d0cntrb_rho0dv = ZEROcr
   d0cntrb_dE     = ZEROcr
   
@@ -169,10 +177,18 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   
   do ispec = 1, nspec ! Loop over elements.
     if (ispec_is_acoustic_DG(ispec)) then ! Only do something for DG elements.
-      if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
-        ! If PML, save ispec_PML now (instead of recalling it for each (i,j)).
-        ispec_PML=spec_to_PML(ispec)
-      endif
+! 
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!          ! IMPORTANT INFORMATION:
+!          ! The following block of code is commented out to prevent confusion.
+!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
+!          ! Please do not remove those lines, even if they are commented out for now.
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!      if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+!        ! If PML, save ispec_PML now (instead of recalling it for each (i,j)).
+!        ispec_PML=spec_to_PML(ispec)
+!      endif
       
       ! --------------------------- !
       ! First set of loops: compute !
@@ -181,10 +197,18 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i,j,ispec)
-          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
-            ! If PML, save iglobPML now.
-            iglobPML = ibool_LNS_PML(i, j, ispec_PML)
-          endif
+! 
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!          ! IMPORTANT INFORMATION:
+!          ! The following block of code is commented out to prevent confusion.
+!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
+!          ! Please do not remove those lines, even if they are commented out for now.
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
+!            ! If PML, save iglobPML now.
+!            iglobPML = ibool_LNS_PML(i, j, ispec_PML)
+!          endif
           jacLoc = jacobian(i,j,ispec)
           xigammal(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
           xigammal(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
@@ -203,14 +227,22 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
             !jacLoc            = ya_x_l * ya_z_l * jacLoc     ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
           endif
           
-          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
-            ! Need to include stretching on base stress tensor.
-            ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
-            ! \Sigma_x needs to become \kappa_2\Sigma_x, and \Sigma_z needs to become \kappa_1\Sigma_z.
-            ! Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include kappa_i in those directly.
-            xigammal(:, 1)    = LNS_PML_kapp(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by kappa_2.
-            xigammal(:, NDIM) = LNS_PML_kapp(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by kappa_1.
-          endif
+! 
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!          ! IMPORTANT INFORMATION:
+!          ! The following block of code is commented out to prevent confusion.
+!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
+!          ! Please do not remove those lines, even if they are commented out for now.
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+!            ! Need to include stretching on base stress tensor.
+!            ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
+!            ! \Sigma_x needs to become \kappa_2\Sigma_x, and \Sigma_z needs to become \kappa_1\Sigma_z.
+!            ! Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include kappa_i in those directly.
+!            xigammal(:, 1)    = LNS_PML_kapp(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by kappa_2.
+!            xigammal(:, NDIM) = LNS_PML_kapp(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by kappa_1.
+!          endif
           
           wzlwxljacLoc(1)    = wzgll(j)*jacLoc ! Notice how 1 is z and 2 is x.
           wzlwxljacLoc(NDIM) = wxgll(i)*jacLoc
@@ -327,103 +359,111 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
           d0cntrb_dE(i,j) = LNS_g(iglob)*in_dm(NDIM,iglob) * jacLoc
           
-          ! 5) Eventually, PML.
-          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
-            ! Do two things here:
-            ! 1) Add auxiliary variables to main RHS.
-            ! 2) Prepare auxiliary variables RHS.
-            
-            pml_a1 = product(LNS_PML_kapp(:,i,j,ispec_PML))
-            pml_a0 = LNS_PML_a0(i,j,ispec_PML) ! LNS_PML_a0 initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-            pml_alp = LNS_PML_alpha(:,i,j,ispec_PML)
-            pml_b  = LNS_PML_b(:,i,j,ispec_PML) ! LNS_PML_b initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-            pml_boa = ZEROcr
-            where(pml_b/=ZEROcr) pml_boa = pml_b / pml_alp ! b_i/alpha_i, only where b_i!=0
-            !write(*,*) "pml_a1, pml_a0, pml_alp, pml_b, pml_boa", pml_a1, pml_a0, pml_alp, pml_b, pml_boa! debuG
-            !stop 'kek'
-            
-            ! 1) Add auxiliary variables to main RHS.
-            ! 1.1) Update degree 0 contributions (set G=a1*G ***FIRST***), add a_0q, add G auxiliary variables, and add YU's auxiliary variables.
-            call LNS_PML_updateD0(d0cntrb_drho(i,j), cv_drho(iglob), 1, &
-                                  pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
-            do k = 1, NDIM
-              call LNS_PML_updateD0(d0cntrb_rho0dv(k,i,j), cv_rho0dv(k,iglob), 1+k, &
-                                    pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
-            enddo
-            call LNS_PML_updateD0(d0cntrb_dE(i,j), cv_dE(iglob), 2+NDIM, &
-                                  pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
-            ! 1.2) Update degree 1 contributions.
-            ! 1.2.1) First, reset xigammal.
-            xigammal(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
-            xigammal(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
-            xigammal(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
-            xigammal(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
-            ! 1.2.2) Need to include d_i on auxiliary stress tensor \Sigma=(R^{alpha_2}_{\sigma_1}, R^{alpha_1}_{\sigma_2}). We do it as follows. While not very readable, it gets the job done in a somewhat efficient way. \Sigma_1 needs to become d_2\Sigma_1, and \Sigma_2 needs to become d_1\Sigma_2. Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include d_i in those directly.
-            xigammal(:, 1)    = LNS_PML_d(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by d_2.
-            xigammal(:, NDIM) = LNS_PML_d(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by d_1.
-            ! 1.2.3)
-            do SPCDM = 1, NDIM ! rho'
-              cntrb_drho(i,j,SPCDM) =   cntrb_drho(i,j,SPCDM) &
-                                      + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(1,3:4,iglobPML))
-            enddo
-            do k = 1, NDIM ! rho0v'
-              do SPCDM = 1, NDIM
-                cntrb_rho0dv(k,i,j,SPCDM) =   cntrb_rho0dv(k,i,j,SPCDM) &
-                                            + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(1+k,3:4,iglobPML))
-              enddo
-            enddo
-            do SPCDM = 1, NDIM ! E'
-              cntrb_dE(i,j,SPCDM) =   cntrb_dE(i,j,SPCDM) &
-                                    + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(2+NDIM,3:4,iglobPML))
-            enddo
-            
-            ! 2) Prepare auxiliary variables RHS. Recall pattern for R^beta_q: rhs = beta*R^beta_q - q.
-            !if(.false.) then
-            ! 2.1) YU*q (:,1:2,:)
-            ! 2.1.1) rho' (1,:,:)
-            call LNS_PML_buildRHS(1, 1, iglobPML, pml_alp(1), cv_drho(iglob))
-            call LNS_PML_buildRHS(1, 2, iglobPML, pml_alp(2), cv_drho(iglob))
-            ! 2.1.2) rho0v' (2:3,:,:)
-            do k=1,NDIM
-              call LNS_PML_buildRHS(1+k, 1, iglobPML, pml_alp(1), cv_rho0dv(k, iglob))
-              call LNS_PML_buildRHS(1+k, 2, iglobPML, pml_alp(2), cv_rho0dv(k, iglob))
-            enddo
-            ! 2.1.3) E' (2+NDIM,:,:)
-            call LNS_PML_buildRHS(2+NDIM, 1, iglobPML, pml_alp(1), cv_dE(iglob))
-            call LNS_PML_buildRHS(2+NDIM, 2, iglobPML, pml_alp(2), cv_dE(iglob))
-            ! 2.2) Sigma (:,3:4,:) : care for indices flipping (alpha2 with sigma1 and alpha1 with sigma2) ! TODO: TAKE CARE OF VISCOUS TENSOR
-            ! 2.2.1) rho' (1,:,:)
-            call LNS_PML_buildRHS(1, 3, iglobPML, pml_alp(2), in_dm(1,iglob))
-            call LNS_PML_buildRHS(1, 4, iglobPML, pml_alp(1), in_dm(2,iglob))
-            ! 2.2.2) rho0v' (2:3,:,:)
-            call LNS_PML_buildRHS(2, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(1,iglob)   +in_dp(iglob)) ! vx sig1
-            call LNS_PML_buildRHS(2, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
-            call LNS_PML_buildRHS(3, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(NDIM,iglob)) ! vz sig1
-            call LNS_PML_buildRHS(3, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+in_dp(iglob)) ! vz sig2
-            ! 2.2.3) E' (2+NDIM,:,:)
-            call LNS_PML_buildRHS(2+NDIM, 3, iglobPML, pml_alp(2), &
-                                     LNS_dv(1,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
-                                   + LNS_v0(1,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig1
-            call LNS_PML_buildRHS(2+NDIM, 4, iglobPML, pml_alp(1), &
-                                     LNS_dv(2,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
-                                   + LNS_v0(2,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig2
-            ! 2.3) G (:,5:6,:) : zeroth degree contribution
-            ! 2.3.1) rho' (1,:,:): G=0
-            !call LNS_PML_buildRHS(1, 5, iglobPML, pml_alp(1), ZEROcr) ! rho a1G, do nothing
-            !call LNS_PML_buildRHS(1, 6, iglobPML, pml_alp(2), ZEROcr) ! rho a2G, do nothing
-            LNS_PML_RHS(1,5:6,iglobPML) = ZEROcr ! force to zero
-            ! 2.3.2) rho0v' (2:3,:,:): G=...
-            call LNS_PML_buildRHS(2, 5, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
-            call LNS_PML_buildRHS(2, 6, iglobPML, pml_alp(2), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
-            call LNS_PML_buildRHS(3, 5, iglobPML, pml_alp(1), - cv_drho(iglob)*LNS_g(iglob)) ! vz a1G
-            call LNS_PML_buildRHS(3, 6, iglobPML, pml_alp(2), - cv_drho(iglob)*LNS_g(iglob)) ! vz a2G
-            ! 2.3.3) E' (2+NDIM,:,:): G=g*dm_z
-            call LNS_PML_buildRHS(2+NDIM, 5, iglobPML, pml_alp(1), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a1G
-            call LNS_PML_buildRHS(2+NDIM, 6, iglobPML, pml_alp(2), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
-            !endif
-          else
-            d0cntrb_drho = ZEROcr ! Safeguard: make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
-          endif ! Endif on PML_BOUNDARY_CONDITIONS.
+!          ! 5) Eventually, PML.
+! 
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!          ! IMPORTANT INFORMATION:
+!          ! These blocks of code are commented out to prevent confusion.
+!          ! But they may be useful in the future, when someone actually tries to finish the full PML implementation.
+!          ! Please do not remove those lines, even if they are commented out for now.
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+!            ! Do two things here:
+!            ! 1) Add auxiliary variables to main RHS.
+!            ! 2) Prepare auxiliary variables RHS.
+!            
+!            pml_a1 = product(LNS_PML_kapp(:,i,j,ispec_PML))
+!            pml_a0 = LNS_PML_a0(i,j,ispec_PML) ! LNS_PML_a0 initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
+!            pml_alp = LNS_PML_alpha(:,i,j,ispec_PML)
+!            pml_b  = LNS_PML_b(:,i,j,ispec_PML) ! LNS_PML_b initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
+!            pml_boa = ZEROcr
+!            where(pml_b/=ZEROcr) pml_boa = pml_b / pml_alp ! b_i/alpha_i, only where b_i!=0
+!            !write(*,*) "pml_a1, pml_a0, pml_alp, pml_b, pml_boa", pml_a1, pml_a0, pml_alp, pml_b, pml_boa! debuG
+!            !stop 'kek'
+!            
+!            ! 1) Add auxiliary variables to main RHS.
+!            ! 1.1) Update degree 0 contributions (set G=a1*G ***FIRST***), add a_0q, add G auxiliary variables, and add YU's auxiliary variables.
+!            call LNS_PML_updateD0(d0cntrb_drho(i,j), cv_drho(iglob), 1, &
+!                                  pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
+!            do k = 1, NDIM
+!              call LNS_PML_updateD0(d0cntrb_rho0dv(k,i,j), cv_rho0dv(k,iglob), 1+k, &
+!                                    pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
+!            enddo
+!            call LNS_PML_updateD0(d0cntrb_dE(i,j), cv_dE(iglob), 2+NDIM, &
+!                                  pml_a1, pml_a0, pml_boa, pml_b, jacLoc, iglobPML)
+!            ! 1.2) Update degree 1 contributions.
+!            ! 1.2.1) First, reset xigammal.
+!            xigammal(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
+!            xigammal(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
+!            xigammal(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
+!            xigammal(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
+!            ! 1.2.2) Need to include d_i on auxiliary stress tensor \Sigma=(R^{alpha_2}_{\sigma_1}, R^{alpha_1}_{\sigma_2}). We do it as follows. While not very readable, it gets the job done in a somewhat efficient way. \Sigma_1 needs to become d_2\Sigma_1, and \Sigma_2 needs to become d_1\Sigma_2. Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include d_i in those directly.
+!            xigammal(:, 1)    = LNS_PML_d(NDIM, i,j,ispec_PML)*xigammal(:, 1)    ! Multiply x component by d_2.
+!            xigammal(:, NDIM) = LNS_PML_d(1,    i,j,ispec_PML)*xigammal(:, NDIM) ! Multiply z component by d_1.
+!            ! 1.2.3)
+!            do SPCDM = 1, NDIM ! rho'
+!              cntrb_drho(i,j,SPCDM) =   cntrb_drho(i,j,SPCDM) &
+!                                      + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(1,3:4,iglobPML))
+!            enddo
+!            do k = 1, NDIM ! rho0v'
+!              do SPCDM = 1, NDIM
+!                cntrb_rho0dv(k,i,j,SPCDM) =   cntrb_rho0dv(k,i,j,SPCDM) &
+!                                            + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(1+k,3:4,iglobPML))
+!              enddo
+!            enddo
+!            do SPCDM = 1, NDIM ! E'
+!              cntrb_dE(i,j,SPCDM) =   cntrb_dE(i,j,SPCDM) &
+!                                    + wzlwxljacLoc(SPCDM)*DOT_PRODUCT(xigammal(SPCDM,:), LNS_PML(2+NDIM,3:4,iglobPML))
+!            enddo
+!            
+!            ! 2) Prepare auxiliary variables RHS. Recall pattern for R^beta_q: rhs = beta*R^beta_q - q.
+!            !if(.false.) then
+!            ! 2.1) YU*q (:,1:2,:)
+!            ! 2.1.1) rho' (1,:,:)
+!            call LNS_PML_buildRHS(1, 1, iglobPML, pml_alp(1), cv_drho(iglob))
+!            call LNS_PML_buildRHS(1, 2, iglobPML, pml_alp(2), cv_drho(iglob))
+!            ! 2.1.2) rho0v' (2:3,:,:)
+!            do k=1,NDIM
+!              call LNS_PML_buildRHS(1+k, 1, iglobPML, pml_alp(1), cv_rho0dv(k, iglob))
+!              call LNS_PML_buildRHS(1+k, 2, iglobPML, pml_alp(2), cv_rho0dv(k, iglob))
+!            enddo
+!            ! 2.1.3) E' (2+NDIM,:,:)
+!            call LNS_PML_buildRHS(2+NDIM, 1, iglobPML, pml_alp(1), cv_dE(iglob))
+!            call LNS_PML_buildRHS(2+NDIM, 2, iglobPML, pml_alp(2), cv_dE(iglob))
+!            ! 2.2) Sigma (:,3:4,:) : care for indices flipping (alpha2 with sigma1 and alpha1 with sigma2) ! TODO: TAKE CARE OF VISCOUS TENSOR
+!            ! 2.2.1) rho' (1,:,:)
+!            call LNS_PML_buildRHS(1, 3, iglobPML, pml_alp(2), in_dm(1,iglob))
+!            call LNS_PML_buildRHS(1, 4, iglobPML, pml_alp(1), in_dm(2,iglob))
+!            ! 2.2.2) rho0v' (2:3,:,:)
+!            call LNS_PML_buildRHS(2, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(1,iglob)   +in_dp(iglob)) ! vx sig1
+!            call LNS_PML_buildRHS(2, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
+!            call LNS_PML_buildRHS(3, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(NDIM,iglob)) ! vz sig1
+!            call LNS_PML_buildRHS(3, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+in_dp(iglob)) ! vz sig2
+!            ! 2.2.3) E' (2+NDIM,:,:)
+!            call LNS_PML_buildRHS(2+NDIM, 3, iglobPML, pml_alp(2), &
+!                                     LNS_dv(1,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
+!                                   + LNS_v0(1,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig1
+!            call LNS_PML_buildRHS(2+NDIM, 4, iglobPML, pml_alp(1), &
+!                                     LNS_dv(2,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
+!                                   + LNS_v0(2,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig2
+!            ! 2.3) G (:,5:6,:) : zeroth degree contribution
+!            ! 2.3.1) rho' (1,:,:): G=0
+!            !call LNS_PML_buildRHS(1, 5, iglobPML, pml_alp(1), ZEROcr) ! rho a1G, do nothing
+!            !call LNS_PML_buildRHS(1, 6, iglobPML, pml_alp(2), ZEROcr) ! rho a2G, do nothing
+!            LNS_PML_RHS(1,5:6,iglobPML) = ZEROcr ! force to zero
+!            ! 2.3.2) rho0v' (2:3,:,:): G=...
+!            call LNS_PML_buildRHS(2, 5, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
+!            call LNS_PML_buildRHS(2, 6, iglobPML, pml_alp(2), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
+!            call LNS_PML_buildRHS(3, 5, iglobPML, pml_alp(1), - cv_drho(iglob)*LNS_g(iglob)) ! vz a1G
+!            call LNS_PML_buildRHS(3, 6, iglobPML, pml_alp(2), - cv_drho(iglob)*LNS_g(iglob)) ! vz a2G
+!            ! 2.3.3) E' (2+NDIM,:,:): G=g*dm_z
+!            call LNS_PML_buildRHS(2+NDIM, 5, iglobPML, pml_alp(1), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a1G
+!            call LNS_PML_buildRHS(2+NDIM, 6, iglobPML, pml_alp(2), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
+!            !endif
+!          else
+!            d0cntrb_drho = ZEROcr ! Safeguard: make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
+!          endif ! Endif on PML_BOUNDARY_CONDITIONS.
         enddo ! Enddo on i.
       enddo ! Enddo on j.
       
@@ -449,9 +489,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           wxlwzl = real(wxgll(i)*wzgll(j), kind=CUSTOM_REAL)
           
           ! Add zero-th order terms.
-          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! Degree 0 contribution to rho' only exists if there are PMLs. TODO: a better condition.
-            outrhs_drho(iglob) = outrhs_drho(iglob) + d0cntrb_drho(i,j) * wxlwzl
-          endif
+! 
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!          ! IMPORTANT INFORMATION:
+!          ! The following block of code is commented out to prevent confusion.
+!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
+!          ! Please do not remove those lines, even if they are commented out for now.
+!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! Degree 0 contribution to rho' only exists if there are PMLs. TODO: a better condition.
+!            outrhs_drho(iglob) = outrhs_drho(iglob) + d0cntrb_drho(i,j) * wxlwzl
+!          endif
           do SPCDM = 1, NDIM
             outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxlwzl
           enddo
