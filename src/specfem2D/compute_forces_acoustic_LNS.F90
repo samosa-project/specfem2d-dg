@@ -93,6 +93,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
   
+!  ! Variables specifically for manufactured solutions.
+!  real(kind=CUSTOM_REAL), dimension(NDIM) :: X
+!  real(kind=CUSTOM_REAL) :: GAM
+  
   ! Initialisation of the RHS.
   outrhs_drho    = ZEROcr
   outrhs_rho0dv  = ZEROcr
@@ -117,33 +121,36 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
 !  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
 !  !do ispec = 1, nspec; do j = 2,4; do i = 2,4 ! V2: get on center GLL point only
 !    iglob = ibool_DG(i,j,ispec)
-!#define DEX 1.5
-!#define DEZ 1.5
+!#define RHO_cst 0.001
+!#define dRHO_x 1.
+!#define dRHO_z 2.
+!#define E_cst 0.05
+!#define dE_x 3.
+!#define dE_z 4.
+!    X = coord(:,ibool_before_perio(i,j,ispec))
+!    GAM = gammaext_DG(iglob)
 !    outrhs_drho(iglob) = &!outrhs_drho(iglob) + &
-!                           0. &
-!                         * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!                           RHO_cst*dRHO_x*PI*cos(dRHO_x*PI*X(1))*LNS_v0(1,iglob) &
+!                         * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
 !    
 !    !outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + 1.
 !    outrhs_rho0dv(1, iglob) = &!outrhs_rho0dv(1, iglob) + &
-!                                !(gammaext_DG(iglob)-1.)*DEX*PI &
-!                                !  *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-!                                !(gammaext_DG(iglob)-1.) &
-!                                0. &
-!                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!                                (GAM-1.) &
+!                                  *(  E_cst*dE_x*PI*cos(dE_x*PI*X(1)) &
+!                                    - 0.5*RHO_cst*dRHO_x*PI*cos(dRHO_x*PI*X(1))*LNS_v0(1,iglob)**2 ) &
+!                              * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
 !    
 !    outrhs_rho0dv(2, iglob) = &!outrhs_rho0dv(2, iglob) + &
-!                                !(gammaext_DG(iglob)-1.)*DEZ*PI &
-!                                !  *cos(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec))) &
-!                                !0. &
-!                                (gammaext_DG(iglob)-1.) &
-!                              * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!                                (GAM-1.) &
+!                                  *(  E_cst*dE_z*PI*cos(dE_z*PI*X(2)) &
+!                                    - 0.5*RHO_cst*dRHO_z*PI*cos(dRHO_z*PI*X(2))*LNS_v0(1,iglob)**2 ) &
+!                              * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
 !    
 !    outrhs_dE(iglob) = &!outrhs_dE(iglob) + &
-!                         !LNS_v0(1,iglob)*gammaext_DG(iglob)*DEX*PI &
-!                         !  *cos(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-!                         !LNS_v0(1,iglob)*gammaext_DG(iglob) &
-!                         0. &
-!                       * wxgll(j)*wzgll(j)*jacobian(i,j,ispec)
+!                         LNS_v0(1,iglob)*PI &
+!                           *(  GAM*E_cst*dE_x*cos(dE_x*PI*X(1)) &
+!                             - 0.5*(GAM-1.)*RHO_cst*dRHO_x*cos(dRHO_x*PI*X(1))*LNS_v0(1,iglob)**2) &
+!                       * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
 !  enddo; enddo; enddo
 !  !! DO NOT FORGET TO UPDATE BOUNDARY TERMS BELOW, lines ~1100.
 !  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1174,14 +1181,14 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
 !        ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !        exact_interface_flux = .false. ! Do not force jump to zero.
-!        !exact_interface_flux = .true. ! Force jump to zero. We are on the boundary, this is needed.
-!        out_drho_P = 0.
+!        
+!        out_drho_P = RHO_cst*(  sin(dRHO_x*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!                              + sin(dRHO_z*PI*coord(2,ibool_before_perio(i,j,ispec))))
 !        out_dv_P = 0.*out_dv_P
-!        !out_dE_P =   sin(DEX*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-!        !           + sin(DEZ*PI*coord(2,ibool_before_perio(i,j,ispec)))
-!        !out_dE_P = 1.
-!        out_dE_P = coord(2,ibool_before_perio(i,j,ispec)) - 0.5
-!        out_dp_P = (gammaext_DG(iglobM)-1.)*out_dE_P
+!        out_dE_P = E_cst*(  sin(dE_x*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+!                          + sin(dE_z*PI*coord(2,ibool_before_perio(i,j,ispec))))
+!        call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+!        
 !        out_rho0dv_P = LNS_rho0(iglobM)*out_dv_P
 !        if(swCompVisc) then
 !          out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
