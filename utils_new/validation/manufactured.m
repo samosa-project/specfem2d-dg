@@ -37,7 +37,7 @@ IDz = 100;
 % OUTPUT_FILES directory to analyse.
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dp'];
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dp_190603'];
-OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']; IDz=[3]*1000;
+OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']; IDz=[500,[1,2]*1000];
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_exact']; IDz=[100];
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_force_exact_flux'];
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_jumpexactlambda'];
@@ -52,8 +52,12 @@ OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']; IDz=[3]*1000;
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_x-p5']; IDz=[1,2,3]*1000;
 
 % Parameters for analytic solution (cf. LNS_manufactured_solutions.mw).
-% dEx=3; dEz=2;
-dEx=1.5; dEz=1.5;
+RHO_cst = 0.001; dRHO_x = 1; dRHO_z = 2;
+E_cst = 50*RHO_cst; dE_x=3; dE_z=4;
+
+% Plots.
+extsToSave={'jpg'};
+% extsToSave={'jpg','eps'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.
@@ -96,7 +100,9 @@ USE_ISOTHERMAL_MODEL = readExampleFiles_extractParam([OFD,'input_parfile'],'USE_
 if(not(strcmp(MODEL,'default') & not(USE_ISOTHERMAL_MODEL)))
   error(['fluid model is wrong, set MODEL=default and USE_ISOTHERMAL_MODEL=.false. ']);
 end
-% RHO0 = readExampleFiles_extractParam([OFD,'input_parfile'],'surface_density','float');
+RHO0 = readExampleFiles_extractParam([OFD,'input_parfile'],'surface_density','float');
+sound_velocity = readExampleFiles_extractParam([OFD,'input_parfile'],'sound_velocity','float');
+V0_x = readExampleFiles_extractParam([OFD,'input_parfile'],'wind','float');
 GAM = readExampleFiles_extractParam([OFD,'input_parfile'],'constant_p','float') / readExampleFiles_extractParam([OFD,'input_parfile'],'constant_v','float');
 if(readExampleFiles_extractParam([OFD,'input_parfile'],'USE_LNS','bool'))
   LNSorFNS = 'LNS';
@@ -136,19 +142,24 @@ for IT = IDz
   caxxxxiiss_exp = [min(zexp),max(zexp)];
 
   % Build analytic solution (cf. LNS_manufactured_solutions.mw).
+  % Constitutive variables.
+  drho_th = RHO_cst*(sin(dRHO_x*pi*xi) + sin(dRHO_z*pi*yi));
+  dvx_th = 0.*xi;
+  dvz_th = 0.*xi;
+  dE_th = E_cst * (sin(dE_x*pi*xi) + sin(dE_z*pi*yi));
+  % Pressure.
+  dp_th = (GAM-1)*(-0.5*V0_x^2*drho_th + dE_th); % Compute directly.
+%   p0 = sound_velocity^2 * RHO0/GAM; E0 = p0/(GAM-1) + 0.5*RHO0*V0_x^2; dp_th = (GAM-1)*(E0+dE_th - 0.5*(RHO0+drho_th).*((V0_x+dvx_th).^2 + dvz_th.^2)) - p0; % Deduced from (rho, v, E)
+  
   switch(imagetype_wavefield_dumps)
     case 4
-%       zth = (GAM-1) * (sin(dEx*pi*xi) + sin(dEz*pi*yi));
-%       zth = (GAM-1) * 1. + 0*xi;
-%       zth = (GAM-1) * (xi-.5);
-      zth = (GAM-1) * (yi-.5);
+      zth = dp_th;
     case 2
-      zth = 0*xi;
+      zth = dvx_th;
     otherwise
       error(['[] imagetype_wavefield_dumps not implemented']);
   end
-  caxxxxiiss_th = [min(zth),max(zth)];
-  meanzth = 0.5*(min(zth)+max(zth));
+  caxxxxiiss_th = max(abs(zexp))*[-1,1];
 
   % error
   zerr = zexp-zth; errName = ['(', synthname, ' - Analytic)'];
@@ -162,7 +173,7 @@ for IT = IDz
   
   if(numel(unique(glob_caxx))==1)
     % If zth = cste, choose glob_caxx based on zexp
-    glob_caxx = [min(zexp),max(zexp)];
+    glob_caxx = max(abs(zexp))*[-1,1];
     % If again zexp = cste, choose glob_caxx arbitrarily
     if(numel(unique(glob_caxx))==1)
       if(glob_caxx(1)==0)
@@ -210,7 +221,7 @@ for IT = IDz
   else
     colorbarticks = colorbarticks*max(abs(zexp));
   end
-  colorbarticks = colorbarticks + meanzth;
+  colorbarticks = colorbarticks;
   set(h_cb, 'ytick', colorbarticks);
   
   xlabel(xlab);
@@ -222,6 +233,6 @@ for IT = IDz
   setappdata(gcf, 'StoreTheLink', Link);
 
   prettyAxes(feg);
-  customSaveFig(feg, savefigfullpath,{'jpg','eps'});
+  customSaveFig(feg, savefigfullpath,extsToSave);
 end
 %%%%%%%%%%%%%%%%
