@@ -97,9 +97,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   outrhs_drho    = ZEROcr
   outrhs_rho0dv  = ZEROcr
   outrhs_dE      = ZEROcr
-!  d0cntrb_drho   = ZEROcr
-  d0cntrb_rho0dv = ZEROcr
-  d0cntrb_dE     = ZEROcr
   
   ! Start by adding source terms.
 !  if(.false.) then ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -194,6 +191,16 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
       ! First set of loops: compute !
       ! volumic contributions.      !
       ! --------------------------- !
+      ! First, zero the temporary contribution fields.
+      ! This might not be needed, since they are strictly overwritten below, but this is safer.
+      cntrb_drho     = ZEROcr
+      cntrb_rho0dv   = ZEROcr
+      cntrb_dE       = ZEROcr
+    !  d0cntrb_drho   = ZEROcr
+      d0cntrb_rho0dv = ZEROcr
+      d0cntrb_dE     = ZEROcr
+      
+      ! Then, loop on the GLL points to set each of the (i, j) component to the temporary contribution fields.
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i,j,ispec)
