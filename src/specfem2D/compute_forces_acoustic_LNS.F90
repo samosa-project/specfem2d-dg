@@ -927,7 +927,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! TODO: ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES. See boundary_terms_DG.f90.
         
         ! Set out_dv_P.
-        out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
+        out_dv_P = velocity_P - LNS_v0(:, iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
         ! Set out_dp_P: traction continuity.
         out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
         ! Set out_dE_P.
@@ -948,8 +948,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! Set out_dT_P.
         if(swCompdT) then
           !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(NDIM)**2))/c_V
-          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
         
       else
@@ -974,7 +974,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         !gamma_P        = buffer_DG_gamma_P(ipoin,num_interface)
         
         ! Set out_dv_P.
-        out_dv_P=out_rho0dv_P/LNS_rho0(iglobM)
+        out_dv_P = out_rho0dv_P/LNS_rho0(iglobM)
         !out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
         !out_dv_P(NDIM) = out_rho0dv_P(NDIM)/out_drho_P
         
@@ -995,8 +995,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
         ! Set out_dT_P.
         if(swCompdT) then
-          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:, iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
         !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
         
@@ -1060,7 +1060,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
                                 velocity_P, out_dp_P)
       
       ! Set out_dv_P.
-      out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
+      out_dv_P = velocity_P - LNS_v0(:, iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
       
       ! Set out_dp_P.
       ! VERSION 1: no stress continuity.
@@ -1089,8 +1089,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       
       ! Set out_dT_P.
       if(swCompdT) then
-        !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-        call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+        call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+        !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
       endif
       
       !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
@@ -1130,8 +1130,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
 !          out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
 !        endif
 !        if(swCompdT) then
-          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P: same as other side, that is a Neumann condition.
-!          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+!           call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P: same as other side, that is a Neumann condition.
+!         !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
 !        endif
 !      else ! Else on PML.
         ! --------------------------- !
@@ -1159,7 +1159,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
           velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
         enddo
         ! Set out_dv_P.
-        out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
+        out_dv_P = velocity_P - LNS_v0(:, iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
         ! Set out_dE_P.
         call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
         ! Set out_rho0dv_P.
@@ -1174,8 +1174,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
         ! Set out_dT_P.
         if(swCompdT) then
-          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
         
         
@@ -1195,8 +1195,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
 !          out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
 !        endif
 !        if(swCompdT) then
-!          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-!          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+!          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:, iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+!          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
 !        endif
 !        !! DO NOT FORGET TO UPDATE SOURCE TERM ABOVE, lines ~110.
 !        ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1275,7 +1275,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
     enddo
     ! Set out_dv_P.
-    out_dv_P=velocity_P-LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
+    out_dv_P = velocity_P - LNS_v0(:,iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
     ! Set out_dp_P: traction continuity.
     out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
     ! Set out_dE_P.
@@ -1299,7 +1299,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     endif
     ! Set out_dT_P.
     if(swCompdT) then
-      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+      call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+      !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
     endif
     
   else
@@ -1343,8 +1344,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     ! Set out_dT_P.
     if(swCompdT) then
       ! iglobP exists and has meaning.
-      !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, out_dv_P + LNS_v0(:,iglobM), LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-      call compute_dT_i(LNS_rho0(iglobP)+out_drho_P, LNS_p0(iglobP)+out_dp_P, out_dT_P, iglobP)
+      call compute_dT_i(LNS_rho0(iglobP)+out_drho_P, LNS_v0(:, iglobP)+out_dv_P, LNS_E0(iglobP)+out_dE_P, out_dT_P, iglobP)
+      !call compute_dT_i(LNS_rho0(iglobP)+out_drho_P, LNS_p0(iglobP)+out_dp_P, out_dT_P, iglobP)
     endif
     !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
     

@@ -115,7 +115,8 @@ subroutine compute_forces_acoustic_LNS_main()
 !    endif
 !  enddo; enddo; enddo
 !  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
+  !call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
+  call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
   
   ! Precompute gradients, only if viscosity exists whatsoever.
   if(LNS_viscous) then
@@ -523,8 +524,8 @@ subroutine initial_state_LNS()
   LNS_c0 = sqrt(gammaext_DG*LNS_p0/LNS_rho0)
   
   ! Initialise T_0.
-  !call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
-  call compute_T(LNS_rho0, LNS_p0, LNS_T0)
+  call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+  !call compute_T(LNS_rho0, LNS_p0, LNS_T0)
   !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
   
   ! Detect if viscosity exists somewhere on this CPU.
@@ -1489,30 +1490,30 @@ end subroutine compute_dp_i
 ! compute_T                                                    !
 ! ------------------------------------------------------------ !
 ! Computes temperature from constitutive variables.
-!subroutine compute_T(in_rho, in_v, in_E, out_T)
-!  use constants, only: CUSTOM_REAL, NDIM
-!  use specfem_par, only: c_V, nglob_DG
-!  use specfem_par_LNS, only: norm2
-!  implicit none
-!  ! Input/Output.
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
-!  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
-!  ! Local.
-!  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-!  !out_T=(in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V
-!  out_T=(in_E/in_rho - HALFcr*norm2(in_v))/c_V
-!end subroutine compute_T
-subroutine compute_T(in_rho, in_p, out_T)
+subroutine compute_T(in_rho, in_v, in_E, out_T)
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par, only: nglob_DG
-  use specfem_par_LNS, only: R_ADIAB
+  use specfem_par, only: c_V, nglob_DG
+  use specfem_par_LNS, only: norm2
   implicit none
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
-  out_T = in_p / (R_ADIAB * in_rho)
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  !out_T = (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V
+  out_T = (in_E/in_rho - HALFcr*norm2(in_v))/c_V
 end subroutine compute_T
+!subroutine compute_T(in_rho, in_p, out_T)
+!  use constants, only: CUSTOM_REAL, NDIM
+!  use specfem_par, only: nglob_DG
+!  use specfem_par_LNS, only: R_ADIAB
+!  implicit none
+!  ! Input/Output.
+!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
+!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
+!  out_T = in_p / (R_ADIAB * in_rho)
+!end subroutine compute_T
 ! ------------------------------------------------------------ !
 ! compute_T_i                                                  !
 ! ------------------------------------------------------------ !
@@ -1538,60 +1539,60 @@ end subroutine compute_T
 ! ------------------------------------------------------------ !
 ! Computes temperature perturbation from constitutive variables.
 ! Note: this could have been done nearly inline by using the subroutine compute_T, but defining this function enables one to use less RAM.
-!subroutine compute_dT(in_rho, in_v, in_E, out_dT)
-!  use constants, only: CUSTOM_REAL, NDIM
-!  use specfem_par, only: c_V, nglob_DG
-!  use specfem_par_LNS, only: LNS_T0, norm2
-!  implicit none
-!  ! Input/Output.
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
-!  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
-!  ! Local.
-!  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-!  !out_dT=  (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V &
-!  out_dT=  (in_E/in_rho - HALFcr*norm2(in_v))/c_V &
-!         - LNS_T0
-!end subroutine compute_dT
-subroutine compute_dT(in_rho, in_p, out_dT)
+subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par, only: nglob_DG!,c_V
-  use specfem_par_LNS, only: LNS_T0,R_ADIAB
+  use specfem_par, only: c_V, nglob_DG
+  use specfem_par_LNS, only: LNS_T0, norm2
   implicit none
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
-  out_dT = in_p / (R_ADIAB * in_rho) - LNS_T0
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  !out_dT =   (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V &
+  out_dT =   (in_E/in_rho - HALFcr*norm2(in_v))/c_V &
+           - LNS_T0
 end subroutine compute_dT
-! Same as compute_dT, but point by point (unvectorised).
-!subroutine compute_dT_i(in_rho, in_v, in_E, out_T, iglob)
+!subroutine compute_dT(in_rho, in_p, out_dT)
 !  use constants, only: CUSTOM_REAL, NDIM
-!  use specfem_par, only: c_V
-!  use specfem_par_LNS, only: LNS_T0, norm2r1
+!  use specfem_par, only: nglob_DG!,c_V
+!  use specfem_par_LNS, only: LNS_T0,R_ADIAB
 !  implicit none
 !  ! Input/Output.
-!  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
-!  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
-!  real(kind=CUSTOM_REAL), intent(out) :: out_T
-!  integer, intent(in) :: iglob
-!  ! Local.
-!  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-!  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
-!  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
-!  out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V &
-!        - LNS_T0(iglob)
-!end subroutine compute_dT_i
-subroutine compute_dT_i(in_rho, in_p, out_dTi, iglob)
+!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
+!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
+!  out_dT = in_p / (R_ADIAB * in_rho) - LNS_T0
+!end subroutine compute_dT
+! Same as compute_dT, but point by point (unvectorised).
+subroutine compute_dT_i(in_rho, in_v, in_E, out_T, iglob)
   use constants, only: CUSTOM_REAL, NDIM
-  !use specfem_par, only: c_V
-  use specfem_par_LNS, only: LNS_T0, R_ADIAB
+  use specfem_par, only: c_V
+  use specfem_par_LNS, only: LNS_T0, norm2r1
   implicit none
   ! Input/Output.
-  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
-  real(kind=CUSTOM_REAL), intent(out) :: out_dTi
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), intent(out) :: out_T
   integer, intent(in) :: iglob
-  out_dTi = in_p / (R_ADIAB * in_rho) - LNS_T0(iglob)
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
+  out_T =   (in_E/in_rho - HALFcr*norm2r1(in_v))/c_V &
+          - LNS_T0(iglob)
 end subroutine compute_dT_i
+!subroutine compute_dT_i(in_rho, in_p, out_dTi, iglob)
+!  use constants, only: CUSTOM_REAL, NDIM
+!  !use specfem_par, only: c_V
+!  use specfem_par_LNS, only: LNS_T0, R_ADIAB
+!  implicit none
+!  ! Input/Output.
+!  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
+!  real(kind=CUSTOM_REAL), intent(out) :: out_dTi
+!  integer, intent(in) :: iglob
+!  out_dTi = in_p / (R_ADIAB * in_rho) - LNS_T0(iglob)
+!end subroutine compute_dT_i
 ! ------------------------------------------------------------ !
 ! compute_E                                                    !
 ! ------------------------------------------------------------ !
