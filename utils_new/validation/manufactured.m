@@ -17,8 +17,8 @@ clc;
 format compact;
 set(0, 'DefaultLineLineWidth', 3); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-set(0, 'defaultTextFontSize', 28);
-set(0, 'defaultAxesFontSize', 24); % Default at 10.
+set(0, 'defaultTextFontSize', 24);
+set(0, 'defaultAxesFontSize', 22); % Default at 10.
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
@@ -31,10 +31,13 @@ prefix = 'validation_lns_manufactured';
 savefigpath = [SPCFM_EX_DIR,prefix,'_info/'];
 errorPrefix_base = ['$\varepsilon_{'];
 
+% N for interpolation grid.
+Nexact = 1000; % Choose Nexact >> the N's we want to test. 10000 chugs HARD, 1000 runs ok.
+
 % Field plots?
+plotFields_do = 1; % do or do not plot fields themselves
 plotFields_saveFigName_base = ['comparedDump__'];
 plotFields_extsToSave={'jpg'};
-plotFields_do = 1; % do or do not plot fields themselves
 plotFields_xlab = '$x/L$';
 plotFields_ylab = '$z/L$';
 plotFields_NColorbarTicks = 9;
@@ -50,23 +53,44 @@ plotErr_figPos = [0,1e4,1600,600];
 IDz = 100;
 
 % OUTPUT_FILES directory to analyse.
-
-OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000']}; IDzs={[5000]};
+OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']}; IDzs={[5000]};% test case
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000']}; IDzs={[1000]};
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000']}; IDzs={[5000]};
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500']; IDz=[10000];
 % OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250']; IDz=[20000];
 
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000'], ...
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000'], ...
 %         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500'], ...
 %         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250']};
-% % commonID = 4*[1:5]*1000;
-% commonID = 4*[5]*1000;
-% IDzs = {[commonID/4], ...
+% commonID = 4*[1:5]*1000;
+% % commonID = 4*[5]*1000;
+% IDzs = {[commonID/20], ...
+%         [commonID/4], ...
 %         [commonID/2], ...
 %         [commonID]};
+% plotFields_do = 0; % deactivate plotting fields when we compute many errors
+
+% testCase = 'inviscid';
+% testCase = 'kappa';
+testCase = 'mu';
 
 % Parameters for analytic solution (cf. LNS_manufactured_solutions.mw).
-RHO_cst = 0.001; dRHO_x = 1; dRHO_z = 2;
-E_cst = 50*RHO_cst; dE_x=3; dE_z=4;
+% RHO_cst = 0.001;
+RHO_cst = 0.;
+dRHO_x = 1;
+dRHO_z = 2;
+VX_cst = 0.001;
+% VX_cst = 0.;
+dVX_x = 2;
+dVX_z = 0;
+VZ_cst = 0.;
+dVZ_x = 1;
+dVZ_z = 2;
+% E_cst = 0.05;
+E_cst = 0.;
+dE_x = 3;
+dE_z = 4;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.
@@ -126,18 +150,54 @@ for ofdi = 1:N_OFD
   sound_velocity = readExampleFiles_extractParam([OFD,'input_parfile'],'sound_velocity','float');
   V0_x = readExampleFiles_extractParam([OFD,'input_parfile'],'wind','float');
   GAM = readExampleFiles_extractParam([OFD,'input_parfile'],'constant_p','float') / readExampleFiles_extractParam([OFD,'input_parfile'],'constant_v','float');
+  P0 = sound_velocity^2*RHO0/GAM; % deduce p0 from isobaric hypothesis
+  E0 = P0/(GAM-1) + 0.5*RHO0*V0_x^2; % deduce E0 from isobaric hypothesis
   if(readExampleFiles_extractParam([OFD,'input_parfile'],'USE_LNS','bool'))
     LNSorFNS = 'LNS';
   else
     LNSorFNS = 'FNS';
   end
   synthname = [LNSorFNS,' Synthetic'];
+  KAPPA = readExampleFiles_extractParam([OFD,'input_parfile'],'thermal_conductivity','float');
+  MU = readExampleFiles_extractParam([OFD,'input_parfile'],'dynamic_viscosity','float');
+  if(max(MU,KAPPA)>0)
+    VISCOUS = 1;
+    disp(['[] VISCOUS']);
+    if(strcmp(testCase,'inviscid'))
+      error(['[, ERROR] Cannot test inviscid with viscosity activated in this OUTPUT_FILES.'])
+    end
+    if(RHO_cst~=0)
+      error(['[ERROR] for viscous tests, RHO_cst must be zero, and now is not']);
+    end
+    if(strcmp(testCase,'kappa') && not(VX_cst==0 & VZ_cst==0))
+      error(['[ERROR] for viscous kappa test, VX_cst and VZ_cst must be zero, and now are not']);
+    end
+    if(strcmp(testCase,'kappa') && E_cst==0)
+      error(['[ERROR] for viscous kappa test, E_cst must be non zero, and now is zero']);
+    end
+    if(strcmp(testCase,'mu') && not(E_cst==0))
+      error(['[ERROR] for viscous mu test, E_cst must be zero, and now is not']);
+    end
+    if(strcmp(testCase,'mu') && VX_cst==0)
+      error(['[ERROR] for viscous mu test, VX_cst must be non zero, and now is zero']);
+    end
+  else
+    VISCOUS = 0;
+    disp(['[] INVISCID']);
+    if(strcmp(testCase,'kappa') || strcmp(testCase,'mu'))
+%       error(['[, ERROR] Cannot test viscous with viscosity deactivated in this OUTPUT_FILES.'])
+    end
+    if(not(VX_cst==0 & VZ_cst==0))
+%       error(['[ERROR] for inviscid test, VX_cst and VZ_cst must be zero, and now are not']);
+    end
+  end
   %%%%%%%%%%%%%%%%
   
   % Save N.
   globalSave(ofdi,:,GS_ID_NX) = ones(1,numel(IDz))* NX; % save N in last dimension, for all iterations
   % Save DT.
-  globalSave(ofdi,:,GS_ID_DT) = readExampleFiles_extractParam([OFD,'input_parfile'],'DT','float');
+  DT = readExampleFiles_extractParam([OFD,'input_parfile'],'DT','float');
+  globalSave(ofdi,:,GS_ID_DT) = DT;
   
   %%%%%%%%%%%%%%%%
   % Loop dumps and plot agreement.
@@ -160,26 +220,32 @@ for ofdi = 1:N_OFD
       savefigname = [plotFields_saveFigName_base, 'IT',sprintf('%012.0f',IT)];
       savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
     end
-
+    
+    % Create independent mesh onto which interpolate.
+    x_exact = linspace(min(X),max(X),Nexact);
+    y_exact = linspace(min(Y),max(Y),Nexact);
+    [Xe, Ye] = meshgrid(x_exact,y_exact);
+    
     % Interpolate dump.
-    delauTri = delaunayTriangulation(X, Y);
-    tri = delauTri.ConnectivityList ;
-    xi = delauTri.Points(:,1) ; yi = delauTri.Points(:,2) ;
-    xi = (xi-min(xi)) / peak2peak(xi); % bring back x to [0, 1] (safety)
-    yi = (yi-min(yi)) / peak2peak(yi); % bring back z to [0, 1] (safety)
+%     delauTri = delaunayTriangulation(X, Y);
+%     tri = delauTri.ConnectivityList;
+%     xi = delauTri.Points(:,1); yi = delauTri.Points(:,2);
+%     xi = (xi-min(xi)) / peak2peak(xi); % bring back x to [0, 1] (safety)
+%     yi = (yi-min(yi)) / peak2peak(yi); % bring back z to [0, 1] (safety)
     F = scatteredInterpolant(X,Y,V);
-    zexp = F(xi,yi);
-    caxxxxiiss_exp = [min(zexp), max(zexp)];
+%     zexp = F(xi,yi);
+    zexp = F(Xe, Ye);
+    caxxxxiiss_exp = [min(min(zexp)), max(max(zexp))];
 
     % Build analytic solution (cf. LNS_manufactured_solutions.mw).
     % Constitutive variables.
-    drho_th = RHO_cst*(sin(dRHO_x*pi*xi) + sin(dRHO_z*pi*yi));
-    dvx_th = 0.*xi;
-    dvz_th = 0.*xi;
-    dE_th = E_cst * (sin(dE_x*pi*xi) + sin(dE_z*pi*yi));
+    drho_th = RHO_cst * (sin(dRHO_x*pi*Xe) + sin(dRHO_z*pi*Ye));
+    dvx_th  = VX_cst  * (sin(dVX_x*pi*Xe)  + sin(dVX_z*pi*Ye));
+    dvz_th  = VZ_cst  * (sin(dVZ_x*pi*Xe)  + sin(dVZ_z*pi*Ye));
+    dE_th   = E_cst   * (sin(dE_x*pi*Xe)   + sin(dE_z*pi*Ye));
     % Pressure.
-    dp_th = (GAM-1)*(-0.5*V0_x^2*drho_th + dE_th); % Compute directly.
-%     p0 = sound_velocity^2 * RHO0/GAM; E0 = p0/(GAM-1) + 0.5*RHO0*V0_x^2; dp_th = (GAM-1)*(E0+dE_th - 0.5*(RHO0+drho_th).*((V0_x+dvx_th).^2 + dvz_th.^2)) - p0; % Deduced from (rho, v, E)
+    %dp_th = (GAM-1)*(-0.5*V0_x^2*drho_th + dE_th); % Compute directly.
+    dp_th = (GAM-1)*(E0+dE_th - 0.5*(RHO0+drho_th).*((V0_x+dvx_th).^2 + dvz_th.^2)) - P0;
     
     switch(imagetype_wavefield_dumps)
       case 4
@@ -191,15 +257,16 @@ for ofdi = 1:N_OFD
       otherwise
         error(['[] imagetype_wavefield_dumps not implemented']);
     end
-    caxxxxiiss_th = max(abs(zexp))*[-1,1];
+    caxxxxiiss_th = max(max(abs(zexp)))*[-1,1];
     errorPrefix = [errorPrefix_base, qtity];
     
     % Compute error.
     zerr = zexp-zth;
   %   errName = ['(', synthname, ' - Analytic)'];
-    errName = [errorPrefix,',',num2str(NX),'}\left(',num2str(IT),'\right)'];
-    caxxxxiiss_err = [min(zerr), max(zerr)];
-    L2NormOfError = (integrate2DDelaunayTriangulation(delauTri, zerr.^2))^0.5;
+    errName = [errorPrefix,'}\left(',num2str(NX),'\right)'];
+    caxxxxiiss_err = [min(min(zerr)), max(max(zerr))];
+    %L2NormOfError = (integrate2DDelaunayTriangulation(delauTri, zerr.^2))^0.5;
+    L2NormOfError = (trapz(x_exact,trapz(y_exact,zerr.^2)))^0.5;
     
     globalSave(ofdi,IT_id,GS_ID_IT) = IT; % save iteration in last dimension
     globalSave(ofdi,IT_id,GS_ID_EPS) = L2NormOfError; % save error in last dimension
@@ -213,7 +280,7 @@ for ofdi = 1:N_OFD
       glob_caxx = caxxxxiiss_th;
       if(numel(unique(glob_caxx))==1)
         % If zth = cste, choose glob_caxx based on zexp
-        glob_caxx = max(abs(zexp))*[-1,1];
+        glob_caxx = max(max(abs(zexp)))*[-1,1];
         % If again zexp = cste, choose glob_caxx arbitrarily
         if(numel(unique(glob_caxx))==1)
           if(glob_caxx(1)==0)
@@ -229,21 +296,27 @@ for ofdi = 1:N_OFD
       axxx = tight_subplot(1, 3, 0.012, [0.14,0.08], [0.05, 0.10]); % not mandatory, but prettier
       axes(axxx(1));
       % axxx(1)=subplot(1,3,1);
-      % surf(Xmg,Ymg,Vmg); shading interp; view([0,0,1]); colormap jet;
-      trisurf(tri,xi,yi,zth); shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx); %colorbar;
+%       trisurf(tri,xi,yi,zth);
+      surf(Xe,Ye,zth);
+      shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx); %colorbar;
       xlabel(plotFields_xlab); ylabel(plotFields_ylab);
       title('Analytic');
       % Synthetic. %%%
       axes(axxx(2));
       % axxx(2)=subplot(1,3,2);
-      trisurf(tri,xi,yi,zexp); shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx); %colorbar;
+%       trisurf(tri,xi,yi,zexp);
+      surf(Xe,Ye,zexp);
+      shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx); %colorbar;
       yticklabels([]);
       xlabel(plotFields_xlab);
-      title([synthname,' ($n=',num2str(IT),'$)']);
+%       title([synthname,' ($n=',num2str(IT),'$)']);
+      title([synthname,' ($t=',scientific_latex_notation(DT*IT,2),'$~s)']);
       % Error. %%%%%%%
       axes(axxx(3));
       % axxx(3)=subplot(1,3,3);
-      trisurf(tri,xi,yi,zerr); shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx);
+%       trisurf(tri,xi,yi,zerr);
+      surf(Xe,Ye,zerr);
+      shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx);
       xlabel(plotFields_xlab);
       yticklabels([]);
       title({[errName,'=',scientific_latex_notation(L2NormOfError,2),'$']});
@@ -251,10 +324,10 @@ for ofdi = 1:N_OFD
       posAxxx3 = get(axxx(3),'Position');
       h_cb = colorbar('Position', [posAxxx3(1)+posAxxx3(3)+0.03  posAxxx3(2)  0.03  posAxxx3(4)]);
       colorbarticks=linspace(-1,1,plotFields_NColorbarTicks); colorbarticks=sort([colorbarticks, [-1,1]*max(thresh)]);
-      if(max(abs(zth))>0)
-        colorbarticks = colorbarticks*max(abs(zth));
+      if(max(max(abs(zth)))>0)
+        colorbarticks = colorbarticks*max(max(abs(zth)));
       else
-        colorbarticks = colorbarticks*max(abs(zexp));
+        colorbarticks = colorbarticks*max(max(abs(zexp)));
       end
       colorbarticks = colorbarticks;
       set(h_cb, 'ytick', colorbarticks);
@@ -279,7 +352,6 @@ squeeze(globalSave)
 %%%%%%%%%%%%%%%%
 if(size(globalSave,1)>1)
   % If more than one OFD.
-  figErr_saveFigFullPath = [savefigpath, figErr_saveFigName_base, datestr(now,'YYmmDD_HHMMss')];
   plotErr_ylab = [errorPrefix,'}(N)$'];
   plotErr_xlim = [min(min(globalSave(:,:,GS_ID_NX))),max(max(globalSave(:,:,GS_ID_NX)))];
 
@@ -309,6 +381,8 @@ if(size(globalSave,1)>1)
   xlim(plotErr_xlim);
   ylim([10^floor(log10(min(min(globalSave(:,:,GS_ID_EPS))))),10^ceil(log10(max(max(globalSave(:,:,GS_ID_EPS)))))]);
   prettyAxes(fig_error_progress);
+  figErr_saveFigFullPath = [savefigpath, figErr_saveFigName_base, 'progress__', datestr(now,'YYmmDD_HHMMss')];
+  customSaveFig(fig_error_progress, figErr_saveFigFullPath, figErr_extsToSave);
 
   % Plot last time as standalone.
   fig_error = figure('units','pixels','position',plotErr_figPos);
@@ -318,6 +392,7 @@ if(size(globalSave,1)>1)
   xlim(plotErr_xlim);
   tickLabels_general_reskin_y(fig_error);
   prettyAxes(fig_error);
+  figErr_saveFigFullPath = [savefigpath, figErr_saveFigName_base, datestr(now,'YYmmDD_HHMMss')];
   customSaveFig(fig_error, figErr_saveFigFullPath, figErr_extsToSave);
 end
 %%%%%%%%%%%%%%%%
