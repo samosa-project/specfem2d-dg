@@ -65,7 +65,7 @@
                                 ibool_interfaces_acoustic_DG, nibool_interfaces_acoustic_DG, &
                                 inum_interfaces_acoustic_DG, ninterface_acoustic_DG, &
                                 mask_ispec_inner_outer,nibool_interfaces_ext_mesh, ibool_interfaces_ext_mesh_init, &
-                                is_MPI_interface_DG, USE_DISCONTINUOUS_METHOD
+                                is_MPI_interface_DG, USE_DISCONTINUOUS_METHOD,MPI_transfer_iface
   implicit none
 
   ! local parameters
@@ -100,7 +100,10 @@
   
   allocate(is_MPI_interface_DG(nglob_DG))
   is_MPI_interface_DG = .false.
-
+  
+  allocate(MPI_transfer_iface(NGLLX, 4, nspec,2))
+  ! 4 because elements have four sides in 2D. This will change when considering 3D. Maybe consider using a variable here.
+  
   do num_interface = 1, ninterface
     ! initializes interface point counters
     nglob_interface_acoustic = 0

@@ -552,8 +552,8 @@ subroutine prepare_MPI_DG()
     
     logical :: one_other_node_is_found, one_other_node_is_found_corner
    
-    allocate(MPI_transfer_iface(NGLLX, 4, nspec,2))
-    ! 4 because elements have four sides in 2D. This will change when considering 3D. Maybe consider using a variable here.
+    !allocate(MPI_transfer_iface(NGLLX, 4, nspec,2))
+    !! 4 because elements have four sides in 2D. This will change when considering 3D. Maybe consider using a variable here.
     
     do ispec = 1, nspec
       do i = 1, NGLLX
