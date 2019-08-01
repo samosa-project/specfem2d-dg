@@ -14,7 +14,7 @@ clear all;
 % close all;
 clc;
 
-format compact;
+format shortg;
 set(0, 'DefaultLineLineWidth', 3); % Default at 0.5.
 set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
 set(0, 'defaultTextFontSize', 24);
@@ -32,11 +32,11 @@ savefigpath = [SPCFM_EX_DIR,prefix,'_info/'];
 errorPrefix_base = ['$\varepsilon_{'];
 
 % N for interpolation grid.
-Nexact = 1000; % Choose Nexact >> the N's we want to test. 10000 chugs HARD, 1000 runs ok.
+Nexact = 1000; % Choose Nexact >> the N's we want to test. 10000 chugs HARD, 1000 runs ok. Up to N=100 points on the simulation's mesh, Nexact=1000 and Nexact=5000 yield the exact same L2 error.
 
 % Field plots?
 plotFields_do = 1; % do or do not plot fields themselves
-plotFields_saveFigName_base = ['comparedDump__'];
+plotFields_saveFigName_prefix = ['comparedDump__'];
 plotFields_extsToSave={'jpg'};
 plotFields_xlab = '$x/L$';
 plotFields_ylab = '$z/L$';
@@ -53,42 +53,61 @@ plotErr_figPos = [0,1e4,1600,600];
 IDz = 100;
 
 % OUTPUT_FILES directory to analyse.
-OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']}; IDzs={[5000]};% test case
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000']}; IDzs={[1000]};
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000']}; IDzs={[5000]};
-% OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500']; IDz=[10000];
-% OFD = [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250']; IDz=[20000];
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_mu_dp__1p25em5']}; IDzs={[2]*10000}; plotFields_do = 0;
+OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']}; IDzs={[2]*10000}; plotFields_do = 1;
 
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250']};
-% commonID = 4*[1:5]*1000;
-% % commonID = 4*[5]*1000;
-% IDzs = {[commonID/20], ...
-%         [commonID/4], ...
-%         [commonID/2], ...
-%         [commonID]};
-% plotFields_do = 0; % deactivate plotting fields when we compute many errors
-
+% Test case to plot/compute.
 % testCase = 'inviscid';
 % testCase = 'kappa';
 testCase = 'mu';
 
+%%%%%%%%%%%%%%%%
+% Packed, for paper.
+%%%%%%%%%%%%%%%%
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000_inviscid_dp'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_inviscid_dp'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500_inviscid_dp'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250_inviscid_dp']}; testCase = 'inviscid'; OFDs(4)=[];
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000_kappa_dp'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_kappa_dp'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500_kappa_dp'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250_kappa_dp']}; testCase = 'kappa'; OFDs(4)=[];
+% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000_kappa_vx'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_kappa_vx'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500_kappa_vx'], ...
+%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250_kappa_vx']}; testCase = 'kappa'; OFDs(4)=[];
+% commonID = [0.2,0.4,0.6,0.8,1]*1000;
+% commonID = [1]*20000;
+% IDzs = {[commonID], ...
+%         [commonID*5], ...
+%         [commonID*5*2], ...
+%         [commonID*5*2*2]}; IDzs(4)=[];
+% plotFields_do = 0; % deactivate plotting fields when we compute many errors
+
 % Parameters for analytic solution (cf. LNS_manufactured_solutions.mw).
-% RHO_cst = 0.001;
-RHO_cst = 0.;
+switch(testCase)
+  case 'inviscid'
+    RHO_cst = 0.001;
+    VX_cst = 0.;
+    E_cst = 0.05;
+  case 'kappa'
+    RHO_cst = 0.001;
+    VX_cst = 0.;
+    E_cst = 0.05;
+  case 'mu'
+    RHO_cst = 0.;
+    VX_cst = 0.001;
+    E_cst = 0.;
+  otherwise
+    error(['[, ERROR]']);
+end
 dRHO_x = 1;
 dRHO_z = 2;
-VX_cst = 0.001;
-% VX_cst = 0.;
 dVX_x = 2;
 dVX_z = 0;
 VZ_cst = 0.;
 dVZ_x = 1;
 dVZ_z = 2;
-% E_cst = 0.05;
-E_cst = 0.;
 dE_x = 3;
 dE_z = 4;
 
@@ -134,7 +153,7 @@ for ofdi = 1:N_OFD
   
   if(plotFields_do)
     % Prepare Figure saving w.r.t. OFD.
-    spl=split(OFD,'/'); plotFields_saveFigName_base = [plotFields_saveFigName_base, regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
+    spl=split(OFD,'/'); plotFields_saveFigName_base = [plotFields_saveFigName_prefix, regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
   end
 
   %%%%%%%%%%%%%%%%
@@ -190,6 +209,9 @@ for ofdi = 1:N_OFD
     if(not(VX_cst==0 & VZ_cst==0))
 %       error(['[ERROR] for inviscid test, VX_cst and VZ_cst must be zero, and now are not']);
     end
+    if(RHO_cst==0)
+      error(['[ERROR] for inviscid test, RHO_cst must be non zero, and now is zero']);
+    end
   end
   %%%%%%%%%%%%%%%%
   
@@ -206,6 +228,7 @@ for ofdi = 1:N_OFD
     IT = IDz(IT_id);
     % Load dump.
     [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT);
+    disp(['[] Read dump at iteration ',num2str(IT),' (t = ',num2str(IT*DT),' s).']);
     if(ismember(imagetype_wavefield_dumps,[1,2,3]))
       disp(['[] Selecting x-axis values from dump.']);
       V = V(:,1);
@@ -259,6 +282,7 @@ for ofdi = 1:N_OFD
     end
     caxxxxiiss_th = max(max(abs(zexp)))*[-1,1];
     errorPrefix = [errorPrefix_base, qtity];
+    disp(['[] Integral of zth = ',num2str(trapz(x_exact,trapz(y_exact,zth)))]);
     
     % Compute error.
     zerr = zexp-zth;
@@ -267,6 +291,7 @@ for ofdi = 1:N_OFD
     caxxxxiiss_err = [min(min(zerr)), max(max(zerr))];
     %L2NormOfError = (integrate2DDelaunayTriangulation(delauTri, zerr.^2))^0.5;
     L2NormOfError = (trapz(x_exact,trapz(y_exact,zerr.^2)))^0.5;
+    disp(['[] L_{inf} norm of error = ',num2str(max(max(zerr)))]);
     
     globalSave(ofdi,IT_id,GS_ID_IT) = IT; % save iteration in last dimension
     globalSave(ofdi,IT_id,GS_ID_EPS) = L2NormOfError; % save error in last dimension
@@ -387,7 +412,8 @@ if(size(globalSave,1)>1)
   % Plot last time as standalone.
   fig_error = figure('units','pixels','position',plotErr_figPos);
   tight_subplot(1, 1, -1, [0.2,0.11], [0.14, 0.04]);
-  semilogy(N, EPS,'displayname',['@$t=',num2str(t),'$~s']);
+  semilogy(N, EPS,'displayname',testCase);
+  legend('location','northeast');
   xlabel(plotErr_xlab); ylabel(plotErr_ylab); title(plotErr_title);
   xlim(plotErr_xlim);
   tickLabels_general_reskin_y(fig_error);
