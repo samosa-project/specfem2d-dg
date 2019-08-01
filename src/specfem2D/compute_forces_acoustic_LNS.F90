@@ -94,6 +94,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
 
 #define USE_MMS 0
+! ACTIVATE ONLY ONE OF THE BELOW.
+#define MMS_IV 0
+#define MMS_KA 0
+#define MMS_MU 1
+
 #if USE_MMS
   ! Variables specifically for manufactured solutions.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: X
@@ -124,40 +129,79 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
   !do ispec = 1, nspec; do j = 2,4; do i = 2,4 ! V2: get on center GLL point only
     iglob = ibool_DG(i,j,ispec)
-! For inviscid test, set MMS_dRHO_cst and MMS_dE_cst to non-zero, and MMS_dVX_cst=dMMS_dVZ_cst=0.
-! For KAPPA test, set MMS_dE_cst to non-zero, and MMS_dRHO_cst=MMS_dVX_cst=dMMS_dVZ_cst=0.
-! For MU test, set MMS_dVX_cst to non-zero, and MMS_dRHO_cst=dMMS_dVZ_cst=MMS_dE_cst=0.
-!#define MMS_dRHO_cst 0.001
+    
+#if MMS_IV
+#define MMS_dRHO_cst 0.001
+#define MMS_dVX_cst 0.
+#define MMS_dE_cst 0.05
+#endif
+
+#if MMS_KA
 #define MMS_dRHO_cst 0.
+#define MMS_dVX_cst 0.
+#define MMS_dE_cst 0.05
+#endif
+
+#if MMS_MU
+#define MMS_dRHO_cst 0.
+#define MMS_dVX_cst 0.001
+#define MMS_dE_cst 0.
+#endif
+
+#define MMS_dVZ_cst 0.
+
 #define MMS_dRHO_x 1.
 #define MMS_dRHO_z 2.
-#define MMS_dVX_cst 0.001
-!#define MMS_dVX_cst 0.
 #define MMS_dVX_x 2.
 #define MMS_dVX_z 0.
-#define MMS_dVZ_cst 0.
 #define MMS_dVZ_x 0.
 #define MMS_dVZ_z 0.
-!#define MMS_dE_cst 0.05
-#define MMS_dE_cst 0.
 #define MMS_dE_x 3.
 #define MMS_dE_z 4.
+
+#if MMS_IV
+  if(LNS_viscous) stop 'CANNOT TEST MMS INVISCID IF VISCOSITY'
+#endif
+#if MMS_KA
+  if(.not. LNS_viscous) stop 'CANNOT TEST MMS KAPPA IF NO VISCOSITY'
+#endif
+#if MMS_MU
+  if(.not. LNS_viscous) stop 'CANNOT TEST MMS MU IF NO VISCOSITY'
+#endif
+
     X = coord(:,ibool_before_perio(i,j,ispec))
     GAM = gammaext_DG(iglob)
     w = LNS_v0(1,iglob)
     outrhs_drho(iglob) = &!outrhs_drho(iglob) + &
-                          !! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
-                          ! MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w &
+#if MMS_IV
+                          ! For inviscid and KAPPA test.
+                          MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w &
+#endif
+#if MMS_KA
+                          ! For inviscid and KAPPA test.
+                          MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w &
+#endif
+#if MMS_MU
                           ! For MU test.
                           LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1)) &
+#endif
                          * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
     
     !outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) + 1.
     outrhs_rho0dv(1, iglob) = &!outrhs_rho0dv(1, iglob) + &
-                               !! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
-                               !(GAM-1.)*PI &
-                               !  *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                               !    - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 ) &
+#if MMS_IV
+                               ! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
+                               (GAM-1.)*PI &
+                                 *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                   - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 ) &
+#endif
+#if MMS_KA
+                               ! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
+                               (GAM-1.)*PI &
+                                 *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                   - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 ) &
+#endif
+#if MMS_MU
                                ! For MU test.
                                ( &
                                  LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1)) &
@@ -165,26 +209,42 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                + &
                                  PI**2*MMS_dVX_cst*MMS_dVX_x**2*(8./3.)*LNS_mu(iglob)*sin(MMS_dVX_x*PI*X(1)) &
                                ) &
+#endif
                               * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
     
     outrhs_rho0dv(2, iglob) = &!outrhs_rho0dv(2, iglob) + &
-                               !! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
-                               !(GAM-1.)*PI &
-                               !  *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
-                               !    - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 ) &
+#if MMS_IV
+                               ! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
+                               (GAM-1.)*PI &
+                                 *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
+                                   - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 ) &
+#endif
+#if MMS_KA
+                               ! For inviscid and KAPPA test (for KAPPA, make sure you set MMS_dRHO_cst=0.).
+                               (GAM-1.)*PI &
+                                 *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
+                                   - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 ) &
+#endif
+#if MMS_MU
                                ! For MU test.
                                0. &
+#endif
                               * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
     
     outrhs_dE(iglob) = &!outrhs_dE(iglob) + &
                         !! For inviscid test.
-                        !w*PI &
-                        !  *(  GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                        !    - 0.5*(GAM-1.)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2) &
-                        !! For KAPPA test.
-                        !(   w*PI*GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                        !  + ((MMS_dE_cst*LNS_kappa(iglob)*PI**2)/(LNS_rho0(iglob)*c_V)) &
-                        !    *(sin(MMS_dE_x*PI*X(1))*MMS_dE_x**2 + sin(MMS_dE_z*PI*X(2))*MMS_dE_z**2) ) &
+#if MMS_IV
+                        w*PI &
+                          *(  GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                            - 0.5*(GAM-1.)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2) &
+#endif
+#if MMS_KA
+                        ! For KAPPA test.
+                        (   w*PI*GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                          + ((MMS_dE_cst*LNS_kappa(iglob)*PI**2)/(LNS_rho0(iglob)*c_V)) &
+                            *(sin(MMS_dE_x*PI*X(1))*MMS_dE_x**2 + sin(MMS_dE_z*PI*X(2))*MMS_dE_z**2) ) &
+#endif
+#if MMS_MU
                         ! For MU test.
                         ( &
                           (LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))/(GAM-1.)) &
@@ -202,6 +262,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                 ) &
                           ) &
                         ) &
+#endif
                        * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
   enddo; enddo; enddo
   !! DO NOT FORGET TO UPDATE BOUNDARY TERMS BELOW, lines ~1100.
