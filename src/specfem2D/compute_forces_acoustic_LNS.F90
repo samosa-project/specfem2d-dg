@@ -926,12 +926,12 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL) :: normal_v, tangential_v!, &
                             !veloc_x, veloc_z!, gamma_P!, &
                             !dv_M(1), dv_M(NDIM), inp_dp_M, gamma_P, e1_DG_P
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: veloc_P
+  !real(kind=CUSTOM_REAL), dimension(NDIM) :: veloc_P
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
   !real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  integer :: iglobM, i_el, j_el, ispec_el, iglob, iglobP, ipoin, num_interface!, i_ac, j_ac, ispec_ac
+  integer :: iglobM, i_el, j_el, ispec_el, iglobP, ipoin, num_interface!, iglob, i_ac, j_ac, ispec_ac
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
   !real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
   ! Characteristic based BC
@@ -993,6 +993,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! should be used.             !
       ! --------------------------- !
       
+#if 0
+! The case below will stop the program anyhow afterwards. Best remove it altogether for now.
+! Moreover, ispec_is_acoustic_coupling_ac is allocated in a bad place (in compute_forces_acoustic_DG_calling_routine.F90), and so testing it causes a segfault. So, best remove it altogether for now.
+! You may have to bring it back onboard if you plan on implementing acoustic_DG/acoustic coupling.  
       if(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0) then
         ! --------------------------- !
         ! MPI acoustic potential      !
@@ -1065,8 +1069,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
           call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
           !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
         endif
+#endif
         
-      else
+!      else ! 01/08/19 Removed this else with the if above (see comment above on acoustic_DG/acoustic coupling).
         ! --------------------------- !
         ! MPI acoustic DG neighbour   !
         ! (not acoustic potential     !
@@ -1114,7 +1119,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         endif
         !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
         
-      endif
+!      endif ! 01/08/19 Removed this else with the if above (see comment above on acoustic_DG/acoustic coupling).
       
     elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
       ! --------------------------- !
