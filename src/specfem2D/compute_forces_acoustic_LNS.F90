@@ -931,7 +931,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
   !real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  integer :: iglobM, i_el, j_el, ispec_el, i_ac, j_ac, ispec_ac, iglob, iglobP, ipoin, num_interface
+  integer :: iglobM, i_el, j_el, ispec_el, iglob, iglobP, ipoin, num_interface!, i_ac, j_ac, ispec_ac
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
   !real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
   ! Characteristic based BC
@@ -1321,7 +1321,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
 !      endif ! Endif on PML.
     endif ! Endif on ipoin.
-    
+  
+#if 0
+! The case below will stop the program anyhow afterwards. Best remove it altogether for now.
+! Moreover, ispec_is_acoustic_coupling_ac is allocated in a bad place (in compute_forces_acoustic_DG_calling_routine.F90), and so testing it causes a segfault. So, best remove it altogether for now.
+! You may have to bring it back onboard if you plan on implementing acoustic_DG/acoustic coupling.  
   elseif(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0) then
     ! --------------------------- !
     ! neighbor(3) /= -1           !
@@ -1420,6 +1424,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
       !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
     endif
+#endif
     
   else
     ! --------------------------- !
