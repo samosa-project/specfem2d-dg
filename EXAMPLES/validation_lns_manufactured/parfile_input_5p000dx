@@ -35,9 +35,9 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 100000
+NSTEP                           = 20000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 5e-6
+DT                              = 25e-6
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -333,7 +333,7 @@ interfacesfile                  = ../interfaces_input
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 xmin                            =  0.0d0
 xmax                            =  1.0d0
-nx                              = 25
+nx                              = 5
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .false.
@@ -351,7 +351,7 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 nbregions                       = 1
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 25 1 25 1
+1 5 1 5 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -360,7 +360,7 @@ nbregions                       = 1
 #---------------------------------------------------------------------#
 
 # Time steps between display of information about the simulation (percentage done, estimated remaining time, etc.).
-NSTEP_BETWEEN_OUTPUT_INFO       = 5000
+NSTEP_BETWEEN_OUTPUT_INFO       = 1000
 
 # Generate a GNUPLOT file containing the grid, and a script to plot it?
 output_grid_Gnuplot             = .false.
@@ -381,7 +381,7 @@ ENERGYBOX_ZMAX = 0.
 #---------------------------------------------------------------------#
 
 # Time steps between JPEG and/or PostScript snapshots.
-NSTEP_BETWEEN_OUTPUT_IMAGES     = 20000
+NSTEP_BETWEEN_OUTPUT_IMAGES     = 4000
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
 NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 1000

@@ -35,7 +35,7 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 20000
+NSTEP                           = 400000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 1.25e-6
 
@@ -110,7 +110,7 @@ USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobar
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
 surface_density                 = 1.4            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
 sound_velocity                  = 340.0          # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
-wind                            = 10.0            # Horizontal wind. Unit: m.s^{-1}.
+wind                            = 10.0           # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
 dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
 thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
@@ -202,7 +202,7 @@ subsamp_seismos                 = 1
 USE_TRICK_FOR_BETTER_PRESSURE   = .false.
 
 # Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway. A good rule of thumb would be NSTEP = (f0 * dt * Np)^{-1} in order to have Np points per period, where f0 is the fundamental frequency of the source time function.
-NSTEP_BETWEEN_OUTPUT_SEISMOS    = 25
+NSTEP_BETWEEN_OUTPUT_SEISMOS    = 1000000000
 
 # Compute the field int_0^t v^2 dt for a set of GLL points and write it to file. Use
 # the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms. Points in the stretching buffers (in DG elements) are not taken into account.
@@ -360,7 +360,7 @@ nbregions                       = 1
 #---------------------------------------------------------------------#
 
 # Time steps between display of information about the simulation (percentage done, estimated remaining time, etc.).
-NSTEP_BETWEEN_OUTPUT_INFO       = 200
+NSTEP_BETWEEN_OUTPUT_INFO       = 20000
 
 # Generate a GNUPLOT file containing the grid, and a script to plot it?
 output_grid_Gnuplot             = .false.
@@ -381,7 +381,7 @@ ENERGYBOX_ZMAX = 0.
 #---------------------------------------------------------------------#
 
 # Time steps between JPEG and/or PostScript snapshots.
-NSTEP_BETWEEN_OUTPUT_IMAGES     = 1000
+NSTEP_BETWEEN_OUTPUT_IMAGES     = 80000
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
 NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 1000
