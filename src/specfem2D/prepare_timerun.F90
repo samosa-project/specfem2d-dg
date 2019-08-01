@@ -319,6 +319,13 @@
     call find_normals()
   endif
   
+  if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
+    ! It also needs the normals to be initialised. This is why it is put here.
+    ! It also needs to be ran before iterate time for informative prints. This is why it is put here.
+    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+  endif
+  
 !  if(.false.) then ! TEST HACK: IMPACT OF WIND WHEN USING STRETCHING BUFFERS
 !    ! THIS BREAKS A FUNDAMENTAL HYPOTHESIS: IF THIS IS ACTIVATED, $\partial_xw_x\neq0$!
 !    ! If there are lateral stretching boundary conditions, gradually nullify wind in those to prevent spurious signals.

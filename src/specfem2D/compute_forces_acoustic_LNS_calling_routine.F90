@@ -42,10 +42,10 @@ subroutine compute_forces_acoustic_LNS_main()
     !  call setUpVandermonde()
     !endif
     
-    if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
-      ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
-      call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
-    endif
+    !if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+    !  ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
+    !  call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+    !endif
     
     ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
     LNS_drho   = ZEROcr
@@ -1284,7 +1284,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
                   LNS_drho(iglobM), LNS_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
                   LNS_drho(iglobP), LNS_rho0dv(:,iglobP), LNS_dE(iglobP), & ! Input constitutive variables, "P" side.
-                  LNS_dummy_1d(1), & ! Input other variable, "M" side.
+                  LNS_dp(iglobM), & ! Input other variable, "M" side.
                   !V_DG(:,:,iglobM), T_DG(:,iglobM), & ! Input derivatives, "M" side. MIGHT NEED.
                   !V_DG(:,:,iglobP), T_DG(:,iglobP), & ! Input derivatives, "M" side. MIGHT NEED.
                   n_out, & ! Normal vector (input).
@@ -1307,9 +1307,10 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             
             if(swTF) then
               if(abs(timelocal)<TINYVAL) then
-                ! At timelocal==0, we want to compute \nabla v_0, and thus we need to add v_0 to TF_P. At timelocal==0, we do not care about \nabla T.
+                ! At timelocal==0, we want to compute \nabla v_0, and thus we need to add v_0 to TF_P. TF already contains v_0 (in the call itself).
+                ! At timelocal==0, we do not care about \nabla T.
                 ! For timelocal>0, we know we are computing \nabla v' or \nabla T', and thus we do not need to add anything.
-                TF_P=TF_P+LNS_v0(:,iglobM)
+                TF_P = TF_P + LNS_v0(:,iglobM)
               endif
             endif
             ! Dot products.
