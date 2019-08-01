@@ -42,6 +42,11 @@ subroutine compute_forces_acoustic_LNS_main()
     !  call setUpVandermonde()
     !endif
     
+    if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+      ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
+      call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+    endif
+    
     ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
     LNS_drho   = ZEROcr
     LNS_rho0dv = ZEROcr
@@ -1014,6 +1019,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
     !veloc_x_DG = rhovx_DG/rho_DG
     !veloc_z_DG = rhovz_DG/rho_DG
     !T = (E_DG/rho_DG - HALFcr*(veloc_x_DG**2 + veloc_z_DG**2))/c_V
+    n_out = ZEROcr
   endif
   
   if(swSF) then

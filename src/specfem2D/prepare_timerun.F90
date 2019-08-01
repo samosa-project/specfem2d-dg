@@ -221,10 +221,10 @@
     call flush_IMAIN()
   endif ! Endif on ABC_STRETCH.
   
-  if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
-    ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
-    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
-  endif
+  !if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+  !  ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
+  !  call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+  !endif
   
   ! Prepare bottom forcing read from external file.
   if(USE_DISCONTINUOUS_METHOD .and. TYPE_FORCING==10) then
