@@ -328,7 +328,8 @@
 
 ! Low-Dissipation and Low-Dispersion Six-Stage Fourth-Order Low-Storage RK (64LSRK)
 ! Reference:
-! [1] J. Berland, C. Bogey, and C. Bailly, “Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm,” Comput. Fluids, vol. 35, no. 10, pp. 1459–1463, 2006.
+! [1] J. Berland, C. Bogey, and C. Bailly, “Low-dissipation and low-dispersion fourth-order Runge-Kutta algorithm”,
+!     Comput. Fluids, vol. 35, no. 10, pp. 1459–1463, 2006.
 !     DOI: 10.1016/j.compfluid.2005.04.003
 ! maximum number of stages for optimized (for reduced storage) LDDRK4-6 Runge-Kutta time scheme
   integer, parameter :: NSTAGE = 6
@@ -349,7 +350,8 @@
 
 ! Five-Stage Fourth-Order Low-Storage RK (54LSRK)
 ! Reference:
-! [1] M. H. Carpenter and A. Kennedy, “Fourth-Order 2N-Storage Runge-Kutta Schemes,” Nasa Tech. Memo., vol. 109112, pp. 1–26, 1994.
+! [1] M. H. Carpenter and A. Kennedy, “Fourth-Order 2N-Storage Runge-Kutta Schemes”,
+!     Nasa Tech. Memo., vol. 109112, pp. 1–26, 1994.
 !     URL: http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf
   real(kind=CUSTOM_REAL), parameter, dimension(5) :: rk4a_d = (/0._CUSTOM_REAL,&
           -567301805773.0_CUSTOM_REAL/1357537059087.0_CUSTOM_REAL,&
@@ -372,9 +374,10 @@
 
 ! Three-Stage Third-Order Low-Storage RK (33LSRK)
 ! References:
-! [1] J. H. Williamson, “Low-storage Runge-Kutta schemes,” J. Comput. Phys., vol. 35, no. 1, pp. 48–56, 1980.
+! [1] J. H. Williamson, “Low-storage Runge-Kutta schemes”, J. Comput. Phys., vol. 35, no. 1, pp. 48–56, 1980.
 !     DOI: 10.1016/0021-9991(80)90033-9
-! [2] M. H. Carpenter and A. Kennedy, “Fourth-Order 2N-Storage Runge-Kutta Schemes,” Nasa Tech. Memo., vol. 109112, pp. 1–26, 1994.
+! [2] M. H. Carpenter and A. Kennedy, “Fourth-Order 2N-Storage Runge-Kutta Schemes”,
+!     Nasa Tech. Memo., vol. 109112, pp. 1–26, 1994.
 !     URL: http://www.ece.uvic.ca/~btill/papers/numacoust/Carpenter_Kennedy_1994.pdf
   real(kind=CUSTOM_REAL), parameter, dimension(3) :: ls33rk_a = (/&
           0._CUSTOM_REAL,&
