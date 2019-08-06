@@ -176,7 +176,7 @@
   IONOSPHERIC_COUPLING = .false. ! Default value.
   if(USE_DISCONTINUOUS_METHOD) then
     call read_value_logical_p(IONOSPHERIC_COUPLING, 'solver.IONOSPHERIC_COUPLING')
-    if (err_occurred() /= 0) write(*,*) 'Error reading parameter IONOSPHERIC_COUPLING in Par_file. '&
+    if (err_occurred() /= 0) write(*,*) 'Error reading parameter IONOSPHERIC_COUPLING in Par_file. ',&
                                         'Setting to .false., do not worry.'
   endif
   
