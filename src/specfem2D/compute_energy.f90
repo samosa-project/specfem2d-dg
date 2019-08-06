@@ -82,7 +82,9 @@ subroutine compute_energy()
   kinetic_energy = ZERO
   potential_energy = ZERO
 
-  ! Note: when using buffer techniques, such as the virtual stretching, the calculations below become false. Indeed, the actual derivatives depend on the virtual stretching parameters (in particular for xixl, xizl, gammaxl, gammazl, and jacobianl). Thus, we choose to skip the points in the buffers for computation of the energy.
+  ! Note: when using buffer techniques, such as the virtual stretching, the calculations below become false. Indeed,
+  ! the actual derivatives depend on the virtual stretching parameters (in particular for xixl, xizl, gammaxl, gammazl,
+  ! and jacobianl). Thus, we choose to skip the points in the buffers for computation of the energy.
 
 ! loop over spectral elements
   do ispec = 1,nspec
@@ -285,7 +287,8 @@ subroutine compute_energy()
       ! compute velocity vector field in this element
       !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
       !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
-      ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+      ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the
+      ! following call instead.
       if(USE_LNS) then
         call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                         potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
@@ -296,7 +299,8 @@ subroutine compute_energy()
                                         (rhovx_DG**2+rhovz_DG**2)**0.5/rho_DG, ispec,vector_field_element)
       endif
       ! IMPORTANT NOTICE -----------!
-      ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that, 'vector_field_element' is 2-dimensionnal, but contains ||v||_2 in both components.
+      ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that,
+      ! 'vector_field_element' is 2-dimensionnal, but contains ||v||_2 in both components.
       ! In the computation of kinetic energy below, this does not change the fact that:
       !  vector_field_element(1,i,j)**2+vector_field_element(2,i,j)**2 = ||v||^2_2,
       ! but it is a convoluted way to do it.
@@ -340,7 +344,8 @@ subroutine compute_energy()
           if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
             iglob = ibool_DG(i, j, ispec)
             ! See equation (23) of M. Maess et al., Journal of Sound and Vibration 296 (2006) 264-276
-            ! Storing E_{K,0} and E_{P,0} would be far better. But since it is already far too heavy to compute the energy, we do not even bother. Instead, send E_{K,0} and E_{P,0} at first iteration and perturbation afterwards.
+            ! Storing E_{K,0} and E_{P,0} would be far better. But since it is already far too heavy to compute the energy, we
+            ! do not even bother. Instead, send E_{K,0} and E_{P,0} at first iteration and perturbation afterwards.
             if(it>1) then
               ! LNS kinetic energy perturbation E_K' = E_K - E_{K,0}
               kinetic_energy = kinetic_energy &
@@ -376,7 +381,8 @@ subroutine compute_energy()
             ! compute potential energy
             potential_energy = potential_energy &
                 + (pressure_element(i,j)**2)*wxgll(i)*wzgll(j)*jacobianl / (TWO * rhol * cpl**2)
-            ! INFO: pressure ('pressure_element') will always be zero in DG elements, since 'compute_pressure_one_element' is not well defined for DG elements. Thus, potential_energy will always be zero in full DG simulations.
+            ! INFO: pressure ('pressure_element') will always be zero in DG elements, since 'compute_pressure_one_element'
+            !       is not well defined for DG elements. Thus, potential_energy will always be zero in full DG simulations.
           endif
 
         enddo
@@ -430,7 +436,9 @@ subroutine compute_energy_fields()
   ! loop over spectral elements
   do ispec = 1,nspec
     
-    ! When using buffer techniques, such as the virtual stretching, the calculations below become false. Indeed, the actual derivatives depend on the virtual stretching parameters (in particular for xixl, xizl, gammaxl, gammazl, and jacobianl). Thus, we choose to skip the points in the buffers for computation of the energy.
+    ! When using buffer techniques, such as the virtual stretching, the calculations below become false.
+    ! Indeed, the actual derivatives depend on the virtual stretching parameters (in particular for xixl, xizl, gammaxl,
+    ! gammazl, and jacobianl). Thus, we choose to skip the points in the buffers for computation of the energy.
     if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
       cycle
     endif
@@ -588,12 +596,14 @@ subroutine compute_energy_fields()
       ! compute velocity vector field in this element
       !call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
       !                                potential_dot_gravito,veloc_elastic,velocs_poroelastic,ispec,vector_field_element)
-      ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the following call instead.
+      ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation).
+      ! Thus, we make the following call instead.
       call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                       potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
                                       (rhovx_DG**2+rhovz_DG**2)**0.5/rho_DG, ispec,vector_field_element)
       ! IMPORTANT NOTICE -----------!
-      ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that, 'vector_field_element' is 2-dimensionnal, containing ||v||_2 in both components.
+      ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that,
+      ! 'vector_field_element' is 2-dimensionnal, containing ||v||_2 in both components.
       ! In the computation of kinetic energy below, this does not change the fact that:
       !  vector_field_element(1,i,j)**2+vector_field_element(2,i,j)**2 = ||v||_2,
       ! but it is a convoluted way to do it.

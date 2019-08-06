@@ -247,7 +247,8 @@
     courant_stability_number_max = max(courant_stability_number_max, &
                                        vpImax_local * deltat / (distance_min_local * percent_GLL(NGLLX)))
     
-    ! Safeguard: check if CFL is > 1. If so, warn user, so that they can know where the issue is and do something about it. Do not stop program.
+    ! Safeguard: check if CFL is > 1. If so, warn user, so that they can know where the issue is and do something about it.
+    ! Do not stop program.
     if(vpImax_local*deltat/(distance_min_local*percent_GLL(NGLLX))>1.) then
         write(*,*) "********************************"
         write(*,*) "*           WARNING            *"

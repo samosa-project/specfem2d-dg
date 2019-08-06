@@ -36,7 +36,8 @@
 ! ------------------------------------------------------------ !
 ! Computes the coupling from viscoelastic elements to acoustic (classical, not DG) elements.
 ! Note: the coupling from viscoelastic elements to DG acoustic elements is treated in "boundary_terms_DG.f90".
-! TODO: Maybe format the file containing the [viscoelastic -> DG acoustic] coupling ("boundary_terms_DG.f90") in accordance with the other couplings (for example, in a file "compute_coupling_acousticDG_el.f90").
+! TODO: Maybe format the file containing the [viscoelastic -> DG acoustic] coupling ("boundary_terms_DG.f90") in accordance
+!       with the other couplings (for example, in a file "compute_coupling_acousticDG_el.f90").
 
   subroutine compute_coupling_acoustic_el(displ_elastic,displ_elastic_old,potential_dot_dot_acoustic)
 

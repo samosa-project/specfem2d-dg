@@ -219,7 +219,8 @@
      xtmp2_nu1 = xtmp2_nu1 + xtmp_ak_nu1/(ONE + ONE/(TWO * PI * f0_attenuation / inv_tau_sigma_nu1_sent(i_sls))**2)/N_SLS
   enddo
 
-  ! Remark: for velocities read to be those at f->0 (instead of f=f_0 or f->infty), see file "Notes_on_viscoelasticity_and_compatibility_with_Carcione_analytical_solution.pdf".
+  ! Remark: for velocities read to be those at f->0 (instead of f=f_0 or f->infty),
+  ! see file "Notes_on_viscoelasticity_and_compatibility_with_Carcione_analytical_solution.pdf".
   ! To implement that, make f0_attenuation->0, that is, make xtmp2_nu1->1 and xtmp2_nu2->1, or in other words, set here:
   ! xtmp2_nu2=1
   ! xtmp2_nu1=1

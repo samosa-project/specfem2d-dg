@@ -49,7 +49,8 @@
 !                         which_proc_receiver, ispec_selected_rec, &
 !                         b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
 !                         source_time_function_rho_DG, source_time_function_E_DG, &
-!                         source_time_function_rhovx_DG, source_time_function_rhovz_DG!, nglob_DG, source_time_function, coord, ibool, link_DG_CG
+!                         source_time_function_rhovx_DG, source_time_function_rhovz_DG!, &
+!                         !nglob_DG, source_time_function, coord, ibool, link_DG_CG
 !  
 !  implicit none!!
 !
