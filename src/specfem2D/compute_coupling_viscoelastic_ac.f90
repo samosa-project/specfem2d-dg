@@ -244,14 +244,16 @@
         iglob_DG = ibool_DG(i, j, ispec_acoustic)
         if(USE_LNS) then
           ! LNS coupling.
-          ! Set solid stress = fluid stress. That is, pass \Sigma\cdot n as stress in the normal direction (instead of pressure in classical SPECFEM).
+          ! Set solid stress = fluid stress. That is, pass \Sigma\cdot n as stress in the normal direction
+          ! (instead of pressure in classical SPECFEM).
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW LNS TENSOR IMPLEMENTATION
           normal_vect(1) = nx
           normal_vect(NDIM) = nz
           sigma_hat = 0. ! Initialise stress.
           !!!!!!!!!!!!!! LNS CLASSICAL F2S COUPLING: pass \Sigma\cdot n as stress in the normal direction
+          ! For LNS, inviscid = \rho_0v_0\otimes v' + p'I
           call stressBuilder_addInviscidFluid(LNS_rho0(iglob_DG), LNS_v0(:,iglob_DG), &
-                                              LNS_dv(:,iglob_DG), LNS_dp(iglob_DG), sigma_hat) ! For LNS, inviscid = \rho_0v_0\otimes v' + p'I
+                                              LNS_dv(:,iglob_DG), LNS_dp(iglob_DG), sigma_hat)
           ! Note: for FNS, inviscid = \rho v\otimes v + pI. Maybe implement a dedicated routine.
           ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
           !if(LNS_viscous) then ! Check if viscosity exists whatsoever.
@@ -263,7 +265,8 @@
           !!!!!!!!!!!!!!! LNS TERRANA F2S COUPLING: [Terrana et al., 2018]'s (53) VERSION 1 (try easymode)
           !!coupling crashes at some point
           !! Use Terrana formula (53)
-          !call build_tau_s(normal_vect, ii2, jj2, ispec_elastic, sigma_hat) ! Use sigma_hat to store TAU_S. Use the IDs as defined above for the elastic side.
+          !! Use sigma_hat to store TAU_S. Use the IDs as defined above for the elastic side.
+          !call build_tau_s(normal_vect, ii2, jj2, ispec_elastic, sigma_hat)
           !!sigma_elastic_loc = sigma_elastic(:,:,iglob)
           !! \Sigma\cdot\bm{n} becomes the formula (53) in Terrana, thus contribution to acceleration writes:
           !accel_elastic(:, iglob) =   accel_elastic(:, iglob) &
@@ -342,9 +345,10 @@
           pressure =   (gammaext_DG(iglob_DG) - ONE) &
                      * (  E_DG(iglob_DG) &
                         - HALFcr*rho_DG(iglob_DG)*( veloc_x**2 + veloc_z**2 ) ) ! Recover pressure from state equation.
-          pressure = pressure - p_DG_init(iglob_DG) ! Substract inital pressure to find only the perturbation (under linear hypothesis).
-          ! Set elastic acceleration.
+          ! Substract inital pressure to find only the perturbation (under linear hypothesis).
+          pressure = pressure - p_DG_init(iglob_DG)
           
+          ! Set elastic acceleration.
           ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES.
           x = coord(1, ibool_before_perio(i, j, ispec_acoustic))
           if(ABC_STRETCH .and. &
