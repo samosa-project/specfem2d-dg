@@ -307,10 +307,12 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
   integer :: i, j, i_source, ispec, iglob, iglob_unique
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
   
-  ! TODO: shouldn't the source term be added with a "-" sign since it should classically be on the RHS instead? It is a matter of conventions, which should not be considered very important.
+  ! TODO: shouldn't the source term be added with a "-" sign since it should classically be on the RHS instead?
+  ! It is a matter of conventions, which should not be considered very important.
   
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
+    ! See "prepare_source_time_function.f90" for the subroutine initialising the vector "source_time_function".
     
     if(USE_SPREAD_SSF) then
       ! Case in which a source spatially distributed over more than one element was initialised.
@@ -320,7 +322,7 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
             do i = 1, NGLLX
               iglob_unique = ibool_before_perio(i, j, ispec)
               iglob = ibool_DG(i, j, ispec)
-              temp_source = stf * source_spatial_function_DG(i_source, iglob_unique) ! See "prepare_source_spatial_function.f90" for the subroutine initialising the vector "source_spatial_function_DG".
+              temp_source = stf * source_spatial_function_DG(i_source, iglob_unique)
               jacobianl = jacobian(i, j, ispec)
               
               if(ABC_STRETCH) then
@@ -348,7 +350,9 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
             ! If the source is an elastic force or an acoustic pressure.
             ispec = ispec_selected_source(i_source)
             
-            ! Spatial source function is under the form exp(-(r/sigma)^2) where r is the distance to the source center point. Here, ispec is the element which is chosen to carry the source. Hence, the source center point must be chosen to be at the center of this element. Hence, find it and save its coordinates in the variable X0.
+            ! Spatial source function is under the form exp(-(r/sigma)^2) where r is the distance to the source center point.
+            ! Here, ispec is the element which is chosen to carry the source. Hence, the source center point must be chosen to
+            ! be at the center of this element. Hence, find it and save its coordinates in the variable X0.
             X1(:) = coord(:, ibool_before_perio(1, 1, ispec)) ! Source element's bottom left corner.
             X2(:) = coord(:, ibool_before_perio(NGLLX, 1, ispec)) ! Source element's bottom right corner.
             X3(:) = coord(:, ibool_before_perio(1, NGLLZ, ispec)) ! Source element's top left corner.
@@ -359,7 +363,8 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
             Xc(4, :) = (X4(:) + X2(:))/2.
             X0(:) = (Xc(1, :) + Xc(3, :))/2.
             
-            ! Choose sigma such that the value at the edge of the element is very small, in particular roughly equal to 10^(-accuracy), where accuracy is chosen below.
+            ! Choose sigma such that the value at the edge of the element is very small, in particular roughly equal to
+            ! 10^(-accuracy), where accuracy is chosen below.
             accuracy = 7.
             dist_min = HUGEVAL
             do j = 1, 4
@@ -377,7 +382,7 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
                 x = coord(1, ibool_before_perio(i, j, ispec))
                 y = coord(2, ibool_before_perio(i, j, ispec))
                 r = sqrt( (x - X0(1))**2 + (y - X0(2))**2 )
-                temp_source = stf * exp(-(r/sigma)**2) ! See "prepare_source_time_function.f90" for the subroutine initialising the vector "source_time_function".
+                temp_source = stf * exp(-(r/sigma)**2)
                 jacobianl = jacobian(i, j, ispec)
                 wzl = real(wzgll(j), kind=CUSTOM_REAL)
                 wxl = real(wxgll(i), kind=CUSTOM_REAL)

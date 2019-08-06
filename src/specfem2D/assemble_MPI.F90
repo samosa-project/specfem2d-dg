@@ -303,11 +303,16 @@
 ! ------------------------------------------------------------ !
 ! assemble_MPI_vector_DG                                       !
 ! ------------------------------------------------------------ !
-! This routine is used in the Discontinuous Galerkin (DG) extensions. Thus, it is not really an 'assembly' routine, since the points at interfaces do not overlap in discontinuous Galerkin methods. Rather, it stores values at interfaces between cores in dedicated buffers. Those buffers are later used in order to compute interface fluxes (see e.g. the routine 'compute_interfaces_unknowns' in 'boundary_terms_DG.f90').
+! This routine is used in the Discontinuous Galerkin (DG) extensions. Thus, it is not really an 'assembly' routine, since the
+! points at interfaces do not overlap in discontinuous Galerkin methods. Rather, it stores values at interfaces between cores
+! in dedicated buffers. Those buffers are later used in order to compute interface fluxes (see e.g. the routine
+! 'compute_interfaces_unknowns' in 'boundary_terms_DG.f90').
 ! IN:
 !   array_val1, a quantity's variable. Shape (:). Size (nglob).
 ! OUT:
-!   buffer_DG_P, a buffer containing the values of the considered quantity at all GLL points on each interface between cores. Shape (:,:). Size (NGLLX*A,B), where A is the maximum number of elements on one interface between cores, and B is the number of interfaces between cores.
+!   buffer_DG_P, a buffer containing the values of the considered quantity at all GLL points on each interface between cores.
+!                Shape (:,:). Size (NGLLX*A,B), where A is the maximum number of elements on one interface between cores,
+!                and B is the number of interfaces between cores.
 
 subroutine assemble_MPI_vector_DG(array_val1, buffer_DG_P)
 
@@ -329,7 +334,9 @@ subroutine assemble_MPI_vector_DG(array_val1, buffer_DG_P)
   include "precision.h" ! In order to get CUSTOM_MPI_TYPE.
 
   !real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: array_val1
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: array_val1 ! In fact, for DG, other side of buffer is only read, not modified (to the contrary of classical acoustic, which uses CG). At least, not modified yet, it will be later, using interfaces' fluxes.
+  ! In fact, for DG, other side of buffer is only read, not modified (to the contrary of classical acoustic, which uses CG).
+  ! At least, not modified yet, it will be later, using interfaces' fluxes.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: array_val1
   real(kind=CUSTOM_REAL), dimension(NGLLX*max_interface_size,ninterface), intent(out) :: &
         buffer_DG_P
 
@@ -393,7 +400,8 @@ subroutine assemble_MPI_vector_DG(array_val1, buffer_DG_P)
   do iinterface = 1, ninterface_acoustic_DG*2
 
     call MPI_Wait(tab_requests_send_recv_DG(iinterface), &
-    !call MPI_Wait(tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), & ! DEBUG: Wasn't that before, maybe cause of the MPI communications bug on CEA machines?
+    !call MPI_Wait(tab_requests_send_recv_DG(ninterface_acoustic_DG+iinterface), &
+    ! DEBUG: Wasn't that before, maybe cause of the MPI communications bug on CEA machines?
                   MPI_STATUS_IGNORE, ier)
     ! DEBUG
     !if (ier /= MPI_SUCCESS) then

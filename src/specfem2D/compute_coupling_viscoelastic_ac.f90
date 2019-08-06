@@ -76,8 +76,10 @@
   
   real(kind=CUSTOM_REAL) :: x ! For coupling deactivation in buffers.
   
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: normal_vect!, v_hat ! Storage for the normal vector. Storage for v_hat in Terrana F2S coupling.
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_hat!, sigma_elastic_loc ! Stress to be used in the acceleration formula, and storage for TAU_S for Terrana coupling. Storage for elastic stress.
+  ! Storage for the normal vector. Storage for v_hat in Terrana F2S coupling.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: normal_vect!, v_hat
+  ! Stress to be used in the acceleration formula, and storage for TAU_S for Terrana coupling. Storage for elastic stress.
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: sigma_hat!, sigma_elastic_loc
 
   ! loop on all the coupling edges
   do inum = 1,num_fluid_solid_edges
@@ -256,8 +258,10 @@
           !  call stressBuilder_addViscousFluid(-sigma_dv(:,iglob_DG), sigma_hat) ! Send viscous tensor.
           !  ! This routine is located in 'compute_forces_acoustic_LNS_calling_routine.F90'.
           !endif
-          accel_elastic(:, iglob) = accel_elastic(:, iglob) + weight*matmul(sigma_hat, normal_vect) ! Add contribution to acceleration.
-          !!!!!!!!!!!!!!! LNS TERRANA F2S COUPLING: [Terrana et al., 2018]'s (53) VERSION 1 (try easymode), coupling crashes at some point
+          ! Add contribution to acceleration.
+          accel_elastic(:, iglob) = accel_elastic(:, iglob) + weight*matmul(sigma_hat, normal_vect)
+          !!!!!!!!!!!!!!! LNS TERRANA F2S COUPLING: [Terrana et al., 2018]'s (53) VERSION 1 (try easymode)
+          !!coupling crashes at some point
           !! Use Terrana formula (53)
           !call build_tau_s(normal_vect, ii2, jj2, ispec_elastic, sigma_hat) ! Use sigma_hat to store TAU_S. Use the IDs as defined above for the elastic side.
           !!sigma_elastic_loc = sigma_elastic(:,:,iglob)
@@ -344,12 +348,14 @@
           ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES.
           x = coord(1, ibool_before_perio(i, j, ispec_acoustic))
           if(ABC_STRETCH .and. &
-             (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone ! TODO: use stretching_buffer variable
-               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone ! TODO: use stretching_buffer variable
+             (      (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) &
+               .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) &
              ) &
             ) then
-            if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
-            if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+            ! Condition is on left/right stretching and in left buffer zone ! TODO: use stretching_buffer variable.
+            ! x is a local buffer coordinate now (1 at beginning, 0 at end).
+            if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
+            if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF
             weight = weight*x
             ! This gradually deactivates coupling in the horizontal buffers.
             ! TODO: This is a hack. A better method is to be preferred.
@@ -361,7 +367,8 @@
           accel_elastic(2,iglob) = accel_elastic(2,iglob) &
             + weight*(  nx*(rho_DG(iglob_DG)*veloc_x*veloc_z) &
                       + nz*(pressure + rho_DG(iglob_DG)*veloc_z**2) )
-          ! TODO: The viscous tensor should be included here as well. The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
+          ! TODO: The viscous tensor should be included here as well.
+          !       The free slip condition in boundary_conditions_DG.f90 should hence also be corrected.
         endif
       else
         ! Classic SPECFEM coupling.
