@@ -24,7 +24,7 @@ module specfem_par_LNS
   ! Constants and coefficients.
   ! ---------------------------- !
   ! Constants (TODO maybe move to constants.h.in).
-  real(kind=CUSTOM_REAL), parameter :: R_ADIAB = 8.3144598
+  !real(kind=CUSTOM_REAL), parameter :: R_ADIAB = 8.3144598
   
   ! LSRK coefficients. ! Size should be stage_time_scheme.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_scheme_A, LNS_scheme_B, LNS_scheme_C
@@ -164,7 +164,7 @@ module specfem_par_LNS
   ! ---------------------------- !
   contains
   
-  ! Redefine the Fortran 2008 routine norm2, alongside one dedicated to rank 1 vectors.
+  ! Redefines the Fortran 2008 routine norm2, alongside one dedicated to rank 1 vectors.
   function norm2(r2arr)
     use constants, only: CUSTOM_REAL
     implicit none
@@ -172,7 +172,7 @@ module specfem_par_LNS
     real(kind=CUSTOM_REAL), dimension(:,:), intent(in) :: r2arr ! Input: rank 2 array (tensor field).
     real(kind=CUSTOM_REAL), dimension(size(r2arr,2)) :: norm2
     ! Local.
-    !N./A.
+    ! N./A.
     norm2 = sum(r2arr**2,1)
   end function norm2
   function norm2r1(r1arr)
@@ -182,11 +182,11 @@ module specfem_par_LNS
     real(kind=CUSTOM_REAL), dimension(:), intent(in) :: r1arr ! Input: rank 1 array (vector).
     real(kind=CUSTOM_REAL) :: norm2r1
     ! Local.
-    !N./A.
+    ! N./A.
     norm2r1 = sum(r1arr**2)
   end function norm2r1
   
-  ! Implement explicitely the inverse of a 2x2 matrix.
+  ! Implements explicitely the inverse of a 2x2 matrix.
   function inverse_2x2(A) result(Am1)
     use constants, only: CUSTOM_REAL
     implicit none
@@ -194,13 +194,39 @@ module specfem_par_LNS
     real(kind=CUSTOM_REAL), dimension(2,2), intent(in) :: A
     real(kind=CUSTOM_REAL), dimension(2,2) :: Am1
     ! Local.
-    !N./A.
+    ! N./A.
     Am1(1, 1) =  A(2, 2)
     Am1(1, 2) = -A(1, 2)
     Am1(2, 1) = -A(2, 1)
     Am1(2, 2) =  A(1, 1)
     Am1 = Am1/(A(1, 1)*A(2, 2)-A(1, 2)*A(2, 1))
   end function inverse_2x2
+  
+  ! Implements a robust closeness test.
+  ! See https://www.python.org/dev/peps/pep-0485/
+  function isClose(a,b,tol) result(a_isCloseTo_b)
+    use constants, only: CUSTOM_REAL
+    implicit none
+    ! Input/Output.
+    real(kind=CUSTOM_REAL), intent(in) :: a, b, tol
+    logical :: a_isCloseTo_b
+    ! Local.
+    ! N./A.
+    a_isCloseTo_b = .false.
+    if(abs(a-b) <= max( tol * max(abs(a), abs(b)), 0._CUSTOM_REAL)) then
+      a_isCloseTo_b = .true.
+    endif
+  end function isClose
+  function isNotClose(a,b,tol) result(a_isNotCloseTo_b)
+    use constants, only: CUSTOM_REAL
+    implicit none
+    ! Input/Output.
+    real(kind=CUSTOM_REAL), intent(in) :: a, b, tol
+    logical :: a_isNotCloseTo_b
+    ! Local.
+    ! N./A.
+    a_isNotCloseTo_b = (.not. (isClose(a,b,tol)))
+  end function isNotClose
 
 !  ! ------------------------------------------------------------ !
 !  ! RusanovFlux                                                  !
