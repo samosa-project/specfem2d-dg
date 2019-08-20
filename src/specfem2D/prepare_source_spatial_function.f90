@@ -188,7 +188,8 @@ subroutine prepare_source_spatial_function_DG
                 !source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/0.5)
                 !distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(3.1415*(0.25))*(coord(1, iglob_unique)-0.))**2. ! Oblique plane wave.
                 distsqrd = (coord(2, iglob_unique) - z_source(i_source))**2. ! Horizontal plane wave.
-                if(abs(coord(2, iglob_unique))<1.e9 .and. abs(coord(1, iglob_unique))<1.e9) then ! Constrain to a box.
+                !distsqrd = (coord(1, iglob_unique) - x_source(i_source))**2. ! Vertical plane wave.
+                if(abs(coord(2, iglob_unique))<20. .and. abs(coord(1, iglob_unique))<1.e9) then ! Constrain to a box.
                   source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
                 else
                   source_spatial_function_DG(i_source, iglob_unique) = ZEROcr
