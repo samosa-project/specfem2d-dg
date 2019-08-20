@@ -21,7 +21,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
-  integer :: ier, i_aux!, i, j, ispec, iglob
+  integer :: ier, i_aux, i, j, ispec, iglob
   logical check_linearHypothesis
   
   ! Checks if anything has to be done.
@@ -102,24 +102,47 @@ subroutine compute_forces_acoustic_LNS_main()
     where(LNS_rho0/=ZEROcr) LNS_dv(i_aux, :) = LNS_rho0dv(i_aux, :)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
   enddo
   call compute_dp(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dp)
-!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  ! Exact formulas, for manufactured solutions' validation check.
-!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-!    if(     abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
-!       .or. abs(coord(1,ibool_before_perio(i,j,ispec))-1.)<TINYVAL &
-!       .or. abs(coord(2,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
-!       .or. abs(coord(2,ibool_before_perio(i,j,ispec))-1.)<TINYVAL) then
-!      iglob = ibool_DG(i,j,ispec)
-!      LNS_drho(iglob) = 0.
-!      LNS_dv(:,iglob) = 0.
-!      LNS_rho0dv(:,iglob) = LNS_rho0(iglob)*LNS_dv(:,iglob)
-!      LNS_dE(iglob) = coord(2,ibool_before_perio(i,j,ispec)) - 0.5
-!      !LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*(  sin(1.5*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-!      !                                         + sin(1.5*PI*coord(2,ibool_before_perio(i,j,ispec))))
-!      LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*LNS_dE(iglob)
-!    endif
-!  enddo; enddo; enddo
-!  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#if 0
+  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Exact formulas, for manufactured solutions' validation check.
+  !write(*,*) "minval(ibool_DG), maxval(ibool_DG), nglob_DG", minval(ibool_DG), maxval(ibool_DG), nglob_DG
+  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+    !if(     abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
+    !   .or. abs(coord(1,ibool_before_perio(i,j,ispec))-1.)<TINYVAL &
+    !   .or. abs(coord(2,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
+    !   .or. abs(coord(2,ibool_before_perio(i,j,ispec))-1.)<TINYVAL) then
+      iglob = ibool_DG(i,j,ispec)
+      LNS_drho(iglob) = 0.
+#define aa 2.
+#define cc 3.
+#define ee 5.
+#define gg 7.
+#define bb 4.
+#define dd 4.
+#define ff 4.
+#define hh 4.
+      LNS_dv(1,iglob) = aa*coord(1,ibool_before_perio(i,j,ispec))**bb + cc*coord(2,ibool_before_perio(i,j,ispec))**dd
+      LNS_dv(2,iglob) = ee*coord(1,ibool_before_perio(i,j,ispec))**ff + gg*coord(2,ibool_before_perio(i,j,ispec))**hh
+      !LNS_dv(1,iglob) = coord(1,ibool_before_perio(i,j,ispec))+coord(2,ibool_before_perio(i,j,ispec))
+      !LNS_dv(2,iglob) = coord(1,ibool_before_perio(i,j,ispec))+coord(2,ibool_before_perio(i,j,ispec))
+      LNS_rho0dv(:,iglob) = LNS_rho0(iglob)*LNS_dv(:,iglob)
+      LNS_dE(iglob) = 0.
+      !LNS_dE(iglob) = coord(2,ibool_before_perio(i,j,ispec)) - 0.5
+      !LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*(  sin(1.5*PI*coord(1,ibool_before_perio(i,j,ispec))) &
+      !                                         + sin(1.5*PI*coord(2,ibool_before_perio(i,j,ispec))))
+      !LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*LNS_dE(iglob)
+      LNS_dp(iglob) = 0.
+    !endif
+  enddo; enddo; enddo
+#if 0
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+        write(*,*) '(x z) (vx vz)', coord(:,ibool_before_perio(i,j,ispec)), LNS_dv(:,ibool_DG(i,j,ispec))
+      endif
+    enddo; enddo; enddo
+#endif
+  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#endif
   !call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
   call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
   
@@ -127,8 +150,42 @@ subroutine compute_forces_acoustic_LNS_main()
   if(LNS_viscous) then
     ! Note: this will compute nabla_dv only if viscosity is activated.
     call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
-    ! Precompute \Sigma_v' from \nabla(v').
+    !call compute_viscous_tensors(nabla_dT, nabla_dv, LNS_dummy_1d, LNS_dummy_1d, LNS_rho0, &
+    !                             LNS_rho0dv(1,:), LNS_rho0dv(2,:), LNS_dE, timelocal) ! Litteraly no difference.
+    !call compute_gradient_TFSF(LNS_dummy_2d, LNS_dv(1,:), .false., .true., LNS_switch_gradient, &
+    !                           LNS_dummy_2d, nabla_dv(1,:,:), timelocal)
+    !call compute_gradient_TFSF(LNS_dummy_2d, LNS_dv(2,:), .false., .true., LNS_switch_gradient, &
+    !                           LNS_dummy_2d, nabla_dv(2,:,:), timelocal) ! Litteraly no difference.
+#if 0
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      !if(abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL .and. abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+      if(abs(nabla_dv(1, 1, ibool_DG(i,j,ispec))-aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1))>TINYVAL .or. &
+         abs(nabla_dv(1, 2, ibool_DG(i,j,ispec))-cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1))>TINYVAL .or. &
+         abs(nabla_dv(2, 1, ibool_DG(i,j,ispec))-ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1))>TINYVAL .or. &
+         abs(nabla_dv(2, 2, ibool_DG(i,j,ispec))-gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1))>TINYVAL ) then
+        write(*,*) '(x z) (dxvx dzvx dxvz dzvz)',&
+                                            coord(:,ibool_before_perio(i,j,ispec)), &
+                                            nabla_dv(1, 1, ibool_DG(i,j,ispec)), nabla_dv(1, 2, ibool_DG(i,j,ispec)), & ! TEST
+                                            nabla_dv(2, 1, ibool_DG(i,j,ispec)), nabla_dv(2, 2, ibool_DG(i,j,ispec)) ! TEST
+        write(*,*) 'th =                       ', &
+                                                  coord(:,ibool_before_perio(i,j,ispec)), &
+                                                  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1), &
+                                                  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1), &
+                                                  ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1), &
+                                                  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)
+        endif
+      !endif
+    enddo; enddo; enddo
+#endif
+    ! Precompute \Sigma_v' from \nabla v'.
     call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
+#if 0
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+        write(*,*) '(x z) (Sv_11 Sv_12 Sv_22)', coord(:,ibool_before_perio(i,j,ispec)), sigma_dv(:, ibool_DG(i,j,ispec)) ! TEST
+      endif
+    enddo; enddo; enddo
+#endif
   endif
 
 #ifdef USE_MPI
@@ -396,7 +453,7 @@ end subroutine damp_solution_LNS
 
 
 
-
+#if 0
 subroutine LNS_PML_buildRHS(idQ, idR, iglobPML, beta, q)
   ! TODO: select variables to use.
   use constants
@@ -413,7 +470,7 @@ subroutine LNS_PML_buildRHS(idQ, idR, iglobPML, beta, q)
   LNS_PML_RHS(idQ, idR, iglobPML) = beta*LNS_PML(idQ, idR, iglobPML) - q
 end subroutine LNS_PML_buildRHS
 
-subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, jacloc, iglobPML)
+subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, Jac_L, iglobPML)
   ! TODO: select variables to use.
   use constants
   use specfem_par
@@ -421,7 +478,7 @@ subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, jacloc, iglobPML)
   implicit none  
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(inout) :: d0cntrb
-  real(kind=CUSTOM_REAL), intent(in) :: q, a1, a0, jacloc
+  real(kind=CUSTOM_REAL), intent(in) :: q, a1, a0, Jac_L
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: boa, b
   integer, intent(in) :: idQ, iglobPML
   ! Local.
@@ -432,16 +489,17 @@ subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, jacloc, iglobPML)
     d0cntrb = d0cntrb - (   a0*q &
                           + b(1)  *LNS_PML_RHS(1,1,iglobPML) & ! YU1
                           + b(2)  *LNS_PML_RHS(1,2,iglobPML) & ! YU2
-                        )*jacloc
+                        )*Jac_L
   else
     d0cntrb = d0cntrb - (   a0*q &
                           + boa(1)*LNS_PML_RHS(idQ,5,iglobPML) & ! G1
                           + boa(2)*LNS_PML_RHS(idQ,6,iglobPML) & ! G2
                           + b(1)  *LNS_PML_RHS(idQ,1,iglobPML) & ! YU1
                           + b(2)  *LNS_PML_RHS(idQ,2,iglobPML) & ! YU2
-                        )*jacloc
+                        )*Jac_L
   endif
 end subroutine LNS_PML_updateD0
+#endif
 
 
 
@@ -959,11 +1017,11 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   implicit none
   
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: SF
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG) :: TF
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: SF
   logical, intent(in) :: swTF, swSF, swMETHOD
-  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: nabla_SF
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM, nglob_DG), intent(out) :: nabla_TF
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: nabla_SF
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
   
   ! Local.
@@ -980,7 +1038,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor ,SPCDM
-  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacLoc ! Jacobian matrix and determinant
+  real(kind=CUSTOM_REAL) :: dXi_dX_L,dXi_dZ_L,dEta_dX_L,dEta_dZ_L,Jac_L ! Jacobian matrix and determinant
   !real(kind=CUSTOM_REAL) :: temp_SFx, temp_SFz, temp_TFxx, temp_TFzx, temp_TFxz, temp_TFzz
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
   !       rho_DG, rhovx_DG, rhovz_DG, E_DG, veloc_x_DG, veloc_z_DG, T, &
@@ -989,14 +1047,14 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: locgrad_SF
   !real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: locgrad_TF
   
-  !real(kind=CUSTOM_REAL) :: dxiTF(1), dgamTF(1), dxiTF(NDIM), dgamTF(NDIM), dSF_dxi, dSF_dgamma ! Derivatives in \Lambda.
-  real(kind=CUSTOM_REAL) :: dSF_dxi, dSF_dgamma ! Derivatives in \Lambda.
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: dxiTF, dgamTF ! Derivatives in \Lambda.
+  !real(kind=CUSTOM_REAL) :: dTF_dXi(1), dTF_dEta(1), dTF_dXi(NDIM), dTF_dEta(NDIM), dSF_dXi, dSF_dEta ! Derivatives in \Lambda.
+  real(kind=CUSTOM_REAL) :: dSF_dXi, dSF_dEta ! Derivatives in \Lambda.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: dTF_dXi, dTF_dEta ! Derivatives in \Lambda.
   !real(kind=CUSTOM_REAL) :: dTFx_dx, dTFx_dz, dTFz_dx, dTFz_dz, dSF_dx, dSF_dz
   real(kind=CUSTOM_REAL) :: wxl, wzl ! Quadrature weights.
-  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_SFx_1, temp_SFx_2, &
-        temp_SFz_1, temp_SFz_2, temp_TFxx_1, temp_TFxx_2, &
-        temp_TFxz_1, temp_TFxz_2, temp_TFzx_1, temp_TFzx_2, temp_TFzz_1, temp_TFzz_2
+  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: dSF_dX_tmp1, dSF_dX_tmp2, &
+        dSF_dZ_tmp1, dSF_dZ_tmp2, dTF1_dX_tmp1, dTF1_dX_tmp2, &
+        dTF1_dZ_tmp1, dTF1_dZ_tmp2, dTF2_dX_tmp1, dTF2_dX_tmp2, dTF2_dZ_tmp1, dTF2_dZ_tmp2
   !real(kind=CUSTOM_REAL) :: vx_init, vz_init
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
@@ -1013,6 +1071,23 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
     write(*,*) "********************************"
     return
   endif
+  
+  ! PASSING OF TF IS OKAY
+#if 0
+  if(timelocal>ZEROcr) then
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      if(abs(TF(1,ibool_DG(i,j,ispec)) - (  aa*coord(1,ibool_before_perio(i,j,ispec))**bb &
+                            + cc*coord(2,ibool_before_perio(i,j,ispec))**dd))>TINYVAL) then
+        write(*,*) coord(:,ibool_before_perio(i,j,ispec)), TF(:,ibool_DG(i,j,ispec))
+        stop "passing was wrong"
+      endif
+      if(abs(TF(2,ibool_DG(i,j,ispec)) - (   ee*coord(1,ibool_before_perio(i,j,ispec))**ff &
+                             + gg*coord(2,ibool_before_perio(i,j,ispec))**hh))>TINYVAL) then
+        stop "passing was wrong"
+      endif
+    enddo; enddo; enddo
+  endif
+#endif
   
   if(swMETHOD) then
     ! "Desintegrate."
@@ -1039,23 +1114,29 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
       ! --------------------------- !
       do j = 1, NGLLZ
         do i = 1, NGLLX
-          iglob = ibool_DG(i,j,ispec)
-          jacLoc = jacobian(i,j,ispec)
-          xixl = xix(i,j,ispec)
-          xizl = xiz(i,j,ispec)
-          gammaxl = gammax(i,j,ispec)
-          gammazl = gammaz(i,j,ispec)
+          iglob     = ibool_DG(i,j,ispec)
+          Jac_L     = jacobian(i,j,ispec)
+          dXi_dX_L  = xix(i,j,ispec)
+          dXi_dZ_L  = xiz(i,j,ispec)
+          dEta_dX_L = gammax(i,j,ispec)
+          dEta_dZ_L = gammaz(i,j,ispec)
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! See beginning of subroutine compute_forces_acoustic_LNS for detailed explanations.
             iglob_unique = ibool_before_perio(i, j, ispec)
             ya_x_l  = stretching_ya(1, iglob_unique)
             ya_z_l  = stretching_ya(2, iglob_unique)
-            xixl    = ya_x_l * xixl       ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            xizl    = ya_z_l * xizl       ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            gammaxl = ya_x_l * gammaxl    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            gammazl = ya_z_l * gammazl    ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            !jacLoc = ya_x_l*ya_z_l*jacLoc ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            ! Multiply x component by ya_x.
+            dXi_dX_L    = ya_x_l * dXi_dX_L
+            ! Multiply z component by ya_z.
+            dXi_dZ_L    = ya_z_l * dXi_dZ_L
+            ! Multiply x component by ya_x.
+            dEta_dX_L   = ya_x_l * dEta_dX_L
+            ! Multiply z component by ya_z.
+            dEta_dZ_L   = ya_z_l * dEta_dZ_L
+            ! TODO: something on jacobian??
+            !Jac_L = ya_x_l*ya_z_l*Jac_L
           endif
           
           wzl = wzgll(j)
@@ -1081,38 +1162,38 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! Compute inner contributions.
             !if(.not. CONSTRAIN_HYDROSTATIC) then
             if(swSF) then
-              temp_SFx_1(i,j)  = wzl * jacLoc * (xixl * SF(iglob))
-              temp_SFz_1(i,j)  = wzl * jacLoc * (xizl * SF(iglob))
-              temp_SFx_2(i,j)  = wxl * jacLoc * (gammaxl * SF(iglob))
-              temp_SFz_2(i,j)  = wxl * jacLoc * (gammazl * SF(iglob))
+              dSF_dX_tmp1(i,j)  = wzl * Jac_L * (dXi_dX_L * SF(iglob))
+              dSF_dZ_tmp1(i,j)  = wzl * Jac_L * (dXi_dZ_L * SF(iglob))
+              dSF_dX_tmp2(i,j)  = wxl * Jac_L * (dEta_dX_L * SF(iglob))
+              dSF_dZ_tmp2(i,j)  = wxl * Jac_L * (dEta_dZ_L * SF(iglob))
             endif
             if(swTF) then
-              temp_TFxx_1(i,j) = wzl * jacLoc * (xixl * TF(1,iglob))
-              temp_TFxz_1(i,j) = wzl * jacLoc * (xizl * TF(1,iglob))
-              temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * TF(NDIM,iglob))
-              temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * TF(NDIM,iglob))
-              temp_TFxx_2(i,j) = wxl * jacLoc * (gammaxl * TF(1,iglob))
-              temp_TFxz_2(i,j) = wxl * jacLoc * (gammazl * TF(1,iglob))
-              temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * TF(NDIM,iglob))
-              temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * TF(NDIM,iglob))
+              dTF1_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * TF(1,iglob))
+              dTF1_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * TF(1,iglob))
+              dTF2_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * TF(NDIM,iglob))
+              dTF2_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * TF(NDIM,iglob))
+              dTF1_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * TF(1,iglob))
+              dTF1_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * TF(1,iglob))
+              dTF2_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * TF(NDIM,iglob))
+              dTF2_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * TF(NDIM,iglob))
             endif
             !else
             !  vx_init = rhovx_init(iglob)/rho_init(iglob)
             !  vz_init = rhovz_init(iglob)/rho_init(iglob)
             !  
-            !  temp_SFx_1(i,j)  = wzl * jacLoc * (xixl * (SF(iglob) - T_init(iglob)))
-            !  temp_SFz_1(i,j)  = wzl * jacLoc * (xizl * (SF(iglob) - T_init(iglob)))
-            !  temp_TFxx_1(i,j) = wzl * jacLoc * (xixl * (TF(1,iglob) - vx_init))
-            !  temp_TFxz_1(i,j) = wzl * jacLoc * (xizl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  temp_TFzx_1(i,j) = wzl * jacLoc * (xixl * (TF(NDIM,iglob) - vz_init))
-            !  temp_TFzz_1(i,j) = wzl * jacLoc * (xizl * (TF(NDIM,iglob) - vz_init))
+            !  dSF_dX_tmp1(i,j)  = wzl * Jac_L * (dXi_dX_L * (SF(iglob) - T_init(iglob)))
+            !  dSF_dZ_tmp1(i,j)  = wzl * Jac_L * (dXi_dZ_L * (SF(iglob) - T_init(iglob)))
+            !  dTF1_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * (TF(1,iglob) - vx_init))
+            !  dTF1_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
+            !  dTF2_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * (TF(NDIM,iglob) - vz_init))
+            !  dTF2_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * (TF(NDIM,iglob) - vz_init))
             !  
-            !  temp_SFx_2(i,j)  = wxl * jacLoc * (gammaxl * (SF(iglob) - T_init(iglob)))
-            !  temp_SFz_2(i,j)  = wxl * jacLoc * (gammazl * (SF(iglob) - T_init(iglob)))
-            !  temp_TFxx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(1,iglob) - vx_init))
-            !  temp_TFxz_2(i,j) = wxl * jacLoc * (gammazl * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  temp_TFzx_2(i,j) = wxl * jacLoc * (gammaxl * (TF(NDIM,iglob) - vz_init))
-            !  temp_TFzz_2(i,j) = wxl * jacLoc * (gammazl * (TF(NDIM,iglob) - vz_init))
+            !  dSF_dX_tmp2(i,j)  = wxl * Jac_L * (dEta_dX_L * (SF(iglob) - T_init(iglob)))
+            !  dSF_dZ_tmp2(i,j)  = wxl * Jac_L * (dEta_dZ_L * (SF(iglob) - T_init(iglob)))
+            !  dTF1_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * (TF(1,iglob) - vx_init))
+            !  dTF1_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
+            !  dTF2_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * (TF(NDIM,iglob) - vz_init))
+            !  dTF2_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * (TF(NDIM,iglob) - vz_init))
             !endif
           else
             ! In that case, we want to compute \int_{\Omega} (\nabla f)\Phi directly as it.
@@ -1131,12 +1212,16 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! which is immediate through the SEM formulation.
             
             if(swSF) then
-              dSF_dxi     = ZEROcr
-              dSF_dgamma  = ZEROcr
+              dSF_dXi       = ZEROcr
+              dSF_dEta      = ZEROcr
             endif
             if(swTF) then
-              dxiTF  = ZEROcr
-              dgamTF = ZEROcr
+              dTF_dXi       = ZEROcr ! Vector operation.
+              dTF_dEta      = ZEROcr ! Vector operation.
+              !dTF_dXi(1)     = ZEROcr ! Safeguard: do scalar instead.
+              !dTF_dXi(2)     = ZEROcr ! Safeguard: do scalar instead.
+              !dTF_dEta(1)    = ZEROcr ! Safeguard: do scalar instead.
+              !dTF_dEta(2)    = ZEROcr ! Safeguard: do scalar instead.
             endif
             
             ! Compute derivatives in unit element \Lambda.
@@ -1144,67 +1229,96 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             do k = 1, NGLLX
               !if(.not. CONSTRAIN_HYDROSTATIC) then
               if(swSF) then
-                dSF_dxi     = dSF_dxi     + SF(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dSF_dgamma  = dSF_dgamma  + SF(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dSF_dXi   = dSF_dXi   + SF(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dSF_dEta  = dSF_dEta  + SF(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
               if(swTF) then
-                dxiTF(1)     = dxiTF(1)     + TF(1,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dgamTF(1)    = dgamTF(1)    + TF(1,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-                dxiTF(NDIM)  = dxiTF(NDIM)  + TF(NDIM,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dgamTF(NDIM) = dgamTF(NDIM) + TF(NDIM,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dTF_dXi(1)     = dTF_dXi(1)     + TF(1,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dTF_dEta(1)    = dTF_dEta(1)    + TF(1,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dTF_dXi(NDIM)  = dTF_dXi(NDIM)  + TF(NDIM,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dTF_dEta(NDIM) = dTF_dEta(NDIM) + TF(NDIM,ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
               !else
               !  vx_init = rhovx_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-              !  dxiTF(1) = dxiTF(1) + (TF(1,ibool_DG(k,j,ispec)) - vx_init) &
+              !  dTF_dXi(1) = dTF_dXi(1) + (TF(1,ibool_DG(k,j,ispec)) - vx_init) &
               !                      * real(hprime_xx(i,k), kind=CUSTOM_REAL)
               !  vx_init = rhovx_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))       
-              !  dgamTF(1) = dgamTF(1) + (TF(1,ibool_DG(i,k,ispec)) - vx_init) &
+              !  dTF_dEta(1) = dTF_dEta(1) + (TF(1,ibool_DG(i,k,ispec)) - vx_init) &
               !                            * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               !  vz_init = rhovz_init(ibool_DG(k,j,ispec))/rho_init(ibool_DG(k,j,ispec))
-              !  dxiTF(NDIM) = dxiTF(NDIM) + (TF(NDIM,ibool_DG(k,j,ispec)) - vz_init) &
+              !  dTF_dXi(NDIM) = dTF_dXi(NDIM) + (TF(NDIM,ibool_DG(k,j,ispec)) - vz_init) &
               !                      * real(hprime_xx(i,k), kind=CUSTOM_REAL)
               !  vz_init = rhovz_init(ibool_DG(i,k,ispec))/rho_init(ibool_DG(i,k,ispec))
-              !  dgamTF(NDIM) = dgamTF(NDIM) + (TF(NDIM,ibool_DG(i,k,ispec)) - vz_init) &
+              !  dTF_dEta(NDIM) = dTF_dEta(NDIM) + (TF(NDIM,ibool_DG(i,k,ispec)) - vz_init) &
               !                            * real(hprime_zz(j,k), kind=CUSTOM_REAL)
-              !  dSF_dxi = dSF_dxi + (SF(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
+              !  dSF_dXi = dSF_dXi + (SF(ibool_DG(k,j,ispec)) - T_init(ibool_DG(k,j,ispec))) &
               !                    * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-              !  dSF_dgamma = dSF_dgamma + (SF(ibool_DG(i,k,ispec)) - T_init(ibool_DG(i,k,ispec))) &
+              !  dSF_dEta = dSF_dEta + (SF(ibool_DG(i,k,ispec)) - T_init(ibool_DG(i,k,ispec))) &
               !                           * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               !endif
+#if 0
+              if(abs(coord(1,ibool_before_perio(i,j,ispec))-2.)<TINYVAL .and. &
+                 abs(coord(2,ibool_before_perio(i,j,ispec))-3.)<TINYVAL) then
+                  write(*,*) 'k, dTF_dXi(2)', k, dTF_dXi(2), &
+                             'added', TF(2,ibool_DG(k,j,ispec)), real(hprime_xx(i,k), kind=CUSTOM_REAL)
+              endif
+#endif
             enddo ! Enddo on k.
 
             ! Compute derivatives in element \Omega using the chain rule.
             if(swSF) then
-              !dSF_dx   = dSF_dxi * xixl + dSF_dgamma * gammaxl
-              !dSF_dz   = dSF_dxi * xizl + dSF_dgamma * gammazl
-              !temp_SFx = dSF_dx * jacLoc
-              !temp_SFz = dSF_dz * jacLoc
+              !dSF_dx   = dSF_dXi * dXi_dX_L + dSF_dEta * dEta_dX_L
+              !dSF_dz   = dSF_dXi * dXi_dZ_L + dSF_dEta * dEta_dZ_L
+              !temp_SFx = dSF_dx * Jac_L
+              !temp_SFz = dSF_dz * Jac_L
               !nabla_SF(1,iglob) = dSF_dx
               !nabla_SF(NDIM,iglob) = dSF_dz
-              nabla_SF(1,iglob) = dSF_dxi * xixl + dSF_dgamma * gammaxl
-              nabla_SF(NDIM,iglob) = dSF_dxi * xizl + dSF_dgamma * gammazl
+              nabla_SF(1,iglob)    = dSF_dXi * dXi_dX_L + dSF_dEta * dEta_dX_L
+              nabla_SF(NDIM,iglob) = dSF_dXi * dXi_dZ_L + dSF_dEta * dEta_dZ_L
             endif
             if(swTF) then
-              !dTFx_dx   = dxiTF(1) * xixl + dgamTF(1) * gammaxl
-              !dTFx_dz   = dxiTF(1) * xizl + dgamTF(1) * gammazl
-              !dTFz_dx   = dxiTF(NDIM) * xixl + dgamTF(NDIM) * gammaxl
-              !dTFz_dz   = dxiTF(NDIM) * xizl + dgamTF(NDIM) * gammazl
-              !temp_TFxx = dTFx_dx * jacLoc
-              !temp_TFxz = dTFx_dz * jacLoc
-              !temp_TFzx = dTFz_dx * jacLoc
-              !temp_TFzz = dTFz_dz * jacLoc
+              !dTFx_dx   = dTF_dXi(1) * dXi_dX_L + dTF_dEta(1) * dEta_dX_L
+              !dTFx_dz   = dTF_dXi(1) * dXi_dZ_L + dTF_dEta(1) * dEta_dZ_L
+              !dTFz_dx   = dTF_dXi(NDIM) * dXi_dX_L + dTF_dEta(NDIM) * dEta_dX_L
+              !dTFz_dz   = dTF_dXi(NDIM) * dXi_dZ_L + dTF_dEta(NDIM) * dEta_dZ_L
+              !temp_TFxx = dTFx_dx * Jac_L
+              !temp_TFxz = dTFx_dz * Jac_L
+              !temp_TFzx = dTFz_dx * Jac_L
+              !temp_TFzz = dTFz_dz * Jac_L
               !nabla_TF(1,1,iglob) = dTFx_dx
               !nabla_TF(1,NDIM,iglob) = dTFx_dz
               !nabla_TF(NDIM,1,iglob) = dTFz_dx
               !nabla_TF(NDIM,NDIM,iglob) = dTFz_dz
+              
               do k=1,NDIM ! Re-using index k for spatial dimension.
-                nabla_TF(k,1,iglob) = dxiTF(k) * xixl + dgamTF(k) * gammaxl
-                nabla_TF(k,NDIM,iglob) = dxiTF(k) * xizl + dgamTF(k) * gammazl
-              enddo
-            endif
-          endif
-        enddo
-      enddo
+                nabla_TF(k,1,iglob)    = dTF_dXi(k) * dXi_dX_L + dTF_dEta(k) * dEta_dX_L
+                nabla_TF(k,NDIM,iglob) = dTF_dXi(k) * dXi_dZ_L + dTF_dEta(k) * dEta_dZ_L
+              enddo ! Enddo on k.
+#if 0
+              if(abs(coord(1,ibool_before_perio(i,j,ispec))-2.)<TINYVAL .and. &
+                 abs(coord(2,ibool_before_perio(i,j,ispec))-3.)<TINYVAL) then
+                write(*,*) '(x z) (dxvx dzvx dxvz dzvz)',&
+                            !nabla_dv(1, 1, ibool_DG(i,j,ispec)), nabla_dv(1, 2, ibool_DG(i,j,ispec)), & ! TEST
+                            nabla_TF(2, :, ibool_DG(i,j,ispec))! TEST
+                write(*,*) 'components',&
+                            dTF_dXi(2), dXi_dX_L, dTF_dEta(2), dEta_dX_L, & ! dTF_dXi at fault
+                            dTF_dXi(2), dXi_dZ_L, dTF_dEta(2), dEta_dZ_L ! dTF_dEta at fault (for high degrees only it seems)
+                write(*,*) 'th =                       ', &
+                            !aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1), &
+                            !cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1), &
+                            ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ee-1), &
+                            gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)
+             endif
+#endif
+              
+             ! nabla_TF(1,1,iglob) = dTF_dXi(1) * dXi_dX_L + dTF_dEta(1) * dEta_dX_L ! dTFx_dx = d[TF(1)]/dXi * dXi/dX + d[TF(1)]/dEta * dEta/dX
+             ! nabla_TF(1,2,iglob) = dTF_dXi(1) * dXi_dZ_L + dTF_dEta(1) * dEta_dZ_L ! dTFx_dz = d[TF(1)]/dXi * dXi/dZ + d[TF(1)]/dEta * dEta/dZ
+             ! nabla_TF(2,1,iglob) = dTF_dXi(2) * dXi_dX_L + dTF_dEta(2) * dEta_dX_L ! dTFz_dx = d[TF(2)]/dXi * dXi/dX + d[TF(2)]/dEta * dEta/dX
+             ! nabla_TF(2,2,iglob) = dTF_dXi(2) * dXi_dZ_L + dTF_dEta(2) * dEta_dZ_L ! dTFz_dz = d[TF(2)]/dXi * dXi/dZ + d[TF(2)]/dEta * dEta/dZ
+            endif ! Endif on swTF.
+          endif ! Endif on swMETHOD.
+        enddo ! Enddo on i.
+      enddo ! Enddo on j.
       
       if(swMETHOD) then
         ! "Desintegrate".
@@ -1214,26 +1328,26 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! Assemble the contributions using the inner contributions.
             do k = 1, NGLLX
               if(swSF) then
-              nabla_SF(1,iglob) = nabla_SF(1,iglob) - &
-                               (temp_SFx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                temp_SFx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_SF(NDIM,iglob) = nabla_SF(NDIM,iglob) - &
-                               (temp_SFz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                temp_SFz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                nabla_SF(1,iglob)    = nabla_SF(1,iglob) - &
+                                       (dSF_dX_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                        dSF_dX_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                nabla_SF(NDIM,iglob) = nabla_SF(NDIM,iglob) - &
+                                       (dSF_dZ_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                        dSF_dZ_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               endif
               if(swTF) then
-              nabla_TF(1,1,iglob) = nabla_TF(1,1,iglob) - &
-                                (temp_TFxx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                 temp_TFxx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_TF(1,NDIM,iglob) = nabla_TF(1,NDIM,iglob) - &
-                                (temp_TFxz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                 temp_TFxz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_TF(NDIM,1,iglob) = nabla_TF(NDIM,1,iglob) - &
-                                (temp_TFzx_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                 temp_TFzx_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
-              nabla_TF(NDIM,NDIM,iglob) = nabla_TF(NDIM,NDIM,iglob) - &
-                                (temp_TFzz_1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                 temp_TFzz_2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                nabla_TF(1,1,iglob)       = nabla_TF(1,1,iglob) - &
+                                            (dTF1_dX_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                             dTF1_dX_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                nabla_TF(1,NDIM,iglob)    = nabla_TF(1,NDIM,iglob) - &
+                                            (dTF1_dZ_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                             dTF1_dZ_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                nabla_TF(NDIM,1,iglob)    = nabla_TF(NDIM,1,iglob) - &
+                                            (dTF2_dX_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                             dTF2_dX_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                nabla_TF(NDIM,NDIM,iglob) = nabla_TF(NDIM,NDIM,iglob) - &
+                                            (dTF2_dZ_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                             dTF2_dZ_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               endif
             enddo
           enddo
@@ -1261,25 +1375,26 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             !Vzz_DG_P     = ZEROcr
             !Vzx_DG_P     = ZEROcr
             !Vxz_DG_P     = ZEROcr
-            n_out(1) = nx_iface(iface, ispec)
-            n_out(2) = nz_iface(iface, ispec)
-            !weight = weight_iface(iface1,iface,ispec)
+            
+            ! Step 1: prepare the normals' parameters (n_out(1), n_out(NDIM), weight, etc.).
+            ! Interior point
+            n_out(1)    = nx_iface(iface, ispec)
+            n_out(NDIM) = nz_iface(iface, ispec)
             halfWeight = weight_iface(iface1,iface, ispec)*HALFcr
             neighbor = -1
             if(neighbor_DG_iface(iface1, iface, ispec, 3) > -1) then
               iface1_neighbor = neighbor_DG_iface(iface1, iface, ispec, 1)
               iface_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 2)
-              ispec_neighbor = neighbor_DG_iface(iface1, iface, ispec, 3)
-              neighbor(1) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1)
-              neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
-              neighbor(3) = ispec_neighbor
+              ispec_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 3)
+              neighbor(1:2)   = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1:2)
+              neighbor(3)     = ispec_neighbor
             endif
             
+            ! Step 2: knowing the normals' parameters, compute now the fluxes.
             iglobP = 1
             if(neighbor(1) > -1) then
               iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
             endif
-            
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
             call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
                   LNS_drho(iglobM), LNS_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
@@ -1319,8 +1434,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
                 nabla_SF(i,iglobM) = nabla_SF(i,iglobM) + halfWeight*(SF(iglobM)+SF_P)*n_out(i)
               endif
               if(swTF) then
-                do j=1,NDIM
-                  nabla_TF(i,j,iglobM) = nabla_TF(i,j,iglobM) + halfWeight*(TF(i,iglobM)+TF_P(i))*n_out(j)
+                do k=1,NDIM
+                  nabla_TF(k,i,iglobM) = nabla_TF(k,i,iglobM) + halfWeight*(TF(k,iglobM)+TF_P(k))*n_out(i)
                 enddo
               endif
             enddo
@@ -1405,6 +1520,28 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !  nabla_TF(NDIM, 1, :) = nabla_TF(NDIM,1,:) ! dxTFz
   !  nabla_TF(NDIM, NDIM, :) = nabla_TF(NDIM,NDIM,:) ! dzTFz
   !endif
+  
+#if 0
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      !if(abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL .and. abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+      !if(abs(nabla_dv(1, 1, ibool_DG(i,j,ispec))-aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1))>TINYVAL .or. &
+      !   abs(nabla_dv(1, 2, ibool_DG(i,j,ispec))-cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1))>TINYVAL) then! .or. &
+      if(abs(nabla_TF(2, 1, ibool_DG(i,j,ispec))-ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1))>TINYVAL .or. &
+         abs(nabla_TF(2, 2, ibool_DG(i,j,ispec))-gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1))>TINYVAL ) then
+        write(*,*) '(x z) (dxvx dzvx dxvz dzvz)',&
+                                            coord(:,ibool_before_perio(i,j,ispec)), &
+                                            !nabla_dv(1, 1, ibool_DG(i,j,ispec)), nabla_dv(1, 2, ibool_DG(i,j,ispec)), & ! TEST
+                                            nabla_TF(2, 1, ibool_DG(i,j,ispec)), nabla_TF(2, 2, ibool_DG(i,j,ispec)) ! TEST
+        write(*,*) 'th =                       ', &
+                                                  coord(:,ibool_before_perio(i,j,ispec)), &
+                                                  !aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1), &
+                                                  !cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1), &
+                                                  ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1.), &
+                                                  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1.)
+        endif
+      !endif
+    enddo; enddo; enddo
+#endif
 end subroutine compute_gradient_TFSF
 
 
