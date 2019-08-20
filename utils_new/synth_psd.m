@@ -121,16 +121,23 @@ else
 end
 
 WPSD_tab = [];
+stopAskingWindowing = 0;
 for i = IDs_to_process
   % Set signal to be used.
   signal = raw_s(i, :);
   
-  % Select time frame.
-  doWindowSignal = -1;
-  while (not((numel(doWindowSignal)==1 && doWindowSignal==0) || (numel(doWindowSignal)==2)))
-    disp(['[', mfilename, '] Window signal for S',num2str(istattab(i)),' @[',num2str(xstattab(istattab(i))),',',num2str(ystattab(istattab(i))),'] ([t1 t2] vector for yes, 0 for no)?']);
-    disp(['[', mfilename, ', INFO] You may use ''xstattab(istattab(i))'' to get the value of the the station''s x position.']);
-    doWindowSignal = input(['[', mfilename, '] > ']);
+  if(not(stopAskingWindowing))
+    % Select time frame.
+    doWindowSignal = -Inf;
+    while (not((numel(doWindowSignal)==1 && ismember(doWindowSignal,[0,-1])) || (numel(doWindowSignal)==2)))
+      disp(['[', mfilename, '] Window signal for S',num2str(istattab(i)),' @[',num2str(xstattab(istattab(i))),',',num2str(ystattab(istattab(i))),'] ([t1 t2] vector for yes, 0 for no, -1 for no for all)?']);
+      disp(['[', mfilename, ', INFO] You may use ''xstattab(istattab(i))'' to get the value of the the station''s x position.']);
+      doWindowSignal = input(['[', mfilename, '] > ']);
+    end
+    if(numel(doWindowSignal)==1 && doWindowSignal==-1)
+      stopAskingWindowing = 1;
+      doWindowSignal = 0;
+    end
   end
   if(any(doWindowSignal))
     sel = (raw_t(1,:)>=min(doWindowSignal) & raw_t(1,:)<=max(doWindowSignal));

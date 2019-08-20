@@ -94,7 +94,7 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1203633_FNS/');
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74710/');
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_74565/');
-% rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
+rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_672048/');
 % rootd = strcat(SPCFMEXloc,'mb_huge/'); OFd = strcat(rootd, 'OUTPUT_FILES_642746/');
 
 % PML.
@@ -182,8 +182,8 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'validation_lns/'); OFd = strcat(rootd, 'OUTPUT_FILES_M.3_dx1gmshstruct_cfl.440_spreadssf_FNS/'); % ?? result
 
 % Tests.
-fig_title = 'test';
-rootd = strcat(SPCFMEXloc,'test_transmission/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,''];
+% fig_title = 'test';
+% rootd = strcat(SPCFMEXloc,'test_transmission/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,''];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); fig_title = [fig_title,' test'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_vectorised_classicalF2S/'); fig_title = [fig_title,' LNS vect clas F2S'];
 % rootd = strcat(SPCFMEXloc,'test_interface/'); OFd = strcat(rootd, 'OUTPUT_FILES_LNS_terranaF2S/'); fig_title = [fig_title,' LNS terrana F2S'];
