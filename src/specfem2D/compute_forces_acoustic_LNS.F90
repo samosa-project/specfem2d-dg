@@ -66,7 +66,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL), dimension(NDIM) :: Jac_WzWx_L
   real(kind=CUSTOM_REAL), dimension(NDIM) :: n_out
   real(kind=CUSTOM_REAL), dimension(NDIM) :: rho0dv_P
-  integer :: iglobM, iglobP
+  integer :: iglobP
   integer, dimension(3) :: neighbor
   
 !  ! Variables specifically for PML.
@@ -650,13 +650,13 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           i = link_iface_ijispec(iface1,iface,ispec,1)
           j = link_iface_ijispec(iface1,iface,ispec,2)
-          iglobM = ibool_DG(i,j,ispec)
+          iglob = ibool_DG(i,j,ispec)
           
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
             ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
-            if(     LNS_mu(iglobM) > TINYVAL &
-               .OR. LNS_eta(iglobM) > TINYVAL &
-               .OR. LNS_kappa(iglobM) > TINYVAL) then
+            if(     LNS_mu(iglob) > TINYVAL &
+               .OR. LNS_eta(iglob) > TINYVAL &
+               .OR. LNS_kappa(iglob) > TINYVAL) then
               viscousComputation=.true.
             else
               viscousComputation=.false.
@@ -686,10 +686,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
           call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, currentTime, & ! Point identifier (input).
-                  cv_drho(iglobM), cv_rho0dv(:,iglobM), & ! Input constitutive variables, "M" side.
+                  cv_drho(iglob), cv_rho0dv(:,iglob), & ! Input constitutive variables, "M" side.
                   cv_drho(iglobP), cv_rho0dv(:,iglobP), cv_dE(iglobP), & ! Input constitutive variables, "P" side. Note they make no sense if neighbor(1)<=-1.
-                  in_dp(iglobM), & ! Input other variable, "M" side.
-                  !V_DG(:,:,iglobM), T_DG(:,iglobM), & ! Input derivatives, "M" side. MIGHT NEED.
+                  in_dp(iglob), & ! Input other variable, "M" side.
+                  !V_DG(:,:,iglob), T_DG(:,iglob), & ! Input derivatives, "M" side. MIGHT NEED.
                   !V_DG(:,:,iglobP), T_DG(:,iglobP), & ! Input derivatives, "M" side. MIGHT NEED.
                   n_out, & ! Normal vector (input).
                   exact_interface_flux, & ! Switch to disable jump in some cases (output).
@@ -704,16 +704,16 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
 #if 1
-          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM))) & ! v_-\cdot n
-                       + LNS_c0(iglobM) & ! Local sound speed, side "M".
+          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob))) & ! v_-\cdot n
+                       + LNS_c0(iglob) & ! Local sound speed, side "M".
                        , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
                        + LNS_c0(iglobP) & ! Local sound speed, side "P".
                        )
 #endif
           ! Exact lambda (i.e. with exact full v=v0+v' and c=c0+c').
 #if 0
-          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))) &
-                       + sqrt(gammaext_DG(iglobM)*(LNS_p0(iglobM)+in_dp(iglobM))/(LNS_rho0(iglobM)+cv_drho(iglobM))) &
+          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
+                       + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))) &
                        , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
                        + sqrt(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)) &
                        )
@@ -730,135 +730,97 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           ! 1) Inviscid contributions.
           ! 1.1) Mass conservation (fully inviscid).
-          !flux_n = DOT_PRODUCT(n_out, in_dm(:,iglobM)+dm_P)
+          !flux_n = DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P)
           if(exact_interface_flux) then
             jump = ZERO
           else
-            jump = cv_drho(iglobM) - drho_P
+            jump = cv_drho(iglob) - drho_P
           endif
-          !outrhs_drho(iglobM) = outrhs_drho(iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          outrhs_drho(iglobM) =   outrhs_drho(iglobM) &
-                                - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglobM)+dm_P) + lambda*jump)
+          !outrhs_drho(iglob) = outrhs_drho(iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_drho(iglob) =   outrhs_drho(iglob) &
+                                - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P) + lambda*jump)
           ! 1.2) x-Momentum inviscid contributions.
-          Sigma_L(1)    =   cv_rho0dv(1,iglobM)*LNS_v0(1,iglobM) + in_dp(iglobM) & ! "M" side.
+          Sigma_L(1)    =   cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob) & ! "M" side.
                           + rho0dv_P(1)        *LNS_v0(1,iglobP) + dp_P ! "P" side.
-          Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(1,iglobM) & ! "M" side.
+          Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob) & ! "M" side.
                           + rho0dv_P(NDIM)        *LNS_v0(1,iglobP) ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZERO
           else
-            jump = cv_rho0dv(1,iglobM) - rho0dv_P(1)
+            jump = cv_rho0dv(1,iglob) - rho0dv_P(1)
           endif
-          !outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          outrhs_rho0dv(1,iglobM) =   outrhs_rho0dv(1,iglobM) &
+          !outrhs_rho0dv(1,iglob) = outrhs_rho0dv(1,iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_rho0dv(1,iglob) =   outrhs_rho0dv(1,iglob) &
                                     - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.2) z-Momentum inviscid contributions.
-          Sigma_L(1)    =   cv_rho0dv(1,iglobM)*LNS_v0(NDIM,iglobM) & ! "M" side.
+          Sigma_L(1)    =   cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob) & ! "M" side.
                           + rho0dv_P(1)        *LNS_v0(NDIM,iglobP) ! "P" side.
-          Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglobM)*LNS_v0(NDIM,iglobM) + in_dp(iglobM) & ! "M" side.
+          Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob) & ! "M" side.
                           + rho0dv_P(NDIM)        *LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZERO
           else
-            jump = cv_rho0dv(NDIM,iglobM) - rho0dv_P(NDIM)
+            jump = cv_rho0dv(NDIM,iglob) - rho0dv_P(NDIM)
           endif
-          !outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          outrhs_rho0dv(NDIM,iglobM) =   outrhs_rho0dv(NDIM,iglobM) &
+          !outrhs_rho0dv(NDIM,iglob) = outrhs_rho0dv(NDIM,iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
                                        - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.3) Energy inviscid contributions.
-          Sigma_L =   LNS_dv(:,iglobM)*(LNS_E0(iglobM) + LNS_p0(iglobM)) & ! "M" side, part.
-                    + LNS_v0(:,iglobM)*(cv_dE(iglobM)  + in_dp(iglobM)) & ! "M" side, part.
+          Sigma_L =   LNS_dv(:,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) & ! "M" side, part.
+                    + LNS_v0(:,iglob)*(cv_dE(iglob)  + in_dp(iglob)) & ! "M" side, part.
                     + dv_P(:)         *(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
                     + LNS_v0(:,iglobP)*(dE_P           + dp_P) ! "P" side, part.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZERO
           else
-            jump = cv_dE(iglobM) - dE_P
+            jump = cv_dE(iglob) - dE_P
           endif
-          !outrhs_dE(iglobM) = outrhs_dE(iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-          outrhs_dE(iglobM) =   outrhs_dE(iglobM) &
+          !outrhs_dE(iglob) = outrhs_dE(iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
+          outrhs_dE(iglob) =   outrhs_dE(iglob) &
                               - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           
           ! 2) Viscous contributions.
           if(viscousComputation) then
             ! Note: since we consider here viscous terms, that is purely diffusive phenomena, the acoustic wave speed makes no sense, and thus the jump in the Lax-Friedrich approximation does not appear in the formulations.
             ! 2.1) Mass conservation: nothing.
-#if 1
             ! 2.2) x-Momentum viscous contributions. The vector [Sigma_L_x, Sigma_L_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
             !Sigma_L(1)    = -in_sigma_dv(1,iglob) -sigma_dv_P(1) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
             !Sigma_L(NDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
-            !outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*DOT_PRODUCT(n_out, Sigma_L) ! Add flux' contribution, with dot product \Sigma\cdot n.
-            outrhs_rho0dv(1,iglobM) =   outrhs_rho0dv(1,iglobM) &
-                                      - halfWeight*DOT_PRODUCT(n_out, -(in_sigma_dv(1:2,iglobM)+sigma_dv_P(1:2)))
+            !outrhs_rho0dv(1,iglob) = outrhs_rho0dv(1,iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            outrhs_rho0dv(1,iglob) =   outrhs_rho0dv(1,iglob) &
+                                      - halfWeight*DOT_PRODUCT(n_out, -(in_sigma_dv(1:2,iglob)+sigma_dv_P(1:2)))
             ! 2.2) z-Momentum viscous contributions. The vector [Sigma_L_x, Sigma_L_z] represents the mean average flux at the boundary of the z-momentum (based on the 2nd line of \Sigma_v).
             !Sigma_L(1)    = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
             !Sigma_L(NDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            !outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*DOT_PRODUCT(n_out, Sigma_L) ! Add flux' contribution, with dot product \Sigma\cdot n.
-            outrhs_rho0dv(NDIM,iglobM) =   outrhs_rho0dv(NDIM,iglobM) &
-                                         - halfWeight*DOT_PRODUCT(n_out, -(in_sigma_dv(2:3,iglobM)+sigma_dv_P(2:3)))
-#endif
-#if 0
-            ! Try including jump.
-            ! Crashes everything.
-            Sigma_L(1)    = -in_sigma_dv(1,iglob) -sigma_dv_P(1)
-            Sigma_L(NDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2)
-            if(exact_interface_flux) then
-              jump = ZERO
-            else
-              jump = cv_rho0dv(1,iglobM) - rho0dv_P(1)
-            endif
-            !outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-            outrhs_rho0dv(1,iglobM) =   outrhs_rho0dv(1,iglobM) &
-                                      - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
-            Sigma_L(1)    = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            Sigma_L(NDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3)
-            if(exact_interface_flux) then
-              jump = ZERO
-            else
-              jump = cv_rho0dv(NDIM,iglobM) - rho0dv_P(NDIM)
-            endif
-            !outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
-            outrhs_rho0dv(NDIM,iglobM) =   outrhs_rho0dv(NDIM,iglobM) &
-                                         - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
-#endif
-#if 0
-            ! Try computing a "mean tensor" at midpoint based on mean derivative.
-            ! But this approach should be exactly equivalent as computing mean tensor directly (since sigma_v is linear in v and thus in dv).
-            mean_nabla_dv_local = 0.5*(nabla_dv(:,:,iglobM) + nabla_dv_P)
-            mean_sigma_viscous_local(1) = (4./3.)*LNS_mu(iglobM)*mean_nabla_dv_local(1, 1) + (2./3.)*LNS_mu(iglobM)*mean_nabla_dv_local(2, 2)
-            mean_sigma_viscous_local(2) = LNS_mu(iglobM)*(mean_nabla_dv_local(1, 2)+mean_nabla_dv_local(2, 1))
-            mean_sigma_viscous_local(3) = (4./3.)*LNS_mu(iglobM)*mean_nabla_dv_local(2, 2) + (2./3.)*LNS_mu(iglobM)*mean_nabla_dv_local(1, 1)
-            ! 2.2) x-Momentum viscous contributions. The vector [Sigma_L_x, Sigma_L_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
-            outrhs_rho0dv(1,iglobM) = outrhs_rho0dv(1,iglobM) - weight_iface(iface1,iface, ispec)*DOT_PRODUCT(n_out, mean_sigma_viscous_local(1:2)) ! Add flux' contribution, with dot product \Sigma\cdot n.
-            ! 2.2) z-Momentum viscous contributions. The vector [Sigma_L_x, Sigma_L_z] represents the mean average flux at the boundary of the z-momentum (based on the 2nd line of \Sigma_v).
-            outrhs_rho0dv(NDIM,iglobM) = outrhs_rho0dv(NDIM,iglobM) - weight_iface(iface1,iface, ispec)*DOT_PRODUCT(n_out, mean_sigma_viscous_local(2:3)) ! Add flux' contribution, with dot product \Sigma\cdot n.
-#endif
+            !outrhs_rho0dv(NDIM,iglob) = outrhs_rho0dv(NDIM,iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
+                                         - halfWeight*DOT_PRODUCT(n_out, -(in_sigma_dv(2:3,iglob)+sigma_dv_P(2:3)))
             ! 2.3) Energy viscous contributions.
-            Sigma_L(1)    = - (  LNS_dv(1,iglobM)*sigma_v_0(1,iglobM) & ! "M" side, part.
-                               + LNS_v0(1,iglobM)*in_sigma_dv(1,iglobM) & ! "M" side, part.
-                               + LNS_dv(NDIM,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
-                               + LNS_v0(NDIM,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
-                               + LNS_kappa(iglobM)*in_nabla_dT(1,iglobM)) & ! "M" side, part.
+            Sigma_L(1)    = - (  LNS_dv(1,iglob)*sigma_v_0(1,iglob) & ! "M" side, part.
+                               + LNS_v0(1,iglob)*in_sigma_dv(1,iglob) & ! "M" side, part.
+                               + LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) & ! "M" side, part.
+                               + LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) & ! "M" side, part.
+                               + LNS_kappa(iglob)*in_nabla_dT(1,iglob)) & ! "M" side, part.
                             - (  dv_P(1)*sigma_v_0(1,iglobP) & ! "P" side, part.
-                               + LNS_v0(1,iglobM)*sigma_dv_P(1) & ! "P" side, part.
+                               + LNS_v0(1,iglob)*sigma_dv_P(1) & ! "P" side, part.
                                + dv_P(NDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
                                + LNS_v0(NDIM,iglobP)*sigma_dv_P(2) & ! "P" side, part.
                                + LNS_kappa(iglobP)*nabla_dT_P(1)) ! "P" side, part.
-            Sigma_L(NDIM) = - (  LNS_dv(NDIM,iglobM)*sigma_v_0(3,iglobM) & ! "M" side, part.
-                               + LNS_v0(NDIM,iglobM)*in_sigma_dv(3,iglobM) & ! "M" side, part.
-                               + LNS_dv(1,iglobM)*sigma_v_0(2,iglobM) & ! "M" side, part.
-                               + LNS_v0(1,iglobM)*in_sigma_dv(2,iglobM) & ! "M" side, part.
-                               + LNS_kappa(iglobM)*in_nabla_dT(2,iglobM)) & ! "M" side, part.
+            Sigma_L(NDIM) = - (  LNS_dv(NDIM,iglob)*sigma_v_0(3,iglob) & ! "M" side, part.
+                               + LNS_v0(NDIM,iglob)*in_sigma_dv(3,iglob) & ! "M" side, part.
+                               + LNS_dv(1,iglob)*sigma_v_0(2,iglob) & ! "M" side, part.
+                               + LNS_v0(1,iglob)*in_sigma_dv(2,iglob) & ! "M" side, part.
+                               + LNS_kappa(iglob)*in_nabla_dT(2,iglob)) & ! "M" side, part.
                             - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
                                + LNS_v0(NDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
                                + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
                                + LNS_v0(1,iglobP)*sigma_dv_P(2) & ! "P" side, part.
                                + LNS_kappa(iglobP)*nabla_dT_P(NDIM)) ! "P" side, part.
             !write(*,*) Sigma_L
-            outrhs_dE(iglobM) = outrhs_dE(iglobM) - halfWeight*DOT_PRODUCT(n_out, Sigma_L)
+            outrhs_dE(iglob) = outrhs_dE(iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L)
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
