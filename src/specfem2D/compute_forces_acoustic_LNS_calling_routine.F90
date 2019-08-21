@@ -181,8 +181,26 @@ subroutine compute_forces_acoustic_LNS_main()
     call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
 #if 0
     do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+      if(isNotClose(  sigma_dv(1, ibool_DG(i,j,ispec)) &
+                    , (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
+                                                           + 0.25*gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)) &
+                    , TINYVAL) .or. &
+         isNotClose(  sigma_dv(2, ibool_DG(i,j,ispec)) &
+                    , LNS_mu(ibool_DG(i,j,ispec))*(  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1) &
+                                                   + ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1)) &
+                    , TINYVAL) .or. &
+         isNotClose(  sigma_dv(3, ibool_DG(i,j,ispec)) &
+                    , (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
+                                                           + 0.25*aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1)) &
+                    , TINYVAL)) then
         write(*,*) '(x z) (Sv_11 Sv_12 Sv_22)', coord(:,ibool_before_perio(i,j,ispec)), sigma_dv(:, ibool_DG(i,j,ispec)) ! TEST
+        write(*,*) 'th =                     ', coord(:,ibool_before_perio(i,j,ispec)), &
+                   (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
+                                                        + 0.25*gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)), &
+                   LNS_mu(ibool_DG(i,j,ispec))*(  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1) &
+                                                + ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1)), &
+                   (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
+                                                        + 0.25*aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1))
       endif
     enddo; enddo; enddo
 #endif
@@ -259,12 +277,14 @@ subroutine compute_forces_acoustic_LNS_main()
   !                                             + deltat*(RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)))
   !enddo
   
+#if 0
   ! PML, iterate ADEs.
   if(PML_BOUNDARY_CONDITIONS) then
     LNS_PML_aux(:,:,:) = LNS_scheme_A(i_stage)*LNS_PML_aux(:,:,:) + deltat*LNS_PML_RHS(:,:,:)
     LNS_PML(:,:,:)     = LNS_PML(:,:,:) + LNS_scheme_B(i_stage)*LNS_PML_aux(:,:,:)
     LNS_PML(1,5:6,:)   = ZEROcr ! for q=rho', G=0, thus no convolution, thus no need for aux vars. hack, TODO something better
   endif
+#endif
   
   ! test
   !if(PML_BOUNDARY_CONDITIONS) then
@@ -1565,6 +1585,8 @@ end subroutine compute_gradient_TFSF
 
 
 
+#if 0
+! UNUSED
 ! ------------------------------------------------------------ !
 ! compute_p                                                    !
 ! ------------------------------------------------------------ !
@@ -1586,6 +1608,7 @@ subroutine compute_p(in_rho, in_v, in_E, out_p)
           !                             + in_v(NDIM,:)**2))
           * (in_E - HALFcr*in_rho*norm2(in_v))
 end subroutine compute_p
+#endif
 ! ------------------------------------------------------------ !
 ! compute_dp                                                   !
 ! ------------------------------------------------------------ !
