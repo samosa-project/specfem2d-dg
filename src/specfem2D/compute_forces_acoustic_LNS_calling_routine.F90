@@ -1060,7 +1060,11 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor ,SPCDM
-  real(kind=CUSTOM_REAL) :: dXi_dX_L,dXi_dZ_L,dEta_dX_L,dEta_dZ_L,Jac_L ! Jacobian matrix and determinant
+  !real(kind=CUSTOM_REAL) :: DXiEta_L(1,1),DXiEta_L(1,2),DXiEta_L(2,1),DXiEta_L(2,2),Jac_L ! Jacobian matrix and determinant
+  real(kind=CUSTOM_REAL), dimension(NDIM,NDIM) :: DXiEta_L ! Derivatives in \Lambda.
+  !real(kind=CUSTOM_REAL) :: wxl, wzl ! Quadrature weights.
+  !real(kind=CUSTOM_REAL) :: Jac_L
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: Jac_WzWx_L
   !real(kind=CUSTOM_REAL) :: temp_SFx, temp_SFz, temp_TFxx, temp_TFzx, temp_TFxz, temp_TFzz
   !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
   !       rho_DG, rhovx_DG, rhovz_DG, E_DG, veloc_x_DG, veloc_z_DG, T, &
@@ -1070,16 +1074,18 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   !real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: locgrad_TF
   
   !real(kind=CUSTOM_REAL) :: dTF_dXi(1), dTF_dEta(1), dTF_dXi(NDIM), dTF_dEta(NDIM), dSF_dXi, dSF_dEta ! Derivatives in \Lambda.
-  real(kind=CUSTOM_REAL) :: dSF_dXi, dSF_dEta ! Derivatives in \Lambda.
+  !real(kind=CUSTOM_REAL) :: dSF_dXi, dSF_dEta ! Derivatives in \Lambda.
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: dSF_dXiEta ! Derivatives in \Lambda, only used if swMETHOD==.false..
   real(kind=CUSTOM_REAL), dimension(NDIM) :: dTF_dXi, dTF_dEta ! Derivatives in \Lambda.
   !real(kind=CUSTOM_REAL) :: dTFx_dx, dTFx_dz, dTFz_dx, dTFz_dz, dSF_dx, dSF_dz
-  real(kind=CUSTOM_REAL) :: wxl, wzl ! Quadrature weights.
-  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: dSF_dX_tmp1, dSF_dX_tmp2, &
-        dSF_dZ_tmp1, dSF_dZ_tmp2, dTF1_dX_tmp1, dTF1_dX_tmp2, &
-        dTF1_dZ_tmp1, dTF1_dZ_tmp2, dTF2_dX_tmp1, dTF2_dX_tmp2, dTF2_dZ_tmp1, dTF2_dZ_tmp2
+  !real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: dSF_dX_ctrbXi, dSF_dX_ctrbEta, &
+  !      dSF_dZ_ctrbXi, dSF_dZ_ctrbEta, dTF1_dX_ctrbXi, dTF1_dX_ctrbEta, &
+  !      dTF1_dZ_ctrbXi, dTF1_dZ_ctrbEta, dTF2_dX_ctrbXi, dTF2_dX_ctrbEta, dTF2_dZ_ctrbXi, dTF2_dZ_ctrbEta
+  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ,NDIM) :: dSF_dXZ_ctrbXi, dSF_dXZ_ctrbEta
+  real(kind=CUSTOM_REAL), dimension(NDIM,NGLLX,NGLLZ,NDIM) :: dTF_dXZ_ctrbXi, dTF_dXZ_ctrbEta
   !real(kind=CUSTOM_REAL) :: vx_init, vz_init
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: Ya_SABC ! Stretching absorbing boundary conditions.
+  !real(kind=CUSTOM_REAL), dimension(NDIM) :: Ya_SABC ! Stretching absorbing boundary conditions.
   
   if(.not. (swSF .or. swTF)) then
     write(*,*) "********************************"
@@ -1137,32 +1143,43 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob     = ibool_DG(i,j,ispec)
-          Jac_L     = jacobian(i,j,ispec)
-          dXi_dX_L  = xix(i,j,ispec)
-          dXi_dZ_L  = xiz(i,j,ispec)
-          dEta_dX_L = gammax(i,j,ispec)
-          dEta_dZ_L = gammaz(i,j,ispec)
+          !Jac_L     = jacobian(i,j,ispec)
+          !DXiEta_L(1,1)  = xix(i,j,ispec)
+          !DXiEta_L(1,2)  = xiz(i,j,ispec)
+          !DXiEta_L(2,1) = gammax(i,j,ispec)
+          !DXiEta_L(2,2) = gammaz(i,j,ispec)
+          DXiEta_L(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
+          DXiEta_L(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
+          DXiEta_L(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
+          DXiEta_L(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! See beginning of subroutine compute_forces_acoustic_LNS for detailed explanations.
             !iglob_unique = ibool_before_perio(i, j, ispec)
-            Ya_SABC  = stretching_ya(:, ibool_before_perio(i, j, ispec))
+            !Ya_SABC  = stretching_ya(:, ibool_before_perio(i, j, ispec))
             !ya_z_l  = stretching_ya(2, iglob_unique)
             ! If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
-            ! Multiply x component by ya_x.
-            dXi_dX_L    = Ya_SABC(1) * dXi_dX_L
-            ! Multiply z component by ya_z.
-            dXi_dZ_L    = Ya_SABC(2) * dXi_dZ_L
-            ! Multiply x component by ya_x.
-            dEta_dX_L   = Ya_SABC(1) * dEta_dX_L
-            ! Multiply z component by ya_z.
-            dEta_dZ_L   = Ya_SABC(2) * dEta_dZ_L
+            !! Multiply x component by ya_x.
+            !DXiEta_L(1,1)    = Ya_SABC(1) * DXiEta_L(1,1)
+            !! Multiply z component by ya_z.
+            !DXiEta_L(1,2)    = Ya_SABC(2) * DXiEta_L(1,2)
+            !! Multiply x component by ya_x.
+            !DXiEta_L(2,1)   = Ya_SABC(1) * DXiEta_L(2,1)
+            !! Multiply z component by ya_z.
+            !DXiEta_L(2,2)   = Ya_SABC(2) * DXiEta_L(2,2)
+            do k = 1, NDIM
+              DXiEta_L(:, k) = stretching_ya(k, ibool_before_perio(i, j, ispec))*DXiEta_L(:, k)
+            enddo
             ! TODO: something on jacobian??
             !Jac_L = ya_x_l*ya_z_l*Jac_L
           endif
           
-          wzl = wzgll(j)
-          wxl = wxgll(i)
+          !wzl = wzgll(j)
+          !wxl = wxgll(i)
+          
+          Jac_WzWx_L(1)    = wzgll(j)*jacobian(i,j,ispec)
+          Jac_WzWx_L(NDIM) = wxgll(i)*jacobian(i,j,ispec)
+          ! In Jac_WzWx_L, notice how 1 is z and 2 is x. This comes from the use of the chain rule on the bilinear form, and reorganisation. See Leo's LNS paper, or thesis manuscript.
           
           if(swMETHOD) then
             ! In that case, we want to compute \int_{\Omega} (\nabla f)\Phi as:
@@ -1184,38 +1201,52 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! Compute inner contributions.
             !if(.not. CONSTRAIN_HYDROSTATIC) then
             if(swSF) then
-              dSF_dX_tmp1(i,j)  = wzl * Jac_L * (dXi_dX_L * SF(iglob))
-              dSF_dZ_tmp1(i,j)  = wzl * Jac_L * (dXi_dZ_L * SF(iglob))
-              dSF_dX_tmp2(i,j)  = wxl * Jac_L * (dEta_dX_L * SF(iglob))
-              dSF_dZ_tmp2(i,j)  = wxl * Jac_L * (dEta_dZ_L * SF(iglob))
+              !dSF_dX_ctrbXi(i,j)  = wzl * Jac_L * (DXiEta_L(1,1) * SF(iglob))
+              !dSF_dZ_ctrbXi(i,j)  = wzl * Jac_L * (DXiEta_L(1,2) * SF(iglob))
+              !dSF_dXZ_ctrbXi(i,j,1) = wzl * Jac_L * (DXiEta_L(1,1) * SF(iglob))
+              !dSF_dXZ_ctrbXi(i,j,2) = wzl * Jac_L * (DXiEta_L(1,2) * SF(iglob))
+              !dSF_dX_ctrbEta(i,j)  = wxl * Jac_L * (DXiEta_L(2,1) * SF(iglob))
+              !dSF_dZ_ctrbEta(i,j)  = wxl * Jac_L * (DXiEta_L(2,2) * SF(iglob))
+              !dSF_dXZ_ctrbEta(i,j,1)  = wxl * Jac_L * (DXiEta_L(2,1) * SF(iglob))
+              !dSF_dXZ_ctrbEta(i,j,2)  = wxl * Jac_L * (DXiEta_L(2,2) * SF(iglob))
+              dSF_dXZ_ctrbXi(i,j,:)   = Jac_WzWx_L(1) * (DXiEta_L(1,:) * SF(iglob))
+              dSF_dXZ_ctrbEta(i,j,:)  = Jac_WzWx_L(2) * (DXiEta_L(2,:) * SF(iglob))
             endif
             if(swTF) then
-              dTF1_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * TF(1,iglob))
-              dTF1_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * TF(1,iglob))
-              dTF2_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * TF(NDIM,iglob))
-              dTF2_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * TF(NDIM,iglob))
-              dTF1_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * TF(1,iglob))
-              dTF1_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * TF(1,iglob))
-              dTF2_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * TF(NDIM,iglob))
-              dTF2_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * TF(NDIM,iglob))
+              !dTF1_dX_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,1) * TF(1,iglob))
+              !dTF1_dZ_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,2) * TF(1,iglob))
+              !dTF2_dX_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,1) * TF(2,iglob))
+              !dTF2_dZ_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,2) * TF(2,iglob))
+              !dTF1_dX_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,1) * TF(1,iglob))
+              !dTF1_dZ_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,2) * TF(1,iglob))
+              !dTF2_dX_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,1) * TF(2,iglob))
+              !dTF2_dZ_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,2) * TF(2,iglob))
+              do k=1, NDIM
+                !dTF_dXZ_ctrbXi(k,i,j,1) = wzl * Jac_L * (DXiEta_L(1,1) * TF(k,iglob))
+                !dTF_dXZ_ctrbXi(k,i,j,2) = wzl * Jac_L * (DXiEta_L(1,2) * TF(k,iglob))
+                !dTF_dXZ_ctrbEta(k,i,j,1) = wxl * Jac_L * (DXiEta_L(2,1) * TF(k,iglob))
+                !dTF_dXZ_ctrbEta(k,i,j,2) = wxl * Jac_L * (DXiEta_L(2,2) * TF(k,iglob))
+                dTF_dXZ_ctrbXi(k,i,j,:)  = Jac_WzWx_L(1) * (DXiEta_L(1,:) * TF(k,iglob))
+                dTF_dXZ_ctrbEta(k,i,j,:) = Jac_WzWx_L(2) * (DXiEta_L(2,:) * TF(k,iglob))
+              enddo
             endif
             !else
             !  vx_init = rhovx_init(iglob)/rho_init(iglob)
             !  vz_init = rhovz_init(iglob)/rho_init(iglob)
             !  
-            !  dSF_dX_tmp1(i,j)  = wzl * Jac_L * (dXi_dX_L * (SF(iglob) - T_init(iglob)))
-            !  dSF_dZ_tmp1(i,j)  = wzl * Jac_L * (dXi_dZ_L * (SF(iglob) - T_init(iglob)))
-            !  dTF1_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * (TF(1,iglob) - vx_init))
-            !  dTF1_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  dTF2_dX_tmp1(i,j) = wzl * Jac_L * (dXi_dX_L * (TF(NDIM,iglob) - vz_init))
-            !  dTF2_dZ_tmp1(i,j) = wzl * Jac_L * (dXi_dZ_L * (TF(NDIM,iglob) - vz_init))
+            !  dSF_dX_ctrbXi(i,j)  = wzl * Jac_L * (DXiEta_L(1,1) * (SF(iglob) - T_init(iglob)))
+            !  dSF_dZ_ctrbXi(i,j)  = wzl * Jac_L * (DXiEta_L(1,2) * (SF(iglob) - T_init(iglob)))
+            !  dTF1_dX_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,1) * (TF(1,iglob) - vx_init))
+            !  dTF1_dZ_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,2) * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
+            !  dTF2_dX_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,1) * (TF(NDIM,iglob) - vz_init))
+            !  dTF2_dZ_ctrbXi(i,j) = wzl * Jac_L * (DXiEta_L(1,2) * (TF(NDIM,iglob) - vz_init))
             !  
-            !  dSF_dX_tmp2(i,j)  = wxl * Jac_L * (dEta_dX_L * (SF(iglob) - T_init(iglob)))
-            !  dSF_dZ_tmp2(i,j)  = wxl * Jac_L * (dEta_dZ_L * (SF(iglob) - T_init(iglob)))
-            !  dTF1_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * (TF(1,iglob) - vx_init))
-            !  dTF1_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
-            !  dTF2_dX_tmp2(i,j) = wxl * Jac_L * (dEta_dX_L * (TF(NDIM,iglob) - vz_init))
-            !  dTF2_dZ_tmp2(i,j) = wxl * Jac_L * (dEta_dZ_L * (TF(NDIM,iglob) - vz_init))
+            !  dSF_dX_ctrbEta(i,j)  = wxl * Jac_L * (DXiEta_L(2,1) * (SF(iglob) - T_init(iglob)))
+            !  dSF_dZ_ctrbEta(i,j)  = wxl * Jac_L * (DXiEta_L(2,2) * (SF(iglob) - T_init(iglob)))
+            !  dTF1_dX_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,1) * (TF(1,iglob) - vx_init))
+            !  dTF1_dZ_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,2) * (TF(1,iglob))) ! Some hypothesis on initial velocity is used here.
+            !  dTF2_dX_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,1) * (TF(NDIM,iglob) - vz_init))
+            !  dTF2_dZ_ctrbEta(i,j) = wxl * Jac_L * (DXiEta_L(2,2) * (TF(NDIM,iglob) - vz_init))
             !endif
           else
             ! In that case, we want to compute \int_{\Omega} (\nabla f)\Phi directly as it.
@@ -1234,8 +1265,9 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! which is immediate through the SEM formulation.
             
             if(swSF) then
-              dSF_dXi       = ZEROcr
-              dSF_dEta      = ZEROcr
+              !dSF_dXi       = ZEROcr
+              !dSF_dEta      = ZEROcr
+              dSF_dXiEta    = ZEROcr
             endif
             if(swTF) then
               dTF_dXi       = ZEROcr ! Vector operation.
@@ -1251,8 +1283,10 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             do k = 1, NGLLX
               !if(.not. CONSTRAIN_HYDROSTATIC) then
               if(swSF) then
-                dSF_dXi   = dSF_dXi   + SF(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
-                dSF_dEta  = dSF_dEta  + SF(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                !dSF_dXi   = dSF_dXi   + SF(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                !dSF_dEta  = dSF_dEta  + SF(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
+                dSF_dXiEta(1)  = dSF_dXiEta(1)  + SF(ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
+                dSF_dXiEta(2)  = dSF_dXiEta(2)  + SF(ibool_DG(i,k,ispec)) * real(hprime_zz(j,k), kind=CUSTOM_REAL)
               endif
               if(swTF) then
                 dTF_dXi(1)     = dTF_dXi(1)     + TF(1,ibool_DG(k,j,ispec)) * real(hprime_xx(i,k), kind=CUSTOM_REAL)
@@ -1289,20 +1323,23 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
 
             ! Compute derivatives in element \Omega using the chain rule.
             if(swSF) then
-              !dSF_dx   = dSF_dXi * dXi_dX_L + dSF_dEta * dEta_dX_L
-              !dSF_dz   = dSF_dXi * dXi_dZ_L + dSF_dEta * dEta_dZ_L
+              !dSF_dx   = dSF_dXi * DXiEta_L(1,1) + dSF_dEta * DXiEta_L(2,1)
+              !dSF_dz   = dSF_dXi * DXiEta_L(1,2) + dSF_dEta * DXiEta_L(2,2)
               !temp_SFx = dSF_dx * Jac_L
               !temp_SFz = dSF_dz * Jac_L
               !nabla_SF(1,iglob) = dSF_dx
               !nabla_SF(NDIM,iglob) = dSF_dz
-              nabla_SF(1,iglob)    = dSF_dXi * dXi_dX_L + dSF_dEta * dEta_dX_L
-              nabla_SF(NDIM,iglob) = dSF_dXi * dXi_dZ_L + dSF_dEta * dEta_dZ_L
+              !nabla_SF(1,iglob)    = dSF_dXi * DXiEta_L(1,1) + dSF_dEta * DXiEta_L(2,1)
+              !nabla_SF(NDIM,iglob) = dSF_dXi * DXiEta_L(1,2) + dSF_dEta * DXiEta_L(2,2)
+              !nabla_SF(1,iglob)    = dSF_dXiEta(1) * DXiEta_L(1,1) + dSF_dXiEta(2) * DXiEta_L(2,1)
+              !nabla_SF(NDIM,iglob) = dSF_dXiEta(1) * DXiEta_L(1,2) + dSF_dXiEta(2) * DXiEta_L(2,2)
+              nabla_SF(:,iglob) = MATMUL(TRANSPOSE(DXiEta_L), dSF_dXiEta)
             endif
             if(swTF) then
-              !dTFx_dx   = dTF_dXi(1) * dXi_dX_L + dTF_dEta(1) * dEta_dX_L
-              !dTFx_dz   = dTF_dXi(1) * dXi_dZ_L + dTF_dEta(1) * dEta_dZ_L
-              !dTFz_dx   = dTF_dXi(NDIM) * dXi_dX_L + dTF_dEta(NDIM) * dEta_dX_L
-              !dTFz_dz   = dTF_dXi(NDIM) * dXi_dZ_L + dTF_dEta(NDIM) * dEta_dZ_L
+              !dTFx_dx   = dTF_dXi(1) * DXiEta_L(1,1) + dTF_dEta(1) * DXiEta_L(2,1)
+              !dTFx_dz   = dTF_dXi(1) * DXiEta_L(1,2) + dTF_dEta(1) * DXiEta_L(2,2)
+              !dTFz_dx   = dTF_dXi(NDIM) * DXiEta_L(1,1) + dTF_dEta(NDIM) * DXiEta_L(2,1)
+              !dTFz_dz   = dTF_dXi(NDIM) * DXiEta_L(1,2) + dTF_dEta(NDIM) * DXiEta_L(2,2)
               !temp_TFxx = dTFx_dx * Jac_L
               !temp_TFxz = dTFx_dz * Jac_L
               !temp_TFzx = dTFz_dx * Jac_L
@@ -1313,8 +1350,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
               !nabla_TF(NDIM,NDIM,iglob) = dTFz_dz
               
               do k=1,NDIM ! Re-using index k for spatial dimension.
-                nabla_TF(k,1,iglob)    = dTF_dXi(k) * dXi_dX_L + dTF_dEta(k) * dEta_dX_L
-                nabla_TF(k,NDIM,iglob) = dTF_dXi(k) * dXi_dZ_L + dTF_dEta(k) * dEta_dZ_L
+                nabla_TF(k,1,iglob)    = dTF_dXi(k) * DXiEta_L(1,1) + dTF_dEta(k) * DXiEta_L(2,1)
+                nabla_TF(k,NDIM,iglob) = dTF_dXi(k) * DXiEta_L(1,2) + dTF_dEta(k) * DXiEta_L(2,2)
               enddo ! Enddo on k.
 #if 0
               if(abs(coord(1,ibool_before_perio(i,j,ispec))-2.)<TINYVAL .and. &
@@ -1323,8 +1360,8 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
                             !nabla_dv(1, 1, ibool_DG(i,j,ispec)), nabla_dv(1, 2, ibool_DG(i,j,ispec)), & ! TEST
                             nabla_TF(2, :, ibool_DG(i,j,ispec))! TEST
                 write(*,*) 'components',&
-                            dTF_dXi(2), dXi_dX_L, dTF_dEta(2), dEta_dX_L, & ! dTF_dXi at fault
-                            dTF_dXi(2), dXi_dZ_L, dTF_dEta(2), dEta_dZ_L ! dTF_dEta at fault (for high degrees only it seems)
+                            dTF_dXi(2), DXiEta_L(1,1), dTF_dEta(2), DXiEta_L(2,1), & ! dTF_dXi at fault
+                            dTF_dXi(2), DXiEta_L(1,2), dTF_dEta(2), DXiEta_L(2,2) ! dTF_dEta at fault (for high degrees only it seems)
                 write(*,*) 'th =                       ', &
                             !aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1), &
                             !cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1), &
@@ -1333,10 +1370,10 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
              endif
 #endif
               
-             ! nabla_TF(1,1,iglob) = dTF_dXi(1) * dXi_dX_L + dTF_dEta(1) * dEta_dX_L ! dTFx_dx = d[TF(1)]/dXi * dXi/dX + d[TF(1)]/dEta * dEta/dX
-             ! nabla_TF(1,2,iglob) = dTF_dXi(1) * dXi_dZ_L + dTF_dEta(1) * dEta_dZ_L ! dTFx_dz = d[TF(1)]/dXi * dXi/dZ + d[TF(1)]/dEta * dEta/dZ
-             ! nabla_TF(2,1,iglob) = dTF_dXi(2) * dXi_dX_L + dTF_dEta(2) * dEta_dX_L ! dTFz_dx = d[TF(2)]/dXi * dXi/dX + d[TF(2)]/dEta * dEta/dX
-             ! nabla_TF(2,2,iglob) = dTF_dXi(2) * dXi_dZ_L + dTF_dEta(2) * dEta_dZ_L ! dTFz_dz = d[TF(2)]/dXi * dXi/dZ + d[TF(2)]/dEta * dEta/dZ
+             ! nabla_TF(1,1,iglob) = dTF_dXi(1) * DXiEta_L(1,1) + dTF_dEta(1) * DXiEta_L(2,1) ! dTFx_dx = d[TF(1)]/dXi * dXi/dX + d[TF(1)]/dEta * dEta/dX
+             ! nabla_TF(1,2,iglob) = dTF_dXi(1) * DXiEta_L(1,2) + dTF_dEta(1) * DXiEta_L(2,2) ! dTFx_dz = d[TF(1)]/dXi * dXi/dZ + d[TF(1)]/dEta * dEta/dZ
+             ! nabla_TF(2,1,iglob) = dTF_dXi(2) * DXiEta_L(1,1) + dTF_dEta(2) * DXiEta_L(2,1) ! dTFz_dx = d[TF(2)]/dXi * dXi/dX + d[TF(2)]/dEta * dEta/dX
+             ! nabla_TF(2,2,iglob) = dTF_dXi(2) * DXiEta_L(1,2) + dTF_dEta(2) * DXiEta_L(2,2) ! dTFz_dz = d[TF(2)]/dXi * dXi/dZ + d[TF(2)]/dEta * dEta/dZ
             endif ! Endif on swTF.
           endif ! Endif on swMETHOD.
         enddo ! Enddo on i.
@@ -1351,25 +1388,25 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             do k = 1, NGLLX
               if(swSF) then
                 nabla_SF(1,iglob)    = nabla_SF(1,iglob) - &
-                                       (dSF_dX_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                        dSF_dX_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                       (dSF_dXZ_ctrbXi(k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                       dSF_dXZ_ctrbEta(i,k,1) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
                 nabla_SF(NDIM,iglob) = nabla_SF(NDIM,iglob) - &
-                                       (dSF_dZ_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                        dSF_dZ_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                       (dSF_dXZ_ctrbXi(k,j,NDIM) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                       dSF_dXZ_ctrbEta(i,k,NDIM) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               endif
               if(swTF) then
                 nabla_TF(1,1,iglob)       = nabla_TF(1,1,iglob) - &
-                                            (dTF1_dX_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                             dTF1_dX_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                            (dTF_dXZ_ctrbXi(1,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                            dTF_dXZ_ctrbEta(1,i,k,1) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
                 nabla_TF(1,NDIM,iglob)    = nabla_TF(1,NDIM,iglob) - &
-                                            (dTF1_dZ_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                             dTF1_dZ_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                            (dTF_dXZ_ctrbXi(1,k,j,NDIM) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                            dTF_dXZ_ctrbEta(1,i,k,NDIM) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
                 nabla_TF(NDIM,1,iglob)    = nabla_TF(NDIM,1,iglob) - &
-                                            (dTF2_dX_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                             dTF2_dX_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                            (dTF_dXZ_ctrbXi(NDIM,k,j,1) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                            dTF_dXZ_ctrbEta(NDIM,i,k,1) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
                 nabla_TF(NDIM,NDIM,iglob) = nabla_TF(NDIM,NDIM,iglob) - &
-                                            (dTF2_dZ_tmp1(k,j) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
-                                             dTF2_dZ_tmp2(i,k) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
+                                            (dTF_dXZ_ctrbXi(NDIM,k,j,NDIM) * real(hprimewgll_xx(k,i), kind=CUSTOM_REAL) + &
+                                            dTF_dXZ_ctrbEta(NDIM,i,k,NDIM) * real(hprimewgll_zz(k,j), kind=CUSTOM_REAL))
               endif
             enddo
           enddo
