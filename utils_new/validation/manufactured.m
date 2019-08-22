@@ -54,7 +54,7 @@ IDz = 100;
 
 % OUTPUT_FILES directory to analyse.
 % OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_mu_dp__1p25em5']}; IDzs={[2]*10000}; plotFields_do = 0;
-OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']}; IDzs={[2]*10000}; plotFields_do = 1;
+OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']}; IDzs={[2:10]*1}; plotFields_do = 1;
 
 % Test case to plot/compute.
 % testCase = 'inviscid';
@@ -64,34 +64,35 @@ testCase = 'mu';
 %%%%%%%%%%%%%%%%
 % Packed, for paper.
 %%%%%%%%%%%%%%%%
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000_inviscid_dp'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_inviscid_dp'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500_inviscid_dp'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250_inviscid_dp']}; testCase = 'inviscid'; OFDs(4)=[];
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000_kappa_dp'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_kappa_dp'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500_kappa_dp'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250_kappa_dp']}; testCase = 'kappa'; OFDs(4)=[];
-% OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx5p000_kappa_vx'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_kappa_vx'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p500_kappa_vx'], ...
-%         [SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx0p250_kappa_vx']}; testCase = 'kappa'; OFDs(4)=[];
+% OFDs = {[SPCFM_EX_DIR,prefix,'_5p00_iv/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_1p00_iv/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_0p50_iv/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_0p25_iv/OUTPUT_FILES']}; testCase = 'inviscid';
+% OFDs = {[SPCFM_EX_DIR,prefix,'_5p00_ka/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_1p00_ka/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_0p50_ka/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_0p25_ka/OUTPUT_FILES']}; testCase = 'kappa';
+% OFDs = {[SPCFM_EX_DIR,prefix,'_5p00_mu/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_1p00_mu/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_0p50_mu/OUTPUT_FILES'], ...
+%         [SPCFM_EX_DIR,prefix,'_0p25_mu/OUTPUT_FILES']}; testCase = 'mu';
 % commonID = [0.2,0.4,0.6,0.8,1]*1000;
-% commonID = [1]*20000;
-% IDzs = {[commonID], ...
-%         [commonID*5], ...
-%         [commonID*5*2], ...
-%         [commonID*5*2*2]}; IDzs(4)=[];
-% plotFields_do = 0; % deactivate plotting fields when we compute many errors
+commonID = [1]*20000;
+IDzs = {[commonID], ...
+        [commonID*5], ...
+        [commonID*5*2], ...
+        [commonID*5*2*2]};
+plotFields_do = 1; % eventually deactivate plotting
 
 % Parameters for analytic solution (cf. LNS_manufactured_solutions.mw).
+% Should be the same as in source code.
 switch(testCase)
   case 'inviscid'
     RHO_cst = 0.001;
     VX_cst = 0.;
     E_cst = 0.05;
   case 'kappa'
-    RHO_cst = 0.001;
+    RHO_cst = 0.;
     VX_cst = 0.;
     E_cst = 0.05;
   case 'mu'
@@ -153,7 +154,7 @@ for ofdi = 1:N_OFD
   
   if(plotFields_do)
     % Prepare Figure saving w.r.t. OFD.
-    spl=split(OFD,'/'); plotFields_saveFigName_base = [plotFields_saveFigName_prefix, regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
+    spl=split(OFD,'/'); plotFields_saveFigName_base = [plotFields_saveFigName_prefix, regexprep(spl{end-2},[prefix,'_'],''),'__',regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
   end
 
   %%%%%%%%%%%%%%%%
@@ -227,7 +228,7 @@ for ofdi = 1:N_OFD
   for IT_id = 1:numel(IDz)
     IT = IDz(IT_id);
     % Load dump.
-    [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT);
+    [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, 0);
     disp(['[] Read dump at iteration ',num2str(IT),' (t = ',num2str(IT*DT),' s).']);
     if(ismember(imagetype_wavefield_dumps,[1,2,3]))
       disp(['[] Selecting x-axis values from dump.']);
@@ -272,9 +273,11 @@ for ofdi = 1:N_OFD
     
     switch(imagetype_wavefield_dumps)
       case 4
+        disp(['[] Dumps are pressure dumps, computing and plotting error w.r.t. pressure.']);
         zth = dp_th;
         qtity = 'p';
       case 2
+        disp(['[] Dumps are horizontal velocity dumps, computing and plotting error w.r.t. horizontal velocity.']);
         zth = dvx_th;
         qtity = 'v_x';
       otherwise
