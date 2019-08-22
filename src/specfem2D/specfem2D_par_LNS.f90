@@ -14,7 +14,8 @@ module specfem_par_LNS
   ! SEM definition of the gradient.
   ! Switching to LNS_switch_gradient = .false. enables a somewhat little acceleration (~28% total runtime gain), but is
   ! expected to be less accurate.
-  logical, parameter :: LNS_switch_gradient = .true.
+  ! LNS_switch_gradient=.true. has an issue when background wind and viscosity are on both at the same time. Not understood yet, to be corrected.
+  logical, parameter :: LNS_switch_gradient = .false.
   
   ! General switch being true if (maxval(LNS_mu) > 0. .OR. maxval(LNS_eta) > 0. .OR. maxval(LNS_kappa) > 0.) and false if not.
   ! See compute_forces_acoustic_LNS_calling_routine. In the latter case, enables faster verification and thus faster skipping

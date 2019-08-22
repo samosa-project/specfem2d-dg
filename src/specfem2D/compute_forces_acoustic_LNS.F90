@@ -752,7 +752,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif
           !outrhs_rho0dv(1,iglob) = outrhs_rho0dv(1,iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_rho0dv(1,iglob) =   outrhs_rho0dv(1,iglob) &
-                                    - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
+                                   - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.2) z-Momentum inviscid contributions.
           Sigma_L(1)    =   cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob) & ! "M" side.
                           + rho0dv_P(1)        *LNS_v0(NDIM,iglobP) ! "P" side.
@@ -766,7 +766,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif
           !outrhs_rho0dv(NDIM,iglob) = outrhs_rho0dv(NDIM,iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
-                                       - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
+                                      - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.3) Energy inviscid contributions.
           Sigma_L =   LNS_dv(:,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) & ! "M" side, part.
                     + LNS_v0(:,iglob)*(cv_dE(iglob)  + in_dp(iglob)) & ! "M" side, part.
@@ -780,7 +780,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           endif
           !outrhs_dE(iglob) = outrhs_dE(iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_dE(iglob) =   outrhs_dE(iglob) &
-                              - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
+                             - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           
           ! 2) Viscous contributions.
           if(viscousComputation) then

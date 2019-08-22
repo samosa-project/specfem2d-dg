@@ -864,11 +864,11 @@
     
     ! MODIFICATION FOR LNS.
     if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
-      allocate(buffer_LNS_drho_P(NGLLX*max_interface_size,ninterface), &
-               buffer_LNS_dE_P(NGLLX*max_interface_size,ninterface), &
-               buffer_LNS_rho0dv_P(NDIM,NGLLX*max_interface_size,ninterface), &
-               buffer_LNS_nabla_dT(NDIM,NGLLX*max_interface_size,ninterface), &
-               buffer_LNS_sigma_dv(3,NGLLX*max_interface_size,ninterface), &
+      allocate(buffer_LNS_drho_P(             NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_dE_P(               NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_rho0dv_P(NDIM,      NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_nabla_dT(NDIM,      NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_sigma_dv(NVALSIGMA, NGLLX*max_interface_size, ninterface), &
                stat=ier)
       if (ier /= 0) then
         ! Safeguard.
