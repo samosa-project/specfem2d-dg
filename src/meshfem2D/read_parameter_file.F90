@@ -574,7 +574,15 @@
     if (err_occurred() /= 0) stop 'error reading parameter nx in Par_file'
 
     if(ADD_PERIODIC_CONDITIONS) then
-      periodic_BC_search_bandwidth = 1.05*((xmax_param-xmin_param)/nx_param) ! Set bandwidth for periodic boundary conditions search as a little bit more than the elements' (maximum) horizontal width. For acceleration method for periodic points finding (skip points too far from left/right boundaries). See 'repartition_coupling.f90'.
+      ! Set bandwidth for periodic boundary conditions search as a little bit more than the elements' (maximum) horizontal width. For acceleration method for periodic points finding (skip points too far from left/right boundaries). See 'repartition_coupling.f90'.
+      if(read_external_mesh) then
+        ! If external mesh, do not base this off (xmax,xmin,nx) since they make no sense for external meshes.
+        ! Rather, leave it to zero and let 'repartition_coupling.f90' determine it.
+        periodic_BC_search_bandwidth = 0.
+      else
+        ! Else, set it a litte over a Dx.
+        periodic_BC_search_bandwidth = 1.05*((xmax_param-xmin_param)/nx_param)
+      endif
     endif
 
     ! read absorbing boundary parameters

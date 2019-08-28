@@ -337,7 +337,7 @@
 
   use part_unstruct_par,only: nelmnts,part, nzread
   
-  use parameter_file_par,only:periodic_BC_search_bandwidth
+  use parameter_file_par,only:periodic_BC_search_bandwidth,read_external_mesh
 
   implicit none
   include "constants.h"
@@ -351,7 +351,7 @@
   ! local parameters
   logical, dimension(0:nelmnts-1) :: is_periodic
 
-  integer :: el,el2,icorner,icorner2,num_node,num_node2,ifirst_partition_found
+  integer :: el,el2,icorner,icorner2,num_node,num_node2,ifirst_partition_found,startPointOtherLoop
 
   double precision :: xtol,xtypdist
   double precision :: x,y,x2,y2
@@ -386,12 +386,27 @@
   is_periodic(:) = .false.
   
   accelerate_finding = .true. ! Set this to .false. to go back to the original O(N^2) search algorithm.
+  if(read_external_mesh) then
+    ! For now, determination of band is not working well for external meshes. Thus, use old algorithm.
+    accelerate_finding = .false.
+    write(*,*) "> Using external mesh, thus using raw algorithm."
+  endif
+  
   debug_finding = .false.
   
-  xmin = minval(nodes_coords(1,:))
-  xmax = maxval(nodes_coords(1,:))
-  ! Band must be greater than the maximum horizontal dx. The larger the band the better (less chances of not finding all points), but also slower. (xmax-xmin)/(number of points along x) the minimum. Other choices can be hard-coded here.
-  band=periodic_BC_search_bandwidth
+  if(accelerate_finding) then
+    xmin = minval(nodes_coords(1,:))
+    xmax = maxval(nodes_coords(1,:))
+    ! Band must be greater than the maximum horizontal dx. The larger the band the better (less chances of not finding all points), but also slower. (xmax-xmin)/(number of points along x) the minimum. Other choices can be hard-coded here.
+    if(abs(periodic_BC_search_bandwidth)<TINYVAL) then
+      ! If left to a small value, must mean an external mesh is being used.
+      ! Thus, choose a band only based of (xmin, xmax)
+      band = 0.04*(xmax-xmin)
+    else
+      ! Else, it has been set before, so leave the band as such.
+      band = periodic_BC_search_bandwidth
+    endif
+  endif
   
 ! loop on all the elements
   do el = 0, nelmnts-2 ! we stop one element before the end in order for the second loop to be OK in all cases
@@ -405,7 +420,7 @@
     if(accelerate_finding) then
       if(el==0) then
         write(*,*) "> Using acceleration method (skip points too far from left/right boundaries)."
-        write(*,*) "> Band: ", band, " ( ",int(100*band/(xmax-xmin)),"% of horizontal span)."
+        write(*,*) "> Band: ", band, " ( ",(100.*band/(xmax-xmin)),"% of horizontal span)."
       endif
       if(      nodes_coords(1,elmnts_l(NCORNERS*el) + 1) > xmin+band & ! Corner n°0 is laterally too far from left boundary.
          .and. nodes_coords(1,elmnts_l(NCORNERS*el) + 1) < xmax-band & ! Corner n°0 is laterally too far from right boundary.
@@ -414,7 +429,19 @@
       endif
     endif
     
-    do el2 = el+1, nelmnts-1
+    if(read_external_mesh) then
+      if(el==0) then
+        write(*,*) "> For some reason, when using external meshes, periodic point finding with raw algorithm crashes."
+        write(*,*) "> Thus cycle through ALL points twice. Might be very long, prepare to sit there for a long time."
+        write(*,*) "> Maybe go jogging or something meanwhile."
+      endif
+      startPointOtherLoop = 0
+    else
+      startPointOtherLoop = el+1
+    endif
+    
+    do el2 = startPointOtherLoop, nelmnts-1
+    !do el2 = el+1, nelmnts-1
       if (is_periodic(el2)) cycle
       ! it is sufficient to loop on the four corners to determine if this element has at least one periodic point
       do icorner = 0,NCORNERS-1
@@ -426,13 +453,24 @@
           x2 = nodes_coords(1,num_node2)
           y2 = nodes_coords(2,num_node2)
           ! if the two points are at the same height Y
+          !if(y>0. .and. y2>0. .and. &
+          !  ((abs(x-75.)<xtol .and. abs(x2+75.)<xtol) .or. (abs(x+75.)<xtol .and. abs(x2-75.)<xtol))) &
+          !    write(*,*) 'points (',x,y,') and (',x2,y2,') are considered' ! debug
           if (abs(y2 - y) < xtol) then
+            !if(y>0. .and. y2>0. .and. &
+            !  ((abs(x-75.)<xtol .and. abs(x2+75.)<xtol) .or. (abs(x+75.)<xtol .and. abs(x2-75.)<xtol))) &
+            !    write(*,*) 'close enough on yZ' ! debug
             ! if in addition their X coordinates differ by exactly the periodicity distance
             if (abs(abs(x2 - x) - PERIODIC_HORIZ_DIST) < xtol) then
               ! then these two elements are in contact by a periodic edge
               is_periodic(el) = .true.
               is_periodic(el2) = .true.
+              !write(*,*) '>> considered the same (elements ',el,' and ',el2,' are periodic)' ! debug
               goto 100
+            else! debug
+            !if(y>0. .and. y2>0. .and. &
+            !  ((abs(x-75.)<xtol .and. abs(x2+75.)<xtol) .or. (abs(x+75.)<xtol .and. abs(x2-75.)<xtol))) &
+            !      write(*,*) '>> considered NOT the same' ! debug
             endif
           endif
         enddo
@@ -443,6 +481,7 @@
   
   print *,'done detecting points for periodic boundary conditions.'
   print *,'number of periodic elements found and grouped in the same partition: ',count(is_periodic)
+  !stop 'kek' ! DEBUGff
   
   if(mod(count(is_periodic),2)/=0) then
     write(*,*) "********************************"
