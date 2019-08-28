@@ -100,7 +100,7 @@ end subroutine prepare_timerun_ssf
 subroutine prepare_source_spatial_function_DG
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: coord, ibool_before_perio, IMAIN, ispec_is_acoustic_DG, &
-                         ispec_selected_source, myrank, NSOURCES, nspec, &
+                         myrank, NSOURCES, nspec, &!ispec_selected_source, &
                          source_spatial_function_DG, source_type, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA, x_source, z_source 
   implicit none
   
@@ -115,25 +115,28 @@ subroutine prepare_source_spatial_function_DG
       write(filename, '( "OUTPUT_FILES/SSF", i8.8, "_", i8.8 )' ) i_source, myrank
       open(unit=504,file=filename,status='unknown',action='write', position="append")
     endif
-    if(.not. ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
-      ! The central point of the source is not in a DG element, ignore call and inform user.
-      if(myrank == 0) then
-        write(*,*) "********************************"
-        write(*,*) "*           WARNING            *"
-        write(*,*) "********************************"
-        write(*,*) "* The central point of the     *"
-        write(*,*) "* source                       *"
-        write(*,*) "* ", i_source
-        write(*,*) "* is not in a DG element, a    *"
-        write(*,*) "* spread source spatial        *"
-        write(*,*) "* function cannot be           *"
-        write(*,*) "* implemented. A classical     *"
-        write(*,*) "* spatial source function will *"
-        write(*,*) "* be used.                     *"
-        write(*,*) "********************************"
-        call flush_IMAIN()
-      endif
-    else
+    
+    ! 190828: removed this warning. Indeed, only points within DG elements are updated with the SSF. So, this poses no problem when it overlaps with non-DG elements. Worse, it causes some with large sources when procs share DG and non-DG elements.
+    !write(*,*) myrank, 'KEK', coord(:, ibool_before_perio(3, 3, ispec_selected_source(i_source))) ! DEBUG
+    !if(.not. ispec_is_acoustic_DG(ispec_selected_source(i_source))) then
+    !  ! The central point of the source is not in a DG element, ignore call and inform user.
+    !  if(myrank == 0) then
+    !    write(*,*) "********************************"
+    !    write(*,*) "*           WARNING            *"
+    !    write(*,*) "********************************"
+    !    write(*,*) "* The central point of the     *"
+    !    write(*,*) "* source                       *"
+    !    write(*,*) "* ", i_source
+    !    write(*,*) "* is not in a DG element, a    *"
+    !    write(*,*) "* spread source spatial        *"
+    !    write(*,*) "* function cannot be           *"
+    !    write(*,*) "* implemented. A classical     *"
+    !    write(*,*) "* spatial source function will *"
+    !    write(*,*) "* be used.                     *"
+    !    write(*,*) "********************************"
+    !    call flush_IMAIN()
+    !  endif
+    !else
       ! The central point of the source is indeed in a DG element.
       ! TODO: More cases may exist where the use of a spread source spatial function has to be discarded. Identify those and produce relevant tests and error messages.
       
@@ -189,11 +192,11 @@ subroutine prepare_source_spatial_function_DG
                 !distsqrd = (coord(2, iglob_unique) - z_source(i_source) - tan(3.1415*(0.25))*(coord(1, iglob_unique)-0.))**2. ! Oblique plane wave.
                 distsqrd = (coord(2, iglob_unique) - z_source(i_source))**2. ! Horizontal plane wave.
                 !distsqrd = (coord(1, iglob_unique) - x_source(i_source))**2. ! Vertical plane wave.
-                if(abs(coord(2, iglob_unique))<20. .and. abs(coord(1, iglob_unique))<1.e9) then ! Constrain to a box.
+                !if(abs(coord(2, iglob_unique))<20. .and. abs(coord(1, iglob_unique))<1.e9) then ! Constrain to a box.
                   source_spatial_function_DG(i_source, iglob_unique) = exp(-distsqrd/(SPREAD_SSF_SIGMA**2.))
-                else
-                  source_spatial_function_DG(i_source, iglob_unique) = ZEROcr
-                endif
+                !else
+                !  source_spatial_function_DG(i_source, iglob_unique) = ZEROcr
+                !endif
               endif
               
               if(SPREAD_SSF_SAVE) then
@@ -207,7 +210,7 @@ subroutine prepare_source_spatial_function_DG
           enddo ! Enddo on i.
         endif ! Endif on ispec_is_acoustic_DG(ispec).
       enddo ! Enddo on ispec.
-    endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
+    !endif ! Endif on ispec_is_acoustic_DG(ispec_selected_source(i_source)).
     
     !write(*,*) "MINMAX SSF", minval(source_spatial_function_DG), maxval(source_spatial_function_DG)
     where(source_spatial_function_DG(:, :)<TINYVAL) source_spatial_function_DG=ZEROcr ! Set to zero where value is too small.
