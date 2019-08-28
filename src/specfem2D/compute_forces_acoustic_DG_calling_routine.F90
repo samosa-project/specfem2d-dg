@@ -105,9 +105,10 @@ subroutine compute_forces_acoustic_DG_main()
       if(IONOSPHERIC_COUPLING) allocate(N0ext(NGLLX, NGLLZ, nspec))
     endif
     
-    
-    ! Prepare MPI buffers.
-    call prepare_MPI_DG()
+    if (NPROC > 1) then
+      ! Prepare MPI buffers.
+      call prepare_MPI_DG()
+    endif
     
     ! Allocate acoustic coupling array.
     allocate(ispec_is_acoustic_coupling_ac(nglob_DG))
