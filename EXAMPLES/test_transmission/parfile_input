@@ -99,7 +99,7 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-USE_LNS                         = .false.
+USE_LNS                         = .true.
 REMOVE_DG_FLUID_TO_SOLID        = .false.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
@@ -112,11 +112,11 @@ IONOSPHERIC_COUPLING            = .false.         # Activate ionospheric couplin
 USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobaric (.false.) model for the fluid part.
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
 surface_density                 = 1.0            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 700.0          # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
+sound_velocity                  = 500.0          # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
 wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 10.0           # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
-dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
-thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
+dynamic_viscosity               = 0.d0           # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
+thermal_conductivity            = 0.d0           # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
 tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.
 tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. Unit: s.
 constant_p                      = 1005           # $c_p$, isobaric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 1005 for dry air between -40 and 40 °C.
@@ -176,7 +176,7 @@ FORCING_DG_FACTOR               = 1. # Factor by which multiply the forcing.
 #---------------------------------------------------------------------#
 
 # source parameters
-NSOURCES                        = 900              # number of sources (source information is then read from the DATA/SOURCE file)
+NSOURCES                        = 258              # number of sources (source information is then read from the DATA/SOURCE file)
 force_normal_to_surface         = .false.        # angleforce normal to surface (external mesh and curve file needed)
 
 # use an existing initial wave field as source or start from zero (medium initially at rest)
@@ -252,15 +252,15 @@ xfin                            = -100.0d0
 zfin                            =  -10.0d0
 record_at_surface_same_vertical = .false.
 nrec                            =   3     # theta=30, overground: h=10, x=xb+sqrt(h^2+d^2)*cos(theta*pi/180+atan(h/d)), z=sqrt(h^2+d^2)*sin(theta*pi/180+atan(h/d))
-xdeb                            =   -45.  # d=(50/cos(theta*pi/180))*(1/5)
+xdeb                            =   -70.  # d=(50/cos(theta*pi/180))*(1/5)
 zdeb                            =     1.44337567297406441127e1 # d=(50/cos(theta*pi/180))*(1/5)
-xfin                            =   -15. # d=(50/cos(theta*pi/180))*(4/5)
+xfin                            =   -40. # d=(50/cos(theta*pi/180))*(4/5)
 zfin                            =     3.1754264805429417048e1 # d=(50/cos(theta*pi/180))*(4/5)
 record_at_surface_same_vertical = .false.
 nrec                            =   3     # theta=30, overground: h=10, x=xb+sqrt(h^2+d^2)*cos(theta*pi/180-atan(h/d)), z=sqrt(h^2+d^2)*sin(theta*pi/180-atan(h/d))
-xdeb                            =   -35. # d=(50/cos(theta*pi/180))*(1/5)
+xdeb                            =   -60. # d=(50/cos(theta*pi/180))*(1/5)
 zdeb                            =    -2.88675134594812882255e0 # d=(50/cos(theta*pi/180))*(1/5)
-xfin                            =    -5. # d=(50/cos(theta*pi/180))*(4/5)
+xfin                            =   -30. # d=(50/cos(theta*pi/180))*(4/5)
 zfin                            =     1.44337567297406441127e1 # d=(50/cos(theta*pi/180))*(4/5)
 record_at_surface_same_vertical = .false.
 
@@ -296,7 +296,7 @@ STACEY_ABSORBING_CONDITIONS     = .true. # Stacey conditions are not supported f
 
 # Periodic boundary conditions?
 ADD_PERIODIC_CONDITIONS         = .true. # Periodic conditions are not supported for AXISYM.
-PERIODIC_HORIZ_DIST             = 225.d0
+PERIODIC_HORIZ_DIST             = 195.d0
 
 
 #---------------------------------------------------------------------#
@@ -314,8 +314,8 @@ nbmodels                        = 2
 #   poroelastic: model_number 3  rhos rhof phi c   kxx kxz    kzz Ks  Kf  Kfr etaf mufr Qmu
 #   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
 # Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the 'Attenuation' section above as wanted.
-1 1 1.164 349.0d0 0.0d0 0 0 10.0d0 10.0d0 0 0 0 0 0 0
-2 1 2000 800.0 500.0 0 0 1000 1000 0 0 0 0 0 0
+1 1 1.00 1.00d0 0.0d0 0 0 10.d0   10.d0   0 0 0 0 0 0
+2 1 2000 1000.0 500.0 0 0 5000.d0 5000.d0 0 0 0 0 0 0
 
 # External tomography file.
 TOMOGRAPHY_FILE                 = ./DATA/tomo_file.xyz

@@ -21,60 +21,65 @@ Mesh.ElementOrder = 2; // Element order.
 Mesh.RandomFactor=1e-3; // Perturbate every points' positions in order to avoid 3 aligned points. Default is at 1e-9, maximum is 1e-3.
 
 // Geometry. //--------------//
-xmin = -150.;
-xmax = 75.;
-//xmax = -xmin;
+dxGlob = 5.; // Define elements' length.
 
-triangle_halfbase = 50.;
+zinterface = 0.;
+angle_rad = 30. *3.14159265358979323846/180.;
+triangle_halfbase = 75.;
+
+factorMargin = 2.;
+
+xmin = -150.;
+//xmax = triangle_halfbase+(factorMargin+1.)*dxGlob;
+xmax = 3.*(factorMargin+1.)*dxGlob;
+//xmax = -xmin;
 
 zmin = -75.;
 zmax = 75.;
 
-zinterface = 0.;
-angle_rad = 30. *3.14159265358979323846/180.;
 triangle_top = triangle_halfbase*Tan(angle_rad);
 interface_triangle_top = zinterface + triangle_top;
 shift_triangle_horizontal = +0.;
 
 triangle_peak_xpos = 0.+shift_triangle_horizontal;
 
-// Define elements' length.
-dxGlob = 5.;
-
 // Define geometry keypoints.
 i = 1;
 Point(i) = {xmin,zmin,0}; i=i+1;
-Point(i) = {xmin+2.*dxGlob,zmin,0}; i=i+1;
+Point(i) = {xmin+factorMargin*dxGlob,zmin,0}; i=i+1;
 Point(i) = {triangle_peak_xpos,zmin,0}; i=i+1;
-Point(i) = {xmax-2.*dxGlob,zmin,0}; i=i+1;
+Point(i) = {xmax-factorMargin*dxGlob,zmin,0}; i=i+1;
 Point(i) = {xmax,zmin,0}; i=i+1;
 
 Point(i) = {xmax,0.5*(zmin+zinterface),0}; i=i+1; // cut solid right
-Point(i) = {xmax-2.*dxGlob,0.5*(zmin+zinterface),0}; i=i+1; // cut solid right
+Point(i) = {xmax-factorMargin*dxGlob,0.5*(zmin+zinterface),0}; i=i+1; // cut solid right
 Point(i) = {0.,0.5*(zmin+zinterface),0}; i=i+1; // under triangle
 //Point(i) = {triangle_peak_xpos,zinterface-triangle_top,0}; i=i+1; // under triangle
-Point(i) = {xmin+2.*dxGlob,0.5*(zmin+zinterface),0}; i=i+1; // cut solid left
+Point(i) = {xmin+factorMargin*dxGlob,0.5*(zmin+zinterface),0}; i=i+1; // cut solid left
 Point(i) = {xmin,0.5*(zmin+zinterface),0}; i=i+1; // cut solid left
 
 Point(i) = {xmin,zinterface,0}; i=i+1;
-Point(i) = {xmin+2.*dxGlob,zinterface,0}; i=i+1;
+Point(i) = {xmin+factorMargin*dxGlob,zinterface,0}; i=i+1;
 Point(i) = {triangle_peak_xpos-triangle_halfbase,zinterface,0}; i=i+1; // triangle
 Point(i) = {triangle_peak_xpos,interface_triangle_top,0}; i=i+1; // triangle
-Point(i) = {triangle_peak_xpos+triangle_halfbase,zinterface,0}; i=i+1; // triangle
-Point(i) = {xmax-2.*dxGlob,zinterface,0}; i=i+1;
+//Point(i) = {triangle_peak_xpos+triangle_halfbase,zinterface,0}; i=i+1; // triangle
+Point(i) = {triangle_peak_xpos+5.*dxGlob,zinterface,0}; i=i+1; // triangle
+Point(i) = {xmax-factorMargin*dxGlob,zinterface,0}; i=i+1;
 Point(i) = {xmax,zinterface,0}; i=i+1;
 
-//Point(i) = {xmax,0.5*(zmax+zinterface),0}; i=i+1; // cut air right
-//Point(i) = {xmin,0.5*(zmax+zinterface),0}; i=i+1; // cut air left
 Point(i) = {xmax,interface_triangle_top,0}; i=i+1; // cut air right
-Point(i) = {xmax-2.*dxGlob,interface_triangle_top,0}; i=i+1; // cut air right
-Point(i) = {xmin+2.*dxGlob,interface_triangle_top,0}; i=i+1; // cut air left
+Point(i) = {xmax-factorMargin*dxGlob,interface_triangle_top,0}; i=i+1; // cut air right
+Point(i) = {xmin+factorMargin*dxGlob,interface_triangle_top,0}; i=i+1; // cut air left
 Point(i) = {xmin,interface_triangle_top,0}; i=i+1; // cut air left
+//Point(i) = {xmax,0.5*(zmax+interface_triangle_top),0}; i=i+1; // cut air right
+//Point(i) = {xmax-factorMargin*dxGlob,0.5*(zmax+interface_triangle_top),0}; i=i+1; // cut air right
+//Point(i) = {xmin+factorMargin*dxGlob,0.5*(zmax+interface_triangle_top),0}; i=i+1; // cut air left
+//Point(i) = {xmin,0.5*(zmax+interface_triangle_top),0}; i=i+1; // cut air left
 
 Point(i) = {xmin,zmax,0}; i=i+1;
-Point(i) = {xmin+2.*dxGlob,zmax,0}; i=i+1;
+Point(i) = {xmin+factorMargin*dxGlob,zmax,0}; i=i+1;
 Point(i) = {triangle_peak_xpos,zmax,0}; i=i+1;
-Point(i) = {xmax-2.*dxGlob,zmax,0}; i=i+1;
+Point(i) = {xmax-factorMargin*dxGlob,zmax,0}; i=i+1;
 Point(i) = {xmax,zmax,0}; i=i+1;
 
 
@@ -187,24 +192,24 @@ Characteristic Length {1, 2, 3, 4, 5, 6, 7, 8, 9} = dxGlob;
 // ******************************** //
 
 // horizontals
-c1[]=Point{1}; c2[]=Point{2}; nelts=Abs(c1[0]-c2[0])/dxGlob;
+c1[]=Point{1}; c2[]=Point{2}; nelts=Abs(c1[0]-c2[0])/(0.75*dxGlob);
 Transfinite Line{1,3,15,27,35} = nelts/2+1;
 c1[]=Point{4}; c2[]=Point{5}; nelts=Abs(c1[0]-c2[0])/dxGlob;
 Transfinite Line{11,13,25,33,42} = nelts/2+1;
 
-c1[]=Point{2}; c2[]=Point{3}; nelts=Abs(c1[0]-c2[0])/dxGlob;
+c1[]=Point{2}; c2[]=Point{3}; nelts=Abs(c1[0]-c2[0])/(1.1*dxGlob);
 Transfinite Line{5,7,18,29,38} = nelts/2+1;
-c1[]=Point{3}; c2[]=Point{4}; nelts=Abs(c1[0]-c2[0])/dxGlob;
+c1[]=Point{3}; c2[]=Point{4}; nelts=Abs(c1[0]-c2[0])/(1.1*dxGlob);
 Transfinite Line{8,10,23,31,40} = nelts/2+1;
 
 //verticals
 //c1[]=Point{7}; c2[]=Point{8}; nelts=Abs(c1[1]-c2[1])/dxGlob;
-c1[]=Point{13}; c2[]=Point{14}; nelts=Sqrt((c1[0]-c2[0])^2 + (c1[1]-c2[1])^2)/(0.75*dxGlob); // triangle
+c1[]=Point{13}; c2[]=Point{14}; nelts=Sqrt((c1[0]-c2[0])^2 + (c1[1]-c2[1])^2)/(0.5*dxGlob); // triangle
 //c1[]=Point{11}; c2[]=Point{21}; nelts=Sqrt((c1[0]-c2[0])^2 + (c1[1]-c2[1])^2)/(0.75*dxGlob); // triangle
 Transfinite Line{16,14,17,19,22,24,28,26,21,20,30,32} = nelts/2+1;
-c1[]=Point{1}; c2[]=Point{10}; nelts=Abs(c1[1]-c2[1])/dxGlob;
+c1[]=Point{1}; c2[]=Point{10}; nelts=Abs(c1[1]-c2[1])/(0.5*dxGlob);
 Transfinite Line{4,2,6,9,12} = nelts/2+1;
-c1[]=Point{21}; c2[]=Point{22}; nelts=Abs(c1[1]-c2[1])/dxGlob;
+c1[]=Point{21}; c2[]=Point{22}; nelts=Abs(c1[1]-c2[1])/(0.25*dxGlob);
 Transfinite Line{36,34,37,39,41} = nelts/2+1;
 
 

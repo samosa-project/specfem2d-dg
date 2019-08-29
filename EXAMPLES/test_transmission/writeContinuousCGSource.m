@@ -1,10 +1,10 @@
 
 function [] = writeContinuousCGSource(xmin, xmax, zmin, zmax, f0)
-  N = ceil(max(xmax-xmin,zmax-zmin)/0.75);
+  N = ceil(max(xmax-xmin,zmax-zmin)/0.75)
   xarr = linspace(xmin, xmax, N);
   zarr = linspace(zmin, zmax, N);
   
-  source_out = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_transmission/source_input_solid_test';
+  source_out = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_transmission/source_input_solid';
   
   fid = fopen(source_out, 'w');
   
@@ -22,7 +22,7 @@ function [] = writeContinuousCGSource(xmin, xmax, zmin, zmax, f0)
     fprintf(fid,'Mxx                             = 1.d0       # Only for moment tensor source. Mxx component.\n');
     fprintf(fid,'Mzz                             = 1.d0       # Only for moment tensor source. Mzz component.\n');
     fprintf(fid,'Mxz                             = 0.d0       # Only for moment tensor source. Mxz component.\n');
-    fprintf(fid,'factor                          = -1.d3      # Amplification factor.\n');
+    fprintf(fid,'factor                          = 1.d3       # Amplification factor.\n');
     fprintf(fid,'###############################\n');
   end
   
