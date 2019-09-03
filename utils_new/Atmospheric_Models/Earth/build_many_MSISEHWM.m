@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Builds many atmospheric models files (directly compatible with SPECFEM) using MSISE and HWM models.
 % Last modified: See file metadata.
 % Usage:         Configure request using the example request below.
