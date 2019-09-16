@@ -83,7 +83,7 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'tntglanes_10/'); OFd = strcat(rootd, 'OUTPUT_FILES_long300hz/');
 
 % Microbaroms ULDB.
-% fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
+fig_title = strcat('Microbaroms, (49N, 178W), 6:00 UT');
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash@20600/'); subsample = 1; wanted_dt = 0.01; % same as 1560350 but fns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560541_crashfns/'); % same as 1560350 but fns
 % rootd = strcat(SPCFMEXloc,'mb_gmsh/'); OFd = strcat(rootd, 'OUTPUT_FILES_1560350_crash/'); % same as 1560541 but lns

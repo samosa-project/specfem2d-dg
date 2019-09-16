@@ -18,7 +18,7 @@ format longG;
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/');
 [data, t, info, ~]=load_data(); % Load data (see function below).
 
-plot_rate = 0;
+plot_rate = 1;
 plotrate_selfulldgonly = 1;
 plotrate_snappercentthresh = 10; % in [%]
 plotrateversion = 'FNS';
@@ -264,7 +264,7 @@ else % (if(plot_rate))
   set(h, 'ticklabelinterpreter','latex');
   legend('location', 'best');
   
-  title(['Paralellisation Efficiency - ', plotrateversion]);
+  title(['Parallelisation Efficiency - ', plotrateversion]);
   
   prettyAxes(f);
   
