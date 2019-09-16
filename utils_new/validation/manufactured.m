@@ -41,6 +41,8 @@ plotFields_extsToSave={'jpg'};
 plotFields_xlab = '$x/L$';
 plotFields_ylab = '$z/L$';
 plotFields_NColorbarTicks = 9;
+plotFields_addErrorPanel = 1; % Set to 1 for debug, set to 0 for printing nice plots
+plotFields_CMAP_thresh = 0.01; % relative to max
 
 % Error plots.
 figErr_saveFigName_base = ['MES_Error__'];
@@ -54,12 +56,12 @@ IDz = 100;
 
 % OUTPUT_FILES directory to analyse.
 % OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dx1p000_mu_dp__1p25em5']}; IDzs={[2]*10000}; plotFields_do = 0;
-OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES']}; IDzs={[2:10]*1}; plotFields_do = 1;
+OFDs = {[SPCFM_EX_DIR,prefix,'_1p00_iv/OUTPUT_FILES']}; IDzs={[100e3]}; plotFields_do = 1;
 
 % Test case to plot/compute.
-% testCase = 'inviscid';
+testCase = 'inviscid';
 % testCase = 'kappa';
-testCase = 'mu';
+% testCase = 'mu';
 
 %%%%%%%%%%%%%%%%
 % Packed, for paper.
@@ -72,30 +74,33 @@ testCase = 'mu';
 %         [SPCFM_EX_DIR,prefix,'_1p00_ka/OUTPUT_FILES'], ...
 %         [SPCFM_EX_DIR,prefix,'_0p50_ka/OUTPUT_FILES'], ...
 %         [SPCFM_EX_DIR,prefix,'_0p25_ka/OUTPUT_FILES']}; testCase = 'kappa';
-% OFDs = {[SPCFM_EX_DIR,prefix,'_5p00_mu/OUTPUT_FILES'], ...
-%         [SPCFM_EX_DIR,prefix,'_1p00_mu/OUTPUT_FILES'], ...
-%         [SPCFM_EX_DIR,prefix,'_0p50_mu/OUTPUT_FILES'], ...
-%         [SPCFM_EX_DIR,prefix,'_0p25_mu/OUTPUT_FILES']}; testCase = 'mu';
+OFDs = {[SPCFM_EX_DIR,prefix,'_5p00_mu/OUTPUT_FILES'], ...
+        [SPCFM_EX_DIR,prefix,'_1p00_mu/OUTPUT_FILES'], ...
+        [SPCFM_EX_DIR,prefix,'_0p50_mu/OUTPUT_FILES'], ...
+        [SPCFM_EX_DIR,prefix,'_0p25_mu/OUTPUT_FILES']}; testCase = 'mu';
 % commonID = [0.2,0.4,0.6,0.8,1]*1000;
 commonID = [1]*20000;
 IDzs = {[commonID], ...
         [commonID*5], ...
         [commonID*5*2], ...
         [commonID*5*2*2]};
-plotFields_do = 1; % eventually deactivate plotting
+plotFields_do = 0; % eventually deactivate plotting
 
 % Parameters for analytic solution (cf. LNS_manufactured_solutions.mw).
 % Should be the same as in source code.
 switch(testCase)
   case 'inviscid'
+    colourPlot = [1,0,0]; markerPlot = 'o';
     RHO_cst = 0.001;
     VX_cst = 0.;
     E_cst = 0.05;
   case 'kappa'
+    colourPlot = [0,1,0]; markerPlot = 'diamond';
     RHO_cst = 0.;
     VX_cst = 0.;
     E_cst = 0.05;
   case 'mu'
+    colourPlot = [0,0,1]; markerPlot = 'square';
     RHO_cst = 0.;
     VX_cst = 0.001;
     E_cst = 0.;
@@ -126,7 +131,6 @@ if(plotFields_do)
   colorOK = [1,1,1]; % colour for |value|<thresh
   colorZero = [255,228,181]/255; % moccasin
   % CMAP = 'jet'; % default colorbar
-  thresh = 0.05; % relative to max
   CMAP = [0,0,0.25;
           0,0,0.5;
           0,0,1;
@@ -134,7 +138,7 @@ if(plotFields_do)
           1,0,0;
           0.5,0,0;
           0.25,0,0];
-  xcm=[-1, -0.85, -0.15, thresh]; xcm=[xcm, 0, -fliplr(xcm)];
+  xcm=[-1, -0.85, -0.15, plotFields_CMAP_thresh]; xcm=[xcm, 0, -fliplr(xcm)];
   N=1000; % number of points for color values
   CMAP = interp1(xcm, CMAP, linspace(min(xcm),max(xcm),N)');
   colormap(CMAP);
@@ -320,8 +324,13 @@ for ofdi = 1:N_OFD
         end
       end
       % Figure. %%%%%%
+      if(plotFields_addErrorPanel)
+        nbSubplots = 3;
+      else
+        nbSubplots = 2;
+      end
       feg = figure('units','normalized','outerposition',[0 0.4 1 0.6]);
-      axxx = tight_subplot(1, 3, 0.012, [0.14,0.08], [0.05, 0.10]); % not mandatory, but prettier
+      axxx = tight_subplot(1, nbSubplots, 0.012, [0.14,0.08], [0.05, 0.12]); % not mandatory, but prettier
       axes(axxx(1));
       % axxx(1)=subplot(1,3,1);
 %       trisurf(tri,xi,yi,zth);
@@ -339,19 +348,21 @@ for ofdi = 1:N_OFD
       xlabel(plotFields_xlab);
 %       title([synthname,' ($n=',num2str(IT),'$)']);
       title([synthname,' ($t=',scientific_latex_notation(DT*IT,2),'$~s)']);
+      if(plotFields_addErrorPanel)
       % Error. %%%%%%%
-      axes(axxx(3));
-      % axxx(3)=subplot(1,3,3);
-%       trisurf(tri,xi,yi,zerr);
-      surf(Xe,Ye,zerr);
-      shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx);
-      xlabel(plotFields_xlab);
-      yticklabels([]);
-      title({[errName,'=',scientific_latex_notation(L2NormOfError,2),'$']});
+        axes(axxx(3));
+        % axxx(3)=subplot(1,3,3);
+  %       trisurf(tri,xi,yi,zerr);
+        surf(Xe,Ye,zerr);
+        shading interp; view([0,0,1]); colormap(CMAP); caxis(glob_caxx);
+        xlabel(plotFields_xlab);
+        yticklabels([]);
+        title({[errName,'=',scientific_latex_notation(L2NormOfError,2),'$']});
+      end
       % Color bar. %%%
-      posAxxx3 = get(axxx(3),'Position');
+      posAxxx3 = get(axxx(nbSubplots),'Position');
       h_cb = colorbar('Position', [posAxxx3(1)+posAxxx3(3)+0.03  posAxxx3(2)  0.03  posAxxx3(4)]);
-      colorbarticks=linspace(-1,1,plotFields_NColorbarTicks); colorbarticks=sort([colorbarticks, [-1,1]*max(thresh)]);
+      colorbarticks=linspace(-1,1,plotFields_NColorbarTicks); %colorbarticks=sort([colorbarticks, [-1,1]*max(thresh)]);
       if(max(max(abs(zth)))>0)
         colorbarticks = colorbarticks*max(max(abs(zth)));
       else
@@ -359,6 +370,7 @@ for ofdi = 1:N_OFD
       end
       colorbarticks = colorbarticks;
       set(h_cb, 'ytick', colorbarticks);
+      set(h_cb,'tickdir','both');
       % Link = linkprop(axxx,{'CameraUpVector', 'CameraPosition', 'CameraTarget', 'XLim', 'YLim', 'ZLim'});
       Link = linkprop(axxx,{'CameraPosition', 'XLim', 'YLim'});
       setappdata(gcf, 'StoreTheLink', Link);
@@ -415,7 +427,7 @@ if(size(globalSave,1)>1)
   % Plot last time as standalone.
   fig_error = figure('units','pixels','position',plotErr_figPos);
   tight_subplot(1, 1, -1, [0.2,0.11], [0.14, 0.04]);
-  semilogy(N, EPS,'displayname',testCase);
+  loglog(N, EPS,'displayname',testCase,'linewidth',1.5,'marker',markerPlot,'markersize',10,'color',colourPlot,'markerfacecolor',colourPlot);
   legend('location','northeast');
   xlabel(plotErr_xlab); ylabel(plotErr_ylab); title(plotErr_title);
   xlim(plotErr_xlim);

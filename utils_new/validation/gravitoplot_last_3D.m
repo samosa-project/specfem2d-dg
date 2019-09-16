@@ -26,7 +26,7 @@ format shortg
 % clear synf
 
 set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 20); set(0, 'defaultAxesFontSize', 20);
+set(0, 'defaultTextFontSize', 26); set(0, 'defaultAxesFontSize', 26);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
@@ -564,15 +564,18 @@ switch corrFact
   case 1
     % Correcting factor 1 for isothermal case (use it with the Maple script configured with the isothermal decay = z/H).
     KZ = KZ -1j*(1/H + 2/(SOUNDSPEED^2));
+    disp(['[] Used a correcting factor: kz = kz - i*( 1/H+2/(c^2) )']);
     % 1/H comes from the fact that isothDecay=1/H (developing K \cdot X makes this 1/H go outside the i and finds back its place). TBH I do not remember how I found the second factor, sheer luck is not excluded.
   case 2
     % Correcting factor 2 for isothermal case (use it with the Maple script configured without the isothermal decay).
     KZ = KZ -1j*(8.589e-05);
+    disp(['[] Used a correcting factor: kz = kz - i*8.589e-5']);
     % Cannot explain why this value.
   case 3
     % Correcting factor 3 for isothermal case (use it with the Maple script configured with isothermal decay = z/(2H)).
 %     KZ = KZ -1j*(6.449e-05);
     KZ = KZ -1j*(1/(2*H) + 2/(SOUNDSPEED^2));
+    disp(['[] Used a correcting factor: kz = kz - i*( 1/(2H)+2/(c^2) )']);
     % Same rationale as case 1.
 end
 % KZ = KZ -1j*(2/(SOUNDSPEED^2)); % Test correcting factor for isothermal case.
@@ -784,51 +787,80 @@ timef = t;
 disp([' ']);
 disp(['[',mfilename,'] Plotting everything.']);
 fh = figure('units','normalized','outerposition',[0 0 1 1]);
-ax = [];
+% fh = figure('units','normalized','outerposition',[0 0 0.5 1]); half screen
+titt_nlines = 2;
+% axxxx = tight_subplot(nstat, 1, [-0.001, -1], [0.1,0.02+(titt_nlines*0.11/3)], [0.07, 0.02]); % not necessary, but prettier
+axxxx = tight_subplot(nstat, 1, [0, -1], [0.1,0.02+(titt_nlines*0.11/3)], [0.07, 0.02]); % not necessary, but prettier
+% axxxx = tight_subplot(nstat, 1, [0, -1], [0.1,0.02+(titt_nlines*0.11/3)], [0.12, 0.02]); % not necessary, but prettier half screen
+% ax = [];
 
 max_relative_err_all_stats = []; % save maximum error
 for locStatNumber = 1 : nstat
-  ax(locStatNumber) = subplot(nstat,1,nstat-locStatNumber+1);
-  hold on
-  if(seismotype == 1)
-    ID_t_anal_end = find(timef <= Ztime(locStatNumber,end), 1, 'last');
-%     plot(timef(1:timef_final),real(synf(locStatNumber,1:timef_final)),'Color',[0 0 0],'LineWidth',1)
-    plot(timef(1:ID_t_anal_end), synf(locStatNumber, 1:ID_t_anal_end),'Color',[0 0 0],'LineWidth',1,'displayname','analytical');
-%     plot(timef,real(synf(locStatNumber,:))/max(real(synf(locStatNumber,:))),'Color',[0 0 0],'LineWidth',1)
-%     plot(Ztime(locStatNumber,:),real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))/max(real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))),'Color',[0 0 0],'LineWidth',1)
-  else
-%     plot(Ztime(locStatNumber,:),syn(locStatNumber,:),'Color',[0 0 0],'LineWidth',1)
-    plot(t,synf(locStatNumber,:),'Color',[0 0 0],'LineWidth',1,'displayname','analytical')
-  end
+%   ax(locStatNumber) = subplot(nstat,1,nstat-locStatNumber+1);
+  axes(axxxx(nstat-locStatNumber+1));
+  hold on;
   
-  % Plot synthetic.
-%   Ztime_temp = Ztime(locStatNumber,1:floor(dt/subsampledDt):end);
-%   Zamp_temp  = Zamp(locStatNumber,1:floor(dt/subsampledDt):end);
-%   SIZE_R = size(Ztime_temp)
-%   disp(['[',mfilename,'] Plotting a ',num2str(numel(Ztime_temp)),' long array.']);
-%         size((Zamp_temp-real(synf(istat,1:length(Ztime_temp))))')
-%   DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
-  plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2,'displayname','synthetic');
-  
-  ylim_b4_err = get(gca,'ylim');
-  
-  % Produce and plot difference.
+  % Produce difference.
   if(min(diff(Ztime(1,:))) < min(diff(t)))
     % if dt_sythetic < dt_analytic, interpolate analytic on synthetic t (Ztime)
-    err_t = Ztime(locStatNumber,1:nt);
-    err_synth = Zamp(locStatNumber,1:nt);
-    err_anal = interp1(t, synf(locStatNumber,:), err_t);
+    t_forErr = Ztime(locStatNumber,1:nt);
+    synth_forErr = Zamp(locStatNumber,1:nt);
+    anal_forErr = interp1(t, synf(locStatNumber,:), t_forErr);
   else
     % if dt_sythetic < dt_analytic, interpolate synthetic on analytic t (t)
-    err_t = t;
-    err_synth = interp1(Ztime(locStatNumber,1:nt), Zamp(locStatNumber,1:nt), err_t);
-    err_anal = synf(locStatNumber,:);
+    t_forErr = t;
+    synth_forErr = interp1(Ztime(locStatNumber,1:nt), Zamp(locStatNumber,1:nt), t_forErr);
+    anal_forErr = synf(locStatNumber,:);
   end
-  err_v = factor_err * abs(err_synth - err_anal);
+  err_v = factor_err * abs(synth_forErr - anal_forErr); max_relative_err_all_stats(locStatNumber) = (max(err_v)/factor_err)/peak2peak(synf(locStatNumber,:));
   
-  max_relative_err_all_stats(locStatNumber) = (max(err_v)/100)/peak2peak(synf(locStatNumber,:));
+  % Seek for a possible lag.
+  synth_forErr_forXCorr=synth_forErr;synth_forErr_forXCorr(isnan(synth_forErr))=0; % remove nans for xcorr
+  anal_forErr_forXCorr=anal_forErr;anal_forErr_forXCorr(isnan(anal_forErr))=0; % remove nans for xcorr
+%   anal_forErr_forXCorr = anal_forErr;
+  [xc, xcl] = xcorr(synth_forErr_forXCorr, anal_forErr_forXCorr);
+%   [xc, xcl] = xcorr(synth_forErr_forXCorr, anal_forErr);
+%   synth_forErr(isnan(synth_forErr))=0; % remove nans for xcorr
+%   [xc, xcl] = xcorr(synth_forErr, anal_forErr);
+%   xcl_time = xcl*mean(unique(diff(t_forErr)));
+  lag = xcl(find(abs(xc) == max(abs(xc))));
+  disp(['Lag for station ',num2str(locStatNumber),' = ',num2str(lag),' indices. Shifing.']);
+  anal_forErr(max(1+lag,1):end+min(lag,0)) = anal_forErr(max(1-lag,1):end+min(-lag,0));
+  if(lag<0)
+    anal_forErr(end+lag:end) = nan;
+  else
+    anal_forErr(1:1+lag) = nan;
+  end
+  err_v = factor_err * abs(synth_forErr - anal_forErr); max_relative_err_all_stats(locStatNumber) = (max(err_v)/factor_err)/peak2peak(synf(locStatNumber,:));
   
-  plot(err_t,err_v,':k','LineWidth',1.5,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']);
+  % Plot analytic value.
+%   if(seismotype == 1)
+%     ID_t_anal_end = find(timef <= Ztime(locStatNumber,end), 1, 'last');
+% %     plot(timef(1:timef_final),real(synf(locStatNumber,1:timef_final)),'Color',[0 0 0],'LineWidth',1)
+%     plot(timef(1:ID_t_anal_end), synf(locStatNumber, 1:ID_t_anal_end),'Color',[0 0 0],'LineWidth',1,'displayname','analytical');
+% %     plot(timef,real(synf(locStatNumber,:))/max(real(synf(locStatNumber,:))),'Color',[0 0 0],'LineWidth',1)
+% %     plot(Ztime(locStatNumber,:),real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))/max(real(synf(locStatNumber,1:length(Ztime(locStatNumber,:))))),'Color',[0 0 0],'LineWidth',1)
+%   else
+% %     plot(Ztime(locStatNumber,:),syn(locStatNumber,:),'Color',[0 0 0],'LineWidth',1)
+%     error('not implemented');
+%     plot(t,synf(locStatNumber,:),'Color',[0 0 0],'LineWidth',1,'displayname','analytical')
+%   end
+  plot(t_forErr, anal_forErr, 'Color', [0 0 0], 'LineWidth', 1, 'displayname', 'analytical');
+  
+  % Plot synthetic.
+% %   Ztime_temp = Ztime(locStatNumber,1:floor(dt/subsampledDt):end);
+% %   Zamp_temp  = Zamp(locStatNumber,1:floor(dt/subsampledDt):end);
+% %   SIZE_R = size(Ztime_temp)
+% %   disp(['[',mfilename,'] Plotting a ',num2str(numel(Ztime_temp)),' long array.']);
+% %         size((Zamp_temp-real(synf(istat,1:length(Ztime_temp))))')
+% %   DIFF(locStatNumber,:) = (Zamp_temp-real(synf(locStatNumber,1:length(Ztime_temp))))';
+%   plot(Ztime(locStatNumber,1:nt),Zamp(locStatNumber,1:nt),'-.k','LineWidth',2,'displayname','synthetic');
+  plot(t_forErr, synth_forErr, '-.k', 'LineWidth', 2, 'displayname', 'synthetic');
+  
+  ylim_b4_err = get(gca,'ylim'); ylim_b4_err=max(abs(ylim_b4_err))*1.1; pow10=10^(-floor(log10(max(ylim_b4_err)))); ylim_b4_err = ceil(pow10*ylim_b4_err)/pow10*[-1,1]; % save and round ylim
+  
+  % Plot difference.
+  plot(t_forErr,err_v,':k','LineWidth',1.5,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']);
   
 %   ylim([min([min(Zamp(locStatNumber,1:nt))+min(synf(locStatNumber,:))]), max([max(Zamp(locStatNumber,1:nt))+max(synf(locStatNumber,:))])] * 1.05);
 %   ylim([ylim_b4_err]*1.05);
@@ -839,7 +871,9 @@ for locStatNumber = 1 : nstat
 %     ylabel([variable,' along z-axis (m)']);
     ylabel(['$',vname_long,'_z$ ',vunit]);
   end
+  yticklabels('auto');
   if (locStatNumber == 1)
+    xticklabels('auto');
     xlabel('time [s]');
   else
     xticklabels([]);
@@ -850,14 +884,19 @@ for locStatNumber = 1 : nstat
 %   if(locStatNumber==1)
   if(locStatNumber==nstat)
     % legend only on first plot
-    legend('location','northeast');
+%     legend('location','northeast');
+    legend('location','east','fontsize',23);
   end
 end
-linkaxes(ax, 'x');
+linkaxes(axxxx, 'x');
+if(not(USE_ISOTHERMAL_MODEL))
+  linkaxes(axxxx, 'xy');
+  curylim = ylim; curylim=max(abs(curylim))*1.1; pow10=10^(-floor(log10(max(curylim)))); ylim(ceil(pow10*curylim)/pow10*[-1,1]); % round ylim
+end
 xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);
 % title(['Gravito-acoustic wave propagation. Stations at altitude : ', num2str(zstattab(locStatNumber)),'km (along z)']);
-title({['Sound Speed = ',num2str(SOUNDSPEED),' [m/s].'],['Stations'' Altitudes = [', sprintf('%.1f ',zstattab(istattab)/1000),'] [km]'],['Max. Relative Error = ',num2str(max(max_relative_err_all_stats*100)),' \%']});
-addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
+title({['Stations'' Altitudes = [', sprintf('%.1f ',zstattab(istattab)/1000),'] [km]'],['Sound Speed = ',num2str(SOUNDSPEED),' [m/s]. Max. Relative Error = ',num2str(max(max_relative_err_all_stats*100)),' \%']});
+% addpath('/usr/local/matlab/r2018a/toolbox/tightfig'); tightfig; % eventually tighten fig
 prettyAxes(fh);
 savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
 % customSaveFig(savefigfullpath,{'fig','eps','jpg'});

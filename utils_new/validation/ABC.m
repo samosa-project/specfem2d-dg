@@ -122,7 +122,7 @@ if(compareEnergies)
   
   EEE_outputFigPath=[outputFigDir_wprefix,'E'];
   fE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},4,1,tit_all,[],{'-','--',':'});
-  customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});
+  customSaveFig(fE, EEE_outputFigPath, {'fig', 'jpg', 'eps'});
   disp(["figure(fE.Number); customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});"]);
 end
 
@@ -192,7 +192,7 @@ if(compareStations)
   set(cax.Children(1:nRepetitions*(nbstats-1)),'handlevisibility','off');
   legend('location','northwest');
   prettyAxes(fTvD);
-  customSaveFig(TS_outputFigPath, {'fig', 'jpg', 'eps'});
+  customSaveFig(fTvD, TS_outputFigPath, {'fig', 'jpg', 'eps'});
   disp(["figure(fTvD.Number); customSaveFig(TS_outputFigPath, {'fig', 'jpg', 'eps'});"]);
 end
 
