@@ -117,7 +117,7 @@ subroutine iterate_time()
       write(IMAIN,*) "No acoustic zone exist."
       if(USE_DISCONTINUOUS_METHOD) then
         write(*,*) "********************************"
-        write(*,*) "*            ERROR             *"
+        write(*,*) "*           WARNING            *"
         write(*,*) "********************************"
         write(*,*) "* This is a safeguard. No      *"
         write(*,*) "* acoustic zone exist, but     *"
