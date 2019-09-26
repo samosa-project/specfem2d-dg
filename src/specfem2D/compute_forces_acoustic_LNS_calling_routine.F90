@@ -760,8 +760,9 @@ end subroutine LNS_PML_init_coefs
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
-  use specfem_par, only: assign_external_model, gammaext_DG, ibool_DG, pext_dg, rhoext, &
-SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, windxext!, &
+  use specfem_par, only: assign_external_model, coord, coord_interface, gammaext_DG, ibool_DG, ibool_before_perio, &
+  pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, &
+  windxext!, &
 !ABC_STRETCH, ibool_before_perio, stretching_buffer, stretching_ya
   use specfem_par_LNS, only: LNS_g
 
@@ -822,6 +823,7 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
     ! > Set wind.
     if(swComputeV) then
       out_v(1) = windxext(i, j, ispec)
+      out_v(NDIM) = ZEROcr
       ! One might want to set vertical wind here, too.
     endif
   else
@@ -830,6 +832,7 @@ SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODE
     if(USE_ISOTHERMAL_MODEL) then
       ! > Set density.
       H = SCALE_HEIGHT ! Also for pressure, below.
+      z = real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL) - coord_interface
       out_rho = surface_density*exp(-z/H)
       ! > Set pressure.
       if(swComputeP) then
