@@ -43,7 +43,7 @@
     ldd --version
   If the version is < 2.17, a link to the real-time library might be needed. Add -lrt to the list of libraries in SCOTCH's Makefile. To do so, edit "specfem-dg/src/meshfem2D/scotch/src/Makefile.inc" and add "-lrt" at the end of the libraries' line ("LDFLAGS").
 
-5) The simulations' method of execution varies whether you are on a local machine or on a cluster. On a local machine, running the script provided in the folders which are under "./EXAMPLE" should be enough. On a cluster, please report to its documentation.
+4) The simulations' method of execution varies whether you are on a local machine or on a cluster. On a local machine, running the script provided in the folders which are under "./EXAMPLE" should be enough. On a cluster, please report to its documentation.
 ###############################
 
 # Running. ####################
