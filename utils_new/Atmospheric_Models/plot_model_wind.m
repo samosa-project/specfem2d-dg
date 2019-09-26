@@ -15,7 +15,7 @@
 % yields:
 %   TODO.
 
-function [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl)%, customcolorbar)
+function [fh] = plot_model_wind(Z, V, U, existingfignumber, colour, labl)%, customcolorbar)
   if(not(exist('existingfignumber')))
     existingfignumber=-1;
   end
@@ -28,7 +28,7 @@ function [fh] = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl)%, cu
 %   if(not(exist('customcolorbar')))
 %     customcolorbar=0;
 %   end
-  [AZIMUTH, W]=cart2pol(WN,WE);
+  [AZIMUTH, W] = cart2pol(V,U);
 %   AZIMUTH = AZIMUTH-pi/2; % Northward <-> theta=0. Eastward <-> theta=pi/2. Southward <-> theta=pi. Westward <-> theta=-pi/2.
   
   AZIMUTH(W==0)=0; % If wind is 0, zero the angle too.

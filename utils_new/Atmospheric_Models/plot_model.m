@@ -18,6 +18,11 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   end
   addpath('/home/l.martire/Documents/work/mars/mars_is'); % customSaveFig
   
+  set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+  set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+  set(0, 'DefaultTextInterpreter', 'latex');
+  set(0, 'DefaultLegendInterpreter', 'latex');
+  
   if(not(exist('maxalt','var')))
     maxalt_provided = 0;
   else
@@ -64,14 +69,14 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   
   [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
   
-  T=T-273.15;
+  T = T-273.15; % [°C]
   thresheqzero=1e-6;
   
 %   D = differentiation_matrix(Z, 0);
 %   DZW = D*W;
 %   DZW(1)=DZW(2); % Correction hack.
-  DZW=gradient(W,Z);
-  DZW(1:2)=DZW(3); % Correction hack.
+  DZW = gradient(W,Z);
+  DZW(1:2) = DZW(3); % Correction hack.
   
   fh=figure('units','normalized','outerposition',[0 0 1 1]);
   

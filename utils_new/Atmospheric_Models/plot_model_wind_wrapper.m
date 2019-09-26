@@ -19,6 +19,6 @@ function [fh] = plot_model_wind_wrapper(spcfm_file, existingfignumber, colour, l
   if(not(exist('labl')))
     labl=-1;
   end
-  [Z, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, WN, WE, ~, ~, ~, ~] = extract_atmos_model(spcfm_file, 3, 0, 0);
-  fh = plot_model_wind(Z, WN, WE, existingfignumber, colour, labl);
+  [Z, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, V, U, ~, ~, ~, ~] = extract_atmos_model(spcfm_file, 3, 0, 0);
+  fh = plot_model_wind(Z, V, U, existingfignumber, colour, labl);
 end
