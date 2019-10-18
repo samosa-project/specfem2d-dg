@@ -122,12 +122,19 @@ subroutine iterate_time()
         write(*,*) "* This is a safeguard. No      *"
         write(*,*) "* acoustic zone exist, but     *"
         write(*,*) "* USE_DISCONTINUOUS_METHOD is  *"
-        write(*,*) "* set to '.true.'. Either set  *"
+        write(*,*) "* set to '.true.'.             *"
+        write(*,*) "* This is only the case on CPU *"
+        write(*,*) "* 0. If you're sure that       *"
+        write(*,*) "* id_region_DG is correctly    *"
+        write(*,*) "* set, then go on my child.    *"
+        write(*,*) "* Otherwise, know that program *"
+        write(*,*) "* might crash later. Then,     *"
+        write(*,*) "* either set                   *"
         write(*,*) "* USE_DISCONTINUOUS_METHOD to  *"
         write(*,*) "* .false. or configure your    *"
         write(*,*) "* acoustic zone right.         *"
         write(*,*) "********************************"
-        stop
+        !stop
         write(IMAIN,*) ". "
       endif
     endif ! Endif on any_acoustic.
