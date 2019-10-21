@@ -141,7 +141,7 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
   !  cnst_hdrsttc=ZERO
   !endif
   
-  testCoef_removeDxV0x = 1.
+  testCoef_removeDxV0x = 0.
   testCoef_Ni = 1.
 
   ! Transformed this into using the input variables instead of duplicating those.
