@@ -42,8 +42,8 @@ function [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND
   KAPPA = DATA.data(:, 9); %                                        (kappa)
   MU = DATA.data(:, 10); % dynamic viscosity                        (mu)
   MUVOL = DATA.data(:, 11); % volumic viscosity?                    (mu_vol)
-  NORTHWIND = DATA.data(:, 12); %                                   (w_M)
-  EASTWIND = DATA.data(:, 13); %                                    (w_Z)
+  NORTHWIND = DATA.data(:, 12); %                                   (w_M) meridional = towards north
+  EASTWIND = DATA.data(:, 13); %                                    (w_Z) zonal = towards east
   WIND = DATA.data(:, 14); %                                        (w_P)
   CP = DATA.data(:, 15); %                                          (c_p)
   CV = DATA.data(:, 16); %                                          (c_v)
@@ -59,6 +59,9 @@ function [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND
   if(frsvibfound)
     FR = DATA.data(:, 18); %                                        (f_r)
     SVIB = DATA.data(:, 19); %                                      (s_vib)
+  else
+    FR = [];
+    SVIB = [];
   end
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

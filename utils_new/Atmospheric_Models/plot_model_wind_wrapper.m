@@ -10,6 +10,8 @@
 %   TODO.
 
 function [fh] = plot_model_wind_wrapper(spcfm_file, existingfignumber, colour, labl)%, customcolorbar)
+  set(0, 'DefaultTextInterpreter', 'latex');
+  set(0, 'DefaultLegendInterpreter', 'latex');
   if(not(exist('existingfignumber')))
     existingfignumber=-1;
   end

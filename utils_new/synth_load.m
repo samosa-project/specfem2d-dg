@@ -41,8 +41,32 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % OUTPUT_FILES location.       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% fig_title = ['test montagne'];
+% rootd = strcat(SPCFMEXloc,'test_montagne/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); subsample = 0; wanted_dt = 0.01;
+
 % Mars.
-fig_title = strcat('Mars InSIGHT');
+fig_title = strcat('Mars InSight');
+rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291243_f0=1.5_sig=50_thickened/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01/'); OFd = strcat(rootd, 'OUTPUT_FILES_291193_sig=50_f0=1.5_outside_duct/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, outside duct'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol0__z800_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_290950_sigma=30/'); subsample = 1; wanted_dt = 0.01; fig_title = [fig_title, ', sol0 $\sigma=30$'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol0__z800_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_290374_sigma=50/'); subsample = 1; wanted_dt = 0.01; fig_title = [fig_title, ', sol0 $\sigma=50$'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01/'); OFd = strcat(rootd, 'OUTPUT_FILES_289776_sig=50_f0=1.5/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01/'); OFd = strcat(rootd, 'OUTPUT_FILES_289598_sig=30_f0=1.5/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__hard__ctrlAtm_03/'); OFd = strcat(rootd, 'OUTPUT_FILES_288976_ctrlAtm_03/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight__hard__ctrlAtm_02/'); OFd = strcat(rootd, 'OUTPUT_FILES_288975_ctrlAtm_02/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight__hard__ctrlAtm_01/'); OFd = strcat(rootd, 'OUTPUT_FILES_288974_ctrlAtm_01/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var06/'); OFd = strcat(rootd, 'OUTPUT_FILES_3032931/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var06'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var05/'); OFd = strcat(rootd, 'OUTPUT_FILES_3032928/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var05'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var04/'); OFd = strcat(rootd, 'OUTPUT_FILES_3032920/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var04'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var02/'); OFd = strcat(rootd, 'OUTPUT_FILES_288682/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var02'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01/'); OFd = strcat(rootd, 'OUTPUT_FILES_288681/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01'];
+
+% rootd = strcat(SPCFMEXloc,'mars_insight__hard__ctrlAtm/'); OFd = strcat(rootd, 'OUTPUT_FILES_288681_sig=30_f0=3.0/'); subsample = 0; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 0; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight_1633618_z800_redoneFNS_hardSoil_withoutAtt/'); OFd = strcat(rootd, 'OUTPUT_FILES_281920_crashed/'); subsample = 0; wanted_dt = 0.01; % z=800 but z=45
+% rootd = strcat(SPCFMEXloc,'mars_insight_1633618_z800_redoneFNS_withoutAtt/'); OFd = strcat(rootd, 'OUTPUT_FILES_2589397/'); subsample = 0; wanted_dt = 0.01; % z=800 but z=45
+
 % rootd = strcat(SPCFMEXloc,'mars_insight_sol000_lmst2000/'); OFd = strcat(rootd, 'OUTPUT_FILES_2176570_z45/'); subsample = 0; wanted_dt = 0.01; % z=800 but z=45
 % rootd = strcat(SPCFMEXloc,'mars_insight_sol000_lmst2000/'); OFd = strcat(rootd, 'OUTPUT_FILES_2112987/'); subsample = 0; wanted_dt = 0.01; % z=800 but z=2000
 % rootd = strcat(SPCFMEXloc,'mars_insight_waveguide_excitation/'); OFd = strcat(rootd, 'OUTPUT_FILES_1996492/'); subsample = 1; wanted_dt = 0.01;
@@ -51,8 +75,7 @@ fig_title = strcat('Mars InSIGHT');
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_151319_20h_f3_larger/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_151120_z830_f0p1_crashed_but_later/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight_incidence/'); OFd = strcat(rootd, 'OUTPUT_FILES_150395_20h_f3/'); subsample = 1; wanted_dt = 0.01;
-% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1633618_z800/'); subsample = 0; wanted_dt = 0.01;
-rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
+% rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1601166_z12k/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1538139_22h/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529789_20h_cleanusable/'); subsample = 1; wanted_dt = 0.01;
 % rootd = strcat(SPCFMEXloc,'mars_insight/'); OFd = strcat(rootd, 'OUTPUT_FILES_1529411_interrupted/');
@@ -376,15 +399,17 @@ else
   periodizechoice = 0;
 end
 
-if (behaviour == 0) % Eventually, plot one by one in subplots.
+% Eventually, plot one by one in subplots.
+if (behaviour == 0)
   plotOneByOne(Ztime, Zamp, istattab, xstattab(istattab), ystattab(istattab), normalise_ylims, fig_title, ylabel_unknown);
-  
-elseif (behaviour == 2) % Eventually, plot as time-distance.
+end
+
+% Get distance vector
+if(ismember(behaviour,[1,2]))
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
   end
-  
   switch distancechoice
     case 1
 %       distance = xstattab4dist; dist_symbol = "x"; dist_name = "horizontal distance";
@@ -400,17 +425,19 @@ elseif (behaviour == 2) % Eventually, plot as time-distance.
       end
       distance = dist_to_sources; dist_symbol = "d"; dist_name = "distance";
   end
-%   addpath('/home/l.martire/Documents/Ongoing_Work/1811_glanes/treatment_leo'); % wtff?
+end
+
+% Eventually, plot as time-distance.
+if(behaviour==2)
   reducedtime = - 1;
   while (not(numel(reducedtime)==1 && reducedtime>=0))
     reducedtime = input(['[', mfilename, '] Reduced time? (0 for no, any other value for speed [m/s]) > ']);
   end
-  
   plot_time_v_dist(Ztime, Zamp, distance(istattab), reducedtime, fig_title, dist_name);
-  
 end
 
-if (ismember(plot_amplitude, [1, 2, 3])) % Eventually, plot amplitude as function of distance.
+% Eventually, plot amplitude as function of distance.
+if (ismember(plot_amplitude, [1, 2, 3]))
   % Plot amplitude.
   amp = zeros(size(Zamp));
   for ii = 1:length(Zamp(:, 1))

@@ -29,13 +29,14 @@ function [fh] = plot_model_wind(Z, V, U, existingfignumber, colour, labl)%, cust
 %     customcolorbar=0;
 %   end
   [AZIMUTH, W] = cart2pol(V,U);
+%   [AZIMUTH, W] = cart2pol(U,V); % U=Zonal=Eastward, V=Meridional=Northward
 %   AZIMUTH = AZIMUTH-pi/2; % Northward <-> theta=0. Eastward <-> theta=pi/2. Southward <-> theta=pi. Westward <-> theta=-pi/2.
   
   AZIMUTH(W==0)=0; % If wind is 0, zero the angle too.
   
-  AZIMUTH=mod(AZIMUTH,2*pi);
+  AZIMUTH = mod(AZIMUTH, 2*pi);
   
-  rad2deg=1; unit='[rad]';
+%   rad2deg=1; unit='[rad]';
   rad2deg=180/pi; unit='[deg]';
   
 %   [WTH, W]

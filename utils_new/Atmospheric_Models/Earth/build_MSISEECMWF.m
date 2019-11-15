@@ -22,8 +22,6 @@
 % Notes:         An ERA5 file must have previously been downloaded. See
 %                the provided Matlab script 'prepare_call_ECMWF_API' in
 %                order to do so.
-%                See LaTeX project
-%                https://v2.overleaf.com/project/5c4827468093415759c04743.
 
 clear all;
 % close all;

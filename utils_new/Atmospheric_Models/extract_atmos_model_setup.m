@@ -152,7 +152,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
           dateString=[yyyymmdd, ', ', hhmmss, ' UT, ', splitlocalsat{2}, ' LT'];
         case 4
           % mars case
-          dateString = ['LS ',sprintf('%.3f',LS), ', LT ',sprintf('%.3f',LT), 'h'];
+          dateString = ['LS ',sprintf('%.3f',LS), '$^\circ$, LT ',sprintf('%.3f',LT), 'h'];
         otherwise
           dateString = ['[unknown planet, cannot dedude datestring]'];
       end
@@ -171,7 +171,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
           end
           ap=aptab(1);
           info.ap=ap;
-          secondaryInfoString=strcat("F10.7 avg. = ", sprintf("%.1f",f107a), ", F10.7 = ", sprintf("%.1f",f107), ", AP = ", sprintf("%.1f",ap));
+          secondaryInfoString=['F10.7 avg. = ', sprintf('%.1f',f107a), ', F10.7 = ', sprintf('%.1f',f107), ', AP = ', sprintf('%.1f',ap)];
         case 4
           % nothing
           secondaryInfoString=[];

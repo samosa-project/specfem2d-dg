@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author:        Guerman Poler, Léo Martire.
-# Mail:          leo.martire@outlook.com
 # Description:   Calls ECMWF API with requested parameters.
 # Last modified: See file metadata.
 # Usage:         Call this script with 5 arguments (startDate, endDate, times, areaStr, outputFileName).

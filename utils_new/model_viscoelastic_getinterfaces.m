@@ -8,16 +8,17 @@
 % Usage:
 %   [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
 % with:
-%   f_0 a main frequency,
-%   np a number of points per wavelength,
+%   f_0      a main frequency,
+%   np       a number of points per wavelength,
 % yields:
 %   interf_s the depths of the interfaces (top one being z=0),
-%   nelts_s the number of elements per layer,
-%   IDparf the corresponding model IDs for each layer in the parfile.
+%   nelts_s  the number of elements per layer,
+%   IDparf   the corresponding model IDs for each layer in the parfile.
 
 function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
   if(nargin~=2)
-    error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''f0, np''.']);
+    help(mfilename)
+    error(['[',mfilename,', ERROR] Not enough input arguments.']);
   end
 
   parfile=input(['[',mfilename,'] Path to parfile > '],'s');
@@ -26,6 +27,7 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
   % Parsing parfile to find     %
   % models.                     %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  addpath([regexprep(mfilename('fullpath'),mfilename,''),'tools']);
   models = readExampleFiles_extractParfileModels(parfile);
 
   % Crop unnecessary quantities.

@@ -11,7 +11,7 @@
 % yields:
 %   TODO.
 
-function [Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUvol, Wnorth, Weast, ...
+function [Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUvol, MUvolrot, U, V, ...
           Cp, Cv, GAM, FR, SVIB] = extract_atmos_model_MCDRa(DATAFILE)
   if(not(exist(DATAFILE,'file')))
     error(['[',mfilename,', ERROR] File ''',DATAFILE,''' does not exist. Aborting.']);
@@ -29,11 +29,11 @@ function [Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUvol, Wnorth, Weast, ...
   KAP = model.data(:, 10);
   MU = model.data(:, 11);
   MUvol = model.data(:, 12); % Unused by SPECFEM-DG.
-  %=kek.data(:,13); % muvolrot?
+  MUvolrot = model.data(:,13); % muvolrot?
   FR = model.data(:, 14);
   SVIB = model.data(:, 15);
-  Wnorth = model.data(:, 16);
-  Weast = model.data(:, 17);
+  U = model.data(:, 16); % meridional (positive towards east)
+  V = model.data(:, 17); % zonal (positive toward north)
   Cp = model.data(:, 18); % Unused by SPECFEM-DG.
   Cv = model.data(:, 19); % Used by SPECFEM-DG-FNS for temperature computation.
   GAM = model.data(:, 20);

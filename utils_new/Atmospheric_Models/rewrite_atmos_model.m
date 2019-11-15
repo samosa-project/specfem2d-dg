@@ -177,7 +177,11 @@ function [] = rewrite_atmos_model(output_file, HF, Z, RHO, T, C, P, H, G, NBVSQ,
         otherwise
           error();
       end
-      headerline{3} = defaultColumnHead;
+      if(frsvibgiven)
+        headerline{3} = [defaultColumnHead, ' fr[Hz] Svib[1]'];
+      else
+        headerline{3} = defaultColumnHead;
+      end
     otherwise
       error('error, and script should not be able to go down this far');
   end
