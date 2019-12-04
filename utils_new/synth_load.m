@@ -18,8 +18,8 @@ set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
 set(0, 'DefaultTextInterpreter', 'latex');
 set(0, 'DefaultLegendInterpreter', 'latex');
 
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models');
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
+addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/'));
+% addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
 % addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
@@ -44,9 +44,15 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % fig_title = ['test montagne'];
 % rootd = strcat(SPCFMEXloc,'test_montagne/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); subsample = 0; wanted_dt = 0.01;
 
+fig_title = ['ff'];
+rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
+
 % Mars.
-fig_title = strcat('Mars InSight');
-rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291243_f0=1.5_sig=50_thickened/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct'];
+% fig_title = strcat('Mars InSight');
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED_outsideduct/'); OFd = strcat(rootd, 'OUTPUT_FILES_291537_thicc_outside/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but higher'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol133__var04/'); OFd = strcat(rootd, 'OUTPUT_FILES_291311/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol133var0'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291243_f0=1.5_sig=50_thickened/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct'];
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01/'); OFd = strcat(rootd, 'OUTPUT_FILES_291193_sig=50_f0=1.5_outside_duct/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, outside duct'];
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol0__z800_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_290950_sigma=30/'); subsample = 1; wanted_dt = 0.01; fig_title = [fig_title, ', sol0 $\sigma=30$'];
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol0__z800_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_290374_sigma=50/'); subsample = 1; wanted_dt = 0.01; fig_title = [fig_title, ', sol0 $\sigma=50$'];

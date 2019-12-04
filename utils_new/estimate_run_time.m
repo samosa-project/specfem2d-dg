@@ -213,7 +213,7 @@ else % (if(plot_rate))
 %   theoretical_pow = -1; theoretical_lab=['theoretical best: $\propto n^{',num2str(theoretical_pow),'}$'];
 %   y = t(sel) .* dataraw(sel, idRaw_nbelts) .* dataraw(sel,5); % Get CPU time for each simulation (CPU time p. el. p. it. * nbel.).
 %   theoretical_pow = 0; theoretical_lab=['theoretical best: ??'];
-  y = t(sel); ylab={['total CPU time per element per iteration [s]'], ['(real elapsed time $\times$ number of CPUS)']}; % Get real time (total CPU time p. el. p. it. / CPU).
+  y = t(sel); ylab = {['total CPU time per element per iteration [s]'], ['(real elapsed time $\times$ number of CPUS)']}; % Get real time (total CPU time p. el. p. it. / CPU).
   theoretical_pow = 0; theoretical_lab=['theoretical best: constant ($\propto n^{',num2str(theoretical_pow),'}$)'];
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
