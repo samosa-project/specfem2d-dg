@@ -2158,37 +2158,45 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
       write(*,*) "********************************"
       stop
     endif ! Endif on ispec_is_acoustic_DG.
-    
-    !if(.true.) then ! DEBUG
-    !  do j = 1, NGLLZ
-    !    do i = 1, NGLLX
-    !      if( &
-    !         !      abs(coord(2, ibool(i, j, ispec)))<=20. &
-    !         !.and. &
-    !               abs(coord(1, ibool(i, j, ispec)))<=1e-2) then
-    !        write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
-    !                  ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
-    !                  "rho", rhoext(i, j, ispec),&
-    !                  "vp", vpext(i, j, ispec),&
-    !                  "g", gravityext(i, j, ispec),&
-    !                  "vs", vsext(i, j, ispec),&
-    !                  "Qm", Qmu_attenuationext(i, j, ispec),&
-    !                  "Qk", QKappa_attenuationext(i, j, ispec),&
-    !                  "wx", windxext(i, j, ispec),&
-    !                  "wz", windzext(i, j, ispec),&
-    !                  "p", pext_DG(i, j, ispec),&
-    !                  "gamma", gammaext_DG(ibool_DG(i, j, ispec)),&
-    !                  !"Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
-    !                  "eta", etaext(i, j, ispec),&
-    !                  "mu", muext(i, j, ispec),&
-    !                  "kap", kappa_DG(i, j, ispec),&
-    !                  "tau_sig", tau_sigma(i, j, ispec),&
-    !                  "tau_eps", tau_epsilon(i, j, ispec)
-    !      endif
-    !    enddo
-    !  enddo
-    !endif
   enddo ! Enddo on ispec.
+  
+  ! CHECKING
+  !if(.true.) then ! DEBUG
+  !  do ispec = 1, nspec
+  !    !do j = 1, NGLLZ
+  !    do j = 1, 1
+  !      !do i = 1, NGLLX
+  !      do i = 1, 1
+  !        if( &
+  !            !      abs(coord(2, ibool(i, j, ispec)))<=20. &
+  !            !.and. &
+  !                 abs(coord(1, ibool(i, j, ispec)))<=1e-2) then
+  !          write(*,*) coord(1, ibool(i, j, ispec)), coord(2, ibool(i, j, ispec)),&
+  !                     ispec_is_acoustic_DG(ispec), ispec_is_elastic(ispec),&
+  !                     "rho", rhoext(i, j, ispec),&
+  !                     "vp", vpext(i, j, ispec),&
+  !                     "g", gravityext(i, j, ispec),&
+  !                     "vs", vsext(i, j, ispec),&
+  !                     "Qm", Qmu_attenuationext(i, j, ispec),&
+  !                     "Qk", QKappa_attenuationext(i, j, ispec),&
+  !                     "wx", windxext(i, j, ispec),&
+  !                    "ceff_right", vpext(i, j, ispec)+windxext(i, j, ispec),&
+  !                     "wz", windzext(i, j, ispec),&
+  !                     "p", pext_DG(i, j, ispec),&
+  !                     "gamma", gammaext_DG(ibool_DG(i, j, ispec)),&
+  !                     !"Htab", Htabext_DG(ibool_DG(i, j, ispec)),&
+  !                     "eta", etaext(i, j, ispec),&
+  !                     "mu", muext(i, j, ispec),&
+  !                     "kap", kappa_DG(i, j, ispec),&
+  !                     "tau_sig", tau_sigma(i, j, ispec),&
+  !                     "tau_eps", tau_epsilon(i, j, ispec)
+  !                     ""
+  !        endif
+  !      enddo
+  !    enddo
+  !  enddo ! Enddo on ispec.
+  !  stop
+  !endif
   
   if(IONOSPHERIC_COUPLING) then
     where(abs(Bxext) > 0._CUSTOM_REAL) Bxext = Bxext / sqrt(Bxext**2 + Bzext**2)
