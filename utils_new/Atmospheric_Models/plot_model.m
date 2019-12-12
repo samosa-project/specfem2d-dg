@@ -76,8 +76,10 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     CP = CP(sel);
     CV = CV(sel);
     GAMMA = GAMMA(sel);
-    FR = FR(sel);
-    SVIB = SVIB(sel);
+    if(not(isempty(FR)))
+      FR = FR(sel);
+      SVIB = SVIB(sel);
+    end
   end
   
   [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
