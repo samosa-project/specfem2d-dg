@@ -1118,7 +1118,7 @@ end subroutine prepare_external_forcing
   real(kind=CUSTOM_REAL) :: p_b, rho_b, s_b, rho_inf, v_b_x, v_b_z, c_b, un_b, &
                             rlambda_max, rlambda_min, c_in, c_inf, un_in, un_inf, &
                             deltaZ1, deltaZ2star, p_n, a_n, alpha0
-  real(kind=CUSTOM_REAL) :: rhol, cpl, csl, lambdal_unrelaxed_elastic, mul_unrelaxed_elastic, kappal, cpal, rhoal
+  real(kind=CUSTOM_REAL) :: rhol, cpl, csl, lambdal_unrelaxed_elastic, mul_unrelaxed_elastic, cpal, rhoal!, kappal
 
   iglobM = ibool_DG(i, j, ispec)
   
