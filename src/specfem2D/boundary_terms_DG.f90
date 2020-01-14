@@ -1298,9 +1298,10 @@ end subroutine prepare_external_forcing
       lambdal_unrelaxed_elastic = poroelastcoef(1,1,kmato(ispec_el))
       mul_unrelaxed_elastic = poroelastcoef(2,1,kmato(ispec_el))
       rhol  = density(1,kmato(ispec_el))
-      kappal  = lambdal_unrelaxed_elastic + mul_unrelaxed_elastic
+      !kappal  = lambdal_unrelaxed_elastic + mul_unrelaxed_elastic
       ! TODO: wouldn't it be kappa = lambda + (2/3)*mu? http://www.subsurfwiki.org/wiki/P-wave_modulus
-      cpl = sqrt((kappal + FOUR_THIRDS * mul_unrelaxed_elastic)/rhol) ! Check kappa
+      !cpl = sqrt((kappal + FOUR_THIRDS * mul_unrelaxed_elastic)/rhol) ! Check kappa
+      cpl = sqrt((lambdal_unrelaxed_elastic + TWO*mul_unrelaxed_elastic)/rhol) ! corrected version
       csl = sqrt(mul_unrelaxed_elastic/rhol)
       
       rhoal = surface_density ! This is an approximation, valid unless we have very large topographies (>few km).
