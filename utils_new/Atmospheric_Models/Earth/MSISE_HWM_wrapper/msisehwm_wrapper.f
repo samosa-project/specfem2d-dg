@@ -66,7 +66,7 @@ C     that's why they have to be changed for each event.
       character(len=500), dimension(:), allocatable :: args
 
       character*500 filename,filewind
-      real*4 wind_projection
+      real*4 projected_wind_azimuth
 
 C     ****************************************************************
 C     * Parameters.                                                  *
@@ -80,7 +80,7 @@ C     ****************************************************************
      &         '(ALTMIN ALTMAX NSAMPLES latitude longitude ',
      &         'nYearsSince2000 nDaysSince1StOfJanuary ',
      &         'nSecondsSinceMidnightUTC ',
-     1         'F107A F107 AP filename wind_projection).'
+     1         'F107A F107 AP filename projected_wind_azimuth).'
           write(*,*) ' '
           write(*,*) 'F107A F107 AP may be left at their default',
      &         ' values: 106.7161 131 37.'
@@ -103,7 +103,7 @@ C     ****************************************************************
         read(args(10), *) F107
         read(args(11), *) AP(1)
         read(args(12), *) filename
-        read(args(13), *) wind_projection
+        read(args(13), *) projected_wind_azimuth
         NSAMPLES = NSAMPLES - 1
         write(*, *) 'Arguments assigned.'
         if(NSAMPLES>imax) then
@@ -136,7 +136,7 @@ C       Daily magnetic index.
 C       Output file name.
         filename='msisehwm_model_output'
 C       Wind projection angle (in degrees). 0 is forward zonal (positive eastward). 90 is forward meridional (positive northward). 180 is backwards zonal (positive westward). 270 is backward meriodional (positive southward).
-        wind_projection=0.
+        projected_wind_azimuth=0.
         write(*, *) 'No arguments passed, those in the source code',
      &              ' will be used. Output file is "', trim(filename),
      &              '".'
@@ -352,12 +352,12 @@ C       P(iz)=rhoat(iz)*8.3145*T(iz)/0.0289645
 C       P(iz)=(densmol/6.02214129e23)*(8.3145)*T(iz)
 C       Sound velocity. [m.s^(-1)].
         v(iz)=sqrt(gammatab(iz)*P(iz)/rhoat(iz))
-C       Meridional (1) and zonal (2) winds. [m.s^(-1)].
+C       Meridional (1, positive northward) and zonal (2, positive eastward) winds. [m.s^(-1)].
         Wind(1,iz)=W(1)
         Wind(2,iz)=W(2)	
-C       Projected wind.
-        Wind(3,iz)=cos(wind_projection*PI/180.)*W(2)+
-     &             sin(wind_projection*PI/180.)*W(1)
+C       Projected wind along a given azimuth.
+        Wind(3,iz)=cos(projected_wind_azimuth*PI/180.)*W(1)+
+     &             sin(projected_wind_azimuth*PI/180.)*W(2)
 C       Thermal conductivity. [kg.m.s^(-3).K^(-1)].
         Kappatab(iz)=Kappa(T(iz))
 C       Dynamic viscosity. [Pa.s]=[kg.s^(-1).m^(-1)].

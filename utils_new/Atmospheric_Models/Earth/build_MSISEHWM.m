@@ -17,12 +17,12 @@
 % outFile  output file path
 % outFold  output folder (to which the output file will be moved, somewhat
 %          redundant with previous parameter for single calls but useful for multiple calls)
-% wProjAng projection angle for wind (optional, useful for SPECFEM2D simulations)
+% wind_projection_azimuth projection azimuth for wind in [deg] (optional, useful for SPECFEM2D simulations)
 % F107A    TODO (optional)
 % F107     TODO (optional)
 % AP       TODO (optional)
 
-function output_file_stored = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, yyears, ddays, ssecs, outFile, outFold, wProjAng, F107A, F107, AP)
+function output_file_stored = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, yyears, ddays, ssecs, outFile, outFold, wind_projection_azimuth, F107A, F107, AP)
   % Default paths.
   default_executable_path="MSISE_HWM_wrapper/msisehwm";
   
@@ -46,8 +46,8 @@ function output_file_stored = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, 
   if(~exist('AP','var'))
     AP=37;
   end
-  if(~exist('wind_project_angle','var'))
-    wProjAng=0;
+  if(~exist('wind_projection_azimuth','var'))
+    wind_projection_azimuth = 0;
   end  
 %   [F107A,F107,AP,wind_project_angle]
   
@@ -60,7 +60,7 @@ function output_file_stored = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, 
   command = strcat(executable_fullpath,    " ", num2str(altMin),        " ", num2str(altMax),       " ", num2str(nLayers), " ", ...
                    sprintf("%.5f", lat),   " ", sprintf("%.5f", lon),   " ", num2str(yyears),       " ", num2str(ddays), " ", ...
                    sprintf("%.5f", ssecs), " ", sprintf("%.5f", F107A), " ", sprintf("%.5f", F107), " ", ...
-                   sprintf("%.5f", AP),    " ", outFile,                " ", sprintf("%.5f", wProjAng));
+                   sprintf("%.5f", AP),    " ", outFile,                " ", sprintf("%.5f", wind_projection_azimuth));
   
   % Call.
   system(command);
