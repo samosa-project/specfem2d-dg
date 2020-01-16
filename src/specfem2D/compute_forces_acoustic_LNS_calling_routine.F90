@@ -46,6 +46,11 @@ subroutine compute_forces_acoustic_LNS_main()
     !  ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
     !  call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
     !endif
+    !write(*,*) "min, max RHO0 on proc ", myrank, " : ", minval(LNS_rho0), maxval(LNS_rho0) ! DEBUG
+    !write(*,*) "min, max V0   on proc ", myrank, " : ", minval(LNS_v0), maxval(LNS_v0) ! DEBUG
+    !write(*,*) "min, max P0   on proc ", myrank, " : ", minval(LNS_p0), maxval(LNS_p0) ! DEBUG
+    !write(*,*) "min, max E0   on proc ", myrank, " : ", minval(LNS_E0), maxval(LNS_E0) ! DEBUG
+    !stop
     
     ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
     LNS_drho   = ZEROcr

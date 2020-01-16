@@ -325,7 +325,7 @@
     ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
     ! It also needs the normals to be initialised. This is why it is put here.
     ! It also needs to be ran before iterate time for informative prints. This is why it is put here.
-    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
+    call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS_calling_routine.F90.
   endif
   
 !  if(.false.) then ! TEST HACK: IMPACT OF WIND WHEN USING STRETCHING BUFFERS
