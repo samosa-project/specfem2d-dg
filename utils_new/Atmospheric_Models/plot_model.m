@@ -21,10 +21,10 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   FS = 18;
   FSlab = FS*0.9;
   
-  set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-  set(0, 'defaultTextFontSize', FS); set(0, 'defaultAxesFontSize', FS);
-  set(0, 'DefaultTextInterpreter', 'latex');
-  set(0, 'DefaultLegendInterpreter', 'latex');
+%   set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+%   set(0, 'defaultTextFontSize', FS); set(0, 'defaultAxesFontSize', FS);
+%   set(0, 'DefaultTextInterpreter', 'latex');
+%   set(0, 'DefaultLegendInterpreter', 'latex');
   
   leftprop = [0.631, 0.0745, 0.180];
   rightprop = [0,176,146]/255;
@@ -132,7 +132,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   end
   
 %   title({[posstr,', ',datestr],secondaryinfo,'', 'Sound Speed'});
-  title({[posstr,', ',datestr,secondaryinfo], '', 'Sound Speed'});
+  htit = title({[posstr,', ',datestr,', ',secondaryinfo], 'Sound Speed'});
   
 %   axxx(3)=subplot(233);
   axes(axxx(i)); i=i+1;
@@ -244,6 +244,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
 %   figure(fh.Number);
   prettyAxes(fh);
+%   set(htit,'fontsize',24);
   if(plot_nosave0_save1)
     customSaveFig(fh,atmospheric_model_file);
   end

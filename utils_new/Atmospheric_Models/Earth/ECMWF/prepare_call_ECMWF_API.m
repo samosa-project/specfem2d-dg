@@ -1,10 +1,11 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Calls ECMWF API with requested parameters.
 % Last modified: See file metadata.
 % Usage:         1) Make sure the Python script is alongside this Matlab script.
 %                2) Call this function with wanted parameters.
 %                3) Execute provided command in a dedicated terminal.
+% dates under format 2016-05-27
+% time under Format HH:MM:SS[/HH:MM:SS[/HH:MM:SS[/...]]]
 % Notes:         N/A.
 
 function prepare_call_ECMWF_API(start_date, end_date, times, minmax_lon, minmax_lat, outputFileName)

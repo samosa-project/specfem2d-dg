@@ -27,6 +27,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
   info=struct();
   
   expr_float = '[0-9]+\.[0-9]+';
+  expr_float_possibly_neg = '-?[0-9]+\.[0-9]+';
   expr_int = '[0-9]+';
   
   stop=0;
@@ -40,7 +41,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
       PLA = regexp(line, PLA_expr, 'match'); % match form
       if(isempty(PLA))
         PLA = 3; % earth by default
-        disp(['planet string not found, assuming earth']);
+        disp(['[',mfilename,'] Planet string not found, assuming earth.']);
       else
         PLA = regexp(PLA{1}, expr_int, 'match'); % extract float from form
         PLA = str2num(PLA{1}); % convert to int
@@ -84,7 +85,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
 %       lat = str2num(regexprep(regexprep(line, ['year *[0-9]+ *day *[0-9]+ *seconds *',expr_float,'+ *lat'], ''), 'lon.*', ''))
 %       lat = regexp(line, ['lat ',expr_float], 'match'); % match form
 %       lat = regexp(lat{1}, expr_float, 'match'); % extract float from form
-      lat = regExpQuantity(line, 'lat', expr_float); % convert to float
+      lat = regExpQuantity(line, 'lat', expr_float_possibly_neg); % convert to float
       if(isnan(lat))
         lat=0; % safeguard if not found
       end
@@ -94,7 +95,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
 %       lon = regexp(line, ['lon ',expr_float], 'match'); % match form
 %       lon = regexp(lon{1}, expr_float, 'match'); % extract float from form
 %       lon = str2num(lon{1}); % convert to float
-      lon = regExpQuantity(line, 'lon', expr_float); % convert to float
+      lon = regExpQuantity(line, 'lon', expr_float_possibly_neg); % convert to float
       if(isnan(lon))
         lon=0; % safeguard if not found
       end
@@ -186,10 +187,10 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
 end
 
 function val = regExpQuantity(chararray, Q, expr)
-  reggg = [Q,' ',expr];
+  reggg = [Q,' +',expr];
   val = regexp(chararray, reggg, 'match'); % match form
   if(isempty(val))
-    disp(['not found (expr = ''',reggg,''', string = ''',chararray,''')']);
+    disp(['[',mfilename,'] regexp not found (expr = ''',reggg,''', string = ''',chararray,''')']);
     val = nan;
   else
     val = regexp(val{1}, expr, 'match'); % extract float from form

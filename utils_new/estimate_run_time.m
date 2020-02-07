@@ -19,8 +19,9 @@ addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/');
 [data, t, info, ~]=load_data(); % Load data (see function below).
 
 plot_rate = 0;
-plotrate_selfulldgonly = 1;
-plotrate_snappercentthresh = 10; % in [%]
+plotrate_selfulldgonly = 1; % 1 = exclude simulations with elastic elements
+plotrate_percentdgthresh = 90; % select only simulations with more than plotrate_percentdgthresh % dg elements
+plotrate_snappercentthresh = 100; % in [%]
 plotrateversion = 'FNS';
 % plotrateversion = 'LNS';
 
@@ -176,8 +177,8 @@ else % (if(plot_rate))
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   sel = [];
   if(plotrate_selfulldgonly)
-    sel = (data(:, idRaw_nbeltsdg)==1); % Select full DG only.
-    disp(['[',mfilename,'] Selected only DG data points.']);
+    sel = (data(:, idRaw_nbeltsdg)>plotrate_percentdgthresh/100); % Select full DG only.
+    disp(['[',mfilename,'] Selected only simulations containing more than ',num2str(plotrate_percentdgthresh),'% of DG elements.']);
   else
     sel = logical(ones(size(t))); % Select all.
     disp(['[',mfilename,'] Selected all data points.']);
@@ -198,8 +199,8 @@ else % (if(plot_rate))
   else
     error('kek');
   end
-  for is=1:size(t); if(sel(is)); txt=info{is}(2); txt=txt{1}; if(not(isempty(regexp(txt,'mb gmsh')))); txt, sel(is)=0; end; end; end
-  for is=1:size(t); if(sel(is)); txt=info{is}(2); txt=txt{1}; if(not(isempty(regexp(txt,'mb huge')))); txt, sel(is)=0; end; end; end
+  for is=1:size(t); if(sel(is)); txt=info{is}(2); txt=txt{1}; if(not(isempty(regexp(txt,'mb gmsh')))); txt; disp('      removed mb gmsh run'); sel(is)=0; end; end; end
+  for is=1:size(t); if(sel(is)); txt=info{is}(2); txt=txt{1}; if(not(isempty(regexp(txt,'mb huge')))); txt; disp('      removed mb huge run'); sel(is)=0; end; end; end
   disp(['[',mfilename,'] Restricted selection to non-"mb gmsh" and non-"mb huge" runs.']);
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,38 +220,53 @@ else % (if(plot_rate))
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Choose color-code.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  c = log10(data(sel,3)); clab = ['log$_{10}$(snapshot frequency)']; % Color code with snapshot frequency.
+  c = log10(data(sel,idX_snappercent)); clab = ['log$_{10}$(snapshot frequency)']; % Color code with snapshot frequency.
   ux=sort(unique(x));
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Choose size-code.
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  sizz = 50;
+  sizz_raw = data(sel, idX_nbeltspproc);
+  sizz=sizz_raw;
+  sizz = (sizz-min(sizz));
+  sizz = sizz/range(sizz);
+  sizz = sizz.^0.25;
+  sizz = sizz*300 + 5;
+  slab = ['(nb. elts. per CPU)$^{0.25}$'];
+%   plot(sort(sizz))
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Build best w.r.t. color.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  ubesty=[];
+  u_best_y_wrt_col=[];
   for ix=1:size(ux)
     sely = y(x == ux(ix));
     selc = c(x == ux(ix));
-    ubesty(ix, 1) = min(sely(selc == min(selc)));
+    u_best_y_wrt_col(ix, 1) = min(sely(selc == min(selc)));
   end
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Build linear fits.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   beta_lfit_all = [ones(length(x),  1) log(x) ] \ log(y);
-  beta_lfit_bst = [ones(length(ux), 1) log(ux)] \ log(ubesty);
+  beta_lfit_bestcol = [ones(length(ux), 1) log(ux)] \ log(u_best_y_wrt_col);
   lfitlab_all = ['linear fit best: $\propto n^{', sprintf('%.2g', beta_lfit_all(2)), '}$'];
-  lfitlab_bst = ['linear fit best: $\propto n^{', sprintf('%.2g', beta_lfit_bst(2)), '}$'];
+  lfitlab_bst = ['linear fit best: $\propto n^{', sprintf('%.2g', beta_lfit_bestcol(2)), '}$'];
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Actual plot.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   f = figure('units','normalized','outerposition', [0 0 1 1]);
-  scatter(x, y, 50, c, 'filled', 'displayname', ['data, color $\Leftrightarrow$ ', clab]); hold on;
+  dname = ['data, color $\Leftrightarrow$ ', clab, ', size $\Leftrightarrow$ ', slab];
+  dname = ['data, size $\propto$ ', slab];
+  scatter(x, y, sizz, c, 'filled', 'displayname', dname); hold on;
   
   loglog(ux, exp(beta_lfit_all(1)) * ux.^beta_lfit_all(2), 'k-', 'displayname', ['linear fit all: $\propto n^{', sprintf('%.2g', beta_lfit_all(2)), '}$']);
   
-  scatter(ux, ubesty, 'displayname', ['best data for each abscissa w.r.t. color']);
+  scatter(ux, u_best_y_wrt_col, 'displayname', ['best data for each abscissa w.r.t. color']);
   
-  loglog(ux, exp(beta_lfit_bst(1)) * ux.^beta_lfit_bst(2), 'k--','displayname', lfitlab_bst);
+  loglog(ux, exp(beta_lfit_bestcol(1)) * ux.^beta_lfit_bestcol(2), 'k--','displayname', lfitlab_bst);
   
   loglog(ux, ux.^theoretical_pow * (mean(y(ux == min(ux)))/min(ux)^theoretical_pow), 'k:','displayname', theoretical_lab);
   
@@ -262,6 +278,7 @@ else % (if(plot_rate))
   
   h = colorbar;
   set(h, 'ticklabelinterpreter','latex');
+  ylabel(h,clab,'interpreter','latex', 'fontsize',26);
   legend('location', 'best');
   
   title(['Parallelisation Efficiency - ', plotrateversion]);
@@ -393,8 +410,28 @@ function [x, t, RUNINFO, RUN_RAWDATA]=load_data()
   RUN_RAWDATA(i,:)=[ 900000  853000 0.469 110500 1536  5000  397 100   17985]; RUNINFO{i}={1691823,'FNS InSight impact'}; i=i+1;
   RUN_RAWDATA(i,:)=[  14228    8005 0.482  64000   64  1000   14  25    1789]; RUNINFO{i}={1939115,'FNS tir de mine 40Hz redone'}; i=i+1;
   RUN_RAWDATA(i,:)=[ 733000  682000 0.469 204500  384  5000  157 100   43188]; RUNINFO{i}={1996492,'FNS InSight waveguide excitation'}; i=i+1;
-  RUN_RAWDATA(i,:)=[1174000 1120000 0.469 112400 1280 10000 198 100   64784]; RUNINFO{i}={2112987,'FNS InSight sol 0 z2000'}; i=i+1;
-  RUN_RAWDATA(i,:)=[ 626280  571200 0.469  94200  960 10000 182 100   80025]; RUNINFO{i}={2176570,'FNS InSight sol 0 z0045'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1174000 1120000 0.469 112400 1280 10000  198 100   64784]; RUNINFO{i}={2112987,'FNS InSight sol 0 z2000'}; i=i+1;
+  RUN_RAWDATA(i,:)=[ 626280  571200 0.469  94200  960 10000  182 100   80025]; RUNINFO{i}={2176570,'FNS InSight sol 0 z0045'}; i=i+1;
+  RUN_RAWDATA(i,:)=[1660000 1606000 0.469 285000 1152  5000  204 100   86386]; RUNINFO{i}={2589397,'mars_insight_1633618_z800_redoneFNS_withoutAtt'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 350000  324 10000   73 100   53985]; RUNINFO{i}={3032920,'FNS InSight sol 189 var04'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 350000  324 10000   55 100   53988]; RUNINFO{i}={3032928,'FNS InSight sol 189 var05'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 350000  324 10000   45 100   53988]; RUNINFO{i}={3032931,'FNS InSight sol 189 var06'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 350000  324 10000   45 100   46290]; RUNINFO{i}={288682,'FNS InSight sol 189 var02'}; i=i+1;
+  RUN_RAWDATA(i,:)=[320800   299200 0.469 230000  324 10000   48 100   32140]; RUNINFO{i}={288975,'FNS InSight _ctrlAtm_02'}; i=i+1;
+  RUN_RAWDATA(i,:)=[320800   299200 0.469 230000  324 10000   48 100   32281]; RUNINFO{i}={288976,'FNS InSight _ctrlAtm_03'}; i=i+1;
+  RUN_RAWDATA(i,:)=[308800   284000 0.469 100000  648 20000   27 100   10085]; RUNINFO{i}={290950,'FNS InSight sol 0 sigma=30'}; i=i+1;
+  RUN_RAWDATA(i,:)=[308800   284000 0.469 100000  648 20000   27 100   10063]; RUNINFO{i}={290374,'FNS InSight sol 0 redone sigma=50'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 100000  648 20000   27 100    9976]; RUNINFO{i}={291193,'FNS InSight sol 189 _sig=50_f0=1.5_outside_duct'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 100000  648 20000   27 100    9964]; RUNINFO{i}={289776,'FNS InSight sol 189 _sig=50_f0=1.5'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 181400  648 20000   27 100   18082]; RUNINFO{i}={289598,'FNS InSight sol 189 _sig=30_f0=1.5'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 350000  324 10000   48 100   46043]; RUNINFO{i}={288681,'FNS InSight sol 189 _sig=30_f0=3.0'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 200000  648 20000   27 100   20022]; RUNINFO{i}={291537,'FNS InSight sol 189 _thicc_outside'}; i=i+1;
+  RUN_RAWDATA(i,:)=[296800   272000 0.469 100000  648 20000   41 100    9557]; RUNINFO{i}={291311,'FNS InSight sol 189 '}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 100000  648 20000   27 100    9970]; RUNINFO{i}={291534,'FNS InSight sol 189 _slightlyhigher'}; i=i+1;
+  RUN_RAWDATA(i,:)=[310400   285600 0.469 100000  648 20000   27 100   10009]; RUNINFO{i}={291243,'FNS InSight sol 189 _f0=1.5_sig=50_thickened'}; i=i+1;
+  
+  RUN_RAWDATA(i,:)=[  7125     2375 0.467  19000   32   100    7  25     223]; RUNINFO{i}={173861,'FNS aarhus 2090hz'}; i=i+1;
+  RUN_RAWDATA(i,:)=[  7125     2375 0.534  19000   32    50    7  25     182]; RUNINFO{i}={172340,'FNS aarhus 2000hz'}; i=i+1;
   col_dgpercent=1;
   col_snappercent=2;
   col_synthpercent=3;

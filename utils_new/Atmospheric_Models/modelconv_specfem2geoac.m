@@ -42,11 +42,11 @@ function [] = modelconv_specfem2geoac(spcfm_file, geoac_file, maxz)
   % z[km] T[K] w_M[m/s] w_Z[m/s] rho[kg/(m^3)] p[Pa]
   for ii=1:numel(sel)
     i=sel(ii);
-    line_numbers=[Z(i), T(i), WN(i), WE(i), RHO(i), P(i)];
+    line_numbers=[Z(i), T(i), WE(i), WN(i), RHO(i), P(i)];
     fprintf(f_new,'%15.8e ',line_numbers);
     fprintf(f_new, "\n");
   end
   
   fclose(f_new);
-  disp(strcat("[",mfilename,"] Model converted to: '", geoac_file, "'."));
+  disp(['[',mfilename,'] Model ''',spcfm_file,''' converted to: ''', geoac_file, '''.']);
 end

@@ -33,6 +33,8 @@ suffix="_crop";
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_826213/croppp';
 % FOLDER='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/demo_lns/OUTPUT_FILES_lnsf2s_local/croppp';
 % FOLDER='/home/l.martire/Documents/Ongoing_Work/1811_glanes/190116_presentation_JPL/simulation';
+% FOLDER = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mars_insight/1601166_z12k_crop_snaps';
+FOLDER = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mars_insight__hard__ctrlAtm_01/snapcrop';
 
 if(not(exist('FOLDER','var')))
   FOLDER = input(['folder to treat? > '],'s');
