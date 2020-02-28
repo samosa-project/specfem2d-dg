@@ -250,19 +250,22 @@ for ofdi = 1:N_OFD
     end
     
     % Create independent mesh onto which interpolate.
-    x_exact = linspace(min(X),max(X),Nexact);
-    y_exact = linspace(min(Y),max(Y),Nexact);
-    [Xe, Ye] = meshgrid(x_exact,y_exact);
+    if(0)
+      x_exact = linspace(min(X),max(X),Nexact);
+      y_exact = linspace(min(Y),max(Y),Nexact);
+      [Xe, Ye] = meshgrid(x_exact,y_exact);
+      % Interpolate dump.
+  %     delauTri = delaunayTriangulation(X, Y);
+  %     tri = delauTri.ConnectivityList;
+  %     xi = delauTri.Points(:,1); yi = delauTri.Points(:,2);
+  %     xi = (xi-min(xi)) / peak2peak(xi); % bring back x to [0, 1] (safety)
+  %     yi = (yi-min(yi)) / peak2peak(yi); % bring back z to [0, 1] (safety)
+      F = scatteredInterpolant(X,Y,V);
+  %     zexp = F(xi,yi);
+      zexp = F(Xe, Ye);
+    end
+    [Xe, Ye, zexp] = interpDumps(X, Y, V, Nexact, Nexact);
     
-    % Interpolate dump.
-%     delauTri = delaunayTriangulation(X, Y);
-%     tri = delauTri.ConnectivityList;
-%     xi = delauTri.Points(:,1); yi = delauTri.Points(:,2);
-%     xi = (xi-min(xi)) / peak2peak(xi); % bring back x to [0, 1] (safety)
-%     yi = (yi-min(yi)) / peak2peak(yi); % bring back z to [0, 1] (safety)
-    F = scatteredInterpolant(X,Y,V);
-%     zexp = F(xi,yi);
-    zexp = F(Xe, Ye);
     caxxxxiiss_exp = [min(min(zexp)), max(max(zexp))];
 
     % Build analytic solution (cf. LNS_manufactured_solutions.mw).

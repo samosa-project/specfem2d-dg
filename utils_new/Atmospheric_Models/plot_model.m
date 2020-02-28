@@ -21,11 +21,6 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   FS = 18;
   FSlab = FS*0.9;
   
-%   set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-%   set(0, 'defaultTextFontSize', FS); set(0, 'defaultAxesFontSize', FS);
-%   set(0, 'DefaultTextInterpreter', 'latex');
-%   set(0, 'DefaultLegendInterpreter', 'latex');
-  
   leftprop = [0.631, 0.0745, 0.180];
   rightprop = [0,176,146]/255;
   
@@ -82,6 +77,14 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     end
   end
   
+  % trick for nicer yticks
+  if(maxalt>=1e3)
+    Z=Z/1e3;
+    unitz = ['[km]'];
+  else
+    unitz = ['[m]'];
+  end
+  
   [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
   
   T = T-273.15; % [°C]
@@ -95,14 +98,14 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   
   fh=figure('units','normalized','outerposition',[0 0 1 1]);
   
-  axxx = tight_subplot(2, 3, [0.12,0.03], [0.08,0.11], [0.05, 0.03]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
+  axxx = tight_subplot(2, 3, [0.15,0.03], [0.1,0.11], [0.05, 0.035]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
   
 %   axxx(1)=subplot(231);
   i=1;
   axes(axxx(i)); i=i+1;
   myplot(RHO, Z, marker, colour, datestr, 'sx');
   xlabel('$\rho$ [kg/m$^3$]', 'fontsize', FSlab);
-  ylabel('$z$ [m]', 'fontsize', FSlab); % xlim([0.1*min(RHO),10*max(RHO)]);
+  ylabel(['$z$ ',unitz], 'fontsize', FSlab); % xlim([0.1*min(RHO),10*max(RHO)]);
   title({'Density'});
   
 %   axxx(2)=subplot(232);
@@ -184,7 +187,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   axes(axxx(i)); i=i+1;
   myplot(T, Z, marker, colour, datestr, 'p');
   xlabel('$T$ [$^\circ$C]', 'fontsize', FSlab);
-  ylabel('$z$ [m]', 'fontsize', FSlab); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
+  ylabel(['$z$ ',unitz], 'fontsize', FSlab); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   addatmosphericseparationlines(T, atmalts);
   if(max(abs(T-mean(T)))>thresheqzero)
     % If T==cst, no need to adjust.
@@ -247,6 +250,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   set(htit,'fontsize',24);
   if(plot_nosave0_save1)
     customSaveFig(fh,atmospheric_model_file);
+    disp(['[] Use the following to save in other formats.']);
+    disp(['[] TEX:   customSaveFig(gcf,''',atmospheric_model_file,''',{''tex''});']);
   end
 end
 
