@@ -246,6 +246,8 @@ specfem2DLNS_OBJECTS= \
 	$O/specfem2D_par_LNS.spec_module.o \
 	$O/compute_forces_acoustic_LNS.spec.o \
 	$O/compute_forces_acoustic_LNS_calling_routine.spec.o \
+	$O/lns_load_background_model.spec.o \
+	$O/table_delaunay.spec.o \
 	$(EMPTY_MACRO)
 specfem2D_OBJECTS += $(specfem2DLNS_OBJECTS)
 

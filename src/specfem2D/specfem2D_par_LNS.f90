@@ -230,6 +230,37 @@ module specfem_par_LNS
     ! N./A.
     a_isNotCloseTo_b = (.not. (isClose(a,b,tol)))
   end function isNotClose
+  
+  ! Implement a test to check whether a point is in a triangle or not.
+  ! Used for general background model loading.
+  ! From https://blackpawn.com/texts/pointinpoly/default.html
+  logical function point_is_in_triangle(vert_list, point)
+    use constants, only: CUSTOM_REAL, NDIM
+    implicit none
+    ! Input/Output.
+    real(kind=CUSTOM_REAL), dimension(3, NDIM), intent(in) :: vert_list ! Input: rank 2 array (size should be 3*NDIM).
+    real(kind=CUSTOM_REAL), dimension(NDIM) :: point
+    !logical :: point_is_in_triangle
+    ! Local.
+    real(kind=CUSTOM_REAL), dimension(NDIM) :: v0, v1, v2
+    real(kind=CUSTOM_REAL) :: dot00, dot01, dot02, dot11, dot12, invDenom, u, v
+    ! Compute vectors        
+    v0 = vert_list(3,:) - vert_list(1,:)
+    v1 = vert_list(2,:) - vert_list(1,:)
+    v2 = point - vert_list(1,:)
+    ! Compute dot products
+    dot00 = DOT_PRODUCT(v0, v0)
+    dot01 = DOT_PRODUCT(v0, v1)
+    dot02 = DOT_PRODUCT(v0, v2)
+    dot11 = DOT_PRODUCT(v1, v1)
+    dot12 = DOT_PRODUCT(v1, v2)
+    ! Compute barycentric coordinates
+    invDenom = 1. / (dot00 * dot11 - dot01 * dot01)
+    u = (dot11 * dot02 - dot01 * dot12) * invDenom
+    v = (dot00 * dot12 - dot01 * dot02) * invDenom
+    ! Check if point is in triangle
+    point_is_in_triangle = ((u >= 0) .and. (v >= 0) .and. (u + v < 1))
+  end function point_is_in_triangle
 
 !  ! ------------------------------------------------------------ !
 !  ! RusanovFlux                                                  !

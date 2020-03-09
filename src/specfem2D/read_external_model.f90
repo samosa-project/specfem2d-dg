@@ -221,6 +221,7 @@
     ! Check existence of model file.
     fileexists=.false.
     INQUIRE(File=EXTERNAL_DG_ONLY_MODEL_FILENAME, Exist=fileexists)
+    fileexists=.true.
     if(.not. fileexists) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
@@ -234,20 +235,24 @@
       write(*,*) "********************************"
       stop
     endif
-    call external_model_DG_only_find_nblines(nlines_header, nblines_model)
-    call define_external_model_DG_only(nlines_header, nblines_model)
+    !call external_model_DG_only_find_nblines(nlines_header, nblines_model)
+    !call define_external_model_DG_only(nlines_header, nblines_model)
+    nlines_header=3
+    nblines_model=4
+    call lns_load_background_model(nlines_header, nblines_model)
     
-    if(.false.) then ! DEBUG
+    if(.true.) then ! DEBUG
       open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
       do ispec = 1,nspec
         do j = 1,NGLLZ
           do i = 1,NGLLX
             write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                         rhoext(i, j, ispec)
+                         pext_DG(i, j, ispec)
           enddo
         enddo
       enddo
       close(504)
+      stop
       ! Matlab one-liner plot:
       ! a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_model/OUTPUT_FILES/TESTMODEL"); x=a(:,1); z=a(:,2); d=a(:,3);plot(z,d);
     endif
