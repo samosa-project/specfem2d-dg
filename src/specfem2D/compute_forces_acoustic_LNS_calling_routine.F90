@@ -849,6 +849,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
       ! > Set pressure.
       if(swComputeP) then
         out_p = (sound_velocity**2)*out_rho/gammaext_DG(iglob) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
+        !out_p = ( 100.+(coord(1,ibool_before_perio(i,j,ispec))-50.)**2/30. )*out_rho/gammaext_DG(iglob)
       endif
     endif
     
