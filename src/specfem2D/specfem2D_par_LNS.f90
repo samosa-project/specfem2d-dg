@@ -5,6 +5,13 @@ module specfem_par_LNS
   implicit none
   
   ! ---------------------------- !
+  ! Generalised background model parameters.
+  ! ---------------------------- !
+  ! File name for generalised background model.
+  character(len=100), parameter :: BCKGRD_MDL_LNS_FILENAME = './background_model.dat'
+  integer, parameter :: BCKGRD_MDL_LNS_NCOL = 3
+  
+  ! ---------------------------- !
   ! Switches.
   ! ---------------------------- !
   ! Switch enabling the use of LNS instead of FNS.
