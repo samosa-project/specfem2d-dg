@@ -1,5 +1,5 @@
 function [fh] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
-  [X,Y,V, ~] = readDumps(OFD, IT, verbose);
+  [X,Y,V, ~] = readDumpsUnique(OFD, IT, verbose);
   [Xi, Yi, Zi] = interpDumps(X, Y, V, nx, ny);
   
   fh = figure();

@@ -1,6 +1,6 @@
 % Function coded quickly, maybe to be redone cleaner some day.
 
-function [X,Y,V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
+function [X, Y, V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
   if(not(exist('verbose')))
     verbose=0;
   end
