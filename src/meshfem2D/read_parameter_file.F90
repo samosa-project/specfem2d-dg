@@ -838,12 +838,21 @@
   endif
 
   ! checks model
-  select case (MODEL)
-  case ('default','ascii','binary','external','gll','binary_voigt','external_DG', 'LNS_generalised')
-    print * ! do nothing
-  case default
-    stop 'Bad value: MODEL'
-  end select
+  if(USE_LNS) then
+    select case (MODEL)
+    case ('default','ascii','binary','external','gll','binary_voigt','external_DG', 'LNS_generalised')
+      print * ! do nothing
+    case default
+      stop 'Bad value: MODEL'
+    end select
+  else
+    select case (MODEL)
+    case ('default','ascii','binary','external','gll','binary_voigt','external_DG')
+      print * ! do nothing
+    case default
+      stop 'Bad value: MODEL'
+    end select
+  endif
 
   ! checks model
   select case (SAVE_MODEL)
