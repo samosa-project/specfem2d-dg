@@ -541,7 +541,7 @@ end subroutine LNS_PML_updateD0
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
-  use specfem_par, only: ibool_DG, nspec, &
+  use specfem_par, only: MODEL, ibool_DG, nspec, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
                          NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
                          !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
@@ -561,36 +561,60 @@ subroutine initial_state_LNS()
   integer :: ispec, iglob, i, j
   !real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
   
-  ! Initialise initial state registers.
-  LNS_rho0   = ZEROcr
-  LNS_v0     = ZEROcr
-  LNS_E0     = ZEROcr
-  ! Initialise initial auxiliary quantities.
-  LNS_T0     = ZEROcr
-  LNS_p0     = ZEROcr
-  nabla_v0   = ZEROcr
-  sigma_v_0  = ZEROcr
-  ! Physical parameters.
-  LNS_g      = ZEROcr
-  LNS_mu     = ZEROcr
-  LNS_eta    = ZEROcr
-  LNS_kappa  = ZEROcr
-  
-  do ispec = 1, nspec
-    !if(ispec_is_acoustic_DG(ispec)) then
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          iglob = ibool_DG(i, j, ispec)
-          call set_fluid_properties(i, j, ispec)
-          call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), &
-                                              .true., LNS_v0(:,iglob), &
-                                              .true., LNS_E0(iglob), &
-                                              .true., LNS_p0(iglob))
+  ! Initialisation of the background state.
+  if(trim(MODEL)=='LNS_generalised') then
+    ! If a generalised model was loaded, do not re-initialise the 'LNS_*0' variables.
+  else
+    ! If no external model was loaded, or if the classical stratified DG model was loaded, specify the 'LNS_*0' variables.
+    ! Initialise initial state registers.
+    LNS_rho0   = ZEROcr
+    LNS_v0     = ZEROcr
+    LNS_E0     = ZEROcr
+    ! Initialise initial auxiliary quantities.
+    LNS_T0     = ZEROcr
+    LNS_p0     = ZEROcr
+    nabla_v0   = ZEROcr
+    sigma_v_0  = ZEROcr
+    ! Physical parameters.
+    LNS_g      = ZEROcr
+    LNS_mu     = ZEROcr
+    LNS_eta    = ZEROcr
+    LNS_kappa  = ZEROcr
+    do ispec = 1, nspec
+      !if(ispec_is_acoustic_DG(ispec)) then
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
+            iglob = ibool_DG(i, j, ispec)
+            call set_fluid_properties(i, j, ispec)
+            call background_physical_parameters(i, j, ispec, ZEROcr, LNS_rho0(iglob), &
+                                                .true., LNS_v0(:,iglob), &
+                                                .true., LNS_E0(iglob), &
+                                                .true., LNS_p0(iglob))
+          enddo
         enddo
-      enddo
-    !endif
-  enddo
+      !endif
+    enddo
+    
+    ! Ugly patch to make it work.
+    ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.
+    ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
+    ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
+    ! TODO: something else, maybe involving correcting the FNS implementation.
+    where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
+    where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
+    where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
+
+    ! Recompute and save globally c0.
+    LNS_c0 = sqrt(gammaext_DG*LNS_p0/LNS_rho0)
+
+    ! Initialise T_0.
+    call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+    !call compute_T(LNS_rho0, LNS_p0, LNS_T0)
+    !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
+    
+  endif  
   
+  ! Deallocate old DG variables in all cases.
   ! Not really optimal, but less invasive.
   if(allocated(gravityext)) deallocate(gravityext)
   if(allocated(muext)) deallocate(muext)
@@ -598,23 +622,6 @@ subroutine initial_state_LNS()
   if(allocated(kappa_DG)) deallocate(kappa_DG)
   if(allocated(tau_epsilon)) deallocate(tau_epsilon)
   if(allocated(tau_sigma)) deallocate(tau_sigma)
-  
-  ! Ugly patch to make it work.
-  ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.
-  ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
-  ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
-  ! TODO: something else, maybe involving correcting the FNS implementation.
-  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
-  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
-  where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
-  
-  ! Save globally c0.
-  LNS_c0 = sqrt(gammaext_DG*LNS_p0/LNS_rho0)
-  
-  ! Initialise T_0.
-  call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
-  !call compute_T(LNS_rho0, LNS_p0, LNS_T0)
-  !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
   
   ! Detect if viscosity exists somewhere on this CPU.
   if(     maxval(LNS_mu) > TINYVAL &
