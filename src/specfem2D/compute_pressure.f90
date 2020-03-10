@@ -87,7 +87,7 @@
     xix,xiz,gammax,gammaz,jacobian,ibool,coord, &
     e1,e11, &
     USE_TRICK_FOR_BETTER_PRESSURE,&
-    USE_DISCONTINUOUS_METHOD, ibool_DG ! DG
+    USE_DISCONTINUOUS_METHOD, ibool_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, gammaext_DG! DG
   use specfem_par_LNS,only: USE_LNS, LNS_dp ! DG LNS
 
   implicit none
@@ -546,7 +546,13 @@
           if(USE_LNS) then
             pressure_element(i,j) = LNS_dp(ibool_DG(i,j,ispec))
           else
-            stop 'pressure computation for DG FNS not tested'
+            ! Use formula from 'write_seimograms.f90'.
+            pressure_element(i,j) =   (gammaext_DG(ibool_DG(i,j,ispec))-1.) &
+                                      *(E_DG(ibool_DG(i,j,ispec)) &
+                                    - (0.5)*rho_DG(ibool_DG(i,j,ispec)) &
+                                           *(   (rhovz_DG(ibool_DG(i,j,ispec))/rho_DG(ibool_DG(i,j,ispec)))**2 &
+                                              + (rhovx_DG(ibool_DG(i,j,ispec))/rho_DG(ibool_DG(i,j,ispec)))**2 ))
+            !stop 'pressure computation for DG FNS not tested'
             !pressure_element(i,j) = 0.
           endif
         enddo
