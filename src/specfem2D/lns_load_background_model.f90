@@ -264,9 +264,9 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   ! Safeguards.
   call LNS_prevent_nonsense()
-  write(*,*) 'min max E0 reldiff', minval(LNS_E0), maxval(LNS_E0), ABS(maxval(LNS_E0)-minval(LNS_E0))/abs(maxval(LNS_E0))
-  write(*,*) 'min max T0 reldiff', minval(LNS_T0), maxval(LNS_T0), ABS(maxval(LNS_T0)-minval(LNS_T0))/abs(maxval(LNS_T0))
-  stop
+!  write(*,*) 'min max E0 reldiff', minval(LNS_E0), maxval(LNS_E0), ABS(maxval(LNS_E0)-minval(LNS_E0))/abs(maxval(LNS_E0))
+!  write(*,*) 'min max T0 reldiff', minval(LNS_T0), maxval(LNS_T0), ABS(maxval(LNS_T0)-minval(LNS_T0))/abs(maxval(LNS_T0))
+!  stop
 end subroutine delaunay_interp_all_points
 
 

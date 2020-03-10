@@ -653,6 +653,7 @@ subroutine initial_state_LNS()
 #endif
   
 !  write(*,*) 'min max v0x', minval(LNS_v0(1,:)), maxval(LNS_v0(1,:)) ! DEBUG
+!  write(*,*) 'min max nabla v0', minval(nabla_v0), maxval(nabla_v0)
 !  stop
 end subroutine initial_state_LNS
 
@@ -772,11 +773,11 @@ end subroutine LNS_PML_init_coefs
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
-  use specfem_par, only: assign_external_model, coord, coord_interface, gammaext_DG, ibool_DG, ibool_before_perio, &
+  use specfem_par, only: MODEL, assign_external_model, coord, coord_interface, gammaext_DG, ibool_DG, ibool_before_perio, &
   pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, &
   windxext!, &
 !ABC_STRETCH, ibool_before_perio, stretching_buffer, stretching_ya
-  use specfem_par_LNS, only: LNS_g
+  use specfem_par_LNS, only: LNS_g, LNS_rho0, LNS_v0, LNS_p0
 
   implicit none
   
@@ -823,20 +824,35 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
   
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
+    if(trim(MODEL)=='LNS_generalised') then
+      ! If a generalised model was loaded, return the 'LNS_*0' variables as they were initialised in 'lns_load_background_model.f90'.
+      ! > Set density.
+      out_rho = LNS_rho0(iglob)
+      ! > Set pressure.
+      if(swComputeP) then
+        out_p = LNS_p0(iglob)
+      endif
+      ! > Set wind.
+      if(swComputeV) then
+        out_v = LNS_v0(1:NDIM, iglob)
+      endif
+    else
+      ! If the classical stratified DG model was loaded, use it.
     
-    ! > Set density.
-    out_rho = rhoext(i, j, ispec)
-    
-    ! > Set pressure.
-    if(swComputeP) then
-      out_p = pext_DG(i, j, ispec)
-    endif
-    
-    ! > Set wind.
-    if(swComputeV) then
-      out_v(1) = windxext(i, j, ispec)
-      out_v(NDIM) = ZEROcr
-      ! One might want to set vertical wind here, too.
+      ! > Set density.
+      out_rho = rhoext(i, j, ispec)
+      
+      ! > Set pressure.
+      if(swComputeP) then
+        out_p = pext_DG(i, j, ispec)
+      endif
+      
+      ! > Set wind.
+      if(swComputeV) then
+        out_v(1) = windxext(i, j, ispec)
+        out_v(NDIM) = ZEROcr
+        ! One might want to set vertical wind here, too.
+      endif
     endif
   else
     ! If no external model data file is given (no initial conditions were specified), build model.
