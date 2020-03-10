@@ -48,8 +48,8 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model) :: X_m
-  real(kind=CUSTOM_REAL), dimension(nlines_model) :: p_model
+  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model) :: X_m, v_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model) :: rho_model, p_model, g_model, gam_model, mu_model, kappa_model
   
   ! Safeguard.
   if(.not. USE_DISCONTINUOUS_METHOD) then
@@ -64,7 +64,9 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   endif
   
   ! Read and store values of model.
-  call lns_read_background_model(nlines_header, nlines_model, X_m, p_model)
+  call lns_read_background_model(nlines_header, nlines_model, X_m, &
+                                 rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
+                                )
   
   ! Check
 !  if(.true.) then
@@ -79,7 +81,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
     write(*,*) "> Performing a 2D linear interpolation on the Delaunay triangulation of the provided model points."
   endif
   call delaunay_interp_all_points(nlines_model, X_m, &
-                                  p_model &
+                                  rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
                                  )
   
   ! Update elastic parts.
@@ -96,7 +98,9 @@ end subroutine lns_load_background_model
 ! ------------------------------------------------------------ !
 ! Read and store values of model.
 
-subroutine lns_read_background_model(nlines_header, nlines_model, X_m, p_model)
+subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
+                                     rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
+                                    )
   use constants, only: CUSTOM_REAL, NDIM
   !use specfem_par,only: nspec, tau_sigma, tau_epsilon
   use specfem_par, only: myrank
@@ -106,8 +110,8 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, p_model)
   
   ! Input/output.
   integer, intent(in) :: nlines_header, nlines_model
-  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(out) :: X_m
-  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(out) :: p_model
+  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(out) :: X_m, v_model
+  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(out) :: rho_model, p_model, g_model, gam_model, mu_model, kappa_model
   
   ! Local variables.
   integer :: ncolumns_detected = 3
@@ -134,7 +138,9 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, p_model)
   do i=1, nlines_model
     ! Read values.
     if(ncolumns_detected==BCKGRD_MDL_LNS_NCOL) then
-      read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), p_model(i)
+      read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
+                              rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
+                              g_model(i), gam_model(i), mu_model(i), kappa_model(i)
       !write(*,*) X_m(1, i), X_m(NDIM, i), p_model(i)
     else
       write(*,*) "********************************"
@@ -186,9 +192,11 @@ end subroutine delaunay_background_model_2d
 ! ------------------------------------------------------------ !
 
 
-subroutine delaunay_interp_all_points(nlines_model, X_m, p_m)
-  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ
-  use specfem_par_lns, only: point_is_in_triangle
+subroutine delaunay_interp_all_points(nlines_model, X_m, &
+                                      rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
+                                     )
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_mu, LNS_eta, LNS_E0, LNS_T0
   use specfem_par,only: nspec, &
         ispec_is_elastic, ispec_is_acoustic_DG
   
@@ -196,8 +204,8 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, p_m)
   
   ! Input/output.
   integer, intent(in) :: nlines_model
-  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m
-  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: p_m
+  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m, v_m
+  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
   ! Local variables.
   integer :: ispec, i, j
@@ -214,7 +222,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, p_m)
         do j = 1, NGLLZ
           do i = 1, NGLLX
             call delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
-                                                p_m &
+                                                rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                                )
           enddo
         enddo
@@ -228,6 +236,11 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, p_m)
       stop
     endif ! Endif on ispec_is_acoustic_DG.
   enddo
+  
+  ! Deduce remaining quantities.    
+  LNS_eta = FOUR_THIRDS*LNS_mu
+  call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
+  call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
 end subroutine delaunay_interp_all_points
 
 
@@ -237,31 +250,42 @@ end subroutine delaunay_interp_all_points
 
 
 subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
-                                          p_m &
+                                          rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                          )
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par_lns, only: point_is_in_triangle
-  use specfem_par, only: ibool, coord, pext_DG, coord_interface
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa
+  use specfem_par, only: ibool, ibool_DG, coord, coord_interface, gammaext_dg
   
   implicit none
   
   ! Input/output.
   integer, intent(in) :: nlines_model, ispec, i, j, tri_num
-  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m
   integer(kind=4), dimension(3, nlines_model), intent(in) :: tri_vert
-  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: p_m
+  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m, v_m
+  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
   ! Local variables.
-  integer :: t, v
+  integer :: t, v, iglobDG
+  integer, dimension(3) :: loctri_vertices_ids
   real(kind=8), dimension(3, NDIM) :: local_vertice_list
   real(kind=CUSTOM_REAL), dimension(NDIM) :: point_to_test
   logical found
-  real(kind=CUSTOM_REAL) :: l1, l2, l3
+  real(kind=CUSTOM_REAL), dimension(3) :: barycor
+  
+  ! Safety zeroing of local variables.
+  t = 0
+  v = 0
+  iglobDG = 0
+  loctri_vertices_ids = 0
+  local_vertice_list = 0.
+  point_to_test = 0.
+  found = .false.
+  barycor = 0.
   
   ! Bring back the SPECFEM coordinate to the model convention (where the interface is at altitude zero).
   point_to_test = coord(1:NDIM, ibool(i, j, ispec)) - (/0._CUSTOM_REAL, coord_interface/)
   
-  found = .false.
+  iglobDG = ibool_DG(i, j, ispec)
   
   do t = 1, tri_num
     !write(*,*) "Triangle ", t, " vertices: "
@@ -274,30 +298,46 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
 !      found = .true.
 !      write(*,*) "Point (",point_to_test,") is in triangle n°", t,". Performing barycentric interpolation."
 !      container_triangle = t
-!      call barycentric_coordinates_2d(local_vertice_list, point_to_test, l1, l2, l3)
+!      call barycentric_coordinates_2d(local_vertice_list, point_to_test, barycor(1), barycor(2), barycor(3))
 !      ! https://codeplea.com/triangular-interpolation
 !      return
 !    endif
     
-    call barycentric_coordinates_2d(local_vertice_list, point_to_test, l1, l2, l3)
+    call barycentric_coordinates_2d(local_vertice_list, point_to_test, barycor(1), barycor(2), barycor(3))
     
-    if(l1>=0. .and. l2>=0. .and. l3>=0.) then
+    if(barycor(1)>=0. .and. barycor(2)>=0. .and. barycor(3)>=0.) then
       ! Point is inside triangle.
-!      write(*,*) "Point (",coord(1:NDIM, ibool(i, j, ispec)),") is     in tri. n°", t," (barcoor. = [", l1,", ", l2,", ", l3,"])."
+      loctri_vertices_ids = tri_vert(1:3, t)
+!      write(*,*) "Point (",coord(1:NDIM, ibool(i, j, ispec)),") is     in tri. n°", t," (barcoor. = [", barycor,"])."
 !      write(*,*) "Performing barycentric interpolation." ! https://codeplea.com/triangular-interpolation
-!      write(*,*) "Vertices of this triangle are model points n°[", tri_vert(1:3, t), "]."
+!      write(*,*) "Vertices of this triangle are model points n°[", loctri_vertices_ids, "]."
 !      write(*,*) "Positions of those vertices are: [", local_vertice_list(1, 1:NDIM), "],"
 !      write(*,*) "                                 [", local_vertice_list(2, 1:NDIM), "],"
 !      write(*,*) "                                 [", local_vertice_list(3, 1:NDIM), "]."
-!      write(*,*) "Values of p_model at those points are: [", p_m(tri_vert(1:3, t)), "]."
-!      write(*,*) "Weighted value is (p_model[v1 v2 v3].[l1 l2 l3]) = ", DOT_PRODUCT(p_m(tri_vert(1:3, t)), (/l1, l2, l3/)), "."
-      pext_DG(i, j, ispec) = DOT_PRODUCT(p_m(tri_vert(1:3, t)), (/l1, l2, l3/))
-      
+!      write(*,*) "Values of p_model at those points are: [", p_m(loctri_vertices_ids), "]."
+!      write(*,*) "Weighted value is (p_model[v1 v2 v3].[barycor(1) barycor(2) barycor(3)]) = ", DOT_PRODUCT(p_m(loctri_vertices_ids), barycor), "."
+      LNS_rho0(iglobDG) = DOT_PRODUCT(rho_m(loctri_vertices_ids), barycor)
+      do v = 1, NDIM
+        LNS_v0(v, iglobDG) = DOT_PRODUCT(v_m(v, loctri_vertices_ids), barycor)
+      enddo
+      LNS_p0(iglobDG) = DOT_PRODUCT(p_m(loctri_vertices_ids), barycor)
+      LNS_g(iglobDG) = DOT_PRODUCT(g_m(loctri_vertices_ids), barycor)
+      gammaext_DG(iglobDG) = DOT_PRODUCT(gam_m(loctri_vertices_ids), barycor)
+      LNS_mu(iglobDG) = DOT_PRODUCT(mu_m(loctri_vertices_ids), barycor)
+      LNS_kappa(iglobDG) = DOT_PRODUCT(kappa_m(loctri_vertices_ids), barycor)
+      !vpext(i, j, ispec) = vp_model(1)
+      !Nsqext(i, j, ispec) = Nsq_model(1)
+      !vsext(i, j, ispec) = ZERO
+      !Qmu_attenuationext(i, j, ispec) = HUGEVAL
+      !QKappa_attenuationext(i, j, ispec) = HUGEVAL
+      !Htabext_DG(indglob_DG) = Htab_model(1)
+      !tau_sigma(i, j, ispec) = tau_sigma_model(i)
+      !tau_epsilon(i, j, ispec) = tau_epsilon_model(i)
       return
     else
       ! Point is outside triangle, go to next triangle.
 !      write(*,*) "Point (",point_to_test,") is not in tri. n°", t," (barcoor. =", &
-!                 " [", l1,", ", l2,", ", l3,"])."
+!                 " [", barycor,"])."
       cycle
     endif
   enddo
@@ -368,25 +408,29 @@ end subroutine barycentric_coordinates_2d
 
 subroutine output_lns_interpolated_model()
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ
-  use specfem_par, only: myrank, nspec, ibool_before_perio, coord, &
-                         pext_DG
+  use specfem_par, only: myrank, nspec, ibool_before_perio, coord, ibool_DG, gammaext_DG
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa
   implicit none
   ! Local variables.
-  integer :: ispec, i, j
-  open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
+  integer :: ispec, i, j, iglobDG
+  open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL',status='unknown',action='write', position="append")
   do ispec = 1,nspec
     do j = 1,NGLLZ
       do i = 1,NGLLX
+        iglobDG = ibool_DG(i, j, ispec)
         write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                     pext_DG(i, j, ispec)
+                     LNS_rho0(iglobDG), LNS_v0(1, iglobDG), LNS_v0(NDIM, iglobDG), LNS_p0(iglobDG), &
+                     LNS_g(iglobDG), gammaext_DG(iglobDG), LNS_mu(iglobDG), LNS_kappa(iglobDG)
       enddo
     enddo
   enddo
   close(504)
   if(myrank==0) then
-    write(*,*) "> > Dumped interpolated model to './OUTPUT_FILES/TESTMODEL'. Use the following Matlab one-liner to plot:"
+    write(*,*) "> > Dumped interpolated model to './OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'. ", &
+               "Use the following Matlab one-liner to plot:"
     write(*,*) "      a=importdata('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield/", &
-               "OUTPUT_FILES/TESTMODEL'); x=a(:,1); z=a(:,2); d=a(:,3); [Xi, Yi, Zi] = interpDumps(x, z, d, 50, 50); ", &
+               "OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'); ", &
+               "x=a(:,1); z=a(:,2); d=a(:,3); [Xi, Yi, Zi] = interpDumps(x, z, d, 50, 50); ", &
                "surf(Xi, Yi, Zi); view([0,0,1]); shading flat; colorbar;"
   endif
 end subroutine output_lns_interpolated_model
