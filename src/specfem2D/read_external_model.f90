@@ -51,9 +51,10 @@
     ! MODIF DG
     windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, USE_DISCONTINUOUS_METHOD,&
     Bxext, Bzext, N0ext, &
-    EXTERNAL_DG_ONLY_MODEL_FILENAME,&
+    EXTERNAL_DG_ONLY_MODEL_FILENAME, &
     !TEST
     ibool_before_perio
+  use specfem_par_lns, only: BCKGRD_MDL_LNS_FILENAME
 
   implicit none
 
@@ -65,7 +66,6 @@
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy,vs_val,vp_val,rho_val
   character(len=150) :: inputname
   integer :: nlines_header, nblines_model
-  logical :: fileexists
 
 
   if (tomo_material > 0) MODEL = 'tomo'
@@ -218,30 +218,10 @@
   
   
   else if (trim(MODEL)=='external_DG') then
-    ! Check existence of model file.
-    fileexists=.false.
-    INQUIRE(File=EXTERNAL_DG_ONLY_MODEL_FILENAME, Exist=fileexists)
-    fileexists=.true.
-    if(.not. fileexists) then
-      write(*,*) "********************************"
-      write(*,*) "*            ERROR             *"
-      write(*,*) "********************************"
-      write(*,*) "* Atmospheric model file does  *"
-      write(*,*) "* not exist in folder. Copy    *"
-      write(*,*) "* the atmospheric model file   *"
-      write(*,*) "* in the simulation folder, or *"
-      write(*,*) "* set MODEL to a different     *"
-      write(*,*) "* value in the parameter file. *"
-      write(*,*) "********************************"
-      stop
-    endif
-    !call external_model_DG_only_find_nblines(nlines_header, nblines_model)
-    !call define_external_model_DG_only(nlines_header, nblines_model)
-    nlines_header=3
-    nblines_model=4
-    call lns_load_background_model(nlines_header, nblines_model)
-    
-    if(.true.) then ! DEBUG
+    call external_dg_check_and_get_nblines(EXTERNAL_DG_ONLY_MODEL_FILENAME, nlines_header, nblines_model)
+    call define_external_model_DG_only(nlines_header, nblines_model)
+    ! DEBUG PRINT MODEL
+    if(.false.) then ! DEBUG
       open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
       do ispec = 1,nspec
         do j = 1,NGLLZ
@@ -256,10 +236,25 @@
       ! Matlab one-liner plot:
       ! a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_model/OUTPUT_FILES/TESTMODEL"); x=a(:,1); z=a(:,2); d=a(:,3);plot(z,d);
     endif
+    
+  else if (trim(MODEL)=='LNS_generalised') then
+    call external_dg_check_and_get_nblines(BCKGRD_MDL_LNS_FILENAME, nlines_header, nblines_model)
+    call lns_load_background_model(nlines_header, nblines_model)
+    stop
 
   else if (trim(MODEL)=='tomo') then
     call define_external_model_from_tomo_file()
-  endif
+  
+  else
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Parfile MODEL variable has   *"
+    write(*,*) "* unknown value:               *"
+    write(*,*) "* ", trim(MODEL)
+    write(*,*) "********************************"
+    stop
+  endif ! Endif on trim(MODEL).
 
   if (trim(MODEL)=='external' .or. trim(MODEL)=='tomo' .or. trim(MODEL)=='external_DG') then
     ! check that the external model that has just been defined makes sense
@@ -411,3 +406,32 @@
 
   end subroutine read_external_model
 
+
+subroutine external_dg_check_and_get_nblines(FILENAME, nlines_header, nblines_model)
+  !use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+  implicit none
+  ! Input/output.
+  character(len=100), intent(in) :: FILENAME
+  integer, intent(out) :: nlines_header, nblines_model
+  ! Local variables.
+  logical fileexists
+  ! Check existence of model file.
+  fileexists=.false.
+  INQUIRE(File=FILENAME, Exist=fileexists)
+  fileexists=.true.
+  if(.not. fileexists) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* External model file          *"
+    write(*,*) "* ", trim(FILENAME)
+    write(*,*) "* does not exist in folder.    *"
+    write(*,*) "* Get the model file in the    *"
+    write(*,*) "* simulation folder, or set    *"
+    write(*,*) "* MODEL to a different value   *"
+    write(*,*) "* in the parameter file.       *"
+    write(*,*) "********************************"
+    stop
+  endif
+  call external_model_DG_only_find_nblines(FILENAME, nlines_header, nblines_model)
+end subroutine external_dg_check_and_get_nblines
