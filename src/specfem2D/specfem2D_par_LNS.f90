@@ -9,7 +9,7 @@ module specfem_par_LNS
   ! ---------------------------- !
   ! File name for generalised background model.
   character(len=100), parameter :: BCKGRD_MDL_LNS_FILENAME = './background_model.dat'
-  integer, parameter :: BCKGRD_MDL_LNS_NCOL = 3
+  integer, parameter :: BCKGRD_MDL_LNS_NCOL = 10 ! (x, z, rho, vx, vz, p, g, gamma, mu, kappa)
   
   ! ---------------------------- !
   ! Switches.
@@ -64,6 +64,7 @@ module specfem_par_LNS
   ! Physical quantities.
   ! ---------------------------- !
   ! Pretty much all these arrays are allocated in 'prepare_timerun_wavefields.f90'.
+  ! The initial state arrays (ending in "0") are allocated in 'setup_mesh.f90', in order to be able to perform the loading of general external models.
   ! Physical parameters.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_c0
   

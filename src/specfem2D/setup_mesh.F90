@@ -1199,6 +1199,9 @@ subroutine setup_mesh_surface_DG_coupling()
 ! external models
 
   use specfem_par
+  use specfem_par_lns, only: NVALSIGMA, USE_LNS, &
+                             LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_eta, LNS_kappa, &
+                             LNS_E0, LNS_T0, nabla_v0, sigma_v_0
 
   implicit none
 
@@ -1244,6 +1247,21 @@ subroutine setup_mesh_surface_DG_coupling()
            kappa_DG(NGLLX,NGLLZ,nspec_ext), stat=ier) 
            if(IONOSPHERIC_COUPLING) allocate(N0ext(NGLLX,NGLLZ,nspec_ext), &
             Bxext(nglob_DG), Bzext(nglob_DG), stat=ier)
+    if(USE_LNS) then
+    
+    allocate(LNS_rho0(nglob_DG), LNS_E0(nglob_DG)) ! Initial state.
+    allocate(LNS_v0(NDIM,nglob_DG)) ! Initial state.
+    
+    allocate(nabla_v0(NDIM,NDIM,nglob_DG)) ! Gradient of initial velocity.
+    allocate(LNS_p0(nglob_DG), LNS_T0(nglob_DG)) ! Initial pressure and temperature.
+    allocate(sigma_v_0(NVALSIGMA, nglob_DG)) ! Initial viscous stress tensor.
+      
+    ! Physical parameters.
+    allocate(LNS_g(nglob_DG), &
+             LNS_mu(nglob_DG), &
+             LNS_eta(nglob_DG), &
+             LNS_kappa(nglob_DG))
+    endif
   else
         allocate(gammaext_DG(1))
   endif
