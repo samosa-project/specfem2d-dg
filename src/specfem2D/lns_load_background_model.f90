@@ -166,7 +166,8 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
         read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
                                 rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
                                 g_model(i), gam_model(i), mu_model(i), kappa_model(i)
-        !write(*,*) X_m(1, i), X_m(NDIM, i), p_model(i)
+        if(i<10) write(*,*) i, X_m(1, i), X_m(NDIM, i), p_model(i)
+!        if(i>10) stop
       else
         write(*,*) "********************************"
         write(*,*) "*            ERROR             *"
@@ -196,12 +197,19 @@ subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tr
   implicit none
   ! Input/output.
   integer, intent(in) :: nlines_model
-  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m
+  real(kind=8), dimension(NDIM, nlines_model), intent(inout) :: X_m
   integer(kind=4), intent(out) :: tri_num
   integer(kind=4), dimension(3, nlines_model), intent(out) :: tri_vert, tri_nabe
   ! Local variables.
   integer :: t
+  real(kind=8), dimension(NDIM, nlines_model) :: X_m_save ! dtris2 sorts points into lexicographic order. It seems something is wrong with this. Maybe preventing it should solve the issue?
+  
+  X_m_save = X_m
+!  write(*,*) X_m(1:2, 1:5)
   call dtris2(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
+!  write(*,*) X_m(1:2, 1:5)
+  X_m = X_m_save
+!  write(*,*) X_m(1:2, 1:5)
   
   if(myrank==0) then
     write(*,*) "> > Delaunay triangulation: ", tri_num, "triangles found."
@@ -236,7 +244,8 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   ! Input/output.
   integer, intent(in) :: nlines_model
-  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m, v_m
+  real(kind=8), dimension(NDIM, nlines_model), intent(inout) :: X_m
+  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: v_m
   real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
   ! Local variables.
@@ -343,10 +352,10 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   iglobDG = ibool_DG(i, j, ispec)
   
   do t = 1, tri_num
-    !write(*,*) "Triangle ", t, " vertices: "
+!    write(*,*) "Triangle ", t, " vertices (IDs [", tri_vert(1:3, t),"]): "
     do v = 1, 3
       local_vertice_list(v, 1:NDIM) = X_m(1:NDIM, tri_vert(v, t))
-      !write(*,*) "                           ", local_vertice_list(v, 1:NDIM)
+!      write(*,*) "                           ", local_vertice_list(v, 1:NDIM)
     enddo
     
 !    if(point_is_in_triangle(local_vertice_list, point_to_test)) then
@@ -466,6 +475,17 @@ subroutine barycentric_coordinates_2d(vlist, P, inTri, l1, l2, l3)
   l2 = ZERO
   l3 = ZERO
   det = (vlist(1, 1)-vlist(3, 1))*(vlist(2, 2)-vlist(3, 2)) - (vlist(1, 2)-vlist(3, 2))*(vlist(2, 1)-vlist(3, 1))
+  if(abs(det)<TINYVAL) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Determinant is very close to *"
+    write(*,*) "* zero in this triangle.       *"
+    write(*,*) "* Something's wrong I can feel *"
+    write(*,*) "* it.                          *"
+    write(*,*) "********************************"
+    stop
+  endif
   l1 = ((vlist(2, 2)-vlist(3, 2))*(P(1)-vlist(3, 1))+(vlist(3, 1)-vlist(2, 1))*(P(2)-vlist(3, 2))) / det
   if(l1<-TINYVAL) return ! Point is outside triangle, stop and return.
   l2 = ((vlist(3, 2)-vlist(1, 2))*(P(1)-vlist(3, 1))+(vlist(1, 1)-vlist(3, 1))*(P(2)-vlist(3, 2))) / det
