@@ -97,6 +97,13 @@ end subroutine lns_load_background_model
 ! lns_read_background_model                                    !
 ! ------------------------------------------------------------ !
 ! Read and store values of model.
+! The model file, if ASCII, should have the following format:
+! --- file begin
+!   //header whatever//
+!   //header whatever//
+!   //header whatever//
+!   x[m] z[m] rho0[kg.m^{-3}] v0x[m.s^{-1}] v0z[m.s^{-1}] p0[Pa] g[m.s^{-2}] gamma[1] mu[kg.m^{-1}.s^{-1}] kappa[m.kg.s^{-3}.K{-1}]
+! --- file end
 
 subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
                                      rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
@@ -104,7 +111,7 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
   use constants, only: CUSTOM_REAL, NDIM
   !use specfem_par,only: nspec, tau_sigma, tau_epsilon
   use specfem_par, only: myrank
-  use specfem_par_lns, only: BCKGRD_MDL_LNS_FILENAME, BCKGRD_MDL_LNS_NCOL
+  use specfem_par_lns, only: BCKGRD_MDL_LNS_is_binary, BCKGRD_MDL_LNS_FILENAME, BCKGRD_MDL_LNS_NCOL
   
   implicit none
   
@@ -114,45 +121,66 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
   real(kind=CUSTOM_REAL), dimension(nlines_model), intent(out) :: rho_model, p_model, g_model, gam_model, mu_model, kappa_model
   
   ! Local variables.
-  integer :: ncolumns_detected = 3
+  integer :: ncolumns_detected
   integer :: i, io
   
   call external_model_DG_testfile(BCKGRD_MDL_LNS_FILENAME) ! Test-reading the file.
   
-  call external_model_DG_only_find_nbcols(BCKGRD_MDL_LNS_FILENAME, nlines_header, ncolumns_detected)
+  if(.not. BCKGRD_MDL_LNS_is_binary) then
+    call external_model_DG_only_find_nbcols(BCKGRD_MDL_LNS_FILENAME, nlines_header, ncolumns_detected)
+  endif
   
   if(myrank==0) then
     write(*,*) "> Reading general background model file '", trim(BCKGRD_MDL_LNS_FILENAME)
-    write(*,*) "> Detected ",nlines_header," lines for header, and ",nlines_model," lines of model ", &
-               "(total = ",(nlines_header+nlines_model)," lines). Detected ", ncolumns_detected," columns."
+    if(.not. BCKGRD_MDL_LNS_is_binary) then
+      write(*,*) "> Detected ",nlines_header," lines for header, and ",nlines_model," lines of model ", &
+                 "(total = ",(nlines_header+nlines_model)," lines). Detected ", ncolumns_detected," columns."
+    endif
   endif
   
-  OPEN(100, file=BCKGRD_MDL_LNS_FILENAME)
   
-  do i=1, nlines_header
-    ! Read and skip in header.
-    read(100, *, iostat=io)
-    IF (io/=0) stop "Error reading line in background model file."
-  enddo
   
-  do i=1, nlines_model
-    ! Read values.
-    if(ncolumns_detected==BCKGRD_MDL_LNS_NCOL) then
-      read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
-                              rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
-                              g_model(i), gam_model(i), mu_model(i), kappa_model(i)
-      !write(*,*) X_m(1, i), X_m(NDIM, i), p_model(i)
-    else
-      write(*,*) "********************************"
-      write(*,*) "*            ERROR             *"
-      write(*,*) "********************************"
-      write(*,*) "* Number of columns in model   *"
-      write(*,*) "* file is wrong.               *"
-      write(*,*) "********************************"
-      stop
-    endif
-    if(io/=0) exit
-  enddo
+  if(BCKGRD_MDL_LNS_is_binary) then
+    ! If binary, loop until whole file is read.
+    stop 'BINARY READING OF BACKGROUND FILES IS NOT IMPLEMENTED YET'
+    OPEN(100, file=BCKGRD_MDL_LNS_FILENAME, access='stream', form='unformatted', STATUS="OLD")
+    i = 1
+    do while(io/=0)
+      !read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
+      !                        rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
+      !                        g_model(i), gam_model(i), mu_model(i), kappa_model(i) 
+      read(100, *, iostat=io) rho_model(i)
+      write(*,*) i, rho_model(i) ! DEBUG
+      if(i>10) stop 'kek' ! DEBUG
+      i = i + 1
+    enddo
+  else
+    ! If ASCII, skip header and read detected number of lines.
+    OPEN(100, file=BCKGRD_MDL_LNS_FILENAME)
+    do i=1, nlines_header
+      read(100, *, iostat=io)
+      IF (io/=0) stop "Error reading line in background model file."
+    enddo
+    do i=1, nlines_model
+      if(ncolumns_detected==BCKGRD_MDL_LNS_NCOL) then
+        read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
+                                rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
+                                g_model(i), gam_model(i), mu_model(i), kappa_model(i)
+        !write(*,*) X_m(1, i), X_m(NDIM, i), p_model(i)
+      else
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* Number of columns in model   *"
+        write(*,*) "* file is wrong.               *"
+        write(*,*) "********************************"
+        stop
+      endif
+      if(io/=0) exit
+    enddo
+    
+  endif
+  
   close(100)
 end subroutine lns_read_background_model
 

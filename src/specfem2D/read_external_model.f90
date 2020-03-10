@@ -54,7 +54,7 @@
     EXTERNAL_DG_ONLY_MODEL_FILENAME, &
     !TEST
     ibool_before_perio
-  use specfem_par_lns, only: BCKGRD_MDL_LNS_FILENAME
+  use specfem_par_lns, only: BCKGRD_MDL_LNS_is_binary, BCKGRD_MDL_LNS_FILENAME
 
   implicit none
 
@@ -66,6 +66,8 @@
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy,vs_val,vp_val,rho_val
   character(len=150) :: inputname
   integer :: nlines_header, nblines_model
+  nlines_header = -1
+  nblines_model = -1
 
 
   if (tomo_material > 0) MODEL = 'tomo'
@@ -238,7 +240,9 @@
     endif
     
   else if (trim(MODEL)=='LNS_generalised') then
-    call external_dg_check_and_get_nblines(BCKGRD_MDL_LNS_FILENAME, nlines_header, nblines_model)
+    if(.not. BCKGRD_MDL_LNS_is_binary) then
+      call external_dg_check_and_get_nblines(BCKGRD_MDL_LNS_FILENAME, nlines_header, nblines_model)
+    endif
     call lns_load_background_model(nlines_header, nblines_model)
 !    stop 'kek'
 

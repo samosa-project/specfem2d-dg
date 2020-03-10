@@ -8,6 +8,7 @@ module specfem_par_LNS
   ! Generalised background model parameters.
   ! ---------------------------- !
   ! File name for generalised background model.
+  logical, parameter :: BCKGRD_MDL_LNS_is_binary = .false.
   character(len=100), parameter :: BCKGRD_MDL_LNS_FILENAME = './background_model.dat'
   integer, parameter :: BCKGRD_MDL_LNS_NCOL = 10 ! (x, z, rho, vx, vz, p, g, gamma, mu, kappa)
   
