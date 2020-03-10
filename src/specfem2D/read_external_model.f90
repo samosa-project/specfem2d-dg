@@ -240,7 +240,6 @@
   else if (trim(MODEL)=='LNS_generalised') then
     call external_dg_check_and_get_nblines(BCKGRD_MDL_LNS_FILENAME, nlines_header, nblines_model)
     call lns_load_background_model(nlines_header, nblines_model)
-    stop
 
   else if (trim(MODEL)=='tomo') then
     call define_external_model_from_tomo_file()

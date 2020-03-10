@@ -839,7 +839,7 @@
 
   ! checks model
   select case (MODEL)
-  case ('default','ascii','binary','external','gll','binary_voigt','external_DG')
+  case ('default','ascii','binary','external','gll','binary_voigt','external_DG', 'LNS_generalised')
     print * ! do nothing
   case default
     stop 'Bad value: MODEL'
