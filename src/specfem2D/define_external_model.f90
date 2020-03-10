@@ -1456,20 +1456,21 @@
 ! external_model_DG_testfile                                   !
 ! ------------------------------------------------------------ !
 ! Finds the total number of lines contained in the 'atmospheric_model.dat' file.
-subroutine external_model_DG_testfile()
-  use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+subroutine external_model_DG_testfile(FILENAME)
   implicit none
+  ! Input/output.
+  character(len=100), intent(in) :: FILENAME
   ! Local variables.
   integer io
-  OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
+  OPEN(100, file=FILENAME)
   READ(100,*,iostat=io)
   if(io/=0) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
     write(*,*) "********************************"
-    write(*,*) "* Cannot read atmospheric      *"
+    write(*,*) "* Cannot read external         *"
     write(*,*) "* model file                   *"
-    write(*,*) "* ", trim(EXTERNAL_DG_ONLY_MODEL_FILENAME)
+    write(*,*) "* ", trim(FILENAME)
     write(*,*) "********************************"
     stop
   endif
@@ -1479,16 +1480,17 @@ end subroutine external_model_DG_testfile
 ! external_model_DG_only_find_nblines                          !
 ! ------------------------------------------------------------ !
 ! Finds the total number of lines contained in the 'atmospheric_model.dat' file.
-subroutine external_model_DG_only_find_nblines(nlines_header, nlines_model)
-  use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+subroutine external_model_DG_only_find_nblines(FILENAME, nlines_header, nlines_model)
+  !use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
   implicit none
   ! Input/output.
   integer, intent(out) :: nlines_header, nlines_model
+  character(len=100), intent(in) :: FILENAME
   ! Local variables.
   integer nlines_file, io
-  nlines_header=3; ! Number of header lines in model file. ! TODO: Find a way of discriminating this automatically.
+  nlines_header = 3 ! Number of header lines in model file. ! TODO: Find a way of discriminating this automatically.
   nlines_file = 0
-  OPEN(100, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
+  OPEN(100, file=FILENAME)
   DO
     READ(100,*,iostat=io)
     IF (io/=0) EXIT
@@ -1501,10 +1503,11 @@ end subroutine external_model_DG_only_find_nblines
 ! external_model_DG_only_find_nbcols                           !
 ! ------------------------------------------------------------ !
 ! Finds the number of columns contained in the 'atmospheric_model.dat' file.
-subroutine external_model_DG_only_find_nbcols(nlines_header,ncols)
-  use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+subroutine external_model_DG_only_find_nbcols(FILENAME, nlines_header, ncols)
+  !use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
   implicit none
   ! Input/output.
+  character(len=100), intent(in) :: FILENAME
   integer, intent(in) :: nlines_header
   integer, intent(out) :: ncols
   ! Local variables.
@@ -1514,15 +1517,22 @@ subroutine external_model_DG_only_find_nbcols(nlines_header,ncols)
   integer i, io, reading_unit
   double precision, dimension(MAX_NUM_OF_COLS) :: kek
   reading_unit=100
-  OPEN(reading_unit, file=EXTERNAL_DG_ONLY_MODEL_FILENAME)
+  OPEN(reading_unit, file=trim(FILENAME))
   ! Skip header.
   DO i=1,nlines_header
     READ(reading_unit,*,iostat=io)
+    IF (io/=0) then
+      write(*,*) "Error reading line in file '",trim(FILENAME),"' (iostat=",io,")."
+      stop "FATAL ERROR."
+    endif
   enddo
   ! Get first line of model.
   DO
     READ(reading_unit,'(A)',iostat=io) line
-    IF (io/=0) stop "Error reading line in atmospheric model file."
+    IF (io/=0) then
+      write(*,*) "Error reading line in file '",trim(FILENAME),"' (iostat=",io,")."
+      stop "FATAL ERROR."
+    endif
     exit
   ENDDO
   CLOSE(reading_unit)
@@ -1658,14 +1668,15 @@ subroutine define_external_model_DG_only(nlines_header, nlines_model)
     write(*,*) "********************************"
     stop
   endif
-  call external_model_DG_testfile() ! Test-reading the file.
+  call external_model_DG_testfile(EXTERNAL_DG_ONLY_MODEL_FILENAME) ! Test-reading the file.
   
   if(myrank==0) then
     write(*,*) "> Reading atmospheric model file '", trim(EXTERNAL_DG_ONLY_MODEL_FILENAME),&
-               "' and setting the external model accordingly."
+               "' and setting the external model accordingly by performing a Lagrange interpolation."
   endif
   
-  call external_model_DG_only_find_nbcols(nlines_header,ncolz)
+  call external_model_DG_only_find_nbcols(EXTERNAL_DG_ONLY_MODEL_FILENAME, nlines_header, ncolz)
+  
   if(ncolz/=17 .and. ncolz/=19 .and. ncolz/=20) then
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
@@ -2251,7 +2262,7 @@ subroutine external_DG_update_elastic_from_parfile()
   integer :: i, j, ispec
   
   if(myrank==0) then
-    write(*,*) "  Updating elastic part of external model: read values from ",&
+    write(*,*) "> > Updating elastic part of external model: read values from ",&
                "materials variables (which initially come from parfile) to fill the 'external' variables."
   endif
   
