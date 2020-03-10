@@ -653,7 +653,11 @@ subroutine initial_state_LNS()
 #endif
   
 !  write(*,*) 'min max v0x', minval(LNS_v0(1,:)), maxval(LNS_v0(1,:)) ! DEBUG
-!  write(*,*) 'min max nabla v0', minval(nabla_v0), maxval(nabla_v0)
+!  write(*,*) 'min max nabla_v0', minval(nabla_v0), maxval(nabla_v0)
+!  write(*,*) 'min max nabla_v0(1,:)=partial_i(vx)', minval(nabla_v0(1,1:2,:)), maxval(nabla_v0(1,1:2,:))
+!  write(*,*) 'min max nabla_v0(2,:)=partial_i(vz)', minval(nabla_v0(2,1:2,:)), maxval(nabla_v0(2,1:2,:))
+!  write(*,*) 'min max nabla_v0(:,1)=partial_x(vi)', minval(nabla_v0(1:2,1,:)), maxval(nabla_v0(1:2,1,:))
+!  write(*,*) 'min max nabla_v0(:,2)=partial_z(vi)', minval(nabla_v0(1:2,2,:)), maxval(nabla_v0(1:2,2,:))
 !  stop
 end subroutine initial_state_LNS
 
