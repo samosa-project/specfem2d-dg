@@ -163,6 +163,7 @@ end subroutine lns_read_background_model
 
 subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
   use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: myrank
   
   implicit none
   ! Input/output.
@@ -174,15 +175,17 @@ subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tr
   integer :: t
   call dtris2(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
   
-  write(*,*) "> > Delaunay triangulation: ", tri_num, "triangles found."
-  
-  ! Debug: print out triangles.
-  if(.false.) then
-    do t = 1, tri_num
-      write(*,*) "> > Triangle n°", t, " vertices: ", X_m(1:NDIM, tri_vert(1, t))
-      write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(2, t))
-      write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(3, t))
-    enddo
+  if(myrank==0) then
+    write(*,*) "> > Delaunay triangulation: ", tri_num, "triangles found."
+    
+    ! Debug: print out triangles.
+    if(.false.) then
+      do t = 1, tri_num
+        write(*,*) "> > Triangle n°", t, " vertices: ", X_m(1:NDIM, tri_vert(1, t))
+        write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(2, t))
+        write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(3, t))
+      enddo
+    endif
   endif
   
 end subroutine delaunay_background_model_2d
@@ -196,9 +199,10 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
                                       rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                      )
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS
-  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_mu, LNS_eta, LNS_E0, LNS_T0
-  use specfem_par,only: nspec, &
-        ispec_is_elastic, ispec_is_acoustic_DG
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, &
+                             LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_E0, LNS_T0, &
+                             nabla_v0, sigma_v_0
+  use specfem_par, only: nspec, ispec_is_elastic, ispec_is_acoustic_DG
   
   implicit none
   
@@ -208,11 +212,27 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
   ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer :: ispec, i, j
   integer(kind=4) :: tri_num
   integer(kind=4), dimension(3, nlines_model) :: tri_vert, tri_nabe
   
   call delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
+  
+  ! Initialise initial state registers.
+  LNS_rho0   = ZEROcr
+  LNS_v0     = ZEROcr
+  LNS_E0     = ZEROcr
+  ! Initialise initial auxiliary quantities.
+  LNS_T0     = ZEROcr
+  LNS_p0     = ZEROcr
+  nabla_v0   = ZEROcr ! Will be initialised in 'compute_forces_acoustic_LNS_calling_routine.f90'.
+  sigma_v_0  = ZEROcr ! Will be initialised in 'compute_forces_acoustic_LNS_calling_routine.f90'.
+  ! Physical parameters.
+  LNS_g      = ZEROcr
+  LNS_mu     = ZEROcr
+  LNS_eta    = ZEROcr
+  LNS_kappa  = ZEROcr
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
@@ -241,6 +261,12 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   LNS_eta = FOUR_THIRDS*LNS_mu
   call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
   call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+  
+  ! Safeguards.
+  call LNS_prevent_nonsense()
+  write(*,*) 'min max E0 reldiff', minval(LNS_E0), maxval(LNS_E0), ABS(maxval(LNS_E0)-minval(LNS_E0))/abs(maxval(LNS_E0))
+  write(*,*) 'min max T0 reldiff', minval(LNS_T0), maxval(LNS_T0), ABS(maxval(LNS_T0)-minval(LNS_T0))/abs(maxval(LNS_T0))
+  stop
 end subroutine delaunay_interp_all_points
 
 
@@ -259,6 +285,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   implicit none
   
   ! Input/output.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer, intent(in) :: nlines_model, ispec, i, j, tri_num
   integer(kind=4), dimension(3, nlines_model), intent(in) :: tri_vert
   real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m, v_m
@@ -269,7 +296,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   integer, dimension(3) :: loctri_vertices_ids
   real(kind=8), dimension(3, NDIM) :: local_vertice_list
   real(kind=CUSTOM_REAL), dimension(NDIM) :: point_to_test
-  logical found
+  logical found, inTri
   real(kind=CUSTOM_REAL), dimension(3) :: barycor
   
   ! Safety zeroing of local variables.
@@ -283,7 +310,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   barycor = 0.
   
   ! Bring back the SPECFEM coordinate to the model convention (where the interface is at altitude zero).
-  point_to_test = coord(1:NDIM, ibool(i, j, ispec)) - (/0._CUSTOM_REAL, coord_interface/)
+  point_to_test = coord(1:NDIM, ibool(i, j, ispec)) - (/ZEROcr, coord_interface/)
   
   iglobDG = ibool_DG(i, j, ispec)
   
@@ -303,9 +330,9 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
 !      return
 !    endif
     
-    call barycentric_coordinates_2d(local_vertice_list, point_to_test, barycor(1), barycor(2), barycor(3))
+    call barycentric_coordinates_2d(local_vertice_list, point_to_test, inTri, barycor(1), barycor(2), barycor(3))
     
-    if(barycor(1)>=0. .and. barycor(2)>=0. .and. barycor(3)>=0.) then
+    if(inTri) then
       ! Point is inside triangle.
       loctri_vertices_ids = tri_vert(1:3, t)
 !      write(*,*) "Point (",coord(1:NDIM, ibool(i, j, ispec)),") is     in tri. n°", t," (barcoor. = [", barycor,"])."
@@ -334,11 +361,6 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
       !tau_sigma(i, j, ispec) = tau_sigma_model(i)
       !tau_epsilon(i, j, ispec) = tau_epsilon_model(i)
       
-      ! For the subroutines in 'invert_mass_matrix.f90', one needs to initialise the following:
-      rhoext(i, j, ispec) = LNS_rho0(iglobDG)
-      LNS_c0(iglobDG) = sqrt(gammaext_DG(iglobDG)*LNS_p0(iglobDG)/LNS_rho0(iglobDG)) ! Take the chance to compute and save c0.
-      vpext(i, j, ispec) = LNS_c0(iglobDG)
-      
       ! Sanity checks.
       if(LNS_rho0(iglobDG) <= TINYVAL) then
         write(*,*) "********************************"
@@ -354,11 +376,15 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
         stop
       endif
       
+      ! For the subroutines in 'invert_mass_matrix.f90', one needs to initialise the following:
+      rhoext(i, j, ispec) = LNS_rho0(iglobDG)
+      LNS_c0(iglobDG) = sqrt(gammaext_DG(iglobDG)*LNS_p0(iglobDG)/LNS_rho0(iglobDG)) ! Take the chance to compute and save c0.
+      vpext(i, j, ispec) = LNS_c0(iglobDG)
+      
       return
     else
       ! Point is outside triangle, go to next triangle.
-!      write(*,*) "Point (",point_to_test,") is not in tri. n°", t," (barcoor. =", &
-!                 " [", barycor,"])."
+!      write(*,*) "Point (",point_to_test,") is not in tri. n°", t," (barcoor. = [", barycor,"])."
       cycle
     endif
   enddo
@@ -396,26 +422,29 @@ end subroutine delaunay_interpolate_one_point
 ! ------------------------------------------------------------ !
 ! https://en.wikipedia.org/wiki/Barycentric_coordinate_system
 
-subroutine barycentric_coordinates_2d(vlist, P, l1, l2, l3)
-  use constants, only: CUSTOM_REAL, NDIM
+subroutine barycentric_coordinates_2d(vlist, P, inTri, l1, l2, l3)
+  use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   implicit none
   ! Input/output.
   real(kind=8), dimension(3, NDIM), intent(in) :: vlist
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: P
+  logical, intent(out) :: inTri
   real(kind=CUSTOM_REAL), intent(out) :: l1, l2, l3
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: det
+  inTri = .false.
   l1 = ZERO
   l2 = ZERO
   l3 = ZERO
   det = (vlist(1, 1)-vlist(3, 1))*(vlist(2, 2)-vlist(3, 2)) - (vlist(1, 2)-vlist(3, 2))*(vlist(2, 1)-vlist(3, 1))
   l1 = ((vlist(2, 2)-vlist(3, 2))*(P(1)-vlist(3, 1))+(vlist(3, 1)-vlist(2, 1))*(P(2)-vlist(3, 2))) / det
-  if(l1<0.) return ! Point is outside triangle, stop and return.
+  if(l1<-TINYVAL) return ! Point is outside triangle, stop and return.
   l2 = ((vlist(3, 2)-vlist(1, 2))*(P(1)-vlist(3, 1))+(vlist(1, 1)-vlist(3, 1))*(P(2)-vlist(3, 2))) / det
-  if(l2<0.) return ! Point is outside triangle, stop and return.
+  if(l2<-TINYVAL) return ! Point is outside triangle, stop and return.
   l3 = 1. - l1 - l2
-  if(l3<0.) return ! Point is outside triangle, stop and return.
+  if(l3<-TINYVAL) return ! Point is outside triangle, stop and return.
+  inTri = .true. ! No return command was hit before, hence point can be considered in triangle.
   !write(*,*) "Barycentric coordinates = (", l1, l2, l3, ")."
 end subroutine barycentric_coordinates_2d
 
