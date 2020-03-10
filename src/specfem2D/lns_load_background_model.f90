@@ -252,9 +252,9 @@ end subroutine delaunay_interp_all_points
 subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
                                           rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                          )
-  use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa
-  use specfem_par, only: ibool, ibool_DG, coord, coord_interface, gammaext_dg
+  use constants, only: CUSTOM_REAL, NDIM, TINYVAL
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa, LNS_c0
+  use specfem_par, only: ibool, ibool_DG, coord, coord_interface, gammaext_dg, rhoext, vpext
   
   implicit none
   
@@ -333,6 +333,27 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
       !Htabext_DG(indglob_DG) = Htab_model(1)
       !tau_sigma(i, j, ispec) = tau_sigma_model(i)
       !tau_epsilon(i, j, ispec) = tau_epsilon_model(i)
+      
+      ! For the subroutines in 'invert_mass_matrix.f90', one needs to initialise the following:
+      rhoext(i, j, ispec) = LNS_rho0(iglobDG)
+      LNS_c0(iglobDG) = sqrt(gammaext_DG(iglobDG)*LNS_p0(iglobDG)/LNS_rho0(iglobDG)) ! Take the chance to compute and save c0.
+      vpext(i, j, ispec) = LNS_c0(iglobDG)
+      
+      ! Sanity checks.
+      if(LNS_rho0(iglobDG) <= TINYVAL) then
+        write(*,*) "********************************"
+        write(*,*) "*            ERROR             *"
+        write(*,*) "********************************"
+        write(*,*) "* A negative (<=0) density was *"
+        write(*,*) "* found after interpolation.   *"
+        write(*,*) "********************************"
+        write(*,*) ispec,i,j,&
+                   coord(1,iglobDG),coord(2,iglobDG),&
+                   LNS_rho0(iglobDG)
+        write(*,*) "********************************"
+        stop
+      endif
+      
       return
     else
       ! Point is outside triangle, go to next triangle.
