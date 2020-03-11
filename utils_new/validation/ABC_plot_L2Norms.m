@@ -23,8 +23,8 @@ function [fh] = ABC_plot_L2Norms(L2SqrdErr_FAF_grp, L2SqrdErr_BUF_grp, DSPLNM_st
     linehandles = drawBrackets(gca, i+shift_l, [min(L2SqrdErr_FAF_grp{i}), max(L2SqrdErr_FAF_grp{i})], 2, lip); set(linehandles, 'linewidth', LW, 'color', FAFCol);
   end
   % artificial plots for nicer legend
-  plot([1,1]*1e1, [1,1]*1e1, '-', 'displayname', DSPLNM_strct.FAF, 'marker', '.', 'linewidth', LW, 'markersize', MS*0.75, 'color', BUFCol, 'handlevisibility', 'on'); hold on;
-  plot([1,1]*1e1, [1,1]*1e1, '-', 'displayname', DSPLNM_strct.BUF, 'marker', '.', 'linewidth', LW, 'markersize', MS*0.75, 'color', FAFCol, 'handlevisibility', 'on'); hold on;
+  plot([1,1]*1e1, [1,1]*1e1, '-', 'displayname', DSPLNM_strct.FAF, 'marker', '.', 'linewidth', LW, 'markersize', MS*0.75, 'color', FAFCol, 'handlevisibility', 'on'); hold on;
+  plot([1,1]*1e1, [1,1]*1e1, '-', 'displayname', DSPLNM_strct.BUF, 'marker', '.', 'linewidth', LW, 'markersize', MS*0.75, 'color', BUFCol, 'handlevisibility', 'on'); hold on;
   
   set(tightAxes, 'yscale', 'log');
   

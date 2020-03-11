@@ -176,13 +176,11 @@ if(compareStations)
       legend('location','northwest');
       prettyAxes(fTvD);
       customSaveFig(fTvD, TS_outputFigPath, {'fig', 'jpg', 'eps'});
-      disp(["customSaveFig(fTvD, TS_outputFigPath, {'fig', 'jpg', 'eps'});"]);
+      disp(["customSaveFig(fTvD, TS_outputFigPath, {'fig', 'png', 'eps', 'tex'});"]);
     end
   end
   
   % plot L2 errors
-  FAFCol = COLs{ord.Ff*nbstats+1};
-  BUFCol = COLs{ord.Bu*nbstats+1};
   l2err_outpath = [outputDir, 'TS_L2_summary'];
   [fh] = ABC_plot_L2Norms(L2SqrdErr_FAF_grp, L2SqrdErr_BUF_grp, DSPLNM_strct, colours_runs, allCases, l2err_outpath);
   
