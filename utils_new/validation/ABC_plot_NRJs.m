@@ -1,7 +1,7 @@
 % custom function based off plot_total_energy, but for nicer ABC validation
 % visualisations
 
-function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct, LS_strct, outputfigpath)
+function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct, LS_strct, colours_runs, outputfigpath)
   
   % OFDIRS should be a struct containing the test cases
   % OFD_LIST should be a length 9 cell: {[3 PW], [3 PS], [3 WPS]}.
@@ -50,7 +50,7 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
     axes(axxx(i));
     cur_y = pe;
     for j = 1:3
-      plot(t{i,j}, cur_y{i,j}, 'displayname', DISPLAYNAMES_cell{j}, 'linestyle', LS_cell{j}); hold on;
+      plot(t{i,j}, cur_y{i,j}, 'color', colours_runs{j}, 'displayname', DISPLAYNAMES_cell{j}, 'linestyle', LS_cell{j}); hold on;
     end
 %     if(min(cur_y{i,1})>0 && min(cur_y{i,2})>0 && min(cur_y{i,3})>0)
 %       set(gca,'yscale','log');
@@ -68,7 +68,7 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
     axes(axxx(i+num_cases));
     cur_y = ke;
     for j = 1:3
-      plot(t{i,j}, cur_y{i,j}, 'displayname', DISPLAYNAMES_cell{j}, 'linestyle', LS_cell{j}); hold on;
+      plot(t{i,j}, cur_y{i,j}, 'color', colours_runs{j}, 'displayname', DISPLAYNAMES_cell{j}, 'linestyle', LS_cell{j}); hold on;
     end
 %     if(min(cur_y{i,1})>0 && min(cur_y{i,2})>0 && min(cur_y{i,3})>0)
 %       set(gca,'yscale','log');

@@ -23,13 +23,28 @@ SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 % Parameters.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
+allCases = {'PW', 'PS', 'WPS'};
+
+% prepare colours once and for all
+defaultColOrd = get(0,'defaultAxesColorOrder');
+%   colour_LAR = 'k';
+%   colour_FAF = 'c';
+%   colour_BUF = 'm';
+colour_LAR = defaultColOrd(1,:);
+colour_FAF = defaultColOrd(2,:);
+colour_BUF = defaultColOrd(3,:);
+colours_runs = {colour_LAR, colour_FAF, colour_BUF};
 
 subsample = 1;
 subsample_dt = 1e-4;
 LarRNam='large'; FafRNam='far-field'; BufRNam='buffers';
 
 compareEnergies = 0; % compare energies for all cases at once
-compareStations = 1; curCase = 'WPS'; % compare time series for one case
+% compareStations = 0;
+compareStations = 1; caseToPlot = ''; % plot simply errors
+% compareStations = 1; caseToPlot = 'PW'; % compare time series for one case
+% compareStations = 1; caseToPlot = 'PS'; % compare time series for one case
+% compareStations = 1; caseToPlot = 'WPS'; % compare time series for one case
 
 % Relative locations of OUTPUT_FILES directories. This should be the same across all test cases.
 LAR_ext = '_large/OUTPUT_FILES_baseline/';
@@ -45,20 +60,6 @@ BUF_ext   = ['_buffers/OUTPUT_FILES_p3p25q6e0p001/']; BUF_params=[1e-3,3.25,6];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Treatment.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-switch curCase
-  case 'PW'
-    distType_x0z1d2=1;
-    errorFactor=1e5; % factor by which multiply the absolute error between methods
-  case 'PS'
-    distType_x0z1d2=0;
-    errorFactor=1e2; % factor by which multiply the absolute error between methods
-  case 'WPS'
-    distType_x0z1d2=2;
-    errorFactor=1e2; % factor by which multiply the absolute error between methods
-  otherwise
-    error('sdfgjsmgkmsfkgl');
-end
-
 % Build database of OUTPUT_FILES locations.
 OFDIRS_strct = {}; DSPLNM_strct = {};
 OFDIRS_strct.PW = {}; bsnm = 'LNSABC_PW';
@@ -74,17 +75,7 @@ OFDIRS_strct.WPS.LAR = [SPCFMEXloc,bsnm,LAR_ext];
 OFDIRS_strct.WPS.FAF = [SPCFMEXloc,bsnm,FAF_ext];
 OFDIRS_strct.WPS.BUF = [SPCFMEXloc,bsnm,BUF_ext];
 
-% build OUTPUT_FILES directories' paths for the current case
-curCase_OF_LAR = OFDIRS_strct.(curCase).LAR;
-curCase_OF_FAF = OFDIRS_strct.(curCase).FAF;
-curCase_OF_BUF = OFDIRS_strct.(curCase).BUF;
-% retrieve parameters for the current case
-[curCase_INFOS] = ABC_load_parameters(curCase_OF_LAR, curCase_OF_FAF, curCase_OF_BUF, curCase, BUF_params);
-% print out parameters to text file
-ABC_print_params(curCase_INFOS, outputDir);
 
-FIGTITLE = curCase;
-outputFigDir_wprefix=[outputDir,curCase,'_'];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Actual plots.
@@ -104,52 +95,97 @@ if(compareEnergies)
 %   disp(["figure(fE.Number); customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});"]);
   
   energy_outpath = [outputDir,'energy_summary'];
-  [fE, axxx] = ABC_plot_NRJs(OFDIRS_strct,DSPLNM_strct,LS_strct,energy_outpath);
+  [fE, axxx] = ABC_plot_NRJs(OFDIRS_strct,DSPLNM_strct,LS_strct,colours_runs,energy_outpath);
   %TODO: export descriptions (INFO_all) to a text file
 end
 
-% plot time series
+% compare time series
 if(compareStations)
-  [~,diffSTATBufferLarge]=system(['diff ',curCase_OF_BUF,'STATIONS ',curCase_OF_LAR,'STATIONS']);
-  [~,diffSTATFFLarge]=system(['diff ',curCase_OF_FAF,'STATIONS ',curCase_OF_LAR,'STATIONS']);
-  if(numel(diffSTATBufferLarge)>0)
-    error('STATIONS were not the same between runs buffer and large');
-  end
-  if(numel(diffSTATFFLarge)>0)
-    error('STATIONS were not the same between runs farfield and large');
+  L2SqrdErr_FAF_grp = {};
+  L2SqrdErr_BUF_grp = {};
+  
+  for i_case = 1:numel(allCases)
+    curCase = allCases{i_case};
+    
+    % build OUTPUT_FILES directories' paths for the current case
+    curCase_OF_LAR = OFDIRS_strct.(curCase).LAR;
+    curCase_OF_FAF = OFDIRS_strct.(curCase).FAF;
+    curCase_OF_BUF = OFDIRS_strct.(curCase).BUF;
+    % retrieve parameters for the current case
+    [curCase_INFOS] = ABC_load_parameters(curCase_OF_LAR, curCase_OF_FAF, curCase_OF_BUF, curCase, BUF_params);
+    % print out parameters to text file
+    ABC_print_params(curCase_INFOS, outputDir);
+    % prepare some parameters
+    FIGTITLE = curCase;
+    outputFigDir_wprefix=[outputDir,curCase,'_'];
+    % set distance and factor by which multiply the absolute error between methods for the plot
+    switch curCase
+      case 'PW'
+        distType_x0z1d2=1;
+        errorFactor = 1e5;
+      case 'PS'
+        distType_x0z1d2=0;
+        errorFactor = 1e2;
+      case 'WPS'
+        distType_x0z1d2=2;
+        errorFactor = 1e2;
+      otherwise
+        error('sdfgjsmgkmsfkgl');
+    end
+    
+    % check stations agree between runs for each case
+    [~,diffSTATBufferLarge] = system(['diff ',curCase_OF_BUF,'STATIONS ',curCase_OF_LAR,'STATIONS']);
+    [~,diffSTATFFLarge] = system(['diff ',curCase_OF_FAF,'STATIONS ',curCase_OF_LAR,'STATIONS']);
+    if(numel(diffSTATBufferLarge)>0)
+      error('STATIONS were not the same between runs buffer and large');
+    end
+    if(numel(diffSTATFFLarge)>0)
+      error('STATIONS were not the same between runs farfield and large');
+    end
+    
+    % load stations
+    [x_stat, z_stat, y_stat, stat_file] = loadStations(curCase_OF_BUF);
+    nbstats = numel(x_stat);
+
+    % load actual time series, and compute and store errors
+    [time, Zamp, NMs, COLs, LSs, ord, L2SqrdErr_FAF_grp{i_case}, L2SqrdErr_BUF_grp{i_case}] = ABC_load_TS_and_compute_error({curCase_OF_LAR, curCase_OF_FAF, curCase_OF_BUF}, nbstats, subsample, subsample_dt, errorFactor, colours_runs, DSPLNM_strct);
+    
+    % plot the one we care to plot
+    if(strcmp(caseToPlot, curCase))
+      % Time series plot
+      TS_outputFigPath=[outputFigDir_wprefix,'time_series'];
+      nRepetitions = size(Zamp, 1)/nbstats;
+      switch(distType_x0z1d2)
+        case 0
+          distttt = x_stat; distSymbol='$x$';
+        case 1
+          distttt = z_stat; distSymbol='$z$';
+        case 2
+          % ASSUMING SOURCE IS AT (0, 0)
+          % FLEMME TO DO IT WITH XSOURCEZSOURCE
+          distttt = (x_stat.^2+z_stat.^2).^0.5; distSymbol='$d$';
+        otherwise
+          error('distance switch not implemented');
+      end
+      fTvD = plot_time_v_dist(repmat(time,[nbstats*nRepetitions,1]), Zamp, repmat(distttt,[nRepetitions,1]), 0, FIGTITLE, distSymbol, 1, NMs, COLs, LSs);
+      
+      % cosmetics
+      figure(fTvD);
+      cax=gca();
+      set(cax.Children(1:nRepetitions*(nbstats-1)),'handlevisibility','off');
+      legend('location','northwest');
+      prettyAxes(fTvD);
+      customSaveFig(fTvD, TS_outputFigPath, {'fig', 'jpg', 'eps'});
+      disp(["customSaveFig(fTvD, TS_outputFigPath, {'fig', 'jpg', 'eps'});"]);
+    end
   end
   
-%   STATIONS = [bufferRunOF,'STATIONS'];
-  [x_stat, z_stat, y_stat, stat_file] = loadStations(curCase_OF_BUF);
-  nbstats=numel(x_stat);
+  % plot L2 errors
+  FAFCol = COLs{ord.Ff*nbstats+1};
+  BUFCol = COLs{ord.Bu*nbstats+1};
+  l2err_outpath = [outputDir, 'TS_L2_summary'];
+  [fh] = ABC_plot_L2Norms(L2SqrdErr_FAF_grp, L2SqrdErr_BUF_grp, DSPLNM_strct, colours_runs, allCases, l2err_outpath);
   
-  % load
-  [time, Zamp, NMs, COLs, LSs] = ABC_load_TS_and_compute_error({curCase_OF_LAR, curCase_OF_FAF, curCase_OF_BUF}, nbstats, subsample, subsample_dt, errorFactor, DSPLNM_strct);
-  
-  % actual plot
-  TS_outputFigPath=[outputFigDir_wprefix,'time_series'];
-  nRepetitions = size(Zamp, 1)/nbstats;
-  switch(distType_x0z1d2)
-    case 0
-      distttt = x_stat; distSymbol='$x$';
-    case 1
-      distttt = z_stat; distSymbol='$z$';
-    case 2
-      % ASSUMING SOURCE IS AT (0, 0)
-      % FLEMME TO DO IT WITH XSOURCEZSOURCE
-      distttt = (x_stat.^2+z_stat.^2).^0.5; distSymbol='$d$';
-    otherwise
-      error('distance swtich not implemented');
-  end
-  fTvD = plot_time_v_dist(repmat(time,[nbstats*nRepetitions,1]), Zamp, repmat(distttt,[nRepetitions,1]), 0, FIGTITLE, distSymbol, 1, NMs, COLs, LSs);
-  % cosmetics
-  figure(fTvD);
-  cax=gca();
-  set(cax.Children(1:nRepetitions*(nbstats-1)),'handlevisibility','off');
-  legend('location','northwest');
-  prettyAxes(fTvD);
-  customSaveFig(fTvD, TS_outputFigPath, {'fig', 'jpg', 'eps'});
-  disp(["figure(fTvD.Number); customSaveFig(TS_outputFigPath, {'fig', 'jpg', 'eps'});"]);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
