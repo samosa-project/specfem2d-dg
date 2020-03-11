@@ -16,21 +16,7 @@ clear all;
 % close all;
 clc;
 format compact;
-
-format compact;
-set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-set(0, 'defaultTextFontSize', 18);
-set(0, 'defaultAxesFontSize', 16); % Default at 10.
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
-% set(0, 'DefaultLineLineWidth', 1.5); set(0, 'DefaultLineMarkerSize', 8);
-% set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
-% set(0, 'DefaultTextInterpreter', 'latex');
-% set(0, 'DefaultLegendInterpreter', 'latex');
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new');  % plot_total_energy
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone'); % plot_time_v_dist
+addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new')); % plot_time_v_dist, plot_total_energy, truncToShortest, readAndSubsampleSynth
 SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,8 +27,8 @@ outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
 subsample = 1;
 subsample_dt = 1e-4;
 
-compareEnergies = 0;
-compareStations = 1;
+compareEnergies = 1;
+compareStations = 0;
 
 % basename = 'LNSABC_PW'; prefix='PW'; distType_x0z1d2=1; errorFactor=1e5; % factor by which multiply the absolute error between methods
 % basename = 'LNSABC_PS'; prefix='PS'; distType_x0z1d2=0; errorFactor=1e2; % factor by which multiply the absolute error between methods
@@ -64,6 +50,26 @@ bufferRunOF   = [SPCFMEXloc,basename,'_buffers/OUTPUT_FILES_p3p25q6e0p001']; suf
 BufRNam='buffers';
 largeRunOF    = [SPCFMEXloc,basename,'_large/OUTPUT_FILES_baseline']; LarRNam='large';
 farFieldRunOF = [SPCFMEXloc,basename,'_FF/OUTPUT_FILES_FF']; FafRNam='far-field';
+
+% Locations of OUTPUT_FILES directories. Should be the same across all test cases.
+LAR_ext = '_large/OUTPUT_FILES_baseline/';
+FAF_ext = '_FF/OUTPUT_FILES_FF/';
+BUF_ext = '_buffers/OUTPUT_FILES_p3p25q6e0p001/';
+
+OFDIRS_strct = {}; DSPLNM_strct = {};
+OFDIRS_strct.PW = {}; basename = 'LNSABC_PW';
+OFDIRS_strct.PW.LAR = [SPCFMEXloc,basename,LAR_ext]; DSPLNM_strct.LAR = LarRNam; LS_strct.LAR = '-';
+OFDIRS_strct.PW.FAF = [SPCFMEXloc,basename,FAF_ext]; DSPLNM_strct.FAF = FafRNam; LS_strct.FAF = '--';
+OFDIRS_strct.PW.BUF = [SPCFMEXloc,basename,BUF_ext]; DSPLNM_strct.BUF = BufRNam; LS_strct.BUF = ':';
+OFDIRS_strct.PS = {}; basename = 'LNSABC_PS';
+OFDIRS_strct.PS.LAR = [SPCFMEXloc,basename,LAR_ext];
+OFDIRS_strct.PS.FAF = [SPCFMEXloc,basename,FAF_ext];
+OFDIRS_strct.PS.BUF = [SPCFMEXloc,basename,BUF_ext];
+OFDIRS_strct.WPS = {}; basename = 'LNSABC_WPS';
+OFDIRS_strct.WPS.LAR = [SPCFMEXloc,basename,LAR_ext];
+OFDIRS_strct.WPS.FAF = [SPCFMEXloc,basename,FAF_ext];
+OFDIRS_strct.WPS.BUF = [SPCFMEXloc,basename,BUF_ext];
+
 % safeguard
 if(numel(bufferRunOF)>0); if(not(strcmp(bufferRunOF(end),filesep))); bufferRunOF=[bufferRunOF,filesep]; end; end;
 if(numel(largeRunOF)>0); if(not(strcmp(largeRunOF(end),filesep))); largeRunOF=[largeRunOF,filesep]; end; end;
@@ -104,7 +110,10 @@ else
     ENERGYBOX(4)=globzmax;
   end
 end
-tit_all = {[LarRNam,'=[',tit_La,'], ',FafRNam,'=[',tit_Fa,']'],[BufRNam,'=[',tit_Bu,'], '],['energy box: ',['$[',num2str(min(ENERGYBOX(1:2))),', ',num2str(max(ENERGYBOX(1:2))),']\times[',num2str(min(ENERGYBOX(3:4))),', ',num2str(max(ENERGYBOX(3:4))),']$']]};
+INFO_all = {[LarRNam,'=[',tit_La,'], ',FafRNam,'=[',tit_Fa,']'],[BufRNam,'=[',tit_Bu,'], '],['energy box: ',['$[',num2str(min(ENERGYBOX(1:2))),', ',num2str(max(ENERGYBOX(1:2))),']\times[',num2str(min(ENERGYBOX(3:4))),', ',num2str(max(ENERGYBOX(3:4))),']$']]};
+FIGTITLE = prefix;
+
+displaynames_large_ff_buf = {[LarRNam], [FafRNam], [BufRNam]};
 
 outputFigDir_wprefix=[outputDir,prefix,'_'];
 
@@ -120,10 +129,14 @@ if(compareEnergies)
 %   fPE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},1,0,tit_all);
 %   customSaveFig(outputFigPath, {'fig', 'jpg', 'eps'});
   
-  EEE_outputFigPath=[outputFigDir_wprefix,'E'];
-  fE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},4,1,tit_all,[],{'-','--',':'});
-  customSaveFig(fE, EEE_outputFigPath, {'fig', 'jpg', 'eps'});
-  disp(["figure(fE.Number); customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});"]);
+%   EEE_outputFigPath=[outputFigDir_wprefix,'E'];
+%   fE = plot_total_energy({largeRunOF,farFieldRunOF,bufferRunOF},4,1,FIGTITLE,[],{'-','--',':'}, displaynames_large_ff_buf);
+%   customSaveFig(fE, EEE_outputFigPath, {'fig', 'jpg', 'eps'});
+%   disp(["figure(fE.Number); customSaveFig(EEE_outputFigPath, {'fig', 'jpg', 'eps'});"]);
+  
+  energy_outpath = [outputDir,'energy_summary'];
+  [fE, axxx] = ABC_plot_NRJs(OFDIRS_strct,DSPLNM_strct,LS_strct,);
+  %TODO: export descriptions (INFO_all) to a text file
 end
 
 % plot time series
@@ -185,7 +198,7 @@ if(compareStations)
     otherwise
       error('distance swtich not implemented');
   end
-  fTvD = plot_time_v_dist(repmat(time,[nbstats*nRepetitions,1]), Zamp, repmat(distttt,[nRepetitions,1]), 0, tit_all, distSymbol, 1, NMs, COLs, LSs);
+  fTvD = plot_time_v_dist(repmat(time,[nbstats*nRepetitions,1]), Zamp, repmat(distttt,[nRepetitions,1]), 0, FIGTITLE, distSymbol, 1, NMs, COLs, LSs);
   % cosmetics
   figure(fTvD);
   cax=gca();

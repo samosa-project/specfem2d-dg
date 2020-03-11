@@ -9,15 +9,14 @@
 % yields:
 %   TODO.
 
-function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_4sbpltKP, logscale, titlefig, outputfigpath, linestyles)
+function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_4sbpltKP, logscale, titlefig, outputfigpath, linestyles, custom_displaynames)
   addpath('/home/l.martire/Documents/work/mars/mars_is'); % prettyAxes
-  energyfilename='energy.dat';
-  if(not(exist('OFDIRs')))
+  if(not(exist('OFDIRs', 'var')))
     OFDIRsProvided=0;
   else
     OFDIRsProvided=1;
   end
-  if(not(exist('swtchE_0K_1P_2T_4sbpltKP')))
+  if(not(exist('swtchE_0K_1P_2T_4sbpltKP', 'var')))
     swtchE_0K_1P_2T_4sbpltKP = 0;
   else
     if(not(ismember(swtchE_0K_1P_2T_4sbpltKP,[0,1,2,4])))
@@ -25,20 +24,20 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
       swtchE_0K_1P_2T_4sbpltKP = 0;
     end
   end
-  if(not(exist('logscale')))
+  if(not(exist('logscale', 'var')))
     logscale=1;
   end
-  if(not(exist('titlefig')) | strcmp(titlefig,'auto'))
+  if(not(exist('titlefig', 'var')) | strcmp(titlefig,'auto'))
     titlefig_provided = 0;
   else
     titlefig_provided = 1;
   end
-  if(not(exist('outputfigpath')) | strcmp(outputfigpath,'no') | isempty(outputfigpath))
+  if(not(exist('outputfigpath', 'var')) | strcmp(outputfigpath,'no') | isempty(outputfigpath))
     outputfigpath_provided=0;
   else
     outputfigpath_provided=1;
   end
-  if(not(exist('linestyles')))
+  if(not(exist('linestyles', 'var')))
     linestyles_provided = 0;
   else
     linestyles_provided = 1;
@@ -49,17 +48,21 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
       error(['linestyles input must be the same length as OFDIRs input']);
     end
   end
+  if(not(exist('custom_displaynames', 'var')))
+    custom_displaynames_provided = 0;
+  else
+    custom_displaynames_provided = 1;
+    if(not(iscell(custom_displaynames)))
+      error(['custom_displaynames input must be a cell array']);
+    end
+    if(not(numel(OFDIRs)==numel(custom_displaynames)))
+      error(['custom_displaynames input must be the same length as OFDIRs input']);
+    end
+  end
   
   if(OFDIRsProvided)
     % nothing
   else
-    format compact;
-    set(0, 'DefaultLineLineWidth', 2); % Default at 0.5.
-    set(0, 'DefaultLineMarkerSize', 6); % Default at 6.
-    set(0, 'defaultTextFontSize', 18);
-    set(0, 'defaultAxesFontSize', 16); % Default at 10.
-    set(0, 'DefaultTextInterpreter', 'latex');
-    set(0, 'DefaultLegendInterpreter', 'latex');
     % get OFDIRs
     many0orone1=-1;
     while(not(numel(many0orone1) & ismember(many0orone1,[0,1])))
@@ -132,7 +135,7 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
     titlefig = titlefig_local;
   end
 
-  figureHandle = figure('units','normalized','outerposition',[0 0 0.5 1]);
+  figureHandle = figure('units','normalized','outerposition', [0 0 0.3 1]);
 
   for i=1:numel(OFDIRs)
     % set loading directory, and check it
@@ -143,23 +146,18 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
       disp(['[',mfilename,', INFO] ''',OFDIR,''' is not a directory. Skipping.']);
       continue;
     end
-    energypath = [OFDIR,energyfilename];
-    if(not(exist(energypath)==2))
-      disp(['[',mfilename,', INFO] Energy file ''',energypath,'''does not exist. Skipping.']);
-      continue;
-    end
 
     % Prepare a displayname.
-    spl=split(OFDIR,filesep);
-    simulationname = [spl{end-2},'__',spl{end-1}];
-    simulationname = regexprep(simulationname,'_','\\_');
+    if(custom_displaynames_provided)
+      simulationname = custom_displaynames{i};
+    else
+      spl=split(OFDIR,filesep);
+      simulationname = [spl{end-2},'__',spl{end-1}];
+      simulationname = regexprep(simulationname,'_','\\_');
+    end
 
     % Load the data.
-    EF = importdata(energypath);
-    t  = EF.data(:, 1);
-    ke = EF.data(:, 2);
-    pe = EF.data(:, 3);
-    te = EF.data(:, 4);
+    [t, ke, pe, te] = load_energy(OFDIR);
     
     % If LNS, update values given the file format (see energy file, iterate_time.f90, and compute_energy.f90).
     if(readExampleFiles_extractParam([OFDIR,'input_parfile'],'USE_LNS','bool'))
@@ -199,7 +197,7 @@ function [figureHandle, ke, pe, te] = plot_total_energy(OFDIRs, swtchE_0K_1P_2T_
           if(isa(titlefig,'cell'))
             topscale = numel(titlefig);
           end
-          axxx = tight_subplot(2, 1, 0.03, [0.07,topscale*0.03], [0.15, 0.011]); % not mandatory, but prettier
+          axxx = tight_subplot(2, 1, [0., -1], [0.1,topscale*0.05], [0.2, 0.02]); % not mandatory, but prettier
 %           else
 %             f=gcf; axxx = f.Children;
         end
