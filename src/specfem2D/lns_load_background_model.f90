@@ -166,7 +166,7 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
         read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
                                 rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
                                 g_model(i), gam_model(i), mu_model(i), kappa_model(i)
-        if(i<10) write(*,*) i, X_m(1, i), X_m(NDIM, i), p_model(i)
+!        if(i<10) write(*,*) i, X_m(1, i), X_m(NDIM, i), p_model(i)
 !        if(i>10) stop
       else
         write(*,*) "********************************"
@@ -197,7 +197,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, &
                              LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_E0, LNS_T0, &
                              nabla_v0, sigma_v_0
-  use specfem_par, only: nspec, ispec_is_elastic, ispec_is_acoustic_DG
+  use specfem_par, only: myrank, nspec, ispec_is_elastic, ispec_is_acoustic_DG
   
   implicit none
   
@@ -229,6 +229,10 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   LNS_mu     = ZEROcr
   LNS_eta    = ZEROcr
   LNS_kappa  = ZEROcr
+  
+  if(myrank==0) then
+    write(*,*) "> > Starting interpolation on the Delaunay triangulation."
+  endif
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
@@ -283,16 +287,8 @@ subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tr
   integer(kind=4), dimension(3, 2*nlines_model), intent(out) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
   ! Local variables.
   integer :: t
-!  real(kind=8), dimension(NDIM, nlines_model) :: X_m_save ! dtris2 sorts points into lexicographic order. It seems something is wrong with this. Maybe preventing it should solve the issue?
   
-!  X_m_save = real(X_m, kind = 8)
-!  write(*,*) X_m(1:2, 1:5)
-  
-  ! Note: from loading within the file (using 'lns_read_background_model') to this routine, X_m was of type real(kind=CUSTOM_REAL). Now, dtris2 requires it to be of type real(kind=8). We assume the casting can occur without issues.
   call dtris2(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
-!  write(*,*) X_m(1:2, 1:5)
-!  X_m = X_m_save
-!  write(*,*) X_m(1:2, 1:5)
   
   if(myrank==0) then
     write(*,*) "> > Delaunay triangulation of the ",nlines_model," model points: ", tri_num, "triangles found."
@@ -383,15 +379,15 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
 !      write(*,*) "                                 [", local_vertice_list(3, 1:NDIM), "]."
 !      write(*,*) "Values of p_model at those points are: [", p_m(loctri_vertices_ids), "]."
 !      write(*,*) "Weighted value is (p_model[v1 v2 v3].[barycor(1) barycor(2) barycor(3)]) = ", DOT_PRODUCT(p_m(loctri_vertices_ids), barycor), "."
-      LNS_rho0(iglobDG) = DOT_PRODUCT(rho_m(loctri_vertices_ids), barycor)
+      LNS_rho0(iglobDG)    = DOT_PRODUCT(barycor, rho_m(loctri_vertices_ids))
       do v = 1, NDIM
-        LNS_v0(v, iglobDG) = DOT_PRODUCT(v_m(v, loctri_vertices_ids), barycor)
+        LNS_v0(v, iglobDG) = DOT_PRODUCT(barycor, v_m(v, loctri_vertices_ids))
       enddo
-      LNS_p0(iglobDG) = DOT_PRODUCT(p_m(loctri_vertices_ids), barycor)
-      LNS_g(iglobDG) = DOT_PRODUCT(g_m(loctri_vertices_ids), barycor)
-      gammaext_DG(iglobDG) = DOT_PRODUCT(gam_m(loctri_vertices_ids), barycor)
-      LNS_mu(iglobDG) = DOT_PRODUCT(mu_m(loctri_vertices_ids), barycor)
-      LNS_kappa(iglobDG) = DOT_PRODUCT(kappa_m(loctri_vertices_ids), barycor)
+      LNS_p0(iglobDG)      = DOT_PRODUCT(barycor, p_m(loctri_vertices_ids))
+      LNS_g(iglobDG)       = DOT_PRODUCT(barycor, g_m(loctri_vertices_ids))
+      gammaext_DG(iglobDG) = DOT_PRODUCT(barycor, gam_m(loctri_vertices_ids))
+      LNS_mu(iglobDG)      = DOT_PRODUCT(barycor, mu_m(loctri_vertices_ids))
+      LNS_kappa(iglobDG)   = DOT_PRODUCT(barycor, kappa_m(loctri_vertices_ids))
       !vpext(i, j, ispec) = vp_model(1)
       !Nsqext(i, j, ispec) = Nsq_model(1)
       !vsext(i, j, ispec) = ZERO
