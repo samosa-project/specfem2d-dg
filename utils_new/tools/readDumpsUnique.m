@@ -6,5 +6,7 @@ function [X, Y, V, imagetype_wavefield_dumps] = readDumpsUnique(OFD, IT, verbose
   X = X(iunique);
   Y = Y(iunique);
   V = V(iunique);
+  
+  disp(['[',mfilename,'] Made sure dumps only contain unique (x, z) couples.']);
 end
 

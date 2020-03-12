@@ -1,7 +1,7 @@
 % Function coded quickly, maybe to be redone cleaner some day.
 
 function [X, Y, V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
-  if(not(exist('verbose')))
+  if(not(exist('verbose', 'var')))
     verbose=0;
   end
 %   OFD='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/validation_lns_manufactured/OUTPUT_FILES';
@@ -83,7 +83,7 @@ function [X, Y, V, imagetype_wavefield_dumps] = readDumps(OFD, IT, verbose)
       end
     end
   end
-  disp(['finished loading']);
+  disp(['[',mfilename,'] Finished loading dumps, and assembling them.']);
 
   % check
   if(size(V,1)==0)

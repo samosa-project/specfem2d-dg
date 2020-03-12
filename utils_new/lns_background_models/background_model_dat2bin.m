@@ -1,3 +1,7 @@
+% This script is aimed at converting a background model (supposedly under
+% the right format) from ASCII to binary. Prefer using the other scripts,
+% this method seems quite hefty.
+
 %function background_model_dat2bin()
   input = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield/background_model.dat';
   output = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield/background_model.bin';

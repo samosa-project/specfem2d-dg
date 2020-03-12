@@ -1,6 +1,6 @@
 function [fh] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
   [X,Y,V, ~] = readDumpsUnique(OFD, IT, verbose);
-  [Xi, Yi, Zi] = interpDumps(X, Y, V, nx, ny);
+  [Xi, Yi, Zi] = interpDumpsUnique(X, Y, V, nx, ny);
   
   fh = figure();
   pcolor(Xi, Yi, Zi);
