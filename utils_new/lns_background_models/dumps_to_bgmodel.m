@@ -73,7 +73,8 @@ function [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
   % Some visualisation.
 %   figure(); spy(ROWS); daspect([1,numel(X)/nb_qty,1]); xticks(1:nb_qty); xticklabels(order);
 %   toplot = VAL;
-  toplot = sqrt(gamma*pre/rho0);
-  [Xi, pr_i, VALi] = interpDumps(X, Z, toplot, 1000, 1000); fh = figure(); pcolor(Xi, pr_i, VALi); shading interp; colormaps_fromPython('seismic', 1); colorbar;
+%   toplot = sqrt(gamma*pre/rho0);
+%   [Xi, pr_i, VALi] = interpDumps(X, Z, toplot, 1000, 1000); fh = figure(); pcolor(Xi, pr_i, VALi); shading interp; colormaps_fromPython('seismic', 1); colorbar;
+%   pause;
 end
 

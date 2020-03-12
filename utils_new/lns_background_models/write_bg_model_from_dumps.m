@@ -19,11 +19,10 @@ function [] = write_bg_model_from_dumps(OFD, IT, outputFolder)
   
   % Load dumps.
   [ROWS] = dumps_to_bgmodel(OFD, IT, uniform);
-  pause;
   
   header = {};
-  header{1} = 'custom/default LNS generalised background model\n';
-  header{2} = ['using dumps from IT=',num2str(IT),' in ',OFD,'\n'];
+  header{1} = ['This file was generated using the Matlab script ''',mfilename('fullpath'),'.m''.\n'];
+  header{2} = ['This background model is generated from SPECFEM dumps located in ',OFD,' at IT=',num2str(IT),'.\n'];
   
   % Actually write.
   write_bg_model(ROWS, 'fileType', 'bin', 'outputFolder', outputFolder, 'header', header);
