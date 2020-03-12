@@ -16,6 +16,9 @@ function [Z, RHO, TEMP, C, P, H, G, NBVSQ, KAPPA, MU, MUVOL, NORTHWIND, EASTWIND
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Load and store data.        %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if(not(exist(DATAFILE, 'file')))
+    error(['[',mfilename,', ERROR] File ''',DATAFILE,''' does not exist.']);
+  end
   DATA = importdata(DATAFILE, ' ', headerlines);
   frsvibfound=0;
   if(size(DATA.data,2)<17)
