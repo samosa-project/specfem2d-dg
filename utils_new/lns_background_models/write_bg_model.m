@@ -4,8 +4,11 @@ function [] = write_bg_model(OFD, IT)
   do_interp_NINTERPX = 4;
   do_interp_NINTERPZ = do_interp_NINTERPX;
   
-  output_file = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield_fromdg/background_model.dat';
-%   output_file = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield_4elements/background_model.dat';
+  print_ASCII1_binary_0 = 0;
+  asc__output_file = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield_fromdg/background_model.dat';
+  bin__output_file = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield_fromdg/background_model.bin';
+  bin__output_file_header = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield_fromdg/background_model_header.dat';
+  bin_precision = 'real*8';
 
   tweaks = 1;
   factor_dp = 2e6; % increase the pressure perturbation by a factor
@@ -78,20 +81,41 @@ function [] = write_bg_model(OFD, IT)
   [Xi, Zi, VALi] = interpDumps(X, Z, toplot, 1000, 1000); fh = figure(); pcolor(Xi, Zi, VALi); shading interp; colormaps_fromPython('seismic', 1); colorbar;
   pause
   
-  % Open file and write in it.
-  foutput = fopen(output_file, 'w');
+  header_line1 = 'custom/default LNS generalised background model\n';
+  header_line2 = ['using dumps from IT=',num2str(IT),' in ',OFD,'\n'];
   
-  % header
-  fprintf(foutput, 'custom/default LNS generalised background model\n');
-  fprintf(foutput, ['using dumps from IT=',num2str(IT),' in ',OFD,'\n']);
-  for q = 1:nb_qty
-    fprintf(foutput, pad(lab{q}, spacing+1));
+  if(print_ASCII1_binary_0)
+    % Open file and write in it.
+    foutput = fopen(asc__output_file, 'w');
+
+    % header
+    fprintf(foutput, header_line1);
+    fprintf(foutput, header_line2);
+    for q = 1:nb_qty
+      fprintf(foutput, pad(lab{q}, spacing+1));
+    end
+    fprintf(foutput, '\n');
+    fprintf(foutput, format_line, ROWS');
+    fclose(foutput);
+    disp(['[',mfilename,'] Finished writing background model to ASCII file (''',asc__output_file,''').']);
+  else
+    numlines = size(ROWS, 1);
+    
+    % first number should be an integer containing the number of "lines"
+    fout_hed = fopen(bin__output_file_header, 'w');
+    fprintf(fout_hed, '%d\n', numlines);
+    fprintf(fout_hed, header_line1);
+    fprintf(fout_hed, header_line2);
+    fclose(fout_hed);
+
+    % then, write all values
+    fout = fopen(bin__output_file, 'w');
+    fwrite(fout, ROWS', bin_precision);
+    fclose(fout);
+    disp(['[',mfilename,'] Finished writing background model to BIN file (''',bin__output_file,'''), with separate header (''',bin__output_file_header,''').']);
   end
-  fprintf(foutput, '\n');
-  fprintf(foutput, format_line, ROWS');
   
-  fclose('all');
-  disp(['[',mfilename,'] Finished writing background model to file (''',output_file,''').']);
+  fclose('all'); % safety
   
 end
 
