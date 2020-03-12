@@ -12,8 +12,22 @@
 % with:
 %   TODO.
 
-function [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
+function [ROWS, info] = dumps_to_bgmodel(OFD, IT, uniform)
+  if(not(exist('uniform', 'var')))
+    uniform = struct();
+    uniform.do = 0;
+  end
+  
   addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'));
+  
+  % Safety.
+  if(not(OFD(end) == filesep))
+    OFD = [OFD, filesep];
+  end
+  
+  % Build paths.
+  parfile = [OFD, 'input_parfile'];
+  atmfile = [OFD, 'input_atmospheric_model.dat'];
   
   % Artificial modifications, tweaks.
   tweaks = 1;
@@ -33,12 +47,19 @@ function [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
   mu = 0;
   kap = 0;
   
+  % Save/display information.
+  info_i = 1;
+  info{info_i} = ['[',mfilename,'] Constitutive variables [rho, vx, vz, p]: loaded from SPECFEM dumps located in ''',OFD,''', at IT=',num2str(IT),'.'];
+  disp(info{info_i});
+  
   % Read dumps and integrate those.
+  % TODO: read rho, vx, vz.
   [X, Z, pre, ~] = readDumpsUnique(OFD, IT, 0);
   Z = Z-min(Z); % recall background models should be put in ASL format along z (i.e. min(z) should be 0)
   
-  % choose to interpolate
+  % Choose to interpolate.
   if(uniform.do)
+    % TODO: do it for rho, vx, vz.
     [Xi, Yi, pr_i] = interpDumps(X, Z, pre, uniform.nx, uniform.nz);
     ninterp = numel(Xi);
     X = reshape(Xi, ninterp, 1);
@@ -46,7 +67,53 @@ function [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
     pre = reshape(pr_i, ninterp, 1);
   end
   
-  % lexicographic order, for readability
+  % Recover physical quantities (gravity, gamma, mu, kappa).
+  MODEL = readExampleFiles_extractParam(parfile, 'MODEL', 'string');
+  switch(MODEL)
+    case 'default'
+      mu = readExampleFiles_extractParam(parfile, 'dynamic_viscosity', 'float');
+      kap = readExampleFiles_extractParam(parfile, 'thermal_conductivity', 'float');
+      cp = readExampleFiles_extractParam(parfile, 'constant_p', 'float');
+      cv = readExampleFiles_extractParam(parfile, 'constant_v', 'float');
+      gamma = cp/cv;
+      
+      USE_ISOTHERMAL_MODEL = readExampleFiles_extractParam(parfile, 'USE_ISOTHERMAL_MODEL', 'bool');
+      USE_LNS = readExampleFiles_extractParam(parfile, 'USE_LNS', 'bool');
+      
+      if(USE_ISOTHERMAL_MODEL)
+        grav = readExampleFiles_extractParam(parfile, 'gravity', 'float');
+      else
+        if(USE_LNS)
+          error(['[',mfilename,', ERROR] Not implemented yet.']);
+          grav = 0; % Isobaric, needs to be zero, at least in FNS.
+        else
+          grav = 0; % Isobaric, needs to be zero, at least in FNS.
+        end
+      end
+      
+      info_i = info_i + 1;
+      info{info_i} = ['[',mfilename,'] Physical quantities [gravity, gamma, mu, kappa]: MODEL=default, hence extracted all from parfile ''',parfile,'''.'];
+      disp(info{info_i});
+    
+    case 'external_DG'
+      % Load the external_DG atmospheric model. It is in ASL convention, no need to change vertical reference.
+      [ZDump, ~, ~, ~, ~, ~, GRAVDump, ~, KAPPADump, MUDump, ~, ~, ~, ~, ~, ~, GAMMADump, ~, ~] = extract_atmos_model(atmfile, 3, 0, -1);
+      interpmethod = 'spline';
+      grav = interp1(ZDump, GRAVDump, Z, interpmethod);
+      gamma = interp1(ZDump, GAMMADump, Z, interpmethod);
+      mu = interp1(ZDump, MUDump, Z, interpmethod);
+      kap = interp1(ZDump, KAPPADump, Z, interpmethod);
+      
+      info_i = info_i + 1;
+      info{info_i} = ['[',mfilename,'] Physical quantities [gravity, gamma, mu, kappa]: interpolated from external_DG file ''',atmfile,''', using Matlab''s interp1 with ''',interpmethod,''' method.'];
+      disp(info{info_i});
+      
+    otherwise
+      error(['[',mfilename,', ERROR] This MODEL (',MODEL,') was not implemented yet.']);
+  end
+  pause
+  
+  % Put in lexicographic order, for readability.
   [~, isort] = sortrows([X, Z]);
   X = X(isort);
   Z = Z(isort);

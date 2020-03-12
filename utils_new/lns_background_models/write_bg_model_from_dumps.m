@@ -12,19 +12,26 @@
 %   TODO.
 
 function [] = write_bg_model_from_dumps(OFD, IT, outputFolder)
+%   fileType = 'asc';
+  fileType = 'bin';
+  
   % Eventually re-interpolate on an uniform grid. Not advised.
   uniform.do = 0;
   uniform.nx = 4;
   uniform.nz = uniform.nx;
   
   % Load dumps.
-  [ROWS] = dumps_to_bgmodel(OFD, IT, uniform);
+  [ROWS, header] = dumps_to_bgmodel(OFD, IT, uniform);
   
-  header = {};
-  header{1} = ['This file was generated using the Matlab script ''',mfilename('fullpath'),'.m''.\n'];
-  header{2} = ['This background model is generated from SPECFEM dumps located in ',OFD,' at IT=',num2str(IT),'.\n'];
+  switch(fileType)
+    case 'asc'
+      header{1} = [header{1}, ' This file was generated using the Matlab script ''',mfilename('fullpath'),'.m''.'];
+    case 'bin'
+      header{numel(header) + 1} = ['This file was generated using the Matlab script ''',mfilename('fullpath'),'.m''.'];
+    otherwise
+  end
   
   % Actually write.
-  write_bg_model(ROWS, 'fileType', 'bin', 'outputFolder', outputFolder, 'header', header);
+  write_bg_model(ROWS, 'fileType', fileType, 'outputFolder', outputFolder, 'header', header);
 end
 

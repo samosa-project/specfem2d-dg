@@ -111,6 +111,8 @@ function [] = write_bg_model(varargin)
   
   switch(fileType)
     case {'asc', 'ascii'}
+      nb_qty = size(ROWS, 2);
+      
       % Prepare ASCII format.
       asc__spacing = asc__nb_significantdigits+7;
       asc__format_number = ['%',num2str(asc__spacing),'.',num2str(asc__nb_significantdigits),'e '];
@@ -122,10 +124,10 @@ function [] = write_bg_model(varargin)
 
       % header
       if(numel(header)>2)
-        error(['[',mfilename,', ERROR] Cannot provide more than 2 lines of header with ASCII files.']);
+        error(['[',mfilename,', ERROR] With ASCII files, you must provide exactly 2 lines of header.']);
       end
-      fprintf(foutput, header{1});
-      fprintf(foutput, header{2});
+      fprintf(foutput, [header{1}, '\n']);
+      fprintf(foutput, [header{2}, '\n']);
       [~, lab] = order_bg_model();
       for q = 1:nb_qty
         fprintf(foutput, pad(lab{q}, asc__spacing+1));
@@ -142,7 +144,7 @@ function [] = write_bg_model(varargin)
       fout_hed = fopen(bin__output_header_path, 'w');
       fprintf(fout_hed, '%d\n', numlines);
       for i = 1:numel(header)
-        fprintf(fout_hed, header{i});
+        fprintf(fout_hed, [header{i}, '\n']);
       end
       fclose(fout_hed);
 
