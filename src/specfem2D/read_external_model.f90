@@ -66,9 +66,22 @@
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy,vs_val,vp_val,rho_val
   character(len=150) :: inputname
   integer :: nlines_header, nblines_model
+  
   nlines_header = -1
   nblines_model = -1
-
+  
+  ! Initialise to prevent uninitialised conditionnal jumps.
+  c11ext = 0._CUSTOM_REAL
+  c13ext = 0._CUSTOM_REAL
+  c15ext = 0._CUSTOM_REAL
+  c33ext = 0._CUSTOM_REAL
+  c35ext = 0._CUSTOM_REAL
+  c55ext = 0._CUSTOM_REAL
+  c12ext = 0._CUSTOM_REAL
+  c23ext = 0._CUSTOM_REAL
+  c25ext = 0._CUSTOM_REAL
+  vsext = 0._CUSTOM_REAL
+  gravityext = 0._CUSTOM_REAL
 
   if (tomo_material > 0) MODEL = 'tomo'
 
