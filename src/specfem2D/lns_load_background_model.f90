@@ -186,47 +186,6 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
 end subroutine lns_read_background_model
 
 ! ------------------------------------------------------------ !
-! delaunay_background_model_2d                                 !
-! ------------------------------------------------------------ !
-
-
-subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
-  use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par, only: myrank
-  
-  implicit none
-  ! Input/output.
-  integer, intent(in) :: nlines_model
-  real(kind=8), dimension(NDIM, nlines_model), intent(inout) :: X_m
-  integer(kind=4), intent(out) :: tri_num
-  integer(kind=4), dimension(3, nlines_model), intent(out) :: tri_vert, tri_nabe
-  ! Local variables.
-  integer :: t
-  real(kind=8), dimension(NDIM, nlines_model) :: X_m_save ! dtris2 sorts points into lexicographic order. It seems something is wrong with this. Maybe preventing it should solve the issue?
-  
-  X_m_save = X_m
-!  write(*,*) X_m(1:2, 1:5)
-  call dtris2(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
-!  write(*,*) X_m(1:2, 1:5)
-  X_m = X_m_save
-!  write(*,*) X_m(1:2, 1:5)
-  
-  if(myrank==0) then
-    write(*,*) "> > Delaunay triangulation: ", tri_num, "triangles found."
-    
-    ! Debug: print out triangles.
-    if(.false.) then
-      do t = 1, tri_num
-        write(*,*) "> > Triangle n°", t, " vertices: ", X_m(1:NDIM, tri_vert(1, t))
-        write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(2, t))
-        write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(3, t))
-      enddo
-    endif
-  endif
-  
-end subroutine delaunay_background_model_2d
-
-! ------------------------------------------------------------ !
 ! delaunay_interp_all_points                                   !
 ! ------------------------------------------------------------ !
 
@@ -244,7 +203,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   ! Input/output.
   integer, intent(in) :: nlines_model
-  real(kind=8), dimension(NDIM, nlines_model), intent(inout) :: X_m
+  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(inout) :: X_m
   real(kind=8), dimension(NDIM, nlines_model), intent(in) :: v_m
   real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
@@ -252,7 +211,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer :: ispec, i, j
   integer(kind=4) :: tri_num
-  integer(kind=4), dimension(3, nlines_model) :: tri_vert, tri_nabe
+  integer(kind=4), dimension(3, 2*nlines_model) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
   
   call delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
   
@@ -308,6 +267,50 @@ end subroutine delaunay_interp_all_points
 
 
 ! ------------------------------------------------------------ !
+! delaunay_background_model_2d                                 !
+! ------------------------------------------------------------ !
+
+
+subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
+  use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: myrank
+  
+  implicit none
+  ! Input/output.
+  integer, intent(in) :: nlines_model
+  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(in) :: X_m
+  integer(kind=4), intent(out) :: tri_num
+  integer(kind=4), dimension(3, 2*nlines_model), intent(out) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
+  ! Local variables.
+  integer :: t
+!  real(kind=8), dimension(NDIM, nlines_model) :: X_m_save ! dtris2 sorts points into lexicographic order. It seems something is wrong with this. Maybe preventing it should solve the issue?
+  
+!  X_m_save = real(X_m, kind = 8)
+!  write(*,*) X_m(1:2, 1:5)
+  
+  ! Note: from loading within the file (using 'lns_read_background_model') to this routine, X_m was of type real(kind=CUSTOM_REAL). Now, dtris2 requires it to be of type real(kind=8). We assume the casting can occur without issues.
+  call dtris2(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
+!  write(*,*) X_m(1:2, 1:5)
+!  X_m = X_m_save
+!  write(*,*) X_m(1:2, 1:5)
+  
+  if(myrank==0) then
+    write(*,*) "> > Delaunay triangulation of the ",nlines_model," model points: ", tri_num, "triangles found."
+    
+    ! Debug: print out triangles.
+    if(.false.) then
+      do t = 1, tri_num
+        write(*,*) "> > Triangle n°", t, " vertices: ", X_m(1:NDIM, tri_vert(1, t))
+        write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(2, t))
+        write(*,*) "> >                                   ", X_m(1:NDIM, tri_vert(3, t))
+      enddo
+    endif
+  endif
+  
+end subroutine delaunay_background_model_2d
+
+
+! ------------------------------------------------------------ !
 ! delaunay_interpolate_one_point                               !
 ! ------------------------------------------------------------ !
 
@@ -324,7 +327,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   ! Input/output.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer, intent(in) :: nlines_model, ispec, i, j, tri_num
-  integer(kind=4), dimension(3, nlines_model), intent(in) :: tri_vert
+  integer(kind=4), dimension(3, 2*nlines_model), intent(in) :: tri_vert ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
   real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m, v_m
   real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
