@@ -253,7 +253,9 @@
     endif
     
   else if (trim(MODEL)=='LNS_generalised') then
-    if(.not. BCKGRD_MDL_LNS_is_binary) then
+    if(BCKGRD_MDL_LNS_is_binary) then
+      call LNS_generalised_binary_grab_nlines(nblines_model)
+    else
       call external_dg_check_and_get_nblines(BCKGRD_MDL_LNS_FILENAME, nlines_header, nblines_model)
     endif
     call lns_load_background_model(nlines_header, nblines_model)
@@ -452,3 +454,18 @@ subroutine external_dg_check_and_get_nblines(FILENAME, nlines_header, nblines_mo
   endif
   call external_model_DG_only_find_nblines(FILENAME, nlines_header, nblines_model)
 end subroutine external_dg_check_and_get_nblines
+
+subroutine LNS_generalised_binary_grab_nlines(nblines_model)
+  use specfem_par_lns, only: BCKGRD_MDL_LNS_FILENAME, BCKGRD_MDL_LNS_FILENAME_HEADER
+  implicit none
+  ! Input/output.
+  integer(kind=4), intent(out) :: nblines_model
+  ! Local variables.
+  integer io
+  OPEN(100, file=BCKGRD_MDL_LNS_FILENAME_HEADER, iostat=io)
+  if (io/=0) stop "Error opening background model header file."
+  read(100, *, iostat=io) nblines_model
+!  write(*,*) nblines_model
+  close(100)
+!  stop 'kek'
+end subroutine LNS_generalised_binary_grab_nlines

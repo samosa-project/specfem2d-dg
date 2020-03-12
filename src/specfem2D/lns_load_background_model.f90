@@ -138,22 +138,21 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
     endif
   endif
   
-  
-  
   if(BCKGRD_MDL_LNS_is_binary) then
     ! If binary, loop until whole file is read.
-    stop 'BINARY READING OF BACKGROUND FILES IS NOT IMPLEMENTED YET'
-    OPEN(100, file=BCKGRD_MDL_LNS_FILENAME, access='stream', form='unformatted', STATUS="OLD")
-    i = 1
-    do while(io/=0)
-      !read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
-      !                        rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
-      !                        g_model(i), gam_model(i), mu_model(i), kappa_model(i) 
-      read(100, *, iostat=io) rho_model(i)
-      write(*,*) i, rho_model(i) ! DEBUG
-      if(i>10) stop 'kek' ! DEBUG
-      i = i + 1
+    open(100, file=BCKGRD_MDL_LNS_FILENAME, access='stream', form='unformatted', STATUS="old", action='read', iostat=io)
+    if (io/=0) stop "Error opening background model file."
+    
+    ! Read as many n-uplets as needed from the serial binary file.
+    do i=1, nlines_model
+      read(100, iostat=io) X_m(1, i), X_m(NDIM, i), &
+                           rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
+                           g_model(i), gam_model(i), mu_model(i), kappa_model(i)
+!      write(*,*) X_m(1, i), X_m(NDIM, i), &
+!                 rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
+!                 g_model(i), gam_model(i), mu_model(i), kappa_model(i), io
     enddo
+
   else
     ! If ASCII, skip header and read detected number of lines.
     OPEN(100, file=BCKGRD_MDL_LNS_FILENAME)
