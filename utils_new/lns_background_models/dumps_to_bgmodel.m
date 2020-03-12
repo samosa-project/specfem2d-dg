@@ -1,4 +1,20 @@
+% Author:        Léo Martire.
+% Description:   Loads dumps from SPECFEM and converts them to a LNS
+%                generalised background model array. Shape is dictated by
+%                the script 'order_bg_model.m'.
+% Notes:         Needs scripts:
+%                  utils_new/lns_background_models/order_bg_model.m
+%                  utils_new/readDumpsUnique.m
+%                  utils_new/interpDumps.m
+%
+% Usage:
+%   [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
+% with:
+%   TODO.
+
 function [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
+  addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'));
+  
   % Artificial modifications, tweaks.
   tweaks = 1;
   factor_dp = 2e6; % increase the pressure perturbation by a factor

@@ -1,3 +1,30 @@
+% Author:        Léo Martire.
+% Description:   Writes a LNS generalised background model array (which
+%                shape is dictated by the script 'order_bg_model.m') to a
+%                file for reading by SPECFEM-LNS.
+% Notes:         The array should be prepared according to the order
+%                dictacted by the script 'order_bg_model.m', preferably by
+%                using it, or coding somthing similar to what is
+%                implemented in 'dumps_to_bgmodel.m'.
+%                In the case of binary format, a second file used for
+%                header is produced. It is necessary for SPECFEM-LNS to
+%                know how many points are exported.
+%
+% Usage:
+%   write_bg_model(ROWS, 'fileType', 'bin', 'outputFolder', outputFolder, 'header', header);
+% with:
+%   ROWS                 a LNS generalised background model array (which
+%                        shape is dictated by the script
+%                        'order_bg_model.m')
+%   [optional arguments],
+%      fileType          the type of file (either 'binary' or 'ascii',
+%                        defaults to 'binary'),
+%      outputFolder      the folder in which to produce the files
+%                        (defaults to ./),
+%      header            some header information under cell format (should
+%                        not contain more than 2 cells for ascii format,
+%                        is unlimited for binary format, defaults to {}).
+
 function [] = write_bg_model(varargin)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % PARAMETER READING AND SETTING.

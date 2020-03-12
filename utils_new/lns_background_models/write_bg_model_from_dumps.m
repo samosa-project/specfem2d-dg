@@ -1,3 +1,16 @@
+% Author:        Léo Martire.
+% Description:   Wrapper for loading dumps from SPECFEM simulations and
+%                converting those to LNS generalised background model
+%                files, in binary format.
+% Notes:         Needs scripts:
+%                  utils_new/lns_background_models/dumps_to_bgmodel.m
+%                  utils_new/lns_background_models/write_bg_model.m
+%
+% Usage:
+%   write_bg_model_from_dumps(OFD, IT, outputFolder)
+% with:
+%   TODO.
+
 function [] = write_bg_model_from_dumps(OFD, IT, outputFolder)
   % Eventually re-interpolate on an uniform grid. Not advised.
   uniform.do = 0;
