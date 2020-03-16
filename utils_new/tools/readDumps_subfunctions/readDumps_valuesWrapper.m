@@ -42,7 +42,9 @@ function [V_out] = readDumps_valuesWrapper(parfile, wvfld_filename, wvfld_path, 
       end
       curProc = str2double(curProc);
       valLoaded_dividedBy_nbPoints = numel(VALUES)/bin_nglob(curProc+1);
-      disp(['[] valLoaded_dividedBy_nbPoints=',num2str(valLoaded_dividedBy_nbPoints),'.']);
+      if(verbose)
+        disp(['[',mfilename,'] valLoaded_dividedBy_nbPoints=',num2str(valLoaded_dividedBy_nbPoints),'.']);
+      end
       if(mod(valLoaded_dividedBy_nbPoints,1)==0)
         % Loaded the right number of values, all is right.
       else
