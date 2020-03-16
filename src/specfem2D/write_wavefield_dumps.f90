@@ -114,10 +114,20 @@
   endif
 
   if (imagetype_wavefield_dumps == 1) then
-    if (myrank == 0) write(IMAIN,*) 'dumping the displacement vector...'
+    if(USE_DISCONTINUOUS_METHOD) then
+      if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and temperature in DG elements...'
       call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                        potential_gravito,displ_elastic,displs_poroelastic,&
                                        T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
+    else
+      ! Full classical SPECFEM.
+      if (myrank == 0) write(IMAIN,*) 'dumping the displacement vector...'
+      ! The DG field in compute_vector_whole_medium serves no purpose.
+      ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
+      call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
+                                       potential_gravito,displ_elastic,displs_poroelastic,&
+                                       potential_dphi_dx_DG)
+    endif
   else if (imagetype_wavefield_dumps == 2) then
     if (myrank == 0) write(IMAIN,*) 'dumping the velocity vector...'
     !call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
@@ -138,6 +148,7 @@
                                          rhovx_DG/rho_DG)
       endif
     else
+      ! The DG field in compute_vector_whole_medium serves no purpose.
       ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
       call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
                                        potential_gravito,veloc_elastic,velocs_poroelastic, &
