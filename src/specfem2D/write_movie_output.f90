@@ -41,7 +41,7 @@
     potential_acoustic,potential_dot_acoustic,potential_dot_dot_acoustic, &
     displ_elastic,veloc_elastic,accel_elastic, &
     b_displ_elastic,rho_k,rho_kl, &
-    any_acoustic,any_elastic,GPU_MODE,P_SV
+    any_acoustic,any_elastic,GPU_MODE,P_SV,USE_DISCONTINUOUS_METHOD
 
   use specfem_par_gpu,only: Mesh_pointer,tmp_displ_2D,tmp_veloc_2D,tmp_accel_2D,NGLOB_AB
 
@@ -49,7 +49,7 @@
                               surface_movie_y_noise,noise_output_rhokl,noise_output_array,noise_output_ncol
 
   use specfem_par_movie,only: output_postscript_snapshot,output_color_image,output_wavefield_dumps, &
-    NSTEP_BETWEEN_OUTPUT_IMAGES
+    NSTEP_BETWEEN_OUTPUT_IMAGES, imagetype_wavefield_dumps
 
   implicit none
 
@@ -135,7 +135,11 @@
   ! note: in the case of MPI, in the future it would be more convenient to output a single file
   !       rather than one for each myrank
   if (output_wavefield_dumps) then
-    call write_wavefield_dumps()
+    if(USE_DISCONTINUOUS_METHOD .and. imagetype_wavefield_dumps==10) then
+      call DG_WholeDump()
+    else
+      call write_wavefield_dumps()
+    endif
   endif
 
   end subroutine write_movie_output
