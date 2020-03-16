@@ -271,7 +271,7 @@ subroutine DG_WholeDump()
   use constants,only: IMAIN,SIZE_REAL,NGLLX,NGLLZ,CUSTOM_REAL,NDIM
   use specfem_par, only: myrank,nglob, nglob_DG,nspec, &
                          ibool,coord,it,USE_DISCONTINUOUS_METHOD, &
-                         rho_DG, rhovx_DG, rhovz_DG, E_DG, gammaext_DG!, c_V,T_init, &
+                         rho_DG, rhovx_DG, rhovz_DG, E_DG, gammaext_DG,ispec_is_acoustic_DG!, c_V,T_init, &
 !                         potential_dphi_dx_DG, USE_DISCONTINUOUS_METHOD!, potential_dphi_dz_DG ! Modification for DG.
   
   use specfem_par_movie,only: this_is_the_first_time_we_dump,mask_ibool,imagetype_wavefield_dumps, &
@@ -289,28 +289,32 @@ subroutine DG_WholeDump()
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG) :: DG_VEL
   
   if(.not. USE_DISCONTINUOUS_METHOD) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* The subroutine               *"
-    write(*,*) "* DG_WholeDump, "
-    write(*,*) "* should only be called when   *"
-    write(*,*) "* USE_DISCONTINUOUS_METHOD is  *"
-    write(*,*) "* set to .true..               *"
-    write(*,*) "********************************"
-    stop
+    if(myrank==0) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* The subroutine               *"
+      write(*,*) "* DG_WholeDump, "
+      write(*,*) "* should only be called when   *"
+      write(*,*) "* USE_DISCONTINUOUS_METHOD is  *"
+      write(*,*) "* set to .true..               *"
+      write(*,*) "********************************"
+    endif
+    call exit_MPI(myrank,'ERROR.')
   endif
   if(.not.(imagetype_wavefield_dumps==10)) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* The subroutine               *"
-    write(*,*) "* DG_WholeDump, "
-    write(*,*) "* should only be called when   *"
-    write(*,*) "* imagetype_wavefield_dumps is *"
-    write(*,*) "* set to 10.                   *"
-    write(*,*) "********************************"
-    stop
+    if(myrank==0) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* The subroutine               *"
+      write(*,*) "* DG_WholeDump, "
+      write(*,*) "* should only be called when   *"
+      write(*,*) "* imagetype_wavefield_dumps is *"
+      write(*,*) "* set to 10.                   *"
+      write(*,*) "********************************"
+    endif
+    call exit_MPI(myrank,'ERROR.')
   endif
   
   if (myrank == 0) then
@@ -335,19 +339,23 @@ subroutine DG_WholeDump()
     endif
     icounter = 0
     mask_ibool(:) = .false.
-    do ispec=1,nspec; do j=1,NGLLZ; do i=1,NGLLX
-      iglob = ibool(i,j,ispec)
-      if (.not. mask_ibool(iglob)) then
-        icounter = icounter + 1
-        mask_ibool(iglob) = .true.
-        if(use_binary_for_wavefield_dumps) then
-          !write(THEUNIT,rec=icounter) sngl(coord(1,iglob)), sngl(coord(2,iglob))
-          write(THEUNIT,rec=icounter) sngl(coord(1:NDIM,iglob))
-        else
-          write(THEUNIT,'(2e16.6)') coord(1, iglob), coord(2, iglob)
-        endif
-      endif
-    enddo; enddo; enddo
+    do ispec=1,nspec
+      if(ispec_is_acoustic_DG(ispec)) then
+        do j=1,NGLLZ; do i=1,NGLLX
+          iglob = ibool(i,j,ispec)
+          if (.not. mask_ibool(iglob)) then
+            icounter = icounter + 1
+            mask_ibool(iglob) = .true.
+            if(use_binary_for_wavefield_dumps) then
+              !write(THEUNIT,rec=icounter) sngl(coord(1,iglob)), sngl(coord(2,iglob))
+              write(THEUNIT,rec=icounter) sngl(coord(1:NDIM,iglob))
+            else
+              write(THEUNIT,'(2e16.6)') coord(1, iglob), coord(2, iglob)
+            endif
+          endif
+        enddo; enddo
+      endif ! Endif on ispec_is_acoustic_DG
+    enddo
     close(THEUNIT)
     ! Save nglob to a separate file, once and for all.
     write(wavefield_file,"('OUTPUT_FILES/wavefield_grid_value_of_nglob_',i3.3,'.txt')") myrank
