@@ -17,7 +17,7 @@ function [V_out] = readDumps_valuesWrapper(parfile, wvfld_filename, wvfld_path, 
   
   % Check if current file has to be loaded.
   if(verbose)
-    disp(['[',mfilename,'] ''',wavefield_file_name,''' should be a value file, checking it has right shape, is of right iteration, and then loading it.']);
+    disp(['[',mfilename,'] ''',wvfld_filename,''' should be a value file, checking it has right shape, is of right iteration, and then loading it.']);
   end
   [fileNeedsToBeLoaded] = readDumps_valuesCheck(wvfld_filename, IT);
   

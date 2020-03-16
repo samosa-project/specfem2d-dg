@@ -9,10 +9,8 @@ function [X, Y, V] = readDumps(OFD, IT, verbose)
   
   % Types of variables to query.
   tags = {'rho', 'vel', 'pre'};
-
   
-  
-  % safety.
+  % Safeguard.
   OFD = char(OFD);
   if(not(strcmp(OFD(end),filesep)))
     OFD = [OFD,filesep];
