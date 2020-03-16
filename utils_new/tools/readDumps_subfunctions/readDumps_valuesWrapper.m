@@ -41,10 +41,12 @@ function [V_out] = readDumps_valuesWrapper(parfile, wvfld_filename, wvfld_path, 
         curProc = regexp(curProc, rgxp_findProc_step{rgxp},'match','once');
       end
       curProc = str2double(curProc);
-      if(numel(VALUES)==bin_nglob(curProc+1))
+      valLoaded_dividedBy_nbPoints = numel(VALUES)/bin_nglob(curProc+1);
+      disp(['[] valLoaded_dividedBy_nbPoints=',num2str(valLoaded_dividedBy_nbPoints),'.']);
+      if(mod(valLoaded_dividedBy_nbPoints,1)==0)
         % Loaded the right number of values, all is right.
       else
-        error(['[',mfilename,', ERROR] This file is (supposedly) related to PROC n°',num2str(curProc),'. Hence, should have loaded ',num2str(bin_nglob(curProc+1)),' values, but only loaded ',num2str(numel(VALUES)),'.']);
+        error(['[',mfilename,', ERROR] This file is (supposedly) related to PROC n°',num2str(curProc),'. Hence, should have loaded a multiple of ',num2str(bin_nglob(curProc+1)),' values, but loaded ',num2str(numel(VALUES)),'.']);
       end
       
     else
@@ -78,11 +80,13 @@ function [V_out] = readDumps_valuesWrapper(parfile, wvfld_filename, wvfld_path, 
     end
     switch(current_load)
       case 'rho'
-        nvalues_dumped = 1;
+%         nvalues_dumped = 1;
       case 'vel'
-        nvalues_dumped = 2;
+%         nvalues_dumped = 2;
+        VALUES = reshape(VALUES, [2, numel(VALUES)/2])';
+        % Reshape HAS TO be like this, because binary file lists points as 'x,y,x,y,x,y' and hence first loading of VALUES stores them as [x;y;x;y;x;y]. N.B.: 'numel/2' would crash if wrong number of singles loaded.
       case 'pre'
-        nvalues_dumped = 1;
+%         nvalues_dumped = 1;
       otherwise
         error(['[] current_load not implemented']);
     end

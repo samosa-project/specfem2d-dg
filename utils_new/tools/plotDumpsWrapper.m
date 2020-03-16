@@ -1,30 +1,42 @@
-function [fh] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
-  tags = {'rho', 'vel', 'pre'};
+function [fh,X,Y,V,Xi, Yi, Vi] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
+  tags = {'rho', 'pre', 'velx', 'velz'};
+  units = {'kg/m$^3$', 'Pa', 'm/s', 'm/s'};
   
   Ntags = numel(tags);
   
   [X,Y,V] = readDumpsUnique(OFD, IT, verbose);
   [Xi, Yi, Vi] = interpDumps(X, Y, V, nx, ny);
   
-  fh = figure('units','normalized','outerposition',[0,0,1,1]);
-  tightAxes = tight_subplot(1, Ntags, [0, 0.05], [.1, .08], [0.06, 0.04]); % gaph gapw marghlow marghupp margwlef margwrig
+  fh = figure('units','normalized','outerposition',[0,0,1,0.5]);
+  tightAxes = tight_subplot(1, Ntags, [0.05, 0.05], [.15, .11], [0.06, 0.04]); % gaph gapw marghlow marghupp margwlef margwrig
   
+  prefixes = {};
+  factores = {};
   for t=1:Ntags
     axes(tightAxes(t));
-    if(not(isempty(V.(tags{t}))))
-      pcolor(Xi, Yi, Vi.(tags{t}));
+    curVi = Vi.(tags{t});
+    if(not(isempty(curVi)))
+      if(strcmp(tags{t}, 'pre'))
+        meanPre = mean(curVi,'all');
+        curVi = curVi - meanPre;
+        tags{t} = [tags{t}, '$-',scientific_latex_notation(meanPre, 1),'$'];
+      end
+      [prefixes{t}, factores{t}] = prefix_factor_values({curVi});
+      pcolor(Xi, Yi, curVi*factores{t});
     end
-    title(tags{t});
+    title([tags{t}, ' [', prefixes{t},units{t},']']);
     shading interp;
     colormaps_fromPython('seismic', 1);
 %   caxis([-1,1]*max(abs(Vi(:))));
-    h = colorbar;
+    h{t} = colorbar;
+%     ytl = split(sprintf('%.4f|',h{t}.Ticks),'|'); ytl(end)=[]; set(h{t},'ticklabels',ytl);
     xlabel(['$x$ [m]']);
     if(t==1)
       ylabel(['$z$ [m]']);
     else
       yticklabels({});
     end
+    daspect([1,1,1]);
   end
   linkaxes(tightAxes,'x');
   linkaxes(tightAxes,'y');

@@ -13,7 +13,13 @@ function [X, Y, V] = readDumpsUnique(OFD, IT, verbose)
   % Remove duplicates, in each non-empty field.
   for t=1:numel(tags)
     if(not(isempty(V.(tags{t}))))
-      V.(tags{t}) = V.(tags{t})(iunique);
+      % For vel, make sure to do column by column.
+      if(strcmp(tags{t}, 'vel'))
+        tmp = V.(tags{t})(iunique, :);
+        V.(tags{t}) = tmp;
+      else
+        V.(tags{t}) = V.(tags{t})(iunique);
+      end
     end
   end
   
