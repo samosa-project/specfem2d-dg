@@ -396,12 +396,12 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
 !      found = .true.
 !      write(*,*) "Point (",point_to_test,") is in triangle n°", t,". Performing barycentric interpolation."
 !      container_triangle = t
-!      call barycentric_coordinates_2d(local_vertice_list, point_to_test, barycor(1), barycor(2), barycor(3))
+!      call barycentric_coordinates_2d(local_vertice_list, point_to_test, barycor)
 !      ! https://codeplea.com/triangular-interpolation
 !      return
 !    endif
     
-    call barycentric_coordinates_2d(local_vertice_list, point_to_test, inTri, barycor(1), barycor(2), barycor(3))
+    call barycentric_coordinates_2d(local_vertice_list, point_to_test, inTri, barycor)
     
     if(inTri) then
       ! Point is inside triangle.
@@ -493,21 +493,19 @@ end subroutine delaunay_interpolate_one_point
 ! ------------------------------------------------------------ !
 ! https://en.wikipedia.org/wiki/Barycentric_coordinate_system
 
-subroutine barycentric_coordinates_2d(vlist, P, inTri, l1, l2, l3)
+subroutine barycentric_coordinates_2d(vlist, P, inTri, barycor)
   use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   implicit none
   ! Input/output.
   real(kind=8), dimension(3, NDIM), intent(in) :: vlist
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: P
   logical, intent(out) :: inTri
-  real(kind=CUSTOM_REAL), intent(out) :: l1, l2, l3
+  real(kind=CUSTOM_REAL), dimension(3), intent(out) :: barycor
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: det
   inTri = .false.
-  l1 = ZERO
-  l2 = ZERO
-  l3 = ZERO
+  barycor = ZERO
   det = (vlist(1, 1)-vlist(3, 1))*(vlist(2, 2)-vlist(3, 2)) - (vlist(1, 2)-vlist(3, 2))*(vlist(2, 1)-vlist(3, 1))
   if(abs(det)<TINYVAL) then
     write(*,*) "********************************"
@@ -520,12 +518,12 @@ subroutine barycentric_coordinates_2d(vlist, P, inTri, l1, l2, l3)
     write(*,*) "********************************"
     stop
   endif
-  l1 = ((vlist(2, 2)-vlist(3, 2))*(P(1)-vlist(3, 1))+(vlist(3, 1)-vlist(2, 1))*(P(2)-vlist(3, 2))) / det
-  if(l1<-TINYVAL) return ! Point is outside triangle, stop and return.
-  l2 = ((vlist(3, 2)-vlist(1, 2))*(P(1)-vlist(3, 1))+(vlist(1, 1)-vlist(3, 1))*(P(2)-vlist(3, 2))) / det
-  if(l2<-TINYVAL) return ! Point is outside triangle, stop and return.
-  l3 = 1. - l1 - l2
-  if(l3<-TINYVAL) return ! Point is outside triangle, stop and return.
+  barycor(1) = ((vlist(2, 2)-vlist(3, 2))*(P(1)-vlist(3, 1))+(vlist(3, 1)-vlist(2, 1))*(P(2)-vlist(3, 2))) / det
+  if(barycor(1)<-TINYVAL) return ! Point is outside triangle, stop and return.
+  barycor(2) = ((vlist(3, 2)-vlist(1, 2))*(P(1)-vlist(3, 1))+(vlist(1, 1)-vlist(3, 1))*(P(2)-vlist(3, 2))) / det
+  if(barycor(2)<-TINYVAL) return ! Point is outside triangle, stop and return.
+  barycor(3) = 1. - sum(barycor(1:2))
+  if(barycor(3)<-TINYVAL) return ! Point is outside triangle, stop and return.
   inTri = .true. ! No return command was hit before, hence point can be considered in triangle.
   !write(*,*) "Barycentric coordinates = (", l1, l2, l3, ")."
 end subroutine barycentric_coordinates_2d
