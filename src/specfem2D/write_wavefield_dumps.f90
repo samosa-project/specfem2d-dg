@@ -121,10 +121,10 @@
                                          potential_gravito,displ_elastic,displs_poroelastic,&
                                          LNS_drho)
       else
-        if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and temperature in DG elements...'
+        if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and density in DG elements...'
         call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                          potential_gravito,displ_elastic,displs_poroelastic,&
-                                         T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
+                                         rho_DG)
       endif
     else
       ! Full classical SPECFEM.
@@ -179,6 +179,16 @@
 
   else if (imagetype_wavefield_dumps == 4 .and. .not. P_SV) then
     call exit_MPI(myrank,'cannot dump the pressure field for SH (membrane) waves')
+  
+  else if (imagetype_wavefield_dumps == 5) then
+    if(USE_DISCONTINUOUS_METHOD) then
+      if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and temperature in DG elements...'
+      call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
+                                       potential_gravito,displ_elastic,displs_poroelastic,&
+                                       T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
+    else
+      call exit_MPI(myrank,"Can't use imagetype_wavefield_dumps when USE_DISCONTINUOUS_METHOD isn't used.")
+    endif
 
   else
     call exit_MPI(myrank,'wrong type of flag for wavefield dumping')
