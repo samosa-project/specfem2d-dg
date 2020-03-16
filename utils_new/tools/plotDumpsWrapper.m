@@ -1,4 +1,6 @@
 function [fh,X,Y,V,Xi, Yi, Vi] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
+  removeMeanPressure = 1;
+  
   tags = {'rho', 'pre', 'velx', 'velz'};
   units = {'kg/m$^3$', 'Pa', 'm/s', 'm/s'};
   
@@ -7,7 +9,7 @@ function [fh,X,Y,V,Xi, Yi, Vi] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
   [X,Y,V] = readDumpsUnique(OFD, IT, verbose);
   [Xi, Yi, Vi] = interpDumps(X, Y, V, nx, ny);
   
-  fh = figure('units','normalized','outerposition',[0,0,1,0.5]);
+  fh = figure('units','normalized','outerposition',[0,0,1,0.5],'name',[shorten_string(OFD,90,6), ' @ITERATION ',num2str(IT)]);
   tightAxes = tight_subplot(1, Ntags, [0.05, 0.05], [.15, .11], [0.06, 0.04]); % gaph gapw marghlow marghupp margwlef margwrig
   
   prefixes = {};
@@ -16,7 +18,7 @@ function [fh,X,Y,V,Xi, Yi, Vi] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
     axes(tightAxes(t));
     curVi = Vi.(tags{t});
     if(not(isempty(curVi)))
-      if(strcmp(tags{t}, 'pre'))
+      if(removeMeanPressure && strcmp(tags{t}, 'pre'))
         meanPre = mean(curVi,'all');
         curVi = curVi - meanPre;
         tags{t} = [tags{t}, '$-',scientific_latex_notation(meanPre, 1),'$'];
