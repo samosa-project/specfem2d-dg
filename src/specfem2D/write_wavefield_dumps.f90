@@ -45,7 +45,7 @@
                          rho_DG, rhovx_DG, rhovz_DG, E_DG, c_V,T_init, &
                          potential_dphi_dx_DG, USE_DISCONTINUOUS_METHOD!, potential_dphi_dz_DG ! Modification for DG.
   
-  use specfem_par_lns, only: USE_LNS, LNS_dv
+  use specfem_par_lns, only: USE_LNS, LNS_dv, LNS_drho
   
   use specfem_par_movie,only: this_is_the_first_time_we_dump,mask_ibool,imagetype_wavefield_dumps, &
     use_binary_for_wavefield_dumps,vector_field_display
@@ -115,10 +115,17 @@
 
   if (imagetype_wavefield_dumps == 1) then
     if(USE_DISCONTINUOUS_METHOD) then
-      if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and temperature in DG elements...'
-      call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
-                                       potential_gravito,displ_elastic,displs_poroelastic,&
-                                       T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
+      if(USE_LNS) then
+        if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and density in LNS elements...'
+        call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
+                                         potential_gravito,displ_elastic,displs_poroelastic,&
+                                         LNS_drho)
+      else
+        if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and temperature in DG elements...'
+        call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
+                                         potential_gravito,displ_elastic,displs_poroelastic,&
+                                         T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
+      endif
     else
       ! Full classical SPECFEM.
       if (myrank == 0) write(IMAIN,*) 'dumping the displacement vector...'
