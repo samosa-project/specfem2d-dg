@@ -196,7 +196,8 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   use specfem_par_lns, only: USE_LNS, LNS_rho0, LNS_v0, LNS_p0, &
                              LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_E0, LNS_T0, &
                              nabla_v0, sigma_v_0
-  use specfem_par, only: USE_DISCONTINUOUS_METHOD, any_acoustic_DG, myrank, nspec, ispec_is_elastic, ispec_is_acoustic_DG!, coord, ibool_DG, ibool
+  use specfem_par, only: USE_DISCONTINUOUS_METHOD, any_acoustic_DG, myrank, nspec, ispec_is_elastic, &
+                         ispec_is_acoustic_DG, coord, ibool_DG, ibool, gammaext_DG
   
   implicit none
   
@@ -209,6 +210,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: TWOcr = 2._CUSTOM_REAL
   integer :: ispec, i, j
   integer(kind=4) :: tri_num
   integer(kind=4), dimension(3, 2*nlines_model) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
@@ -283,19 +285,17 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   ! Deduce remaining quantities.    
   LNS_eta = FOUR_THIRDS*LNS_mu
-  !where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr ! LNS_p0 may be zero in elastic parts (which physically poses no problem). But then, the following call crashes (in regions where it does not matter, though). Fix it.
-  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr ! LNS_rho0 may be zero in elastic parts (which physically poses no problem). But then, the following call crashes (in regions where it does not matter, though). Fix it.
+  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr ! LNS_p0 is uninitialised in solids (remains 0). Crashes compute_E. Hack it.
+  where(gammaext_DG < TINYVAL) gammaext_DG = TWOcr ! gammaext_DG is uninitialised in solids (remains 0). Crashes compute_E. Hack it.
   call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
+  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr ! LNS_rho0 is uninitialised in solids (remains 0). Crashes compute_T. Hack it.
   call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
   
-  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
-  where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
-  
-!  ! Debug.
-!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
-!    if(LNS_E0(ibool_DG(i, j, ispec))<TINYVAL) write(*,*) 'E0<=0 at [',coord(1:NDIM, ibool(i, j, ispec)),']: ', &
-!                                                         LNS_E0(ibool_DG(i, j, ispec))
-!  enddo; enddo; enddo
+  ! Debug.
+  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
+    if(LNS_E0(ibool_DG(i, j, ispec))<TINYVAL) write(*,*) 'E0<=0 at [',coord(1:NDIM, ibool(i, j, ispec)),']: ', &
+                                                         LNS_E0(ibool_DG(i, j, ispec)), gammaext_DG(ibool_DG(i, j, ispec))
+  enddo; enddo; enddo
   
   ! Safeguards.
   call LNS_prevent_nonsense()
@@ -543,20 +543,20 @@ subroutine output_lns_interpolated_model()
   implicit none
   ! Local variables.
   integer :: ispec, i, j, iglobDG
-  if(myrank==0) then
-    ! Only let proc 0 write to file.
-    open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL',status='unknown',action='write', position="append")
-    do ispec = 1,nspec
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-          iglobDG = ibool_DG(i, j, ispec)
-          write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                       LNS_rho0(iglobDG), LNS_v0(1, iglobDG), LNS_v0(NDIM, iglobDG), LNS_p0(iglobDG), &
-                       LNS_g(iglobDG), gammaext_DG(iglobDG), LNS_mu(iglobDG), LNS_kappa(iglobDG)
-        enddo
+  ! Let all procs write to file (I know this may not be sequential and freak up the file, but I don't care since it's only for debugging purposes).
+  open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL',status='unknown',action='write', position="append")
+  do ispec = 1,nspec
+    do j = 1,NGLLZ
+      do i = 1,NGLLX
+        iglobDG = ibool_DG(i, j, ispec)
+        write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
+                     LNS_rho0(iglobDG), LNS_v0(1, iglobDG), LNS_v0(NDIM, iglobDG), LNS_p0(iglobDG), &
+                     LNS_g(iglobDG), gammaext_DG(iglobDG), LNS_mu(iglobDG), LNS_kappa(iglobDG)
       enddo
     enddo
-    close(504)
+  enddo
+  close(504)
+  if(myrank==0) then
     write(*,*) "> > Dumped interpolated model to './OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'. ", &
                "Use the following Matlab one-liner to plot:"
     write(*,*) "      OFD=''; [~,lab]=order_bg_model();a=importdata(OFD);x=a(:,1);z=a(:,2);close all;for i=3:10;d=a(:,i);", &
