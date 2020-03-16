@@ -192,11 +192,11 @@ end subroutine lns_read_background_model
 subroutine delaunay_interp_all_points(nlines_model, X_m, &
                                       rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                      )
-  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS
-  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, &
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS, TINYVAL
+  use specfem_par_lns, only: USE_LNS, LNS_rho0, LNS_v0, LNS_p0, &
                              LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_E0, LNS_T0, &
                              nabla_v0, sigma_v_0
-  use specfem_par, only: myrank, nspec, ispec_is_elastic, ispec_is_acoustic_DG
+  use specfem_par, only: USE_DISCONTINUOUS_METHOD, any_acoustic_DG, myrank, nspec, ispec_is_elastic, ispec_is_acoustic_DG!, coord, ibool_DG, ibool
   
   implicit none
   
@@ -208,9 +208,32 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   integer :: ispec, i, j
   integer(kind=4) :: tri_num
   integer(kind=4), dimension(3, 2*nlines_model) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
+  
+  ! Safeguards.
+  if(.not. (USE_DISCONTINUOUS_METHOD .and. USE_LNS)) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Currently cannot use the     *"
+    write(*,*) "* 'external_DG' model if not   *"
+    write(*,*) "* using the DG method.         *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(.not. any_acoustic_DG) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* No acoustic DG elements!     *"
+    write(*,*) "* Cannot import                *"
+    write(*,*) "* LNS_generalised model.       *"
+    write(*,*) "********************************"
+    stop
+  endif
   
   call delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
   
@@ -235,16 +258,18 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
+!      write(*,*) 'Element ',ispec,' is elastic.'! DEBUG
       cycle ! Elastic regions are treated separately (see call to 'external_DG_update_elastic_from_parfile' below).
-    else if(ispec_is_acoustic_DG(ispec)) then
-        ! For DG elements, go through GLL points one by one.
-        do j = 1, NGLLZ
-          do i = 1, NGLLX
-            call delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
-                                                rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
-                                               )
-          enddo
+    elseif(ispec_is_acoustic_DG(ispec)) then
+      ! For DG elements, go through GLL points one by one.
+!      write(*,*) 'Element ',ispec,' is acoustic DG.'! DEBUG
+      do j = 1, NGLLZ
+        do i = 1, NGLLX
+          call delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
+                                              rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
+                                             )
         enddo
+      enddo
     else
       ! Neither elastic nor acoustic_dg.
       write(*,*) "********************************"
@@ -258,8 +283,19 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   ! Deduce remaining quantities.    
   LNS_eta = FOUR_THIRDS*LNS_mu
+  !where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr ! LNS_p0 may be zero in elastic parts (which physically poses no problem). But then, the following call crashes (in regions where it does not matter, though). Fix it.
+  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr ! LNS_rho0 may be zero in elastic parts (which physically poses no problem). But then, the following call crashes (in regions where it does not matter, though). Fix it.
   call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
   call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+  
+  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
+  where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
+  
+!  ! Debug.
+!  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
+!    if(LNS_E0(ibool_DG(i, j, ispec))<TINYVAL) write(*,*) 'E0<=0 at [',coord(1:NDIM, ibool(i, j, ispec)),']: ', &
+!                                                         LNS_E0(ibool_DG(i, j, ispec))
+!  enddo; enddo; enddo
   
   ! Safeguards.
   call LNS_prevent_nonsense()
@@ -499,8 +535,6 @@ end subroutine barycentric_coordinates_2d
 ! output_lns_interpolated_model                                !
 ! ------------------------------------------------------------ !
 ! Outputs the loaded model in full to a file, for checking/plotting purposes.
-! Matlab one-liner plot:
-! a=importdata('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield/OUTPUT_FILES/TESTMODEL'); x=a(:,1); z=a(:,2); d=a(:,3); [Xi, Yi, Zi] = interpDumps(x, z, d, 50, 50); surf(Xi, Yi, Zi); view([0,0,1]); shading flat; colorbar;
 
 subroutine output_lns_interpolated_model()
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ
@@ -509,24 +543,24 @@ subroutine output_lns_interpolated_model()
   implicit none
   ! Local variables.
   integer :: ispec, i, j, iglobDG
-  open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL',status='unknown',action='write', position="append")
-  do ispec = 1,nspec
-    do j = 1,NGLLZ
-      do i = 1,NGLLX
-        iglobDG = ibool_DG(i, j, ispec)
-        write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                     LNS_rho0(iglobDG), LNS_v0(1, iglobDG), LNS_v0(NDIM, iglobDG), LNS_p0(iglobDG), &
-                     LNS_g(iglobDG), gammaext_DG(iglobDG), LNS_mu(iglobDG), LNS_kappa(iglobDG)
+  if(myrank==0) then
+    ! Only let proc 0 write to file.
+    open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL',status='unknown',action='write', position="append")
+    do ispec = 1,nspec
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          iglobDG = ibool_DG(i, j, ispec)
+          write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
+                       LNS_rho0(iglobDG), LNS_v0(1, iglobDG), LNS_v0(NDIM, iglobDG), LNS_p0(iglobDG), &
+                       LNS_g(iglobDG), gammaext_DG(iglobDG), LNS_mu(iglobDG), LNS_kappa(iglobDG)
+        enddo
       enddo
     enddo
-  enddo
-  close(504)
-  if(myrank==0) then
+    close(504)
     write(*,*) "> > Dumped interpolated model to './OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'. ", &
                "Use the following Matlab one-liner to plot:"
-    write(*,*) "      a=importdata('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_custom_wavefield/", &
-               "OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'); ", &
-               "x=a(:,1); z=a(:,2); d=a(:,3); [Xi, Yi, Zi] = interpDumps(x, z, d, 50, 50); ", &
-               "surf(Xi, Yi, Zi); view([0,0,1]); shading flat; colorbar;"
+    write(*,*) "      OFD=''; [~,lab]=order_bg_model();a=importdata(OFD);x=a(:,1);z=a(:,2);close all;for i=3:10;d=a(:,i);", &
+               "[Xi,Yi,Zi]=interpDumps(x,z,d,50,50);figure(i);surf(Xi,Yi,Zi);view([0,0,1]);shading flat;colorbar;", &
+               "title(lab{i});end;"
   endif
 end subroutine output_lns_interpolated_model
