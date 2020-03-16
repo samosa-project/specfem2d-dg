@@ -54,17 +54,21 @@ function [ROWS, info] = dumps_to_bgmodel(OFD, IT, uniform)
   
   % Read dumps and integrate those.
   % TODO: read rho, vx, vz.
-  [X, Z, pre, ~] = readDumpsUnique(OFD, IT, 0);
+  [X, Z, VALUES] = readDumpsUnique(OFD, IT, 0);
+  rho0 = VALUES.rho;
+  vx = VALUES.vel(:,1);
+  vz = VALUES.vel(:,2);
+  pre = VALUES.pre;
   Z = Z-min(Z); % recall background models should be put in ASL format along z (i.e. min(z) should be 0)
   
   % Choose to interpolate.
   if(uniform.do)
     % TODO: do it for rho, vx, vz.
-    [Xi, Yi, pr_i] = interpDumps(X, Z, pre, uniform.nx, uniform.nz);
+    [Xi, Yi, pr_i] = interpDumps(X, Z, VALUES, uniform.nx, uniform.nz);
     ninterp = numel(Xi);
     X = reshape(Xi, ninterp, 1);
     Z = reshape(Yi, ninterp, 1);
-    pre = reshape(pr_i, ninterp, 1);
+    VALUES = reshape(pr_i, ninterp, 1);
   end
   
   % Recover physical quantities (gravity, gamma, mu, kappa).
@@ -111,18 +115,26 @@ function [ROWS, info] = dumps_to_bgmodel(OFD, IT, uniform)
     otherwise
       error(['[',mfilename,', ERROR] This MODEL (',MODEL,') was not implemented yet.']);
   end
-  pause
+%   pause
   
   % Put in lexicographic order, for readability.
   [~, isort] = sortrows([X, Z]);
   X = X(isort);
   Z = Z(isort);
+  rho0 = rho0(isort);
+  vx = vx(isort);
+  vz = vz(isort);
   pre = pre(isort);
   
   % handmade tweaks for tests
   if(tweaks)
     pre = min(pre) + factor_dp*(pre-min(pre));
   end
+  
+  q=X; disp(['[',mfilename,'] (min, max) of X:    (',num2str(min(q)),', ',num2str(max(q)),')']);
+  q=Z; disp(['[',mfilename,'] (min, max) of Z:    (',num2str(min(q)),', ',num2str(max(q)),')']);
+  q=rho0; disp(['[',mfilename,'] (min, max) of rho0: (',num2str(min(q)),', ',num2str(max(q)),')']);
+  q=pre; disp(['[',mfilename,'] (min, max) of pre:  (',num2str(min(q)),', ',num2str(max(q)),')']);
   
   % Format under large unit table.
   ROWS = zeros(numel(X), nb_qty);
