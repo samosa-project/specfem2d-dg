@@ -22,12 +22,20 @@ function [] = plot_model_ceff_wrapper(DATAFILE, maxz)
   [Z, ~, T, C, ~, ~, ~, ~, ~, ~, ~, V, U, ~, ~, ~, ~, ~, ~] = extract_atmos_model(DATAFILE, 3, 0, -1);
 
   sel = 1:floor(wanted_dz/mean(diff(Z))):numel(Z); % subsample
+  
+  if(not(any(sel)))
+    disp(['[',mfilename,', ERROR] sel returned nothing, setting to sel everything.']);
+    sel = 1:numel(Z);
+  end
+  
   % sel=[200,300];
   Z=Z(sel);
   T=T(sel);
   C=C(sel);
   V=V(sel);
   U=U(sel);
+  
+%   max(Z),pause
   
   if(maxz_provided)
     sel = (Z<=maxz);
@@ -37,7 +45,9 @@ function [] = plot_model_ceff_wrapper(DATAFILE, maxz)
     V=V(sel);
     U=U(sel);
   end
-
+  
+%   max(Z),pause
+  
 %   angg = linspace(0,360,nAngles+1)*pi/180;
 %   angg(end) = [];
 
@@ -76,7 +86,7 @@ function [] = plot_model_ceff_wrapper(DATAFILE, maxz)
   nAz = 100;
   A = linspace(0,360,nAz+1)*pi/180;
 %   A = linspace(0,360,nAz+1);
-  [ZZ, AA]=meshgrid(Z, A);
+  [ZZ, AA] = meshgrid(Z, A);
   WIND = uv2azimuth(AA*180/pi, U', V');
 %   WIND = uv2azimuth(AA*180/pi, WN', WE');
 %   CEFF = repmat(reshape(C,1,numel(C)),[nAz+1,1]) + sin(AA).*WE'+cos(AA).*WN'; name=['$c_\mathrm{eff}$'];
@@ -84,6 +94,7 @@ function [] = plot_model_ceff_wrapper(DATAFILE, maxz)
 %   CEFF = repmat(reshape(C,1,numel(C)),[101,1])+cos(AA)*10; % TES PURPOSES
 %   CEFF = WIND; name=['wind'];
 %   CEFF=CEFF/CEFF(1);
+%   figure();plot(max(CEFF), Z);,pause
   
   plot_radial(Z, A, CEFF, name);
   

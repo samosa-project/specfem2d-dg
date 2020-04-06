@@ -80,9 +80,9 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   % trick for nicer yticks
   if(maxalt>=1e3)
     Z=Z/1e3;
-    unitz = ['[km]'];
+    unitz = ['[km]']; unitgrad = 'km';
   else
-    unitz = ['[m]'];
+    unitz = ['[m]']; unitgrad = 'm';
   end
   
   [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
@@ -98,20 +98,21 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   
   fh=figure('units','normalized','outerposition',[0 0 1 1]);
   
-  axxx = tight_subplot(2, 3, [0.15,0.03], [0.1,0.11], [0.05, 0.035]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
+  axxx = tight_subplot(2, 3, [0.16,0.03], [0.10,0.12], [0.06, 0.036]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
   
 %   axxx(1)=subplot(231);
+  xlab = [];
   i=1;
   axes(axxx(i)); i=i+1;
   myplot(RHO, Z, marker, colour, datestr, 'sx');
-  xlabel('$\rho$ [kg/m$^3$]', 'fontsize', FSlab);
+  xlab = [xlab, xlabel('$\rho$ [kg/m$^3$]', 'fontsize', FSlab)];
   ylabel(['$z$ ',unitz], 'fontsize', FSlab); % xlim([0.1*min(RHO),10*max(RHO)]);
   title({'Density'});
   
 %   axxx(2)=subplot(232);
   axes(axxx(i)); i=i+1;
   myplot(C, Z, marker, colour, '$c$', 'p');
-  xlabel('$c$, $c_\mathrm{eff}$ [m/s]', 'fontsize', FSlab); hold on
+  xlab = [xlab, xlabel('$c$, $c_\mathrm{eff}$ [m/s]', 'fontsize', FSlab)]; hold on
   if(max(abs(W))>thresheqzero)
     % If wind==0, no need to plot effective sound speed.
     if(strcmp(LRorDWUW,'DWUW'))
@@ -135,7 +136,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   end
   
 %   title({[posstr,', ',datestr],secondaryinfo,'', 'Sound Speed'});
-  htit = title({[posstr,', ',datestr,', ',secondaryinfo], 'Sound Speed'});
+%   htit = title({[posstr,', ',datestr,', ',secondaryinfo], 'Sound Speed'});
+  htit = title({[posstr,', ',datestr], 'Sound Speed'});
   
 %   axxx(3)=subplot(233);
   axes(axxx(i)); i=i+1;
@@ -155,10 +157,12 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     lightened_sel = 1:numel(RHO);
   end
   freq = logspace(-2,1,Npts);
-  [a_cl, a_rot, a_vib] = atmospheric_attenuation(freq, RHO, C, MU, KAPPA,CP, CV,GAMMA, FR, SVIB);
-%   [a_cl, a_rot, a_vib] = atmospheric_attenuation(freq, RHO, C, MU, KAPPA,CP, CV,GAMMA, [], []);
+  [a_cl, a_rot, a_vib] = atmospheric_attenuation(freq, RHO, T, C, MU, KAPPA,CP, CV,GAMMA, FR, SVIB);
+%   [a_cl, a_rot, a_vib] = atmospheric_attenuation(freq, RHO, T, C, MU, KAPPA,CP, CV,GAMMA, [], []);
   a_tot = a_cl+a_rot+a_vib;
-  a_tot = a_vib;
+  %figure();subplot(1,2,1);contourf(freq,Z,real(a_tot));colorbar;subplot(1,2,2);contourf(freq,Z,real(a_tot));colorbar;pause
+  a_tot = abs(a_tot);
+%   a_tot = a_vib;
   if(abs(max(max(a_tot)))==0)
     to_plot = a_tot;
     lab = '$\alpha_\mathrm{cl}+\alpha_\mathrm{rot}+\alpha_\mathrm{vib}$';
@@ -171,7 +175,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   contourf(freq, Z, to_plot, 15-1, 'ShowText', 'off', 'edgecolor', 'none');
   yticklabels([]);
   set(gca, 'xscale', 'log');
-  xlabel(['frequency [Hz]'], 'fontsize', FSlab);
+  xlab = [xlab, xlabel(['frequency [Hz]'], 'fontsize', FSlab)];
   shading interp;
   h = colorbar;
   ylabel(h, [lab], 'rotation', 90, 'interpreter', 'latex');
@@ -186,7 +190,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   axxx(4)=subplot(234);
   axes(axxx(i)); i=i+1;
   myplot(T, Z, marker, colour, datestr, 'p');
-  xlabel('$T$ [$^\circ$C]', 'fontsize', FSlab);
+  xlab = [xlab, xlabel('$T$ [$^\circ$C]', 'fontsize', FSlab)];
   ylabel(['$z$ ',unitz], 'fontsize', FSlab); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   addatmosphericseparationlines(T, atmalts);
   if(max(abs(T-mean(T)))>thresheqzero)
@@ -198,7 +202,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   axxx(5)=subplot(235);
   axes(axxx(i)); i=i+1;
   myplot(W, Z, marker, colour, datestr, 'p');
-  xlabel('horizontal wind, $w_\mathrm{h}$ [m/s]', 'fontsize', FSlab);
+  xlab = [xlab, xlabel('horizontal wind, $w_\mathrm{h}$ [m/s]', 'fontsize', FSlab)];
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   addatmosphericseparationlines(W, atmalts);
@@ -211,7 +215,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   axxx(6)=subplot(236);
   axes(axxx(i)); i=i+1;
   myplot(DZW, Z, marker, colour, datestr, 'p');
-  xlabel('$\partial_zw_\mathrm{h}$ [1/s]', 'fontsize', FSlab);
+  xlab = [xlab, xlabel(['$\partial_zw_\mathrm{h}$ [(m/s)/',unitgrad,']'], 'fontsize', FSlab)];
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   if(max(abs(DZW))>thresheqzero)
@@ -248,6 +252,16 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
 %   figure(fh.Number);
   prettyAxes(fh);
 %   set(htit,'fontsize',24);
+  
+%   pause;
+  for i=1:numel(xlab)
+%     xlab(i).Position
+    xlab(i).Position = xlab(i).Position + [0, 1, 0];
+%     xlab(i).Position
+%     disp(' ')
+%     pause
+  end
+  
   if(plot_nosave0_save1)
     customSaveFig(fh,atmospheric_model_file);
     disp(['[] Use the following to save in other formats.']);

@@ -8,10 +8,10 @@
 % close all;
 % clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 18);
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
+% set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
+% set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 18);
+% set(0, 'DefaultTextInterpreter', 'latex');
+% set(0, 'DefaultLegendInterpreter', 'latex');
 
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new');
 
@@ -170,7 +170,8 @@ for i = IDs_to_process
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % ASD and plot.               %
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  [~, ~, ~, ~, ASD, ASD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), NWINDOWZZZZ); % UNIT/HZ^.5
+%   [~, ~, ~, ~, ASD, ASD_f] = PSD_Spectrogram(signal, mean(1./diff(time)), NWINDOWZZZZ); % UNIT/HZ^.5
+  [ASD_f, ASD] = asd(signal, mean(1./diff(time)), 'nwindow', NWINDOWZZZZ); % UNIT/HZ^.5
 %   [ASD, ASD_f] = custom_psd(time, signal); % UNIT^2/HZ
 
   WASD_tab(i, :) = ASD;

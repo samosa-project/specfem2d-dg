@@ -13,10 +13,10 @@ clc;
 clear('Zamp','Ztime'); disp(['[',mfilename,', INFO] Cleared Zamp and Ztime variables.']);
 % close all;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
+% set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+% set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
+% set(0, 'DefaultTextInterpreter', 'latex');
+% set(0, 'DefaultLegendInterpreter', 'latex');
 
 addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/'));
 % addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
@@ -45,7 +45,7 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'test_montagne/'); OFd = strcat(rootd, 'OUTPUT_FILES/'); subsample = 0; wanted_dt = 0.01;
 
 fig_title = ['ff'];
-rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
+% rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
 
 % Mars.
 % fig_title = strcat('Mars InSight');
@@ -98,7 +98,7 @@ rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strca
 
 % TNTGlanes
 % fig_title = strcat('Tirs de Mine Glanes');
-% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1939115_40hz_neweststations/');
+rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1939115_40hz_neweststations/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1508049_40hz/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1479543_clean/');
 % rootd = strcat(SPCFMEXloc,'tirdemine_75040_redone/'); OFd = strcat(rootd, 'OUTPUT_FILES_1240682_nospurious_butbadgeom/');
@@ -411,7 +411,7 @@ if (behaviour == 0)
 end
 
 % Get distance vector
-if(ismember(behaviour,[1,2]))
+if(ismember(behaviour,[0,1,2]))
   distancechoice = - 1;
   while (~ ismember(distancechoice, [1, 2, 3, 4]))
     distancechoice = input(['[', mfilename, '] Distance choice? (1 for x, 2 for |x|, 3 for z, 4 for d) > ']);
