@@ -1938,7 +1938,7 @@ subroutine stressBuilder_addInviscidFluid(rho, v1, v2, pressure, out_sigma)
   ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: rho, pressure
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: v1, v2
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: out_sigma
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(inout) :: out_sigma
   
   ! Local.
   integer :: i, j
@@ -1968,7 +1968,7 @@ subroutine stressBuilder_addViscousFluid(viscous_tensor_local, out_sigma)
   
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(in) :: viscous_tensor_local
-  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(out) :: out_sigma
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(inout) :: out_sigma
   
   ! Local.
   ! N./A.
