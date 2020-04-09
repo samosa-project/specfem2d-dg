@@ -42,10 +42,6 @@ subroutine compute_forces_acoustic_LNS_main()
     !  call setUpVandermonde()
     !endif
     
-    !if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
-    !  ! The subroutine 'initial_state_LNS' needs to have stretching initialised to compute \nabla\bm{v}_0. This is why it is put here.
-    !  call initial_state_LNS() ! This routine can be found in compute_forces_acoustic_LNS.F90.
-    !endif
     !write(*,*) "min, max RHO0 on proc ", myrank, " : ", minval(LNS_rho0), maxval(LNS_rho0) ! DEBUG
     !write(*,*) "min, max V0   on proc ", myrank, " : ", minval(LNS_v0), maxval(LNS_v0) ! DEBUG
     !write(*,*) "min, max P0   on proc ", myrank, " : ", minval(LNS_p0), maxval(LNS_p0) ! DEBUG
@@ -773,7 +769,12 @@ end subroutine LNS_PML_init_coefs
 ! background_physical_parameters                               !
 ! ------------------------------------------------------------ !
 ! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
-! Note: This model-building routine builds essentially the same model as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
+! Notes:
+!   *) This model-building routine builds essentially the same model as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
+!   *) This function is called for two reasons at two different places:
+!      *) In 'initial_state_LNS' to initialise the simulation.
+!      *) In 'LNS_get_interfaces_unknowns' (in 'compute_forces_acoustic_LNS.f90') to set the far-field outer boundary conditions.
+!   *) Both reasons rely on the specified background parameters, or initial state.
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
@@ -914,7 +915,9 @@ end subroutine background_physical_parameters
 ! set_fluid_properties                                         !
 ! ------------------------------------------------------------ !
 ! Set fluid properties.
-! Note: This property-setting routine sets essentially the same values as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
+! Notes:
+!   *) This property-setting routine sets essentially the same values as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
+!   *) This function is only called from within 'initial_state_LNS' above.
 
 subroutine set_fluid_properties(i, j, ispec)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM, FOUR_THIRDS
