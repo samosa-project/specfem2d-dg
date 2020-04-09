@@ -1106,9 +1106,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         !gamma_P        = buffer_DG_gamma_P(ipoin,num_interface)
         
         ! Set out_dv_P.
-        out_dv_P = out_rho0dv_P/LNS_rho0(iglobM)
-        !out_dv_P(1) = out_rho0dv_P(1)/out_drho_P
-        !out_dv_P(NDIM) = out_rho0dv_P(NDIM)/out_drho_P
+        out_dv_P(:) = out_rho0dv_P(:)/LNS_rho0(iglobM)
+        !out_dv_P(1) = out_rho0dv_P(1)/LNS_rho0(iglobM)
+        !out_dv_P(NDIM) = out_rho0dv_P(NDIM)/LNS_rho0(iglobM)
         
         ! Set out_dp_P.
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)

@@ -21,7 +21,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
-  integer :: ier, i_aux!, i, j, ispec, iglob
+  integer :: ier, i_aux, i, j, ispec!, iglob
   logical check_linearHypothesis
   
   ! Checks if anything has to be done.
@@ -229,17 +229,21 @@ subroutine compute_forces_acoustic_LNS_main()
   endif
 #endif
   
-  !do ispec=1,nspec
-  !do i=1,NGLLX
-  !do j=1,NGLLZ
-  !if(      abs(coord(1,ibool_before_perio(i,j,ispec))-10.)<2. &
-  !   .and. abs(coord(2,ibool_before_perio(i,j,ispec))-10.)<2.) then
-  !  write(*,*) it, i_stage, coord(:,ibool_before_perio(i,j,ispec)), nabla_dv(:,:,ibool_DG(i,j,ispec))
-  !endif
-  !enddo
-  !enddo
-  !enddo
-  !if(it==6 .and. i_stage==1) stop 'kekest'
+#if 0
+  ! DEBUG
+  if(timelocal>=2. .and. timelocal<=2.2) then
+  do ispec=1,nspec
+  do i=1,NGLLX
+  do j=1,NGLLZ
+  if(      abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<2. &
+     .and. abs(coord(2,ibool_before_perio(i,j,ispec))-100.)<150.) then
+    write(*,*) it, i_stage, timelocal, coord(:,ibool_before_perio(i,j,ispec)), LNS_dp(ibool_DG(i,j,ispec))
+  endif
+  enddo
+  enddo
+  enddo
+  endif
+#endif
   
   !write(*,*) "minval(LNS_dv), maxval(LNS_dv)", minval(LNS_dv), maxval(LNS_dv)! DEBUG
   
