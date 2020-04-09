@@ -538,6 +538,7 @@ end subroutine LNS_PML_updateD0
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: MODEL, ibool_DG, nspec, &
+                         !pext_DG, rhoext, windxext, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
                          NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
                          !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
@@ -618,6 +619,12 @@ subroutine initial_state_LNS()
   if(allocated(kappa_DG)) deallocate(kappa_DG)
   if(allocated(tau_epsilon)) deallocate(tau_epsilon)
   if(allocated(tau_sigma)) deallocate(tau_sigma)
+  
+  ! Can't deallocate the following, because next calls to background_physical_parameters (for outer boundary conditions) need them.
+  ! TBD: design another routine to call for the OBCs, or a switch using those DG variables only at initialisation.
+  !if(allocated(pext_DG)) deallocate(pext_DG)
+  !if(allocated(rhoext)) deallocate(rhoext)
+  !if(allocated(windxext)) deallocate(windxext)
   
   ! Detect if viscosity exists somewhere on this CPU.
   if(     maxval(LNS_mu) > TINYVAL &

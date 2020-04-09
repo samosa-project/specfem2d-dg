@@ -1114,6 +1114,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
         !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
         !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) )
+        !write(*,*) LNS_rho0(iglobM), LNS_v0(:, iglobM), LNS_E0(iglobM), gammaext_DG(iglobM), LNS_p0(iglobM) ! debug
+        !stop 'kek'
         
         ! Set out_dm_P: see bottom of routine.
         
