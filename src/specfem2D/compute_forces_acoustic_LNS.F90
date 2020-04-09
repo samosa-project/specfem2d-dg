@@ -703,7 +703,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZERO
-#if 1
+#if 0
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob))) & ! v_-\cdot n
                        + LNS_c0(iglob) & ! Local sound speed, side "M".
                        , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
@@ -711,7 +711,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                        )
 #endif
           ! Exact lambda (i.e. with exact full v=v0+v' and c=c0+c').
-#if 0
+#if 1
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
                        + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))) &
                        , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
@@ -1166,6 +1166,19 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       ! Set out_drho_P: same as other side, that is a Neumann condition.
       out_drho_P = inp_drho_M
       
+      !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
+      !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
+      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<1. .and. timelocal>=2.) then ! DEBUG
+      !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
+      !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
+      !             !out_rho0dv_P ! DEBUG
+      !             !out_dv_P ! DEBUG
+      !             !trans_boundary ! DEBUG
+      !             !LNS_rho0(iglobM), LNS_v0(:,iglobM), LNS_p0(iglobM), &
+      !             !veloc_elastic(:,ibool(i_el, j_el, ispec_el)), (LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
+      !             LNS_dv(:,iglobM)
+      !endif ! DEBUG
+      
       ! Set velocity_P.
       call build_trans_boundary(n_out, tang, trans_boundary)
 !#define USECLASSICALCOUPLING 1
@@ -1180,6 +1193,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       do SPCDM = 1, NDIM
         velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
       enddo
+      !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
+      !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
+      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<1.) then ! DEBUG
+      !  write(*,*) 'x', coord(:,ibool_before_perio(i,j,ispec)), 'nt', n_out, tang, 'T', trans_boundary ! debug
+      !endif
 #else
       ! VERSION 2: normal velocity from Terrana velocity, and slip condition for tangential.
       !write(*,*) '----------------------------------- timelocal', timelocal ! DEBUG
@@ -1252,12 +1270,15 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       
       !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
       !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
-      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<2.) then ! DEBUG
+      !   .and. abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<1. .and. timelocal>=2.) then ! DEBUG
       !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
       !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
       !             !out_rho0dv_P ! DEBUG
       !             !out_dv_P ! DEBUG
       !             !trans_boundary ! DEBUG
+      !             !LNS_rho0(iglobM), LNS_v0(:,iglobM), LNS_p0(iglobM), &
+      !             !veloc_elastic(:,ibool(i_el, j_el, ispec_el)), (LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
+      !             velocity_P, out_dv_P, LNS_dv(:,iglobM)
       !endif ! DEBUG
 
     else
@@ -1529,6 +1550,9 @@ end subroutine LNS_get_interfaces_unknowns
 ! ------------------------------------------------------------ !
 ! build_trans_boundary                                         !
 ! ------------------------------------------------------------ !
+! From an input normal vector, compute the tangential vector and the matrix for passin from one reference frame to the other.
+! The matrix transf_matrix converts a vector from the normal reference frame (n, t) to the canonic reference frame (x, z).
+! 
 subroutine build_trans_boundary(normal, tangential, transf_matrix)
   use constants, only: CUSTOM_REAL, NDIM
   
@@ -1542,9 +1566,17 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
   ! Local.
   ! N./A.
   
-  ! For the tangential vector, it is assumed that we will only have the elastic media under the DG medium, hence we always have n_out(NDIM)>=0.
+  ! The convention for the tangential vector is as follows.
+  !             ^
+  !             | normal
+  !             |
+  ! .....<------+............ interface
+  ! tangential
+  ! Though non-standard, it poses no issue and is coherent with DG implementation.
   tangential(1)    = -normal(NDIM) ! Recall: normal(NDIM)=n_z.
   tangential(NDIM) =  normal(1) ! Recall: normal(1)=n_x.
+  
+  ! Build the transformation matrix.
   transf_matrix(1, 1)       =   tangential(NDIM)
   transf_matrix(1, NDIM)    = - normal(NDIM) ! Recall: normal(NDIM)=n_z.
   transf_matrix(NDIM,    1) = - tangential(1)
