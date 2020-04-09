@@ -172,7 +172,7 @@ function plot_partitions(PseudoGMSH0orDATABASE1, path_to_mesh, boundary_only, id
       legend('location', 'eastoutside');
 %       set(gca, 'tickdir','both');
 %       set(gca, 'TickLabelInterpreter','latex');
-      xlabel('$x$ (m)'); ylabel('$z$ (m)');
+      xlabel('$x$ [m]'); ylabel('$z$ [m]');
       %title({['Partitions'],FOLDER});
       %axis square
       set(gca,'DataAspectRatio',[1,1,1]);
