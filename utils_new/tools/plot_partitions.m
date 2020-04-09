@@ -6,15 +6,6 @@
 %   Just run it.
 
 function plot_partitions(PseudoGMSH0orDATABASE1, path_to_mesh, boundary_only, ids_choice)
-
-%   clear all;
-  % close all;
-  % clc;
-  format compact;
-  set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 4);
-  set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
-  set(0, 'DefaultTextInterpreter', 'latex');
-  set(0, 'DefaultLegendInterpreter', 'latex');
   
   % Parameters.
   boundarythreshold = 1;
@@ -142,7 +133,11 @@ function plot_partitions(PseudoGMSH0orDATABASE1, path_to_mesh, boundary_only, id
           disp(['[',mfilename,']   ID  = ',sprintf('%5d',arr_ids_cpus_original), ' <- choose among those']);
           ids_choice = input(['[',mfilename,'] > ']);
         end
-        arr_ids_cpus = ids_choice;
+        if(ids_choice==-1)
+          arr_ids_cpus = arr_ids_cpus_original;
+        else
+          arr_ids_cpus = ids_choice;
+        end
       else
         % user provided cpu ids, find them
         arr_ids_cpus = find(CPUs==ids_choice);
@@ -174,9 +169,9 @@ function plot_partitions(PseudoGMSH0orDATABASE1, path_to_mesh, boundary_only, id
           set(h,'handlevisibility','off');
         end
       end
-      legend;
-      set(gca, 'tickdir','both');
-      set(gca, 'TickLabelInterpreter','latex');
+      legend('location', 'eastoutside');
+%       set(gca, 'tickdir','both');
+%       set(gca, 'TickLabelInterpreter','latex');
       xlabel('$x$ (m)'); ylabel('$z$ (m)');
       %title({['Partitions'],FOLDER});
       %axis square
