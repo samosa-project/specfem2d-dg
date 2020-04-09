@@ -515,9 +515,14 @@ end subroutine compute_forces_acoustic_DG_main
 
 subroutine prepare_MPI_DG()
     
-    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+    use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,TINYVAL
     
-    use specfem_par
+    use specfem_par, only: MPI_transfer_iface, is_corner, link_ijispec_iface, &
+                           max_interface_size, ninterface, ninterface_acoustic_dg, inum_interfaces_acoustic_dg, &
+                           link_iface_ijispec, my_neighbours, nibool_interfaces_acoustic_dg, ibool_interfaces_acoustic_dg, &
+                           tab_requests_send_recv_dg, neighbor_dg_iface, &
+                           nspec, ibool, ibool_dg, nglob_DG, coord, &
+                           myrank
 
     use mpi
 
