@@ -13,23 +13,25 @@
 %   TODO.
 
 function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt, LRorDWUW, plot_nosave0_save1)
-  if(nargin<4)
-    error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''atmospheric_model_file, marker, colour, atmalts'', with atmalts possibly [].']);
+  if(nargin<1)
+    %error(['[',mfilename,', ERROR] Not enough input arguments. Needs at least an ''atmospheric_model_file''.']);
+    atmospheric_model_file = input(['[',mfilename,'] Path to an ''atmospheric_model.dat'' file? > '], 's');
   end
-  addpath('/home/l.martire/Documents/work/mars/mars_is'); % customSaveFig
-  
-  FS = 18;
-  FSlab = FS*0.9;
-  
-  leftprop = [0.631, 0.0745, 0.180];
-  rightprop = [0,176,146]/255;
-  
+%   addpath('/home/l.martire/Documents/work/mars/mars_is'); % customSaveFig
+  if(not(exist('marker', 'var')))
+    marker = '-';
+  end
+  if(not(exist('colour', 'var')))
+    colour = 'k';
+  end
+  if(not(exist('atmalts', 'var')))
+    atmalts = [];
+  end
   if(not(exist('maxalt','var')))
     maxalt_provided = 0;
   else
     maxalt_provided = 1;
   end
-  
   if(not(exist('LRorDWUW','var')))
     % not found, make default: LR
     LRorDWUW='LR';
@@ -48,16 +50,20 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     plot_nosave0_save1 = 1;
   end
   
-%   format compact;
-%   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
-%   set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);
-%   set(0, 'DefaultTextInterpreter', 'latex');
-%   set(0, 'DefaultLegendInterpreter', 'latex');
+  FS = 18;
+  FSlab = FS*0.9;
+  colour_leftprop = [0.631, 0.0745, 0.180];
+  colour_rightprop = [0,176,146]/255;
+  T_in_degC = 1;
   
+  % load
   [Z, RHO, T, C, ~, ~, ...
    ~, ~, KAPPA, MU, ~, ~, ~, W, CP, CV, GAMMA, FR, SVIB] = ...
    extract_atmos_model(atmospheric_model_file, 3, 0, 0);
+  [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
+  mainTitle = [posstr,', ',datestr];
   
+  % truncate to maxalt
   if(maxalt_provided)
     sel = (Z<=maxalt);
     Z = Z(sel);
@@ -78,41 +84,58 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   end
   
   % trick for nicer yticks
-  if(maxalt>=1e3)
+  if( (maxalt_provided && (maxalt>=1e3)) || (not(maxalt_provided) && max(Z)>=1e3))
     Z=Z/1e3;
     unitz = ['[km]']; unitgrad = 'km';
   else
     unitz = ['[m]']; unitgrad = 'm';
   end
+  % adjust margin left of subplots accordingly
+  marg_l = 0.04 + log10(max(Z))*0.01;
   
-  [datestr, posstr, secondaryinfo] = extract_atmos_model_setup(atmospheric_model_file);
-  
-  T = T-273.15; % [°C]
-  thresheqzero=1e-6;
+  if(T_in_degC)
+    T = T-273.15; % [°C]
+    unit_T = '$^\circ$C';
+  else
+    unit_T = 'K';
+  end
+  thresheqzero = 1e-6;
   
 %   D = differentiation_matrix(Z, 0);
 %   DZW = D*W;
 %   DZW(1)=DZW(2); % Correction hack.
-  DZW = gradient(W,Z);
-  DZW(1:2) = DZW(3); % Correction hack.
+  DZW = gradient(W, Z);
+  if(numel(Z)>2)
+    DZW(1:2) = DZW(3); % Correction hack.
+  end
   
+  % Prepare labels.
+  i = 1;
+  Title_Subplot{i}='Density'; DName_Subplot{i} = ['density [kg/m$^3]']; XLab_Subplot{i} = ['$\rho$ [kg/m$^3$]']; i=i+1;
+  Title_Subplot{i}='Sound Speed'; DName_Subplot{i} = ['$c$']; XLab_Subplot{i} = ['$c$, $c_\mathrm{eff}$ [m/s]']; i=i+1;
+  Title_Subplot{i}='Attenuation [1/m]'; DName_Subplot{i} = ['$\log_{10}\left(\mathrm{attenuation}\right)$']; XLab_Subplot{i} = []; i=i+1;
+  Title_Subplot{i}='Temperature'; DName_Subplot{i} = ['temperature [',unit_T,']']; XLab_Subplot{i} = ['$T$ [',unit_T,']']; i=i+1;
+  Title_Subplot{i}='Wind'; DName_Subplot{i} = ['horizontal wind [m/s]']; XLab_Subplot{i} = ['horizontal wind $w_\mathrm{h}$ [m/s]']; i=i+1;
+  Title_Subplot{i}='Wind Shear'; DName_Subplot{i} = ['wind shear [(m/s)/',unitgrad,']']; XLab_Subplot{i} = ['$\partial_zw_\mathrm{h}$ [(m/s)/',unitgrad,']']; i=i+1;
+  
+  % Start figure.
   fh=figure('units','normalized','outerposition',[0 0 1 1]);
-  
-  axxx = tight_subplot(2, 3, [0.16,0.03], [0.10,0.12], [0.06, 0.036]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
+  axxx = tight_subplot(2, 3, [0.16,0.03], [0.10,0.12], [marg_l, 0.036]); % [l c gaph gapw margin_bot margin_top marg_left marg_right]
   
 %   axxx(1)=subplot(231);
   xlab = [];
   i=1;
-  axes(axxx(i)); i=i+1;
-  myplot(RHO, Z, marker, colour, datestr, 'sx');
-  xlab = [xlab, xlabel('$\rho$ [kg/m$^3$]', 'fontsize', FSlab)];
+  axes(axxx(i));
+  myplot(RHO, Z, marker, colour, DName_Subplot{i}, 'sx');
+  xlab = [xlab, xlabel(XLab_Subplot{i}, 'fontsize', FSlab)];
   ylabel(['$z$ ',unitz], 'fontsize', FSlab); % xlim([0.1*min(RHO),10*max(RHO)]);
-  title({'Density'});
+  title(Title_Subplot{i});
+  i=i+1;
   
 %   axxx(2)=subplot(232);
-  axes(axxx(i)); i=i+1;
-  myplot(C, Z, marker, colour, '$c$', 'p');
-  xlab = [xlab, xlabel('$c$, $c_\mathrm{eff}$ [m/s]', 'fontsize', FSlab)]; hold on
+  axes(axxx(i));
+  myplot(C, Z, marker, colour, DName_Subplot{i}, 'p');
+  xlab = [xlab, xlabel(XLab_Subplot{i}, 'fontsize', FSlab)]; hold on
   if(max(abs(W))>thresheqzero)
     % If wind==0, no need to plot effective sound speed.
     if(strcmp(LRorDWUW,'DWUW'))
@@ -121,8 +144,8 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
       myplot(max(C+W,C-W), Z, marker, 'r', 'downwind $c_\mathrm{eff}$', 'p');
     elseif(strcmp(LRorDWUW,'LR'))
       % plot left/right effective sound speed
-      myplot(C+W, Z, marker, rightprop, 'rightward $c_\mathrm{eff}$', 'p');
-      myplot(C-W, Z, marker, leftprop, 'leftward $c_\mathrm{eff}$', 'p');
+      myplot(C+W, Z, marker, colour_rightprop, 'rightward $c_\mathrm{eff}$', 'p');
+      myplot(C-W, Z, marker, colour_leftprop, 'leftward $c_\mathrm{eff}$', 'p');
     else
       error('kek');
     end
@@ -134,22 +157,13 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     % If wind==0, no need to adjust.
     forcexlimminmax([min(min(C+W),min(C-W)),max(max(C+W),max(C-W))]);
   end
-  
-%   title({[posstr,', ',datestr],secondaryinfo,'', 'Sound Speed'});
-%   htit = title({[posstr,', ',datestr,', ',secondaryinfo], 'Sound Speed'});
-  htit = title({[posstr,', ',datestr], 'Sound Speed'});
+%  htit = title({[posstr,', ',datestr], 'Sound Speed'});
+  htit = title(Title_Subplot{i});
+  i=i+1;
+  h = annotation('textbox', [0.5, 1, 0, 0], 'string',mainTitle,'interpreter', 'latex','fitboxtotext', true,'fontsize', htit.FontSize, 'linestyle', 'none','horizontalalignment', 'center');
   
 %   axxx(3)=subplot(233);
-  axes(axxx(i)); i=i+1;
-%   myplot(NSQ, Z, marker, colour, datestr, 'p');
-%   xlabel('$N^2$ [rad$^2$/s$^2$]'); % LIMX=NSQ; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
-%   yticklabels([]);
-%   if(max(abs(NSQ-mean(NSQ)))>thresheqzero)
-%     % If NSQ==cst, no need to adjust.
-%     forcexlimminmax(NSQ);
-%   else
-%     xlim(max(NSQ)*[.9,1.1]);
-%   end
+  axes(axxx(i));
   Npts = 100;
   if(numel(RHO)>Npts*5)
     lightened_sel = floor(linspace(1,numel(RHO),Npts*5));
@@ -172,7 +186,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     lab = '$\log_{10}\left(\alpha_\mathrm{cl}+\alpha_\mathrm{rot}+\alpha_\mathrm{vib}\right)$';
     cust_cmap = 0;
   end
-  contourf(freq, Z, to_plot, 15-1, 'ShowText', 'off', 'edgecolor', 'none');
+  contourf(freq, Z, to_plot, 15-1, 'ShowText', 'off', 'edgecolor', 'none', 'displayname', DName_Subplot{i});
   yticklabels([]);
   set(gca, 'xscale', 'log');
   xlab = [xlab, xlabel(['frequency [Hz]'], 'fontsize', FSlab)];
@@ -185,24 +199,26 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   else
     colormaps_fromPython('YlOrRd', 1);
   end
-  title({'Attenuation'});
+  title(Title_Subplot{i});
+  i=i+1;
   
 %   axxx(4)=subplot(234);
-  axes(axxx(i)); i=i+1;
-  myplot(T, Z, marker, colour, datestr, 'p');
-  xlab = [xlab, xlabel('$T$ [$^\circ$C]', 'fontsize', FSlab)];
+  axes(axxx(i));
+  myplot(T, Z, marker, colour, DName_Subplot{i}, 'p');
+  xlab = [xlab, xlabel(XLab_Subplot{i}, 'fontsize', FSlab)];
   ylabel(['$z$ ',unitz], 'fontsize', FSlab); % LIMX=WN; xlim([1.1*min(LIMX)-0.1*max(LIMX),1.1*max(LIMX)-0.1*min(LIMX)]);
   addatmosphericseparationlines(T, atmalts);
   if(max(abs(T-mean(T)))>thresheqzero)
     % If T==cst, no need to adjust.
     forcexlimminmax(T);
   end
-  title({'Temperature'});
+  title(Title_Subplot{i});
+  i=i+1;
   
 %   axxx(5)=subplot(235);
-  axes(axxx(i)); i=i+1;
-  myplot(W, Z, marker, colour, datestr, 'p');
-  xlab = [xlab, xlabel('horizontal wind, $w_\mathrm{h}$ [m/s]', 'fontsize', FSlab)];
+  axes(axxx(i));
+  myplot(W, Z, marker, colour, DName_Subplot{i}, 'p');
+  xlab = [xlab, xlabel(XLab_Subplot{i}, 'fontsize', FSlab)];
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   addatmosphericseparationlines(W, atmalts);
@@ -210,56 +226,32 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
     % If W==cst, no need to adjust.
     forcexlimminmax(W);
   end
-  title({'Wind'});
+  title(Title_Subplot{i});
+  i=i+1;
   
 %   axxx(6)=subplot(236);
-  axes(axxx(i)); i=i+1;
-  myplot(DZW, Z, marker, colour, datestr, 'p');
-  xlab = [xlab, xlabel(['$\partial_zw_\mathrm{h}$ [(m/s)/',unitgrad,']'], 'fontsize', FSlab)];
+  axes(axxx(i));
+  myplot(DZW, Z, marker, colour, DName_Subplot{i}, 'p');
+  xlab = [xlab, xlabel(XLab_Subplot{i}, 'fontsize', FSlab)];
   line([0,0],[Z(1),Z(end)],'linestyle',':','color','k','linewidth',2);
   yticklabels([]);
   if(max(abs(DZW))>thresheqzero)
     % If DZW==0 (W==cst), no need to adjust.
     forcexlimminmax(DZW);
   end
-  title({'Wind Shear'});
+  title(Title_Subplot{i});
+  i=i+1;
   
+  % Post-treatment.
   linkaxes(axxx,'y');
   linkprop(axxx,{'ytick','yscale'});
-%   set(gca,'yscale','log')
-  
-%   % find closest multiple of 3 under log10(max(Z))
-%   Nticks = 6;
-%   nearestPow = log10(max(Z)) - mod(log10(max(Z)),3);
-% %   yticks(linspace(min(Z),max(Z),7));
-%   tentativeYticks = 10^nearestPow * floor(linspace(min(Z),max(Z),Nticks)/(10^nearestPow));
-%   definitiveYticks = min(tentativeYticks) + min(diff(tentativeYticks))*linspace(0,Nticks-1,Nticks); % correct to have same dz between ticks
-%   if(definitiveYticks(1)<min(Z))
-%     definitiveYticks(1)=min(Z);
-%   end
-%   yticks(definitiveYticks);
-%   set(axxx, 'yTickMode', 'auto', 'yTickLabelMode', 'auto'); % reset to auto in case user zooms
   set(axxx, 'yTickMode', 'auto'); % reset to auto in case user zooms
-%   if(maxalt_provided)
-%     ylim([0,maxalt]);
-%   end
   
-%   spl=split(atmospheric_model_file,'.');
-%   spl{length(spl)+1}='jpg';
-%   spl=join(spl,'.');
-%   saveas(gcf,spl{1}, 'jpg');
-%   disp(['[',mfilename,'] Plot of model saved to ''',spl{1},'''.']);
-%   figure(fh.Number);
   prettyAxes(fh);
-%   set(htit,'fontsize',24);
   
-%   pause;
   for i=1:numel(xlab)
-%     xlab(i).Position
-    xlab(i).Position = xlab(i).Position + [0, 1, 0];
-%     xlab(i).Position
-%     disp(' ')
-%     pause
+    xlab(i).Units = 'normalized';
+    xlab(i).Position = xlab(i).Position + [0, 0.04, 0];
   end
   
   if(plot_nosave0_save1)
