@@ -542,9 +542,9 @@ subroutine initial_state_LNS()
                          NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
                          !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
-                             LNS_eta, LNS_kappa, sigma_dv, LNS_dummy_1d, LNS_dummy_2d, &
-                             LNS_viscous, sigma_v_0, nabla_v0, buffer_LNS_nabla_dT, &
-                             buffer_LNS_sigma_dv, LNS_switch_gradient, LNS_g,LNS_c0
+                             buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
+                             LNS_eta, LNS_kappa, LNS_g,LNS_c0, LNS_dummy_1d, LNS_dummy_2d, &
+                             LNS_viscous, sigma_v_0, nabla_v0, LNS_switch_gradient
 
   implicit none
   
