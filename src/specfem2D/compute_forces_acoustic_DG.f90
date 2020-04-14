@@ -197,6 +197,10 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
     call compute_add_sources_acoustic_DG_spread(dot_rhovz, it, i_stage)
   elseif(TYPE_SOURCE_DG == 3) then
     call compute_add_sources_acoustic_DG_spread(dot_E, it, i_stage)
+  elseif(TYPE_SOURCE_DG == 4) then
+    call compute_add_sources_acoustic_DG_spread(dot_rhovx, it, i_stage)
+  elseif(TYPE_SOURCE_DG == 5) then
+    call compute_add_sources_acoustic_DG_spread(dot_rhovz, it, i_stage)
   endif
   
   ! TODO: introduce a verbosity parameter in order to prevent unwanted flooding of the terminal.
