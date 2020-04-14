@@ -347,6 +347,8 @@
   read(IIN,"(a80)") datlin
   read(IIN,*) SPREAD_SSF_SIGMA
   read(IIN,"(a80)") datlin
+  read(IIN,*) SPREAD_SSF_CUSTOM
+  read(IIN,"(a80)") datlin
   read(IIN,*) REMOVE_STF_INITIAL_DISCONTINUITY
   
   ! read the ACOUSTIC_FORCING flag

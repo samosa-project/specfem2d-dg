@@ -262,6 +262,7 @@
   USE_SPREAD_SSF   = .false.
   SPREAD_SSF_SAVE  = .false.
   SPREAD_SSF_SIGMA = 1.
+  SPREAD_SSF_CUSTOM = .false.
   REMOVE_STF_INITIAL_DISCONTINUITY=.false.
   
   if(USE_DISCONTINUOUS_METHOD) then
@@ -287,16 +288,18 @@
     !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SAVE in Par_file'
     call read_value_double_precision_p(SPREAD_SSF_SIGMA, 'solver.SPREAD_SSF_SIGMA')
     !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SIGMA in Par_file'
+    call read_value_logical_p(SPREAD_SSF_CUSTOM, 'solver.SPREAD_SSF_CUSTOM')
+    !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_CUSTOM in Par_file'
     call read_value_logical_p(REMOVE_STF_INITIAL_DISCONTINUITY, 'solver.REMOVE_STF_INITIAL_DISCONTINUITY')
     !if (err_occurred() /= 0) stop 'error reading parameter REMOVE_STF_INITIAL_DISCONTINUITY in Par_file'
 
     !TEST READING NEW PARAMETERS
-    if(.false.) then
-      write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
-      write(*,*) ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
-      write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA
-      write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
-    endif
+#if 0
+    write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
+    write(*,*) ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
+    write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA, SPREAD_SSF_CUSTOM
+    write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
+#endif
   endif
   
   !--------------------------------------------------------------------
