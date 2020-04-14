@@ -997,7 +997,7 @@
       stop
     endif
     
-    if(USE_SPREAD_SSF .and. SPREAD_SSF_SIGMA<=0.) then
+    if(USE_SPREAD_SSF .and. (.not. SPREAD_SSF_CUSTOM) .and. SPREAD_SSF_SIGMA<=0.) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"
