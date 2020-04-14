@@ -21,7 +21,7 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
-  integer :: ier, i_aux, i, j, ispec!, iglob
+  integer :: ier, i_aux!, i, j, ispec!, iglob
   logical check_linearHypothesis
   
   ! Checks if anything has to be done.
