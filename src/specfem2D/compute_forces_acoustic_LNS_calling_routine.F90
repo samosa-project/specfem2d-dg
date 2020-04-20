@@ -86,7 +86,7 @@ subroutine compute_forces_acoustic_LNS_main()
       call find_DG_acoustic_coupling()
     endif
   
-    call LNS_prevent_nonsense() ! Check initial conditions.
+    !call LNS_prevent_nonsense() ! Check initial conditions.
     
   endif ! Endif on (it == 1) and (i_stage == 1).
   
@@ -543,7 +543,7 @@ end subroutine LNS_PML_updateD0
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
-  use specfem_par, only: MODEL, ibool_DG, nspec, &
+  use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, &
                          !pext_DG, rhoext, windxext, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
                          NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic, ispec_is_acoustic_DG!, &
@@ -603,12 +603,13 @@ subroutine initial_state_LNS()
     ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
     ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
     ! TODO: something else, maybe involving correcting the FNS implementation.
-    where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
-    where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
-    where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
+    !where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
+    !where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
+    !where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
 
     ! Recompute and save globally c0.
-    LNS_c0 = sqrt(gammaext_DG*LNS_p0/LNS_rho0)
+    LNS_c0 = 0.
+    where(LNS_rho0 > TINYVAL) LNS_c0 = sqrt(gammaext_DG*LNS_p0/LNS_rho0)
 
     ! Initialise T_0.
     call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
@@ -668,6 +669,24 @@ subroutine initial_state_LNS()
 !  write(*,*) 'min max nabla_v0(:,1)=partial_x(vi)', minval(nabla_v0(1:2,1,:)), maxval(nabla_v0(1:2,1,:))
 !  write(*,*) 'min max nabla_v0(:,2)=partial_z(vi)', minval(nabla_v0(1:2,2,:)), maxval(nabla_v0(1:2,2,:))
 !  stop
+
+  ! DEBUG PRINT MODEL
+  if(.false. .and. myrank==1) then ! DEBUG
+    open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
+    do ispec = 1,nspec
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          iglob = ibool_DG(i, j, ispec)
+          write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
+                       LNS_p0(iglob)
+        enddo
+      enddo
+    enddo
+    close(504)
+    stop
+    ! Matlab one-liner plot:
+    !a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_load_external/OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
+  endif
 end subroutine initial_state_LNS
 
 #if 0
@@ -1748,7 +1767,7 @@ end subroutine compute_dp_i
 ! ------------------------------------------------------------ !
 ! Computes temperature from constitutive variables.
 subroutine compute_T(in_rho, in_v, in_E, out_T)
-  use constants, only: CUSTOM_REAL, NDIM
+  use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   use specfem_par, only: c_V, nglob_DG
   use specfem_par_LNS, only: norm2
   implicit none
@@ -1756,10 +1775,8 @@ subroutine compute_T(in_rho, in_v, in_E, out_T)
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
-  ! Local.
-  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_T = (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V
-  out_T = (in_E/in_rho - HALFcr*norm2(in_v))/c_V
+  out_T = 0._CUSTOM_REAL
+  where(in_rho>TINYVAL) out_T = (in_E/in_rho - 0.5_CUSTOM_REAL*norm2(in_v))/c_V
 end subroutine compute_T
 !subroutine compute_T(in_rho, in_p, out_T)
 !  use constants, only: CUSTOM_REAL, NDIM
@@ -1797,7 +1814,7 @@ end subroutine compute_T
 ! Computes temperature perturbation from constitutive variables.
 ! Note: this could have been done nearly inline by using the subroutine compute_T, but defining this function enables one to use less RAM.
 subroutine compute_dT(in_rho, in_v, in_E, out_dT)
-  use constants, only: CUSTOM_REAL, NDIM
+  use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   use specfem_par, only: c_V, nglob_DG
   use specfem_par_LNS, only: LNS_T0, norm2
   implicit none
@@ -1805,11 +1822,9 @@ subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_E
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: in_v
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
-  ! Local.
-  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_dT =   (in_E/in_rho - HALFcr*(in_v(1,:)**2+in_v(NDIM,:)**2))/c_V &
-  out_dT =   (in_E/in_rho - HALFcr*norm2(in_v))/c_V &
-           - LNS_T0
+  out_dT = 0._CUSTOM_REAL
+  where(in_rho>TINYVAL) out_dT =   (in_E/in_rho - 0.5_CUSTOM_REAL*norm2(in_v))/c_V &
+                                 - LNS_T0
 end subroutine compute_dT
 !subroutine compute_dT(in_rho, in_p, out_dT)
 !  use constants, only: CUSTOM_REAL, NDIM

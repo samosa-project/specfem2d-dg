@@ -84,7 +84,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
 !  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa, pml_alp!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P, rho_MP
   real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P
   logical :: viscousComputation
@@ -716,11 +716,18 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           !  write(*,*) gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)
           !if(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))<=1e-1) &
           !  write(*,*) LNS_p0(iglob), in_dp(iglob)! , (LNS_rho0(iglob)+cv_drho(iglob))
-          lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
-                       + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))) &
-                       , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
-                       + sqrt(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)) &
-                       )
+          rho_MP(1) = LNS_rho0(iglob)+cv_drho(iglob)
+          rho_MP(2) = LNS_rho0(iglobP)+drho_P
+          if(rho_MP(1)>TINYVAL .and. rho_MP(2)>TINYVAL) then
+            lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
+                         + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/rho_MP(1)) &
+                         , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
+                         + sqrt(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/rho_MP(2)) &
+                         )
+          else
+            ! Possibly, in elastic elements, rho_MP is zero (since both LNS_rho0 and cv_drho and drho_P are zero there).
+            lambda = ZEROcr
+          endif
 #endif
           
           ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
@@ -1530,7 +1537,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   endif
   
   ! Set out_dm_P.
-  out_dm_P=out_rho0dv_P+out_drho_P*LNS_v0(:,iglobM)
+  out_dm_P = out_rho0dv_P + out_drho_P*LNS_v0(:,iglobM)
   
 end subroutine LNS_get_interfaces_unknowns
 
