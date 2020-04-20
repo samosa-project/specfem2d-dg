@@ -912,41 +912,24 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_drho_P, inp_dE_P ! Input constitutive variables. They make no sense if neighbor(1)<=-1.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: inp_rho0dv_M, inp_rho0dv_P ! Input constitutive variables.
   real(kind=CUSTOM_REAL), intent(in) :: inp_dp_M ! Input other variables.
-  !real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(in) :: inp_sigma_dv_M ! Input other variables.
-  !real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: T_DG_iP, T_DG_iM ! Input derivatives. MIGHT NEED.
-  !real(kind=CUSTOM_REAL), dimension(NDIM, NDIM), intent(in) :: V_DG_iP, V_DG_iM ! Input derivatives. MIGHT NEED.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: n_out
   logical, intent(out) :: exact_interface_flux ! Output switch.
   real(kind=CUSTOM_REAL), intent(out) :: out_drho_P, out_dE_P ! Output constitutive variables.
-  !real(kind=CUSTOM_REAL), intent(out) :: Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P ! Output derivatives. MIGHT NEED.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_rho0dv_P ! Output constitutive variable.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_dv_P, out_dm_P, out_nabla_dT_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dp_P ! Output other variables.
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(out) :: out_sigma_dv_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dT_P ! In compute_gradient_TFSF (desintegration method), we need temperature on the other side of the boundary in order to compute the flux.
-  !real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: velocity_P ! In compute_gradient_TFSF (desintegration method), we need velocity on the other side of the boundary in order to compute the flux.
   logical, intent(in) :: swCompVisc, swCompdT!, swCompv ! Do not unnecessarily compute some quantities.
   
   ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer :: SPCDM
   real(kind=CUSTOM_REAL), dimension(NDIM) :: velocity_P
   real(kind=CUSTOM_REAL), dimension(NDIM) :: tang ! Tangential vector.
-  real(kind=CUSTOM_REAL) :: normal_v, tangential_v!, &
-                            !veloc_x, veloc_z!, gamma_P!, &
-                            !dv_M(1), dv_M(NDIM), inp_dp_M, gamma_P, e1_DG_P
-  !real(kind=CUSTOM_REAL), dimension(NDIM) :: veloc_P
-  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: TWO  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL) :: normal_v, tangential_v
   integer :: iglobM, i_el, j_el, ispec_el, iglobP, ipoin, num_interface!, iglob, i_ac, j_ac, ispec_ac
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
-  !real(kind=CUSTOM_REAL) :: veloc_x_dg_p, veloc_z_dg_p!,x ! For coupling deactivation in buffers.
-  ! Characteristic based BC
-  !real(kind=CUSTOM_REAL) :: s_b, rho_inf, v_b_x, v_b_z, un_b, &!, rho_b, p_b, c_b, &
-  !                          rlambda_max, rlambda_min, un_in, un_inf!, &!c_in, c_inf, &
-                            !deltaZ1, deltaZ2star, p_n!, a_n, alpha0
-  
   
   ! Initialise output variables to default values.
   exact_interface_flux = .false.
@@ -973,10 +956,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   ! Set out_sigma_dv_P.
   ! Set out_dT_P.
   
-  ! Extract calling point iglob.
-  iglobM = ibool_DG(i, j, ispec)
-  
-  !exact_interface_flux = .false. ! Unless otherwise specified, use the Lax-Friedrich approximation.
+  iglobM = ibool_DG(i, j, ispec) ! Extract calling point iglob on the "minus" side.
   
   if(neighbor(3) == -1 ) then
     ! --------------------------- !
