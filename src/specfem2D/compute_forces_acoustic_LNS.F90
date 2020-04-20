@@ -712,6 +712,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
 #endif
           ! Exact lambda (i.e. with exact full v=v0+v' and c=c0+c').
 #if 1
+          !if(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)<=1e-1) &
+          !  write(*,*) gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)
+          !if(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))<=1e-1) &
+          !  write(*,*) LNS_p0(iglob), in_dp(iglob)! , (LNS_rho0(iglob)+cv_drho(iglob))
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
                        + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))) &
                        , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
