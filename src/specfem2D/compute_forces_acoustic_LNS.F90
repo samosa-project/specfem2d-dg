@@ -721,7 +721,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           if(rho_MP(1)>TINYVAL .and. rho_MP(2)>TINYVAL) then
             lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
                          + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/rho_MP(1)) &
-                         , abs(dot_product(n_out, LNS_v0(:,iglobP)+LNS_dv(:,iglobP))) &
+                         , abs(dot_product(n_out, LNS_v0(:,iglobP)+dv_P)) &
                          + sqrt(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/rho_MP(2)) &
                          )
           else

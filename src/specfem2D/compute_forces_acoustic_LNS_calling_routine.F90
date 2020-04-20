@@ -678,7 +678,7 @@ subroutine initial_state_LNS()
         do i = 1,NGLLX
           iglob = ibool_DG(i, j, ispec)
           write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                       LNS_p0(iglob)
+                       LNS_rho0(iglob)
         enddo
       enddo
     enddo
