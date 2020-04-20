@@ -7,12 +7,11 @@ distance_km = zstattab(stationsToPlot)/1000; unitDist = ['km'];
 % theTitle = {['Stations'' Altitudes = [', sprintf('%.1f ',distance_km),'] [km]'], ...
 %             ['Sound Speed = ',num2str(SOUNDSPEED),' [m/s]. Max. Relative Error = ',num2str(max(max_relative_err_all_stats*100)),' \%']};
 % addenduml1 = [' $c=',sprintf('%.0f',SOUNDSPEED),'$~m/s,'];
-addenduml1 = [''];
-addenduml2 = ['Maximum Relative Error = ',sprintf('%.2f',max(max_relative_err_all_stats*100)),'~\%'];
+addenduml1 = [' Maximum Relative Error = ',sprintf('%.2f',max(max_relative_err_all_stats*100)),'~\%'];
 if(USE_ISOTHERMAL_MODEL)
-  theTitle = {['Isothermal Case,',addenduml1],addenduml2};
+  theTitle = {['Isothermal Case,',addenduml1]};
 else
-  theTitle = {['Isobaric Case,',addenduml1],addenduml2};
+  theTitle = {['Isobaric Case,',addenduml1]};
 end
 
 savefigname = savefigname_base;
@@ -34,20 +33,21 @@ manyPanels1_timeDistance0 = 0; dOverPTP = 200; unitDoPTP = ['km/(',vunit_wobracc
 XLAB = 'time [s]';
 titt_nlines = numel(theTitle); marg_top_bot = [0.12,0.02+(titt_nlines*0.05)];
 marg_left_right = [0.06, 0.02];
-COL_anal = [0 0 0]; COL_synth = COL_anal; COL_err = COL_anal;
-LW_anal = 1; LW_synth = 2; LW_err = 1.5;
-LS_anal = '-'; LS_synth = '-.'; LS_err = ':';
+COL_anal = [0 0 0]; COL_synth = [1,0,0]; COL_err = [0.5,0,0];
+LW_anal = 2; LW_synth = 3; LW_err = 2;
+LS_anal = '-'; LS_synth = '--'; LS_err = ':';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Actually plot.
 fh = figure('units','normalized','outerposition',[0 0 1 1]);
 if(manyPanels1_timeDistance0)
+  error(['[] NOT CHECKED IN A LONG TIME. Before you use it, check it.']);
   axxxx = tight_subplot(nstatToPlot, 1, [0, -1], marg_top_bot, marg_left_right); % not necessary, but prettier
   for j = 1:numel(stationsToPlot)
     axes(axxxx(nstatToPlot-j+1)); hold on;
     i = stationsToPlot(j);
     plot(t_forErr{i}, anal_forErr{i}, LS_anal, 'Color', COL_anal, 'LineWidth', LW_anal, 'displayname', 'analytical'); % Plot analytic value.
-    plot(t_forErr{i}, synth_forErr{i}, LS_synth, 'Color', COL_anal, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
+    plot(t_forErr{i}, synth_forErr{i}, LS_synth, 'Color', COL_synth, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
     ylim_b4_err = get(gca,'ylim'); ylim_b4_err=max(abs(ylim_b4_err))*1.1; pow10=10^(-floor(log10(max(ylim_b4_err)))); ylim_b4_err = ceil(pow10*ylim_b4_err)/pow10*[-1,1]; % save and round ylim
     plot(t_forErr{i},err_v{i},LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']); % Plot difference.
     ylim([ylim_b4_err]); % Redo ylim.
@@ -85,18 +85,19 @@ else
     yshift = distance_km(i);
     hold on;
     ha(i)=plot(t_forErr{i}, yshift + dOverPTP*anal_forErr{i}, LS_anal, 'Color', COL_anal, 'LineWidth', LW_anal, 'displayname', 'analytical'); % Plot analytic value.
-    hs(i)=plot(t_forErr{i}, yshift + dOverPTP*synth_forErr{i}, LS_synth, 'Color', COL_anal, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
+    hs(i)=plot(t_forErr{i}, yshift + dOverPTP*synth_forErr{i}, LS_synth, 'Color', COL_synth, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
     he(i)=plot(t_forErr{i}, yshift + dOverPTP*err_v{i}, LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']); % Plot difference.
   end
-  xticklabels('auto'); xlabel(XLAB);
   legend([ha(1),hs(1),he(1)],'location','northeast');
   
   % Adjust both plots.
   axes(axxxx(1));
-  ylabel(['$z\mathrm{[',unitDist,']} + ',num2str(dOverPTP),'\mathrm{[',unitDoPTP,']}\times v_z\mathrm{[',vunit_wobracc,']}$']);
+  ylabel(['$z\mathrm{[',unitDist,']} + ',num2str(dOverPTP),'\mathrm{[',unitDoPTP,']}\times v''_d\mathrm{[',vunit_wobracc,']}$']);
   yticks(distance_km); yticklabels('auto');
+  xticklabels('auto'); xlabel(XLAB);
   axes(axxxx(2));
   yticks(distance_km); yticklabels({});
+  xticklabels('auto'); xlabel(XLAB);
   
   linkaxes(axxxx,'x'); xlim([0, 235]);
   linkaxes(axxxx,'y'); ylim([-10, 75]);

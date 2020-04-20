@@ -37,6 +37,7 @@ else
     disp(['[',mfilename,'] Isobaric case.']);
     SOUNDSPEED = readExampleFiles_extractParam(parfile, 'sound_velocity', 'float');
     disp(['[',mfilename,'] Speed of sound loaded,         = ',num2str(SOUNDSPEED),'.']);
+    GAM = []; % not needed, but keep for completeness
     GRA = 0; % NEEDED FOR NSQ
     disp(['[',mfilename,'] Gravity set for isobaric case, = ',num2str(GRA),'.']);
   end
