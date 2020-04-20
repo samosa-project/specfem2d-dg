@@ -1094,6 +1094,14 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! (not acoustic potential     !
         ! neighbour).                 !
         ! --------------------------- !
+#if 0
+! DEBUG
+        if(abs(coord(1,ibool_before_perio(i,j,ispec))-100.)<=100. &
+           .and. abs(coord(2,ibool_before_perio(i,j,ispec))-400.)<=40.) then
+          write(*,*) 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                     'LNS_rho0', LNS_rho0(iglobM), 'LNS_v0', LNS_v0(:, iglobM), 'LNS_E0', LNS_E0(iglobM)
+        endif
+#endif   
         
         ! Set exact_interface_flux.
         exact_interface_flux = .false.
@@ -1113,9 +1121,12 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         out_dv_P(:) = out_rho0dv_P(:)/LNS_rho0(iglobM)
         !out_dv_P(1) = out_rho0dv_P(1)/LNS_rho0(iglobM)
         !out_dv_P(NDIM) = out_rho0dv_P(NDIM)/LNS_rho0(iglobM)
+        !out_dv_P(1) = buffer_LNS_dv_P(1, ipoin, num_interface)
+        !out_dv_P(2) = buffer_LNS_dv_P(2, ipoin, num_interface)
         
         ! Set out_dp_P.
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+        !out_dp_P       = buffer_LNS_dp_P(ipoin, num_interface)
         !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
         !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) )
         !write(*,*) LNS_rho0(iglobM), LNS_v0(:, iglobM), LNS_E0(iglobM), gammaext_DG(iglobM), LNS_p0(iglobM) ! debug

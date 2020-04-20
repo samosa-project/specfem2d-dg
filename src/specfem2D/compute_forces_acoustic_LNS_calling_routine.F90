@@ -214,8 +214,10 @@ subroutine compute_forces_acoustic_LNS_main()
     call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
     do i_aux=1,NDIM
       call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
+      !call assemble_MPI_vector_DG(LNS_dv(i_aux,:), buffer_LNS_dv_P(i_aux,:,:))
     enddo
     call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
+    !call assemble_MPI_vector_DG(LNS_dp, buffer_LNS_dp_P)
     
     ! Assemble viscous buffers.
     if(LNS_viscous) then ! Check if viscosity exists whatsoever.

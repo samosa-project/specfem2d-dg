@@ -157,8 +157,8 @@ module specfem_par_LNS
   ! Parallel computing.
   ! ---------------------------- !
   ! MPI: Transfers' buffers.
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_drho_P, buffer_LNS_dE_P
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_rho0dv_P
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_drho_P, buffer_LNS_dE_P!, buffer_LNS_dp_P
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_rho0dv_P!, buffer_LNS_dv_P
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_nabla_dT, buffer_LNS_sigma_dv
   ! ------------------------------------------------------------ !
   
