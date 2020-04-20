@@ -51,7 +51,7 @@
     ! MODIF DG
     windxext, windzext, pext_DG, gammaext_DG, etaext, muext, kappa_DG, USE_DISCONTINUOUS_METHOD,&
     Bxext, Bzext, N0ext, &
-    EXTERNAL_DG_ONLY_MODEL_FILENAME, &
+    EXTERNAL_DG_ONLY_MODEL_FILENAME, &!ispec_is_acoustic_DG,&
     !TEST
     ibool_before_perio
   use specfem_par_lns, only: BCKGRD_MDL_LNS_is_binary, BCKGRD_MDL_LNS_FILENAME
@@ -236,20 +236,20 @@
     call external_dg_check_and_get_nblines(EXTERNAL_DG_ONLY_MODEL_FILENAME, nlines_header, nblines_model)
     call define_external_model_DG_only(nlines_header, nblines_model)
     ! DEBUG PRINT MODEL
-    if(.false.) then ! DEBUG
+    if(.false. .and. myrank==1) then ! DEBUG
       open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
       do ispec = 1,nspec
         do j = 1,NGLLZ
           do i = 1,NGLLX
             write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                         pext_DG(i, j, ispec)
+                         pext_DG(i, j, ispec)!,merge(1.,0.,ispec_is_acoustic_DG(ispec))!
           enddo
         enddo
       enddo
       close(504)
       stop
       ! Matlab one-liner plot:
-      ! a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_model/OUTPUT_FILES/TESTMODEL"); x=a(:,1); z=a(:,2); d=a(:,3);plot(z,d);
+      !a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_load_external/OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
     endif
     
   else if (trim(MODEL)=='LNS_generalised') then

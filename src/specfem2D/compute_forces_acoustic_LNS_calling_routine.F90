@@ -546,7 +546,7 @@ subroutine initial_state_LNS()
   use specfem_par, only: MODEL, ibool_DG, nspec, &
                          !pext_DG, rhoext, windxext, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
-                         NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic!, &
+                         NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic, ispec_is_acoustic_DG!, &
                          !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
@@ -584,7 +584,7 @@ subroutine initial_state_LNS()
     LNS_eta    = ZEROcr
     LNS_kappa  = ZEROcr
     do ispec = 1, nspec
-      !if(ispec_is_acoustic_DG(ispec)) then
+      if(ispec_is_acoustic_DG(ispec)) then
         do j = 1, NGLLZ
           do i = 1, NGLLX
             iglob = ibool_DG(i, j, ispec)
@@ -595,7 +595,7 @@ subroutine initial_state_LNS()
                                                 .true., LNS_p0(iglob))
           enddo
         enddo
-      !endif
+      endif
     enddo
     
     ! Ugly patch to make it work.

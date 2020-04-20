@@ -1099,7 +1099,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         if(abs(coord(1,ibool_before_perio(i,j,ispec))-100.)<=100. &
            .and. abs(coord(2,ibool_before_perio(i,j,ispec))-400.)<=40.) then
           write(*,*) 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                     'LNS_rho0', LNS_rho0(iglobM), 'LNS_v0', LNS_v0(:, iglobM), 'LNS_E0', LNS_E0(iglobM)
+                     'LNS_rho0', LNS_rho0(iglobM), 'LNS_v0', LNS_v0(:, iglobM), 'LNS_E0', LNS_E0(iglobM), &
+                     'LNS_p0', LNS_p0(iglobM), 'gammaext_DG', gammaext_DG(iglobM)
         endif
 #endif   
         
