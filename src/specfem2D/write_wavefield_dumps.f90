@@ -369,19 +369,17 @@ subroutine DG_WholeDump()
   
   ! Now starts the real DG_WholeDump implementation.
   if(use_binary_for_wavefield_dumps) then
-    ! RHO
-    call DG_WholeDump_OneWaveField(1, wvflddmp_tag_rho, rho_DG)
-    
-    ! VEL
-    DG_VEL(1,:) = rhovx_DG/rho_DG
-    DG_VEL(2,:) = rhovz_DG/rho_DG
-    call DG_WholeDump_OneWaveField(2, wvflddmp_tag_vel, DG_VEL)
-    
-    ! PRE.
-    call DG_WholeDump_OneWaveField(1, wvflddmp_tag_pre, &
-           (   (gammaext_DG-1.)*E_DG                &
-             - 0.5*rho_DG*(   (rhovz_DG/rho_DG)**2   &
-                            + (rhovx_DG/rho_DG)**2 )))
+      ! RHO
+      call DG_WholeDump_OneWaveField(1, wvflddmp_tag_rho, rho_DG)
+      ! VEL
+      DG_VEL(1,:) = rhovx_DG/rho_DG
+      DG_VEL(2,:) = rhovz_DG/rho_DG
+      call DG_WholeDump_OneWaveField(2, wvflddmp_tag_vel, DG_VEL)
+      ! PRE.
+      call DG_WholeDump_OneWaveField(1, wvflddmp_tag_pre, &
+             (   (gammaext_DG-1.)*E_DG                &
+               - 0.5*rho_DG*(   (rhovz_DG/rho_DG)**2   &
+                              + (rhovx_DG/rho_DG)**2 )))
     
     if(myrank == 0) then
       write(IMAIN,*) 'Dumping ended.'
