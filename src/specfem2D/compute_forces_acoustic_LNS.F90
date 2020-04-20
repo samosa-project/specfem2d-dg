@@ -883,7 +883,7 @@ end subroutine compute_forces_acoustic_LNS
 !                  out_dv_P) ! Output other variables.
 subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
              inp_drho_M, inp_rho0dv_M, & ! Input constitutive variables, "M" side.
-             inp_drho_P, inp_rho0dv_P, inp_dE_P, & ! Input constitutive variables, "P" side.
+             inp_drho_P, inp_rho0dv_P, inp_dE_P, & ! Input constitutive variables, "P" side. They make no sense if neighbor(1)<=-1.
              inp_dp_M, &!inp_sigma_dv_M, & ! Input other variable, "M" side.
              !V_DG_iM, T_DG_iM, V_DG_iP, T_DG_iP, & ! Input derivatives. MIGHT NEED.
              n_out, & ! Normal vector (input).
@@ -894,23 +894,14 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
              swCompVisc, out_nabla_dT_P, out_sigma_dv_P, & ! Output other variables: viscous.
              swCompdT, out_dT_P) ! Output other variables.
   
-  use constants ! TODO: select variables to use.,only: CUSTOM_REAL,NGLLX,NGLLZ,gamma_euler
-  use specfem_par ! TODO: select variables to use.,only:  ibool_DG, &
-                         !ispec_is_acoustic_forcing, &
-                         !ACOUSTIC_FORCING, &
-                         ! ispec_is_acoustic_coupling_el, ispec_is_acoustic_coupling_ac, potential_dot_dot_acoustic, veloc_elastic,&
-                         !DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
-                         !buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhoMMS_dVZ_P, buffer_DG_E_P, NPROC, &
-                         !buffer_DG_Vxx_P, buffer_DG_Vzz_P, buffer_DG_Vxz_P, buffer_DG_Vzx_P, buffer_DG_Tz_P, buffer_DG_Tx_P, &
-                         !LNS_p0, gammaext_DG, muext, etaext, kappa_DG, ibool, c_V, &
-                         !buffer_DG_gamma_P, coord,  &
-                         !rho_init, rhovx_init, rhoMMS_dVZ_init, E_init, &
-                         !potential_dot_dot_acoustic, &
-                         !veloc_vector_acoustic_DG_coupling, MPI_transfer_iface,&
-                         !ibool_before_perio, ABC_STRETCH, ABC_STRETCH_LEFT,&
-                         !ABC_STRETCH_RIGHT, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_RIGHT_LBUF,&
-                         !mesh_xmin, mesh_xmax
-  use specfem_par_LNS ! TODO: select variables to use.
+  use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: NPROC, ibool, ibool_DG, acoustic_forcing, &
+                         veloc_elastic, sigma_elastic, &
+                         mpi_transfer_iface, &
+                         ispec_is_acoustic_coupling_el, ispec_is_acoustic_forcing
+  use specfem_par_LNS, only: NVALSIGMA, LNS_dummy_1d, &
+                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_c0, LNS_dv, nabla_dT, sigma_dv, &
+                             buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P, buffer_LNS_nabla_dT, buffer_LNS_sigma_dv
   
   implicit none
   
@@ -918,7 +909,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   integer, intent(in) :: i, j, ispec, iface1, iface
   integer, dimension(3), intent(in) :: neighbor
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
-  real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_drho_P, inp_dE_P ! Input constitutive variables.
+  real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_drho_P, inp_dE_P ! Input constitutive variables. They make no sense if neighbor(1)<=-1.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: inp_rho0dv_M, inp_rho0dv_P ! Input constitutive variables.
   real(kind=CUSTOM_REAL), intent(in) :: inp_dp_M ! Input other variables.
   !real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(in) :: inp_sigma_dv_M ! Input other variables.
