@@ -1,6 +1,7 @@
 % Function coded quickly, maybe to be redone cleaner some day.
 
 function [X, Y, V] = readDumps(OFD, IT, verbose)
+  addpath([regexprep(mfilename('fullpath'),mfilename,''),'readDumps_subfunctions']);
   if(not(exist('verbose', 'var')))
     verbose=0;
   end
