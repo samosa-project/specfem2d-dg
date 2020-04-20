@@ -7,25 +7,22 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                        in_dm, in_dp, in_nabla_dT, in_sigma_dv, & ! Precomputed quantities.
                                        outrhs_drho, outrhs_rho0dv, outrhs_dE, & ! Output (RHS for each constitutive variable).
                                        currentTime) ! Time.
-  ! TODO: select variables to use.
-  use constants!, only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM
-  use specfem_par!, only: nglob_DG,nspec, ispec_is_acoustic_DG,&
-                         !xix,xiz,gammax,gammaz,jacobian, &
-                         !hprimewgll_xx, &
-                         !hprimewgll_zz,wxgll,wzgll, &
-                         !ibool_DG, &
-                         !it,potential_dphi_dx_DG, potential_dphi_dz_DG, ibool, &
-                         !DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN, &
-                         !myrank, &
-                         !i_stage, p_DG_init, gammaext_DG, muext, etaext, kappa_DG,tau_epsilon, tau_sigma, &
-                         !!rhovx_init, rhoMMS_dVZ_init, E_init, &
-                         !rho_init, &
-                         !CONSTRAIN_HYDROSTATIC, TYPE_SOURCE_DG, &
-                         !link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
-                         !!mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,&
-                         !!coord, &
-                         !ibool_before_perio,stretching_buffer!,c_V
-  use specfem_par_LNS
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL
+  use specfem_par, only: myrank, &
+                         jacobian, xix, xiz, gammax, gammaz, wxgll, wzgll, hprimewgll_xx, hprimewgll_zz, &
+                         link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_dg_iface, &
+                         nspec, nglob_DG, ibool_DG, ibool_before_perio, &
+                         ispec_is_acoustic_dg, &
+                         it, i_stage, &
+                         gammaext_dg, &
+                         TYPE_SOURCE_DG, &
+                         ABC_STRETCH, stretching_ya, stretching_buffer
+  use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
+                             LNS_dummy_1d, &
+                             LNS_rho0, LNS_v0, LNS_p0, LNS_E0, LNS_dv, &
+                             nabla_v0, sigma_v_0, &
+                             LNS_kappa, LNS_mu, LNS_eta, LNS_g, &
+                             LNS_verbose, LNS_modprint
   
   implicit none
   
@@ -44,9 +41,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   
   ! MESSY
-  !real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhoMMS_dVZ_DG, E_DG
-  !real(kind=CUSTOM_REAL), dimension(2, nglob_DG) :: T_DG
-  !real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG) :: V_DG
   integer :: ispec, i,j, k,iglob,SPCDM, iglob_unique
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, NDIM) :: cntrb_drho, cntrb_dE
   real(kind=CUSTOM_REAL), dimension(NDIM, NGLLX, NGLLZ, NDIM) :: cntrb_rho0dv
@@ -70,14 +64,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   integer, dimension(3) :: neighbor
   
 !  ! Variables specifically for PML.
-! 
 !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  ! IMPORTANT INFORMATION:
 !  ! The following block of code is commented out to prevent confusion.
 !  ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
 !  ! Please do not remove those lines, even if they are commented out for now.
 !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
 !  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
 !  integer :: ispec_PML, iglobPML
 !  real(kind=CUSTOM_REAL) :: pml_a0,pml_a1
@@ -107,6 +99,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL), dimension(NDIM) :: X
   real(kind=CUSTOM_REAL) :: GAM, w
 #endif
+  
+  if(.not. USE_LNS) then
+    stop "THIS ROUTINE SHOULD NOT BE CALLED IF USE_LNS=.false."
+  endif
   
   ! Initialisation of the RHS.
   outrhs_drho    = ZEROcr
@@ -699,10 +695,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                   viscousComputation, nabla_dT_P, sigma_dv_P, & ! Output other variables: viscous.
                   .false., LNS_dummy_1d(1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
           
-          jump   = ZERO ! Safeguard.
+          jump   = ZEROcr ! Safeguard.
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
-          lambda = ZERO
+          lambda = ZEROcr
 #if 0
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob))) & ! v_-\cdot n
                        + LNS_c0(iglob) & ! Local sound speed, side "M".
@@ -743,7 +739,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! 1.1) Mass conservation (fully inviscid).
           !flux_n = DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P)
           if(exact_interface_flux) then
-            jump = ZERO
+            jump = ZEROcr
           else
             jump = cv_drho(iglob) - drho_P
           endif
@@ -757,7 +753,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                           + rho0dv_P(NDIM)        *LNS_v0(1,iglobP) ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
-            jump = ZERO
+            jump = ZEROcr
           else
             jump = cv_rho0dv(1,iglob) - rho0dv_P(1)
           endif
@@ -771,7 +767,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                           + rho0dv_P(NDIM)        *LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
-            jump = ZERO
+            jump = ZEROcr
           else
             jump = cv_rho0dv(NDIM,iglob) - rho0dv_P(NDIM)
           endif
@@ -785,7 +781,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                     + LNS_v0(:,iglobP)*(dE_P           + dp_P) ! "P" side, part.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
-            jump = ZERO
+            jump = ZEROcr
           else
             jump = cv_dE(iglob) - dE_P
           endif
