@@ -273,7 +273,7 @@ subroutine DG_WholeDump()
                          ibool,coord,it,USE_DISCONTINUOUS_METHOD, &
                          rho_DG, rhovx_DG, rhovz_DG, E_DG, gammaext_DG,ispec_is_acoustic_DG!, c_V,T_init, &
 !                         potential_dphi_dx_DG, USE_DISCONTINUOUS_METHOD!, potential_dphi_dz_DG ! Modification for DG.
-  
+  use specfem_par_lns, only: USE_LNS, LNS_drho, LNS_dv, LNS_dp
   use specfem_par_movie,only: this_is_the_first_time_we_dump,mask_ibool,imagetype_wavefield_dumps, &
     use_binary_for_wavefield_dumps
   
@@ -369,6 +369,14 @@ subroutine DG_WholeDump()
   
   ! Now starts the real DG_WholeDump implementation.
   if(use_binary_for_wavefield_dumps) then
+    if(USE_LNS) then
+      ! RHO
+      call DG_WholeDump_OneWaveField(1, wvflddmp_tag_rho, LNS_drho)
+      ! VEL
+      call DG_WholeDump_OneWaveField(2, wvflddmp_tag_vel, LNS_dv)
+      ! PRE.
+      call DG_WholeDump_OneWaveField(1, wvflddmp_tag_pre, LNS_dp)
+    else
       ! RHO
       call DG_WholeDump_OneWaveField(1, wvflddmp_tag_rho, rho_DG)
       ! VEL
@@ -380,6 +388,7 @@ subroutine DG_WholeDump()
              (   (gammaext_DG-1.)*E_DG                &
                - 0.5*rho_DG*(   (rhovz_DG/rho_DG)**2   &
                               + (rhovx_DG/rho_DG)**2 )))
+    endif
     
     if(myrank == 0) then
       write(IMAIN,*) 'Dumping ended.'
