@@ -9,9 +9,12 @@
 % yields:
 %   TODO.
 
-function [Ztime, Zamp] = truncToShortest(raw_t, raw_s)
+function [Ztime, Zamp] = truncToShortest(raw_t, raw_s, verbose)
   if(not(all(size(raw_t)==size(raw_s))))
     error('must have same sizes');
+  end
+  if(not(exist('verbose', 'var')))
+    verbose = 1;
   end
   Nsamples = size(raw_t, 2);
   difftimes = raw_t(:,2:end)-raw_t(:,1:end-1);
@@ -45,6 +48,8 @@ function [Ztime, Zamp] = truncToShortest(raw_t, raw_s)
   % Here, select is true only where difftimes is >0 for ALL lines.
   Ztime = raw_t(:, select);
   Zamp  = raw_s(:, select);
-  disp(['[',mfilename,'] Truncated to shortest reliable time vector. t is now [',num2str(min(min(Ztime))),', ',num2str(max(max(Ztime))),'] (was [',num2str(min(min(raw_t))),', ',num2str(max(max(raw_t))),']).']);
+  if(verbose)
+    disp(['[',mfilename,'] Truncated to shortest reliable time vector. t is now [',num2str(min(min(Ztime))),', ',num2str(max(max(Ztime))),'] (was [',num2str(min(min(raw_t))),', ',num2str(max(max(raw_t))),']).']);
+  end
 end
 

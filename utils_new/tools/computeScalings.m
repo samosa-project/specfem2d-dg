@@ -1,4 +1,7 @@
-function factor = computeScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, rescale_fact)
+function factor = computeScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, rescale_fact, askUserToConfirm)
+  if(not(exist('askUserToConfirm', 'var')))
+    askUserToConfirm = 1;
+  end
   % Renormalisation (global, and geometric).
   factor = 1; % Reset to default value for each station.
   if (geomAtt ~= 0)
@@ -20,7 +23,7 @@ function factor = computeScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, 
     factor = factor / geom_att_fact;
   end
   renorm_statbystat = - 1;
-  if (rescale_fact ~= 1)
+  if(rescale_fact~=1 && askUserToConfirm==1)
     % Rescaling was asked. Check again with user.
     renorm_statbystat = - 1;
     disp(['[',mfilename,'] Specified rescale factor is ', num2str(rescale_fact), '.']);
@@ -31,6 +34,9 @@ function factor = computeScalings(stat_number, geomAtt, x_stat, z_stat, d_stat, 
         renorm_statbystat = 1;
       end
     end
+  else
+    % Confirmation overriden, do apply factor.
+    renorm_statbystat = 1;
   end
   if (renorm_statbystat == 1)
     % If rescaling is actually wanted by user, do it.

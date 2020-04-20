@@ -23,9 +23,12 @@ function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, c
 %   stattag = stations_data.textdata(istat_glob, 1);
   stattag = sprintf('S%04d', stationGlobalNumber);
   OFd = char(OFd); channel = char(channel); extension = char(extension); % safety.
+  if(not(OFd(end)==filesep))
+    OFd = [OFd, filesep];
+  end
   file = [OFd, 'AA.', stattag, '.', channel, '.', extension];
-%   data = load(file{1});
-  data = load(file);
+%   data = load(file);
+  fid = fopen(file); data = textscan(fid, '%f %f', 'CollectOutput', 1); data = data{1}; fclose(fid); % New version, about 3 times faster.
   nt = max(size(data));
   meanactualdt = mean(diff(data(:,1)));
   if (subsample == 1 && wanted_dt>meanactualdt)
