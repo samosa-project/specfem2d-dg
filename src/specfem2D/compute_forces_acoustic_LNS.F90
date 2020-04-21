@@ -7,7 +7,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                                        in_dm, in_dp, in_nabla_dT, in_sigma_dv, & ! Precomputed quantities.
                                        outrhs_drho, outrhs_rho0dv, outrhs_dE, & ! Output (RHS for each constitutive variable).
                                        currentTime) ! Time.
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL, PI
   use specfem_par, only: myrank, &
                          jacobian, xix, xiz, gammax, gammaz, wxgll, wzgll, hprimewgll_xx, hprimewgll_zz, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_dg_iface, &
@@ -16,6 +16,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                          it, i_stage, &
                          gammaext_dg, &
                          TYPE_SOURCE_DG, &
+                         coord, ibool_before_perio, c_V, sound_velocity, & ! For MMS validation.
                          ABC_STRETCH, stretching_ya, stretching_buffer
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
                              LNS_dummy_1d, &
@@ -92,7 +93,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
 ! ACTIVATE ONLY ONE OF THE BELOW.
 #define MMS_IV 0
 #define MMS_KA 0
-#define MMS_MU 1
+#define MMS_MU 0
 
 #if USE_MMS
   ! Variables specifically for manufactured solutions.
@@ -124,6 +125,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   end select
   
   ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if(.false.) write(*,*) coord, ibool_before_perio, c_V, sound_velocity ! Only here because compiler is going to râler because of imports necessary to MMS validation.
 #if USE_MMS
   do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
   !do ispec = 1, nspec; do j = 2,4; do i = 2,4 ! V2: get on center GLL point only
@@ -160,9 +162,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
 
 #if MMS_IV
   if(LNS_viscous) stop 'CANNOT TEST MMS INVISCID IF VISCOSITY'
+  if(.false.) write(*,*) c_v, sound_velocity ! Only here because compiler is going to râler because of imports necessary to MMS MU validation.
 #endif
 #if MMS_KA
   if(.not. LNS_viscous) stop 'CANNOT TEST MMS KAPPA IF NO VISCOSITY'
+  if(.false.) write(*,*) sound_velocity ! Only here because compiler is going to râler because of imports necessary to MMS MU validation.
 #endif
 #if MMS_MU
   if(.not. LNS_viscous) stop 'CANNOT TEST MMS MU IF NO VISCOSITY'
@@ -897,10 +901,11 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
              swCompVisc, out_nabla_dT_P, out_sigma_dv_P, & ! Output other variables: viscous.
              swCompdT, out_dT_P) ! Output other variables.
   
-  use constants, only: CUSTOM_REAL, NDIM
+  use constants, only: CUSTOM_REAL, NDIM, PI
   use specfem_par, only: NPROC, ibool, ibool_DG, acoustic_forcing, &
                          veloc_elastic, sigma_elastic, &
                          mpi_transfer_iface, &
+                         coord, ibool_before_perio, & ! For MMS validation.
                          ispec_is_acoustic_coupling_el, ispec_is_acoustic_forcing
   use specfem_par_LNS, only: NVALSIGMA, LNS_dummy_1d, &
                              LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_c0, LNS_dv, nabla_dT, sigma_dv, &
@@ -933,6 +938,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   real(kind=CUSTOM_REAL) :: normal_v, tangential_v
   integer :: iglobM, i_el, j_el, ispec_el, iglobP, ipoin, num_interface!, iglob, i_ac, j_ac, ispec_ac
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
+  
+  if(.false.) write(*,*) coord, ibool_before_perio ! Only here because compiler is going to râler because of imports necessary to MMS validation.
   
   ! Initialise output variables to default values.
   exact_interface_flux = .false.
