@@ -75,6 +75,7 @@ function [X, Y, V] = readDumps(OFD, IT, verbose)
   else
     % If ASCII, read all.
     toRead = wvflddmp_txtfiles;
+    bin_nglob = [];
   end
 
   % Prepare.
@@ -115,7 +116,9 @@ function [X, Y, V] = readDumps(OFD, IT, verbose)
   % check
   for t=1:numel(tags)
     if(size(V.(tags{t}),1)==0)
-      disp(['[',mfilename,', INFO] No value has been loaded in V.',tags{t},'. Maybe ',tags{t},' dumps for this iteration (',num2str(IT),') do not exist.']);
+      if(verbose)
+        disp(['[',mfilename,', INFO] No value has been loaded in V.',tags{t},'. Maybe ',tags{t},' dumps for this iteration (',num2str(IT),') do not exist.']);
+      end
     else
       if(not(size(XY,1)==size(V.(tags{t}),1)))
         error(['DID NOT LOAD AS MANY POINTS (',num2str(size(XY,1)),') AS VALUES (',num2str(size(V,1)),')']);

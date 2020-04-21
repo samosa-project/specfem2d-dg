@@ -255,7 +255,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   end
   
   if(plot_nosave0_save1)
-    customSaveFig(fh,atmospheric_model_file);
+    customSaveFig(fh, atmospheric_model_file, {'fig', 'eps', 'png'});
     disp(['[] Use the following to save in other formats.']);
     disp(['[] TEX:   customSaveFig(gcf,''',atmospheric_model_file,''',{''tex''});']);
   end
