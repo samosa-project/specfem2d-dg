@@ -10,6 +10,10 @@
 %   TODO.
 
 function [x_stat, z_stat, y_stat, stat_file] = loadStations(OFdir)
+  OFdir=char(OFdir);
+  if(not(OFdir(end)==filesep))
+    OFdir = [OFdir, filesep];
+  end
   try
     stat_file = importdata([OFdir, 'STATIONS']);
   catch

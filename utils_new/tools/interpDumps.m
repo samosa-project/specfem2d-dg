@@ -1,9 +1,18 @@
-function [Xi, Yi, Vi] = interpDumps(X, Y, V, nx, ny)
+function [Xi, Yi, Vi] = interpDumps(X, Y, V, nx, ny, forceDGMesh)
   tags = {'rho', 'vel', 'pre'};
   
-  x_exact = linspace(min(X), max(X), nx);
-  y_exact = linspace(min(Y), max(Y), ny);
-  [Xi, Yi] = meshgrid(x_exact,y_exact);
+  if(not(exist('forceDGMesh','var')))
+    forceDGMesh = 0;
+  end
+  
+  if(forceDGMesh)
+    x_exact = unique(X);
+    y_exact = unique(Y);
+  else
+    x_exact = linspace(min(X), max(X), nx);
+    y_exact = linspace(min(Y), max(Y), ny);
+  end
+  [Xi, Yi] = meshgrid(x_exact, y_exact);
 
   % Interpolate dump, on each non-empty tag.
   for t=1:numel(tags)

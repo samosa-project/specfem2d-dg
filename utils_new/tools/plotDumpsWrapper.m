@@ -26,12 +26,12 @@ function [fh,X,Y,V,Xi, Yi, Vi] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
       end
       [prefixes{t}, factores{t}] = prefix_factor_values({curVi});
       pcolor(Xi, Yi, curVi*factores{t});
+      title([tags{t}, ' [', prefixes{t},units{t},']']);
+      h{t} = colorbar;
+      caxis([-1,1]*max(abs(curVi(:)*factores{t})));
     end
-    title([tags{t}, ' [', prefixes{t},units{t},']']);
     shading interp;
     colormaps_fromPython('seismic', 1);
-    caxis([-1,1]*max(abs(curVi(:)*factores{t})));
-    h{t} = colorbar;
 %     ytl = split(sprintf('%.4f|',h{t}.Ticks),'|'); ytl(end)=[]; set(h{t},'ticklabels',ytl);
     xlabel(['$x$ [m]']);
 %     if(t==1)
