@@ -422,3 +422,12 @@ output_wavefield_dumps          = .true.         # output wave field to a text f
 imagetype_wavefield_dumps       = 4              # display 1=displ vector 2=veloc vector 3=accel vector 4=pressure
 use_binary_for_wavefield_dumps  = .false.        # use ASCII or single-precision binary format for the wave field dumps
 
+#-----------------------------#
+# Manufactured Solutions      #
+# Validation Switches         #
+#-----------------------------#
+VALIDATION_MMS = .true.
+VALIDATION_MMS_IV = .false.
+VALIDATION_MMS_KA = .false.
+VALIDATION_MMS_MU = .true.
+
