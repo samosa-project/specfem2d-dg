@@ -131,17 +131,17 @@ function [t, x, y, TFM0, KX, KZ] = FK_buildAnalytical(t_0, dt_anal, ...
   indNanKZ = find(isnan(KZ));
   indInfKZ = find(isinf(KZ));
   indImagKZ = find(imag(KZ)<0);
-  disp(['[',mfilename,'] Number of NaNs in KZ: ',num2str(numel(indNanKZ)),'.']);
+  disp(['[',mfilename,'] Number of NaNs in KZ: ',num2str(numel(indNanKZ)),' (',sprintf('.0f',(numel(indNanKZ)/numel(KZ))*100),'%).']);
   if(numel(indNanKZ))
     disp(['[',mfilename,']   Setting those NaNs to zeros.']);
     KZ(indNanKZ) = 0.0;
   end
-  disp(['[',mfilename,'] Number of Infs in KZ: ',num2str(numel(indInfKZ)),'.']);
+  disp(['[',mfilename,'] Number of Infs in KZ: ',num2str(numel(indInfKZ)),' (',sprintf('.0f',(numel(indInfKZ)/numel(KZ))*100),'%).']);
   if(numel(indInfKZ))
     disp(['[',mfilename,']   Setting those Infs to zeros.']);
     KZ(indInfKZ) = 0.0;
   end
-  disp(['[',mfilename,'] Number of KZ such that Im(KZ)<0: ',num2str(numel(indImagKZ)),'.']);
+  disp(['[',mfilename,'] Number of KZ such that Im(KZ)<0: ',num2str(numel(indImagKZ)),' (',sprintf('.0f',(numel(indImagKZ)/numel(KZ))*100),'%).']);
   if(numel(indImagKZ))
     disp(['[',mfilename,']   Imaginary part of KZ should be positive in order to attenuate the signal. Setting those to their conjugate (only flips the sign of the imaginary part).']);
     KZ(indImagKZ) = conj(KZ(indImagKZ));
@@ -152,8 +152,8 @@ function [t, x, y, TFM0, KX, KZ] = FK_buildAnalytical(t_0, dt_anal, ...
   %     KZnew=real(KZ).*sign((Omega-wind_x*KX)).*sign(KX)+1i*imag(KZ);
   % !!! Why KZ should have a sign opposite to Omega for GW NOT UNDERSTOOD !!!
   % => because vg perpendicular to Vphi ?
-  KZnew = 0.0 - real(KZ).*sign(Omega_intrinsic) + 1i*imag(KZ);
-  KZ = KZnew;
+%   KZnew = 0.0 - real(KZ).*sign(Omega_intrinsic) + 1i*imag(KZ); KZ = KZnew;
+  KZnew = 0.0 - real(KZ).*sign(Omega_intrinsic); KZ = KZnew;
 
   %%%%%%%%%%%%%%%%%%%%%%%
   % CORRECTING FACTORS. %

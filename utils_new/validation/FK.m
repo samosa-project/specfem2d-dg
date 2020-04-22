@@ -198,9 +198,9 @@ for locStatNumber = 1:nstat
   else
     if(USE_ISOTHERMAL_MODEL)
       % isothermal
-      filt = exp(1i*(KX*x_station + KZ*z_station));
-%           filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H);
-%           filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/(2*H));
+%       filt = exp(1i*(KX*x_station + KZ*z_station));
+%       filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H);
+      filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/(2*H));
 %           filt = exp(1i*(KX*x_station + KZ*z_station) - 2*z_station/H);
 %           filt = exp(1i*(KX*x_station + KZ*z_station) - z_station/(2*H));
 %           filt = exp(1i*(KX*x_station + KZ*z_station) + z_station/H + 2*z_station/(SOUNDSPEED^2));
