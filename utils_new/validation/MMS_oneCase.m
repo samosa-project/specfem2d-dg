@@ -1,11 +1,9 @@
-function MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, verbose, savefigpath)
+function [qtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR] = MMS_oneCase(prefix, testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, verbose, savefigpath)
 
   % N for interpolation grid.
   Nexact = 2000; % Choose Nexact >> the N's we want to test. 10000 chugs HARD, 1000 runs ok. Up to N=100 points on the simulation's mesh, Nexact=1000 and Nexact=5000 yield the exact same L2 error.
-  errorPrefix_base = ['$\varepsilon_{'];
   
   % Field plots?
-  plotFields_do = 1; % do or do not plot fields themselves
   plotFields_saveFigName_prefix = ['comparedDump__'];
   plotFields_extsToSave={'jpg'};
   plotFields_xlab = '$x/L$';
@@ -29,6 +27,7 @@ function MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do,
   GS_ID_DT = 2;
   GS_ID_IT = 3;
   GS_ID_EPS = 4;
+  GS_ID_RELERR = 5;
   for ofdi = 1:N_OFD
     OFD = OFDs{ofdi};
     IDz = iterationsToPlot_forEachOFD{ofdi};
@@ -91,8 +90,13 @@ function MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do,
       [Xe, Ye, zexp] = interpDumps(X, Y, V, Nexact, Nexact);
       x_exact = unique(Xe); y_exact = unique(Ye);
 
-      % Build analytic solution (cf. LNS_manufactured_solutions.mw).
+      % Build analytic solution (cf. LNS_manufactured_solutions.mw) over grid.
       [drho_th, dvx_th, dvz_th, dE_th, dp_th] = MMS_analytic(testCase, Xe, Ye, RHO0, V0_x, E0, P0, GAM);
+      
+      % Grab synthetic value.
+      [Xquery, Yquery, syntheticValue] = MMS_grabSyntheticValue(OFD);
+      % Build analytic solution at query point.
+      [~, ~, ~, ~, dp_th_query] = MMS_analytic(testCase, Xquery, Yquery, RHO0, V0_x, E0, P0, GAM);
 
       switch(imagetype_wavefield_dumps)
         case 4
@@ -114,12 +118,13 @@ function MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do,
       end
       caxxxxiiss_exp = [min(min(zexp)), max(max(zexp))];
       caxxxxiiss_th = max(max(abs(zexp)))*[-1,1];
-      errorPrefix = [errorPrefix_base, qtity];
       % Compute error.
       zerr = zexp-zth;
-      errName = [errorPrefix,'}\left(',num2str(NX),'\right)'];
       caxxxxiiss_err = [min(min(zerr)), max(max(zerr))];
       L2NormOfError = (trapz(x_exact,trapz(y_exact,zerr.^2)))^0.5;
+      
+      relErrSynth = abs((syntheticValue-dp_th_query)/dp_th_query);
+      
       if(verbose)
         disp(['[',mfilename,'] Integral of zth = ',num2str(trapz(x_exact,trapz(y_exact,zth)))]);
         disp(['[',mfilename,'] L_{inf} norm of error = ',num2str(max(max(zerr)))]);
@@ -127,6 +132,7 @@ function MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do,
 
       globalSave(ofdi,IT_id,GS_ID_IT) = IT; % save iteration in last dimension
       globalSave(ofdi,IT_id,GS_ID_EPS) = L2NormOfError; % save error in last dimension
+      globalSave(ofdi,IT_id,GS_ID_RELERR) = relErrSynth;
 
       % Plot error on field.
       if(plotFields_do)
@@ -140,67 +146,5 @@ function MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do,
 
   squeeze(globalSave)
 
-  %%%%%%%%%%%%%%%%
-  % Error plots.
-  %%%%%%%%%%%%%%%%
-
-  % Error plots.
-  plotProgrWRTTime = 0; % plot progression wrt time?
-  figErr_saveFigName_base = ['MES_Error__'];
-  figErr_extsToSave = {'jpg'};
-  plotErr_title = '$L^2$ Error as Function of Number of Elements $N$';
-  plotErr_xlab = 'number of elements on one side $N$';
-  plotErr_figPos = [0,1e4,1600,600];
-
-  if(size(globalSave,1)>1)
-    % If more than one OFD.
-    plotErr_ylab = ['$L^2$ error ', errorPrefix,'}(N)$'];
-    plotErr_xlim = [min(min(globalSave(:,:,GS_ID_NX))),max(max(globalSave(:,:,GS_ID_NX)))];
-
-    if(plotProgrWRTTime)
-      % Plot progression w.r.t. time.
-      ids_IT_to_plot = 1:size(globalSave,2);
-      colours = winter(size(globalSave,2));
-      fig_error_progress = figure('units','pixels','position',plotErr_figPos);
-      tight_subplot(1, 1, -1, [0.2, 0.11], [0.1, 0.04]);
-      for id_IT_to_plot = ids_IT_to_plot
-  %       IT_N=00250dx = globalSave(1,id_IT_to_plot,2);
-        DT_IT = squeeze(globalSave(:,id_IT_to_plot,[GS_ID_DT,GS_ID_IT]));
-        if(not(numel(unique(prod(DT_IT,2))==1)))
-          error(['[, ERROR] t is inconsistent between saved errors (',num2str(prod(DT_IT,2)),')']);
-        end
-        t = unique(prod(DT_IT,2));
-        N_EPS = squeeze(globalSave(:,id_IT_to_plot,[GS_ID_NX,GS_ID_EPS]));
-        N = N_EPS(:, 1);
-        EPS = N_EPS(:, 2);
-        semilogy(N, EPS,'displayname',['@$t=',num2str(t),'$~s'],'color',colours(id_IT_to_plot,:));
-        hold on;
-      end
-      legend();
-      xlabel(plotErr_xlab); ylabel(plotErr_ylab); title([plotErr_title,' and Simulation Time $t$']);
-      xlim(plotErr_xlim);
-      ylim([10^floor(log10(min(min(globalSave(:,:,GS_ID_EPS))))),10^ceil(log10(max(max(globalSave(:,:,GS_ID_EPS)))))]);
-      prettyAxes(fig_error_progress);
-      figErr_saveFigFullPath = [savefigpath, figErr_saveFigName_base, 'progress__', datestr(now,'YYmmDD_HHMMss')];
-      customSaveFig(fig_error_progress, figErr_saveFigFullPath, figErr_extsToSave);
-    end
-
-    % Plot last time as standalone.
-    id_IT_to_plot = size(globalSave,2);
-    N_EPS = squeeze(globalSave(:,id_IT_to_plot,[GS_ID_NX,GS_ID_EPS]));
-    N = N_EPS(:, 1);
-    EPS = N_EPS(:, 2);
-    [~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, colourPlot, markerPlot, markerSize] = MMS_constants(testCase); % Get plot parameters as function of test case.
-    fig_error = figure('units','pixels','position',plotErr_figPos);
-    tight_subplot(1, 1, -1, [0.17,0.11], [0.1, 0.02]);
-    loglog(N, EPS,'displayname',testCase,'marker',markerPlot,'markersize',markerSize,'color',colourPlot,'markerfacecolor',colourPlot);
-    legend('location','northeast');
-    xlabel(plotErr_xlab); ylabel(plotErr_ylab); title(plotErr_title);
-    xlim(plotErr_xlim);
-  %   tickLabels_general_reskin_y(fig_error);
-    prettyAxes(fig_error);
-    figErr_saveFigFullPath = [savefigpath, figErr_saveFigName_base, datestr(now,'YYmmDD_HHMMss')];
-    customSaveFig(fig_error, figErr_saveFigFullPath, figErr_extsToSave);
-  end
   %%%%%%%%%%%%%%%%
 end

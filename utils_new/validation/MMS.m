@@ -36,7 +36,7 @@ savefigpath = [SPCFM_EX_DIR,prefix,'_info/'];
 
 % IDs of dumps to plot packed, for paper.
 commonID2 = 4000;
-generateCase = 3;
+generateCase = 1;
 switch(generateCase)
   case 1
     OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_iv/OUTPUT_FILES'], ...
@@ -65,4 +65,12 @@ switch(generateCase)
 end
 plotFields_do = 0; % deactivate plotting of fields
 
-MMS_oneCase(testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, verbose, savefigpath);
+[errQtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR] = MMS_oneCase(prefix, testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, verbose, savefigpath);
+
+%%%%%%%%%%%%%%%%
+% Error plots.
+%%%%%%%%%%%%%%%%
+
+% Error plots.
+plotProgrWRTTime = 0; % plot progression wrt time?
+MMS_masterFigure;
