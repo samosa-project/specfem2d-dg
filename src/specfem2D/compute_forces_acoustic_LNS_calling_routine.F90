@@ -551,6 +551,7 @@ subroutine initial_state_LNS()
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
                              LNS_eta, LNS_kappa, LNS_g,LNS_c0, LNS_dummy_1d, LNS_dummy_2d, &
+                             VALIDATION_MMS, &
                              LNS_viscous, sigma_v_0, nabla_v0, LNS_switch_gradient
 
   implicit none
@@ -615,8 +616,7 @@ subroutine initial_state_LNS()
     call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
     !call compute_T(LNS_rho0, LNS_p0, LNS_T0)
     !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
-    
-  endif  
+  endif
   
   ! Deallocate old DG variables in all cases.
   ! Not really optimal, but less invasive.
@@ -687,6 +687,9 @@ subroutine initial_state_LNS()
     ! Matlab one-liner plot:
     !a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_load_external/OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
   endif
+    
+  ! Eventually initialise MMS validation coefficients.
+  IF(VALIDATION_MMS) call initialise_VALIDATION_MMS()
 end subroutine initial_state_LNS
 
 #if 0
@@ -2155,6 +2158,214 @@ subroutine LNS_warn_nonsense()
 end subroutine LNS_warn_nonsense
 
 
+subroutine initialise_VALIDATION_MMS()
+  use specfem_par_LNS, only: USE_LNS, LNS_viscous, &
+                             VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU, &
+                             MMS_dRHO_cst, MMS_dVX_cst, MMS_dVZ_cst, MMS_dE_cst, &
+                             MMS_dRHO_x, MMS_dRHO_z, &
+                             MMS_dVX_x, MMS_dVX_z, MMS_dVZ_x, MMS_dVZ_z, &
+                             MMS_dE_x, MMS_dE_z
+  if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
+  if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
+  if(VALIDATION_MMS_IV) then
+    if(LNS_viscous) stop 'CANNOT TEST MMS INVISCID IF VISCOSITY'
+  endif
+  if(VALIDATION_MMS_KA) then
+    if(.not. LNS_viscous) stop 'CANNOT TEST MMS KAPPA IF NO VISCOSITY'
+  endif
+  if(VALIDATION_MMS_MU) then
+    if(.not. LNS_viscous) stop 'CANNOT TEST MMS MU IF NO VISCOSITY'
+  endif
+  if(VALIDATION_MMS_IV) then
+    MMS_dRHO_cst = 0.001
+    MMS_dVX_cst  = 0.
+    MMS_dE_cst   = 0.05
+  endif
+  if(VALIDATION_MMS_KA) then
+    MMS_dRHO_cst = 0.
+    MMS_dVX_cst  = 0.
+    MMS_dE_cst   = 0.05
+  endif
+  if(VALIDATION_MMS_MU) then
+    MMS_dRHO_cst = 0.
+    MMS_dVX_cst  = 0.001
+    MMS_dE_cst   = 0.
+  endif
+  MMS_dVZ_cst = 0.
+  MMS_dRHO_x  = 1.
+  MMS_dRHO_z  = 2.
+  MMS_dVX_x   = 2.
+  MMS_dVX_z   = 0.
+  MMS_dVZ_x   = 0.
+  MMS_dVZ_z   = 0.
+  MMS_dE_x    = 3.
+  MMS_dE_z    = 4.
+end subroutine initialise_VALIDATION_MMS
+
+subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL, PI
+  use specfem_par, only: jacobian, wxgll, wzgll, &
+                         nspec, nglob_DG, ibool_DG, ibool_before_perio, &
+                         gammaext_dg, &
+                         coord, ibool_before_perio, c_V, sound_velocity
+  use specfem_par_LNS, only: USE_LNS, NVALSIGMA, &
+                             LNS_rho0, LNS_v0, &
+                             LNS_kappa, LNS_mu, &
+                             VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU, &
+                             MMS_dRHO_cst, MMS_dVX_cst, MMS_dE_cst, &!MMS_dVZ_cst, &
+                             MMS_dRHO_x, MMS_dRHO_z, &
+                             MMS_dVX_x, &!MMS_dVX_z, &
+                             !MMS_dVZ_x, MMS_dVZ_z, &
+                             MMS_dE_x, MMS_dE_z, &
+                             LNS_verbose, LNS_modprint
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE
+  real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: outrhs_rho0dv
+  ! Local.
+  integer :: ispec, i, j, iglob
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: X
+  real(kind=CUSTOM_REAL) :: GAM, w
+  if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
+  if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
+  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+    iglob = ibool_DG(i, j, ispec)
+    X = coord(:, ibool_before_perio(i, j, ispec))
+    GAM = gammaext_DG(iglob)
+    w = LNS_v0(1, iglob)
+    ! mass conservation.
+    if(VALIDATION_MMS_IV) then
+        outrhs_drho(iglob) = MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w
+    endif
+    if(VALIDATION_MMS_KA) then
+        outrhs_drho(iglob) = MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w
+    endif
+    if(VALIDATION_MMS_MU) then
+        outrhs_drho(iglob) = LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))
+    endif
+    outrhs_drho(iglob) = outrhs_drho(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+    ! x-momentum.
+    if(VALIDATION_MMS_IV) then
+      outrhs_rho0dv(1, iglob) = (GAM-1.)*PI &
+                                     *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
+    endif
+    if(VALIDATION_MMS_KA) then
+      outrhs_rho0dv(1, iglob) = (GAM-1.)*PI &
+                                     *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
+    endif
+    if(VALIDATION_MMS_MU) then
+      outrhs_rho0dv(1, iglob) = ( &
+                                     LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1)) &
+                                     *(w-(GAM-1.)*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1)))) &
+                                   + &
+                                     PI**2*MMS_dVX_cst*MMS_dVX_x**2*(8./3.)*LNS_mu(iglob)*sin(MMS_dVX_x*PI*X(1)) &
+                                   )
+    endif
+    outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+    ! z-momentum.
+    if(VALIDATION_MMS_IV) then
+      outrhs_rho0dv(2, iglob) = (GAM-1.)*PI &
+                                     *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
+                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
+    endif
+    if(VALIDATION_MMS_KA) then
+      outrhs_rho0dv(2, iglob) = (GAM-1.)*PI &
+                                     *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
+                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
+    endif
+    if(VALIDATION_MMS_MU) then
+      outrhs_rho0dv(2, iglob) = 0.
+    endif
+    outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+    ! Energy.
+    if(VALIDATION_MMS_IV) then
+      outrhs_dE(iglob) = w*PI &
+                              *(  GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                - 0.5*(GAM-1.)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2)
+    endif
+    if(VALIDATION_MMS_KA) then
+      outrhs_dE(iglob) = (   w*PI*GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                              + ((MMS_dE_cst*LNS_kappa(iglob)*PI**2)/(LNS_rho0(iglob)*c_V)) &
+                                *(sin(MMS_dE_x*PI*X(1))*MMS_dE_x**2 + sin(MMS_dE_z*PI*X(2))*MMS_dE_z**2) )
+    endif
+    if(VALIDATION_MMS_MU) then
+      outrhs_dE(iglob) = ( &
+                              (LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))/(GAM-1.)) &
+                              *(   0.5*(GAM-1.)*w**2 &
+                                 + sound_velocity**2 &
+                                 - (GAM-1.)**2*w*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1))) &
+                               ) &
+                            + &
+                              PI**2*MMS_dVX_cst*MMS_dVX_x**2 &
+                              *(   (8./3.)*LNS_mu(iglob)*w*sin(MMS_dVX_x*PI*X(1)) &
+                                 + (LNS_kappa(iglob)/c_V) &
+                                   *( &
+                                        MMS_dVX_cst*sin(2.*MMS_dVX_x*PI*X(1)) &
+                                      + w*sin(MMS_dVX_x*PI*X(1)) &
+                                    ) &
+                              ) &
+                            )
+    endif
+    outrhs_dE(iglob) = outrhs_dE(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+  enddo; enddo; enddo
+end subroutine VALIDATION_MMS_source_terms
+
+subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
+                                         exact_interface_flux, out_drho_P, out_dv_P, out_dE_P, &
+                                         out_dp_P, out_rho0dv_P, &
+                                         swCompVisc, out_nabla_dT_P, out_sigma_dv_P, &
+                                         swCompdT, out_dT_P)
+  use constants, only: CUSTOM_REAL, NDIM, PI
+  use specfem_par, only: coord ! For MMS validation.
+  use specfem_par_LNS, only: USE_LNS, NVALSIGMA, &
+                             LNS_rho0, LNS_v0, LNS_E0, nabla_dT, sigma_dv, &
+                             VALIDATION_MMS, &
+                             MMS_dRHO_cst, MMS_dVX_cst, MMS_dVZ_cst, MMS_dE_cst, &
+                             MMS_dRHO_x, MMS_dRHO_z, &
+                             MMS_dVX_x, MMS_dVX_z, MMS_dVZ_x, MMS_dVZ_z, &
+                             MMS_dE_x, MMS_dE_z
+  implicit none
+  ! Input/Output.
+  integer, intent(in) :: iglob, iglobM
+  logical, intent(in) :: swCompVisc, swCompdT!, swCompv ! Do not unnecessarily compute some quantities.
+  logical, intent(out) :: exact_interface_flux ! Output switch.
+  real(kind=CUSTOM_REAL), intent(out) :: out_drho_P, out_dE_P ! Output constitutive variables.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_rho0dv_P ! Output constitutive variable.
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: out_dv_P, out_nabla_dT_P ! Output other variables.
+  real(kind=CUSTOM_REAL), intent(out) :: out_dp_P ! Output other variables.
+  real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(out) :: out_sigma_dv_P ! Output other variables.
+  real(kind=CUSTOM_REAL), intent(out) :: out_dT_P ! In compute_gradient_TFSF (desintegration method), we need temperature on the other side of the boundary in order to compute the flux.
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
+  if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
+  exact_interface_flux = .false. ! Do not force jump to zero.     
+  out_drho_P     = MMS_dRHO_cst*(  sin(MMS_dRHO_x*PI*coord(1, iglob)) &
+                                 + sin(MMS_dRHO_z*PI*coord(2, iglob)))
+  out_dv_P(1)    = MMS_dVX_cst *(  sin(MMS_dVX_x*PI*coord(1, iglob)) &
+                                 + sin(MMS_dVX_z*PI*coord(2, iglob)))
+  out_dv_P(NDIM) = MMS_dVZ_cst *(  sin(MMS_dVZ_x*PI*coord(1, iglob)) &
+                                 + sin(MMS_dVZ_z*PI*coord(2, iglob)))
+  out_dE_P       = MMS_dE_cst  *(  sin(MMS_dE_x*PI*coord(1, iglob)) &
+                                 + sin(MMS_dE_z*PI*coord(2, iglob)))
+  call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+  out_rho0dv_P = LNS_rho0(iglobM)*out_dv_P
+  if(swCompVisc) then
+    out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
+    out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
+  else
+   out_nabla_dT_P = ZEROcr
+   out_sigma_dv_P = ZEROcr
+  endif
+  if(swCompdT) then
+    call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:, iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
+    !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
+  else
+    out_dT_P = ZEROcr
+  endif
+end subroutine VALIDATION_MMS_boundary_terms
 
 
 

@@ -404,6 +404,15 @@
   write(15,*) SPREAD_SSF_CUSTOM
   write(15,*) 'REMOVE_STF_INITIAL_DISCONTINUITY'
   write(15,*) REMOVE_STF_INITIAL_DISCONTINUITY
+  
+  write(15,*) 'VALIDATION_MMS'
+  write(15,*) VALIDATION_MMS
+  write(15,*) 'VALIDATION_MMS_IV'
+  write(15,*) VALIDATION_MMS_IV
+  write(15,*) 'VALIDATION_MMS_KA'
+  write(15,*) VALIDATION_MMS_KA
+  write(15,*) 'VALIDATION_MMS_MU'
+  write(15,*) VALIDATION_MMS_MU
 
   end subroutine save_databases_DG
 

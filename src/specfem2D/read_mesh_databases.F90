@@ -39,7 +39,7 @@
   use specfem_par
   use specfem_par_noise,only: NOISE_TOMOGRAPHY
   use specfem_par_movie
-  use specfem_par_lns, only: USE_LNS
+  use specfem_par_lns, only: USE_LNS, VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU
 
   implicit none
 
@@ -350,6 +350,15 @@
   read(IIN,*) SPREAD_SSF_CUSTOM
   read(IIN,"(a80)") datlin
   read(IIN,*) REMOVE_STF_INITIAL_DISCONTINUITY
+  
+  read(IIN,"(a80)") datlin
+  read(IIN,*) VALIDATION_MMS
+  read(IIN,"(a80)") datlin
+  read(IIN,*) VALIDATION_MMS_IV
+  read(IIN,"(a80)") datlin
+  read(IIN,*) VALIDATION_MMS_KA
+  read(IIN,"(a80)") datlin
+  read(IIN,*) VALIDATION_MMS_MU
   
   ! read the ACOUSTIC_FORCING flag
   read(IIN,"(a80)") datlin

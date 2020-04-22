@@ -18,6 +18,11 @@ module specfem_par_LNS
   ! ---------------------------- !
   ! Switch enabling the use of LNS instead of FNS.
   logical :: USE_LNS
+  logical :: VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU
+  real(kind=CUSTOM_REAL) :: MMS_dRHO_cst, MMS_dVX_cst, MMS_dVZ_cst, MMS_dE_cst, &
+                            MMS_dRHO_x, MMS_dRHO_z, &
+                            MMS_dVX_x, MMS_dVX_z, MMS_dVZ_x, MMS_dVZ_z, &
+                            MMS_dE_x, MMS_dE_z
   
   ! Switch to activate the use of the "desintegration method" for gradient computation methods, and to desactivate to use the
   ! SEM definition of the gradient.

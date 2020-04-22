@@ -180,6 +180,33 @@
                                         'Setting to .false., do not worry.'
   endif
   
+  ! MMS VALIDATION SWITCHES
+  VALIDATION_MMS = .false.
+  VALIDATION_MMS_IV = .false.
+  VALIDATION_MMS_KA = .false.
+  VALIDATION_MMS_MU = .false.
+  if(USE_DISCONTINUOUS_METHOD) then
+    call read_value_logical_p(VALIDATION_MMS, 'solver.VALIDATION_MMS')
+    if (err_occurred() /= 0) write(*,*) 'Error reading parameter VALIDATION_MMS in Par_file. ',&
+                                        'Setting to .false., do not worry.'
+    if(VALIDATION_MMS) then
+      call read_value_logical_p(VALIDATION_MMS_IV, 'solver.VALIDATION_MMS_IV')
+      if (err_occurred() /= 0) write(*,*) 'Error reading parameter VALIDATION_MMS_IV in Par_file. ',&
+                                          'Setting to .false., do not worry.'
+      call read_value_logical_p(VALIDATION_MMS_KA, 'solver.VALIDATION_MMS_KA')
+      if (err_occurred() /= 0) write(*,*) 'Error reading parameter VALIDATION_MMS_KA in Par_file. ',&
+                                          'Setting to .false., do not worry.'
+      call read_value_logical_p(VALIDATION_MMS_MU, 'solver.VALIDATION_MMS_MU')
+      if (err_occurred() /= 0) write(*,*) 'Error reading parameter VALIDATION_MMS_MU in Par_file. ',&
+                                          'Setting to .false., do not worry.'
+      if(      (.not. VALIDATION_MMS_IV) &
+         .and. (.not. VALIDATION_MMS_KA) &
+         .and. (.not. VALIDATION_MMS_MU)) then
+        stop 'If VALIDATION_MMS activated, activate at least one case.'
+      endif
+    endif
+  endif
+  
   call read_value_logical_p(USE_ISOTHERMAL_MODEL, 'solver.USE_ISOTHERMAL_MODEL')
   if (err_occurred() /= 0) stop 'error reading parameter USE_ISOTHERMAL_MODEL in Par_file'
 
