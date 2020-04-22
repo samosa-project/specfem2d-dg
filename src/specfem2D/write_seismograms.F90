@@ -259,7 +259,7 @@
                           save_binary_seismograms_single,save_binary_seismograms_double, &
                           x_source,z_source!,any_acoustic_DG,ispec_is_acoustic_DG, ispec_selected_rec,&
                           !coord, ibool ! DEBUG
-  use specfem_par_lns
+  use specfem_par_lns, only: USE_LNS, VALIDATION_MMS
 
 ! uncomment this to save the ASCII *.sem* seismograms in binary instead, to save disk space and/or writing time
 ! we could/should move this flag to DATA/Par_file one day.
@@ -521,7 +521,11 @@
               time_t = dble(seismo_offset + isample - 1) * deltat - t0
 
               ! distinguish between single and double precision for reals
+              if(USE_LNS .and. VALIDATION_MMS) then
+                write(11,*) sngl(time_t),' ',dble(buffer_binary(isample,irec,iorientation))
+              else
               write(11,*) sngl(time_t),' ',sngl(buffer_binary(isample,irec,iorientation))
+              endif
             enddo
 #else
             write(11) sngl(buffer_binary(:,irec,iorientation))
