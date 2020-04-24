@@ -1,21 +1,13 @@
-function [qtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR] = MMS_oneCase(prefix, testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, verbose, savefigpath)
+function [errQtity, err_l2, err_rel, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR] = MMS_oneCase(prefix, testCase, OFDs, itToPlot_forEachOFD, plotFields_do, err_l2, err_rel, verbose, savefigpath)
 
   % N for interpolation grid.
   Nexact = 2000; % Choose Nexact >> the N's we want to test. 10000 chugs HARD, 1000 runs ok. Up to N=100 points on the simulation's mesh, Nexact=1000 and Nexact=5000 yield the exact same L2 error.
   
-  % Field plots?
-  plotFields_saveFigName_prefix = ['comparedDump__'];
-  plotFields_extsToSave={'jpg'};
-  plotFields_xlab = '$x/L$';
-  plotFields_ylab = '$z/L$';
-  plotFields_NColorbarTicks = 9;
-  plotFields_addErrorPanel = 1; % Set to 1 for debug, set to 0 for printing nice plots
-  plotFields_CMAP_thresh = 0.01; % relative to max
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Treatment.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if(not(numel(OFDs)==numel(iterationsToPlot_forEachOFD)))
+  if(not(numel(OFDs)==numel(itToPlot_forEachOFD)))
     error(['[, ERROR] must provide same number of OFD as IDz']);
   else
     N_OFD = numel(OFDs);
@@ -30,15 +22,10 @@ function [qtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELE
   GS_ID_RELERR = 5;
   for ofdi = 1:N_OFD
     OFD = OFDs{ofdi};
-    IDz = iterationsToPlot_forEachOFD{ofdi};
+    IDz = itToPlot_forEachOFD{ofdi};
     if(not(OFD(end)=='/')); OFD = [OFD,'/']; end; % Safeguard.
     if(verbose)
       disp(['[',mfilename,'] Looking at ''',OFD,'''.']);
-    end
-
-    if(plotFields_do)
-      % Prepare Figure saving w.r.t. OFD.
-      spl=split(OFD,'/'); plotFields_saveFigName_base = [plotFields_saveFigName_prefix, regexprep(spl{end-2},[prefix,'_'],''),'__',regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
     end
 
     %%%%%%%%%%%%%%%%
@@ -62,11 +49,12 @@ function [qtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELE
     else
       LNSorFNS = 'FNS';
     end
-    synthname = [LNSorFNS,' Synthetic'];
+    plotFields_synthname = [LNSorFNS,' Synthetic'];
+%     plotFields_synthname = ['Synthetic'];
     KAPPA = readExampleFiles_extractParam(parfile,'thermal_conductivity','float');
     MU = readExampleFiles_extractParam(parfile,'dynamic_viscosity','float');
     imagetype_wavefield_dumps = readExampleFiles_extractParam(parfile, 'imagetype_wavefield_dumps', 'int');
-    [VISCOUS] = MMS_check(testCase, MU, KAPPA);
+    [~] = MMS_check(testCase, MU, KAPPA);
     %%%%%%%%%%%%%%%%
 
     % Save N.
@@ -102,28 +90,32 @@ function [qtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELE
         case 4
           zexp = zexp.pre;
           zth = dp_th;
-          qtity = 'p';
+          errQtity = 'p';
+          QtityUnit = 'Pa';
           if(verbose)
             disp(['[',mfilename,'] Dumps are pressure dumps, computing and plotting error w.r.t. pressure.']);
           end
         case 2
           zexp = zexp.vel;
           zth = dvx_th;
-          qtity = 'v_x';
+          errQtity = 'v_x';
+          QtityUnit = 'm/s';
           if(verbose)
             disp(['[',mfilename,'] Dumps are horizontal velocity dumps, computing and plotting error w.r.t. horizontal velocity.']);
           end
         otherwise
           error(['[] imagetype_wavefield_dumps not implemented']);
       end
-      caxxxxiiss_exp = [min(min(zexp)), max(max(zexp))];
-      caxxxxiiss_th = max(max(abs(zexp)))*[-1,1];
+      % update error names
+      err_l2.unit = [QtityUnit,'$\cdot$m'];
+      plotFields_YLABCB = ['${\Delta}',errQtity,'$ [',QtityUnit,']'];
+      err_l2.prefix = ['$\',err_l2.symbol, '_{',errQtity,'}'];
+      err_rel.prefix = ['$\',err_rel.symbol, '_{',errQtity,'}'];
+      
       % Compute error.
       zerr = zexp-zth;
-      caxxxxiiss_err = [min(min(zerr)), max(max(zerr))];
-      L2NormOfError = (trapz(x_exact,trapz(y_exact,zerr.^2)))^0.5;
-      
-      relErrSynth = abs((syntheticValue-dp_th_query)/dp_th_query);
+      err_l2_value = (trapz(x_exact,trapz(y_exact,zerr.^2)))^0.5;
+      err_rel_value = abs((syntheticValue-dp_th_query)/dp_th_query);
       
       if(verbose)
         disp(['[',mfilename,'] Integral of zth = ',num2str(trapz(x_exact,trapz(y_exact,zth)))]);
@@ -131,17 +123,23 @@ function [qtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELE
       end
 
       globalSave(ofdi,IT_id,GS_ID_IT) = IT; % save iteration in last dimension
-      globalSave(ofdi,IT_id,GS_ID_EPS) = L2NormOfError; % save error in last dimension
-      globalSave(ofdi,IT_id,GS_ID_RELERR) = relErrSynth;
+      globalSave(ofdi,IT_id,GS_ID_EPS) = err_l2_value; % save error in last dimension
+      globalSave(ofdi,IT_id,GS_ID_RELERR) = err_rel_value;
 
       % Plot error on field.
       if(plotFields_do)
+        plotFields_saveFigName_prefix = ['comparedDump__'];
+        plotFields_extsToSave={'png', 'eps'};
+        spl=split(OFD,'/');
+        plotFields_saveFigName_base = [plotFields_saveFigName_prefix, regexprep(spl{end-2},[prefix,'_'],''),'__',regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
         savefigname = [plotFields_saveFigName_base, 'IT',sprintf('%012.0f',IT)];
         savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
-        MMS_plotFields;
+        feg = MMS_plotFields(err_l2, err_l2_value, Xe, Ye, zth, zexp, zerr, IT, DT, NX, plotFields_synthname,plotFields_YLABCB);
+        customSaveFig(feg, savefigfullpath, plotFields_extsToSave, 9999);
       end
-    end
-  end
+      
+    end % Endfor on IT.
+  end % Endfor on OFD.
   %%%%%%%%%%%%%%%%
 
   squeeze(globalSave)

@@ -19,10 +19,18 @@ addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new')
 SPCFM_EX_DIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Parameters.
+% Setup.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 prefix = 'validation_lns_manufactured';
 savefigpath = [SPCFM_EX_DIR,prefix,'_info/'];
+err_l2.name = '$L^2$ Error';
+err_l2.symbol = ['varepsilon'];
+err_rel.name = 'Relative Error';
+err_rel.symbol = ['epsilon'];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Parameters.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % % IDs of dumps to plot.
 % IDz = 100;
@@ -36,8 +44,13 @@ savefigpath = [SPCFM_EX_DIR,prefix,'_info/'];
 
 % IDs of dumps to plot packed, for paper.
 commonID2 = 4000;
-generateCase = 1;
+generateCase = 5;
 switch(generateCase)
+  case 5
+    % test case
+    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0004_mu/OUTPUT_FILES']}; testCase = 'mu';
+    iterationsToPlot_forEachOFD = {[commonID2*4]};
+    plotFields_do = 1; % activate plotting of fields
   case 1
     OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_iv/OUTPUT_FILES'], ...
             [SPCFM_EX_DIR,prefix,'_N=0005_iv/OUTPUT_FILES'], ...
@@ -45,6 +58,7 @@ switch(generateCase)
             [SPCFM_EX_DIR,prefix,'_N=0050_iv/OUTPUT_FILES'], ...
             [SPCFM_EX_DIR,prefix,'_N=0100_iv/OUTPUT_FILES']}; testCase = 'inviscid';
     iterationsToPlot_forEachOFD = {[commonID2], [commonID2*5], [commonID2*25], [commonID2*50], [commonID2*100]};
+    plotFields_do = 0; % deactivate plotting of fields
   case 2
     OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_ka/OUTPUT_FILES'], ...
             [SPCFM_EX_DIR,prefix,'_N=0005_ka/OUTPUT_FILES'], ...
@@ -52,6 +66,7 @@ switch(generateCase)
             [SPCFM_EX_DIR,prefix,'_N=0050_ka/OUTPUT_FILES'], ...
             [SPCFM_EX_DIR,prefix,'_N=0100_ka/OUTPUT_FILES']}; testCase = 'kappa';
     iterationsToPlot_forEachOFD = {[commonID2], [commonID2*5], [commonID2*25], [commonID2*50], [commonID2*100]};
+    plotFields_do = 0; % deactivate plotting of fields
   case 3
     OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_mu/OUTPUT_FILES'], ...
             [SPCFM_EX_DIR,prefix,'_N=0002_mu/OUTPUT_FILES'], ...
@@ -62,10 +77,15 @@ switch(generateCase)
             [SPCFM_EX_DIR,prefix,'_N=0050_mu/OUTPUT_FILES'], ...
             [SPCFM_EX_DIR,prefix,'_N=0100_mu/OUTPUT_FILES']}; testCase = 'mu';
     iterationsToPlot_forEachOFD = {[commonID2], [commonID2*2], [commonID2*3], [commonID2*4], [commonID2*5], [commonID2*25], [commonID2*50], [commonID2*100]};
+    plotFields_do = 0; % deactivate plotting of fields
+  case 4
+    % illustrative plotfield
+    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0025_iv/OUTPUT_FILES']}; testCase = 'inviscid';
+    iterationsToPlot_forEachOFD = {[commonID2*25]};
+    plotFields_do = 1; % activate plotting of fields
 end
-plotFields_do = 0; % deactivate plotting of fields
 
-[errQtity, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR] = MMS_oneCase(prefix, testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, verbose, savefigpath);
+[errQtity, err_l2, err_rel, globalSave, IDNX, IDDT, IDIT, IDEPS, IDRELERR] = MMS_oneCase(prefix, testCase, OFDs, iterationsToPlot_forEachOFD, plotFields_do, err_l2, err_rel, verbose, savefigpath);
 
 %%%%%%%%%%%%%%%%
 % Error plots.
@@ -73,4 +93,5 @@ plotFields_do = 0; % deactivate plotting of fields
 
 % Error plots.
 plotProgrWRTTime = 0; % plot progression wrt time?
-MMS_masterFigure;
+
+MMS_masterFigure(errQtity, err_l2, err_rel, globalSave, IDNX, IDDT, IDIT, IDEPS, IDRELERR);

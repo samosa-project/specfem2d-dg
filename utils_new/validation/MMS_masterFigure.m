@@ -1,12 +1,6 @@
-% function MMS_masterFigure()
+function MMS_masterFigure(errQtity, err_l2, err_rel, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR)
   if(size(globalSave,1)<=1)
     error('nothing to do');
-  end
-  
-  errorPrefix_base = ['$\varepsilon_{'];
-  errorPrefix = [errorPrefix_base, errQtity];
-  if(strcmp(errQtity, 'p'))
-    l2errunit = 'Pa$\cdot$m';
   end
   
   figErr_saveFigName_base = ['MES_Error__'];
@@ -14,8 +8,8 @@
   
   LS = ':'; LW = 2;
   
-  TIT_L2 = ['$L^2$ Error ', errorPrefix,'}\left(N\right)$ [',l2errunit,']'];
-  TIT_RELERR = 'Relative Error  $\epsilon_{',errQtity,'}\left(N\right)$ [\%]';
+  TIT_L2 = [err_l2.name, ' ', err_l2.prefix,'\left(N\right)$ [',err_l2.unit,']'];
+  TIT_RELERR = [err_rel.name, ' ',err_rel.prefix,'\left(N\right)$ [\%]'];
   XLAB = 'number of elements on one side $N$';
   % errName = [errorPrefix,'}\left(',num2str(NX),'\right)'];
 %   YLAB_L2 = ['$L^2$ error ', errorPrefix,'}(N)$'];
@@ -83,4 +77,4 @@
     figErr_saveFigFullPath = [savefigpath, figErr_saveFigName_base, 'progress__', datestr(now,'YYmmDD_HHMMss')];
     customSaveFig(fig_error_progress, figErr_saveFigFullPath, figErr_extsToSave);
   end
-% end
+end
