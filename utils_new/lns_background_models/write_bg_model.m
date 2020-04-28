@@ -98,8 +98,7 @@ function [] = write_bg_model(varargin)
   % START ACTUAL FUNCTION.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Precision.
-  asc__nb_significantdigits = 16;
-  bin__precision = 'real*8'; % You should not change this, because the Fortran code depends on it.
+  [asc__nb_significantdigits, bin__precision] = bg_model_parameters();
   
   % File names. See 'specfem2D_par_lns.f90'.
   asc__output_filename = 'background_model.dat';
