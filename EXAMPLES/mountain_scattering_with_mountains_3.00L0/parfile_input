@@ -5,7 +5,7 @@
 #---------------------------------------------------------------------#
 
 # Title of job.
-title                           = default_example_DG
+title                           = Earthquake Scattering by Mountains
 
 # Type of simulation.
 # 1: forward
