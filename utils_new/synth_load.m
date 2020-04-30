@@ -47,6 +47,9 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 fig_title = ['ff'];
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
 
+% Test mountains LNS.
+rootd = [SPCFMEXloc, 'mountain_scattering_with_mountains/']; OFd = [rootd,'OUTPUT_FILES_4213746_test'];
+
 % Mars.
 % fig_title = strcat('Mars InSight');
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED_outsideduct/'); OFd = strcat(rootd, 'OUTPUT_FILES_291537_thicc_outside/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
@@ -98,7 +101,7 @@ fig_title = ['ff'];
 
 % TNTGlanes
 % fig_title = strcat('Tirs de Mine Glanes');
-rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364789_20hz_vp4k/');
+% rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364789_20hz_vp4k/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364671_25hz_lowQ/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364569_30hz_ricker/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_1939115_40hz_neweststations/');
@@ -229,9 +232,9 @@ rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loading.                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+OFd = checkOFd(OFd); % Test if OUTPUT_FILES directory exists.
 type_display = readExampleFiles_extractParam([OFd,'input_parfile'],'seismotype','int');
 disp(['[',mfilename,', INFO] Found in OUTPUT_FILES'' input_parfile file that seismotype==',num2str(type_display),'. Setting type_display to this value.']);
-OFd = checkOFd(OFd); % Test if OUTPUT_FILES directory exists.
 pos_sources = loadSources(OFd); % Load sources' positions.
 [xstattab, ystattab, stations_data] = loadStations(OFd); % Load stations data (first try OUTPUT folder, then if not found, try parent DATA folder).
 % Compute distance to sources.
