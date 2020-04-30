@@ -240,30 +240,30 @@ anglerec                        = 0.0d0          # Angle to rotate components at
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =  -1.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =  -1.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =   1.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =   1.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =  10.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =  10.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =  20.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =  20.d3
 record_at_surface_same_vertical = .false.
 

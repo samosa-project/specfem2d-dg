@@ -37,7 +37,6 @@ for without_0__with033L_1__with300L_2 = 0
       nPeaks = 0;
       peaksHalfWidth = 2000;
       peaksAltitude = 0;
-      meshAlgorithm = 9; % structured
     case 1
       % output to "with 0.33L" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_0.33L0/EXTMSH/extMesh.geo';

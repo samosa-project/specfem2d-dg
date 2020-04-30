@@ -136,11 +136,11 @@ TYPE_SOURCE_DG                  = 3
 
 # Stretched buffer absorbing boundary conditions. Not finalised, use at own risk.
 # Note: those are not fully working when using horizontal wind.
-ABC_STRETCH_TOP         = .true.                 # Use buffer-based stretching method on that boundary?
+ABC_STRETCH_TOP         = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_LEFT        = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_BOTTOM      = .false.                # Use buffer-based stretching method on that boundary?
 ABC_STRETCH_RIGHT       = .false.                # Use buffer-based stretching method on that boundary?
-ABC_STRETCH_TOP_LBUF    = 5000.                  # Length of the buffer used for the buffer-based stretching method.
+ABC_STRETCH_TOP_LBUF    = 10.                    # Length of the buffer used for the buffer-based stretching method.
 ABC_STRETCH_LEFT_LBUF   = 10.                    # Length of the buffer used for the buffer-based stretching method.
 ABC_STRETCH_BOTTOM_LBUF = 10.                    # Length of the buffer used for the buffer-based stretching method.
 ABC_STRETCH_RIGHT_LBUF  = 10.                    # Length of the buffer used for the buffer-based stretching method.
@@ -240,30 +240,30 @@ anglerec                        = 0.0d0          # Angle to rotate components at
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =  -1.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =  -1.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =   1.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =   1.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =  10.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =  10.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
-xdeb                            = -28.d0
+xdeb                            = -28.d3
 zdeb                            =  20.d3
-xfin                            =  28.d0
+xfin                            =  28.d3
 zfin                            =  20.d3
 record_at_surface_same_vertical = .false.
 
