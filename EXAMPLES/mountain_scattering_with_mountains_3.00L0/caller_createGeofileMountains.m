@@ -43,7 +43,8 @@ for without_0__with033L_1__with300L_2 = 0
       peaksHalfWidth = 1000/2;
       nPeaks = xmax_peaks/peaksHalfWidth;
       peaksAltitude = 1500;
-      meshAlgorithm = 9; % packing of parallelograms
+%       meshAlgorithm = 9; % packing of parallelograms because of steeper angles
+      dxAir(1) = dxAir(1)*0.85; % need smaller dx because of steeper angles
     case 2
       % output to "with 3.00L" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_3.00L0/EXTMSH/extMesh.geo';
