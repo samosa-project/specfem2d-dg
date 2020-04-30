@@ -59,6 +59,8 @@ cp ./DATA/Par_file ./OUTPUT_FILES/input_parfile
 cp ./DATA/SOURCE ./OUTPUT_FILES/input_source
 cp ./$interfacefileName ./OUTPUT_FILES/input_interfaces
 cp ./atmospheric_model.dat ./OUTPUT_FILES/input_atmospheric_model.dat
+cp ./background_model_header.dat ./OUTPUT_FILES/input_background_model_header.dat
+cp ./background_model.bin ./OUTPUT_FILES/input_background_model.bin
 if [ -e "external_bottom_forcing.dat" ]; then
   tar -czf ./OUTPUT_FILES/input_EBF.tar ./external_bottom_forcing.dat
 fi
