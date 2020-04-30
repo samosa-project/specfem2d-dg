@@ -35,9 +35,9 @@ ngnod                           = 4
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 80000
+NSTEP                           = 100000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 5d-4
+DT                              = 4d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -255,16 +255,16 @@ record_at_surface_same_vertical = .false.
 
 nrec                            =   15
 xdeb                            = -28.d3
-zdeb                            =  10.d3
+zdeb                            =   5.d3
 xfin                            =  28.d3
-zfin                            =  10.d3
+zfin                            =   5.d3
 record_at_surface_same_vertical = .false.
 
 nrec                            =   15
 xdeb                            = -28.d3
-zdeb                            =  20.d3
+zdeb                            =  10.d3
 xfin                            =  28.d3
-zfin                            =  20.d3
+zfin                            =  10.d3
 record_at_surface_same_vertical = .false.
 
 # N.B.: If stations are demanded too close to the fluid-solid interface in DG simulations, SPECFEM2D-DG will sometimes WRONGLY detect in which material the station actually is. This is true for stations on the solid side as well as for stations on the fluid side. See detailed ranting in source file 'locate_receivers.f90'. The easiest solution is to always make sure that:
