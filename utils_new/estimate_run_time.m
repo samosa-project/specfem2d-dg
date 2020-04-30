@@ -49,15 +49,16 @@ if(not(plot_rate))
   % Choices. %%%%%%%%%%%%%%%%%%%%
   % nproc         = 8*48;
   % nbeltsElastic = 6600;
-  nbeltsElastic = input(['[',mfilename,'] Number of viscoelastic elements? > ']);
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Auto-read from parfile. %%%%%
   parfile='';
   while(not(exist(parfile)==2))
     parfile = input(['[',mfilename,'] Path to simulation parfile > '],'s');
   end
-  nstations = sum(readExampleFiles_extractParam(parfile, 'nrec', 'float'));
-  nstepseismo = readExampleFiles_extractParam(parfile, 'NSTEP_BETWEEN_OUTPUT_SEISMOS', 'float');
+  
+  
+  
+  
   extmesh = readExampleFiles_extractParam(parfile, 'read_external_mesh', 'bool');
   if(not(extmesh))
     command = ['cat ',parfile,' | grep -oP " *1 +[0-9]+ +[0-9]+ +[0-9]+ | tail -1"'];
@@ -70,16 +71,28 @@ if(not(plot_rate))
     spl{end}='';
     folderofparfile=strjoin(spl,filesep);
     tryMeshExtMeshLocalisation = [folderofparfile,'EXTMSH',filesep,'Mesh_extMesh'];
-    if(not(exist(tryMeshExtMeshLocalisation)))
-      error('ENTER THE NUMBER OF POINTS OMEGALUL');
+    if(not(exist(tryMeshExtMeshLocalisation, 'file')))
+      error('CANNOT FIND Mesh_extMesh IN ORDER TO GUESS THE NUMBER OF POINTS');
     else
       [~,r]=system(['head ',tryMeshExtMeshLocalisation,' -n 1']);
       neltot    = str2num(r);
-      disp(['[',mfilename,'] Total number of elements found to be ',num2str(neltot),'. Check your ''Mesh_extMesh'' file.']);
-      disp(['[',mfilename,'] Press any key to continue.']);
+      disp(['[',mfilename,']   GUESS for number of elements: ',num2str(neltot),'.']);
+      disp(['[',mfilename,']   Check your ''Mesh_extMesh'' file. Press any key to continue.']);
       pause();
     end
+    tryMaterialExtMeshLocalisation = [folderofparfile,'EXTMSH',filesep,'Material_extMesh'];
+    if(not(exist(tryMaterialExtMeshLocalisation, 'file')))
+      error('CANNOT FIND Material_extMesh IN ORDER TO GUESS NUMBER OF VISCOELASTIC ELEMENTS');
+    else
+      kek = importdata(tryMaterialExtMeshLocalisation);
+      nbeltsElastic_GUESS = numel(kek)-sum(kek==1);
+      disp(['[',mfilename,']   GUESS (assuming material n°1 is the acoustic material) for number of viscoelastic elements: ',num2str(nbeltsElastic_GUESS),'.']);
+    end
   end
+  nbeltsElastic = input(['[',mfilename,'] Number of viscoelastic elements? > ']);
+  
+  nstations = sum(readExampleFiles_extractParam(parfile, 'nrec', 'float'));
+  nstepseismo = readExampleFiles_extractParam(parfile, 'NSTEP_BETWEEN_OUTPUT_SEISMOS', 'float');
   neldg       = neltot-nbeltsElastic;
   nstepsnap   = readExampleFiles_extractParam(parfile, 'NSTEP_BETWEEN_OUTPUT_IMAGES', 'float');
   nsteptot    = readExampleFiles_extractParam(parfile, 'NSTEP', 'float');
@@ -112,10 +125,10 @@ if(not(plot_rate))
     disp(['[',mfilename,'] ',num2str(neltot),' elements including ',num2str(neldg),' DG elements. ',num2str(nsteptot),' time steps. ',num2str(nstations),' stations sampling every ',num2str(nstepseismo),' iterations. Snapshots taken every ',num2str(nstepsnap),' iterations. ',num2str(nproc),' CPUs.']);
     disp(" ");
     disp(['[',mfilename,']                     [        n_stations       percent_DG     percent_snap    percent_synth n_elems_per_proc]']);
-    disp(strcat("[",mfilename,"] Current point:      [ ", sprintf("%17.3e", point), "]."));
+    disp(strcat("[",mfilename,"] Current point:      [ ", sprintf("%17.5f", point), "]."));
     % idp=dsearchn(data,point);
     idp=dsearchn((data-meandata)./weigth,(point-meandata)./weigth); % Optimised search.
-    disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.3e", data(idp,:)), "] (",info{idp}{2},")."));
+    disp(strcat("[",mfilename,"] Closest data point: [ ", sprintf("%17.5f", data(idp,:)), "] (",info{idp}{2},")."));
     disp(strcat("[",mfilename,"] Weights:            [ ", sprintf("%17.f", weigth), "]."));
     time=t(idp);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
