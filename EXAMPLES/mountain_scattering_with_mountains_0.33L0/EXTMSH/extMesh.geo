@@ -14,7 +14,7 @@ Mesh.SurfaceNumbers = 0; // Display surface numbers.
 Mesh.SubdivisionAlgorithm = 1; // Meshing algorithm: all quads.
 Mesh.RecombineAll = 1; // Recombine all triangular elements.
 // Meshing algorithm. //-----//
-Mesh.Algorithm = 5; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).
+Mesh.Algorithm = 1; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).
 Mesh.ElementOrder = 1; // Element order.
 Mesh.RandomFactor = 0.000100; // Perturbate every points positions in order to avoid 3 aligned points. Default is at 1e-9, maximum is 1e-3.
 // Geometry. //--------------//
