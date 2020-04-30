@@ -14,7 +14,7 @@ Mesh.SurfaceNumbers = 0; // Display surface numbers.
 Mesh.SubdivisionAlgorithm = 1; // Meshing algorithm: all quads.
 Mesh.RecombineAll = 1; // Recombine all triangular elements.
 // Meshing algorithm. //-----//
-Mesh.Algorithm = 5; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).
+Mesh.Algorithm = 9; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).
 Mesh.ElementOrder = 1; // Element order.
 Mesh.RandomFactor = 0.000100; // Perturbate every points positions in order to avoid 3 aligned points. Default is at 1e-9, maximum is 1e-3.
 // Geometry. //--------------//
@@ -25,17 +25,16 @@ dxGrdInts1 = 2592.000000;
 dxGrdInts2 = 1620.000000;
 dxGrdInts3 = 762.000000;
 // Define geometry keypoints.
-Point(1) = {-28000.000000, -41140.000000, 0}; // corner
-Point(2) = {28000.000000, -41140.000000, 0}; // corner
-Point(3) = {-28000.000000, -31140.000000, 0}; // corner
-Point(4) = {28000.000000, -31140.000000, 0}; // corner
-Point(5) = {-28000.000000, -16560.000000, 0}; // corner
-Point(6) = {28000.000000, -16560.000000, 0}; // corner
-Point(7) = {-28000.000000, 0.000000, 0}; // corner
-Point(8) = {28000.000000, 0.000000, 0}; // corner
-Point(9) = {0.000000, 0.000000, 0}; // mountain point 
-Point(10) = {-28000.000000, 30000.000000, 0};
-Point(11) = {28000.000000, 30000.000000, 0};
+Point(1) = {-23000.000000, -41140.000000, 0}; // corner
+Point(2) = {23000.000000, -41140.000000, 0}; // corner
+Point(3) = {-23000.000000, -31140.000000, 0}; // corner
+Point(4) = {23000.000000, -31140.000000, 0}; // corner
+Point(5) = {-23000.000000, -16560.000000, 0}; // corner
+Point(6) = {23000.000000, -16560.000000, 0}; // corner
+Point(7) = {-23000.000000, 0.000000, 0}; // corner
+Point(8) = {23000.000000, 0.000000, 0}; // corner
+Point(9) = {-23000.000000, 15000.000000, 0};
+Point(10) = {23000.000000, 15000.000000, 0};
 // Define lines joining points. Warning: prefer counter-clockwise direction to prevent inverted elements. Warning: do not duplicate lines if two or more materials are needed.
 Line(1) = {1, 2};
 Line(2) = {2, 4};
@@ -60,8 +59,8 @@ Plane Surface(2) = {2};
 Plane Surface(3) = {3};
 Plane Surface(4) = {4};
 Mesh.CharacteristicLengthFactor = 1; // Scaling of all elements' sizes. 
-Characteristic Length {7, 8, 9} = 2*dxAirBot; 
-Characteristic Length {10, 11} = 2*dxAirTop; 
+Characteristic Length {7, 8} = 2*dxAirBot; 
+Characteristic Length {9, 10} = 2*dxAirTop; 
 Characteristic Length {1, 2} = 2*dxGrdInts1; 
 Characteristic Length {3, 4} = 2*dxGrdInts2; 
 Characteristic Length {5, 6} = 2*dxGrdInts3; 

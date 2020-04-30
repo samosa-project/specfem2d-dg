@@ -7,7 +7,7 @@ xs                              = 0.d0       # Source x location (m).
 zs                              = -5.d3      # Source y location (m).
 source_type                     = 2          # Elastic force or acoustic pressure = 1, moment tensor = 2. For the moment, only 1 is supported by DG.
 
-time_function_type              = 3          # Source time function type: Ricker = 1, Gaussian first derivative = 2, Gaussian = 3, Dirac = 4, Heaviside = 5, 6 = ??, 7 = ??, 8 = read from file, 9 = burst, 10 = Gaussian primitive.
+time_function_type              = 2          # Source time function type: Ricker = 1, Gaussian first derivative = 2, Gaussian = 3, Dirac = 4, Heaviside = 5, 6 = ??, 7 = ??, 8 = read from file, 9 = burst, 10 = Gaussian primitive.
 name_of_source_file             = "/path/to/file" # Only for time_function_type 8. File containing the source wavelet: two columns file with time and amplitude, dt must be equal (for the moment) to the dt of the simulation. File name can't exceed 150 characters.
 burst_band_width                = 200.d0     # Only for time_function_type 9. Band width of the burst.
 
