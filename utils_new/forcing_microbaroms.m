@@ -7,15 +7,6 @@
 clear all;
 close all;
 clc;
-format compact;
-set(0, 'DefaultLineLineWidth', 3); % Default at 0.5.
-set(0, 'DefaultLineMarkerSize', 8); % Default at 6.
-set(0, 'defaultTextFontSize', 22);
-set(0, 'defaultAxesFontSize', 22); % Default at 10.
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
-set(groot, 'defaultSurfaceEdgeColor', 'none');
-
 addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % lglnodes
 
 rng(0123456789); % Set seed to produce same forcing everytime.
