@@ -80,7 +80,7 @@ function [] = createGeofileMountains(outputFile, meshAlgorithm, xbound, zbound, 
   fprintf(fid, 'Mesh.SubdivisionAlgorithm = 1; // Meshing algorithm: all quads.\n');
   fprintf(fid, 'Mesh.RecombineAll = 1; // Recombine all triangular elements.\n');
   fprintf(fid, '// Meshing algorithm. //-----//\n');
-  fprintf(fid, 'Mesh.Algorithm = %d; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).\n', meshAlgorithm);
+  fprintf(fid, 'Mesh.Algorithm = %d; // 1: MeshAdapt. 5: Delaunay for quads. 8: Delaunay (experimental). 9: structured (packing of parallelograms, experimental).\n', meshAlgorithm);
   fprintf(fid, 'Mesh.ElementOrder = 1; // Element order.\n');
   fprintf(fid, 'Mesh.RandomFactor = %f; // Perturbate every points positions in order to avoid 3 aligned points. Default is at 1e-9, maximum is 1e-3.\n', meshRandomFactor);
   fprintf(fid, '// Geometry. //--------------//\n');
