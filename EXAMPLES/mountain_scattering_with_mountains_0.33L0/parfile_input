@@ -35,9 +35,9 @@ ngnod                           = 4
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 180000
+NSTEP                           = 80000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 4d-4
+DT                              = 5d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
