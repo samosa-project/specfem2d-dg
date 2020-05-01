@@ -3,19 +3,7 @@ function [] = plot_bg_model(DATAFILE)
   [order, tag, tex, unit] = order_bg_model();
   nb_qty = size(order, 1);
   
-  dbgmx = diff(bgm.xx);
-  dbgmz = diff(bgm.zz);
-  if(not(any(diff(diff(find(dbgmx>0))))))
-    % bgm.xx is a series of repeating xx values
-    NZ = find(dbgmx>0,1,'first');
-    NX = numel(bgm.xx)/NZ;
-    for iqty = 1:nb_qty
-      bgm.(order(iqty,:)) = reshape(bgm.(order(iqty,:)), NZ, NX);
-    end
-    isMatrix = 1;
-  else
-    isMatrix = 0;
-  end
+  [bgm, isMatrix] = try_make_bg_model_matrix(bgm);
   
   toKm = 1;
   if(toKm)

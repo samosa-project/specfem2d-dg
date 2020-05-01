@@ -25,7 +25,7 @@
 %                        not contain more than 2 cells for ascii format,
 %                        is unlimited for binary format, defaults to {}).
 
-function [] = write_bg_model(varargin)
+function [outpath] = write_bg_model(varargin)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % PARAMETER READING AND SETTING.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,6 +148,7 @@ function [] = write_bg_model(varargin)
       fclose(fout_hed);
 
       % Then, write all values sequentially.
+      outpath = bin__output_path;
       fout = fopen(bin__output_path, 'w');
       fwrite(fout, ROWS', bin__precision);
       fclose(fout);
