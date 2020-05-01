@@ -23,34 +23,47 @@ xmax = 23e3;
 hLayers_m = [16560, 14580, 10000];
 dxGrdInts = [762, 810*2, 864*3];
 
-dxAir = [1, 1.2]*110;
+dxAir_std = [1, 1.2]*110;
 valleysAltitude = 0;
 meshAlgorithm = 5; % delaunay
 
-% for without_0__with033L_1__with300L_2 = (0:2)
-for without_0__with033L_1__with300L_2 = 0
+std_peak_height = 1500;
+std_3l0_halfw = 9000/2;
+std_033l0_halfw = 1000/2;
 
-  switch(without_0__with033L_1__with300L_2)
+for wo_0__w033L_1__w3L_2__w033Lheight_3 = (0:3)
+% for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0
+% for wo_0__w033L_1__w3L_2__w033Lheight_3 = 3
+
+  switch(wo_0__w033L_1__w3L_2__w033Lheight_3)
     case 0
       % output to "without" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_without_mountains/EXTMSH/extMesh.geo';
       nPeaks = 0;
-      peaksHalfWidth = 2000;
+      peaksHalfWidth = 0;
       peaksAltitude = 0;
+      dxAir = dxAir_std;
     case 1
       % output to "with 0.33L" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_0.33L0/EXTMSH/extMesh.geo';
-      peaksHalfWidth = 1000/2;
+      peaksHalfWidth = std_033l0_halfw;
       nPeaks = xmax_peaks/peaksHalfWidth;
-      peaksAltitude = 1500;
-%       meshAlgorithm = 9; % packing of parallelograms because of steeper angles
-      dxAir(1) = dxAir(1)*0.85; % need smaller dx because of steeper angles
+      peaksAltitude = std_peak_height;
+      dxAir = dxAir_std; dxAir(1) = dxAir_std(1)*0.85; % need smaller dx because of steeper angles
+    case 3
+      % output to "with 0.33L height adjusted" folder
+      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_0.33L0_lower/EXTMSH/extMesh.geo';
+      peaksHalfWidth = std_033l0_halfw;
+      nPeaks = xmax_peaks/peaksHalfWidth;
+      peaksAltitude = (std_peak_height/std_3l0_halfw)*peaksHalfWidth; % keep the same angle as in the 3L0 simulation
+      dxAir = dxAir_std;
     case 2
       % output to "with 3.00L" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_3.00L0/EXTMSH/extMesh.geo';
-      peaksHalfWidth = 9000/2;
+      peaksHalfWidth = std_3l0_halfw;
       nPeaks = xmax_peaks/peaksHalfWidth;
-      peaksAltitude = 1500;
+      peaksAltitude = std_peak_height;
+      dxAir = dxAir_std;
   end
   outputFile
 
