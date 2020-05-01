@@ -206,6 +206,21 @@ subroutine prepare_source_spatial_function_DG
     where(source_spatial_function_DG(:, :)<TINYVAL) source_spatial_function_DG=ZEROcr ! Set to zero where value is too small.
     !write(*,*) "MINMAX SSF", minval(source_spatial_function_DG), maxval(source_spatial_function_DG)
     
+    if(SPREAD_SSF_CUSTOM) then
+      if(myrank == 0) then
+        write(*,*) "********************************"
+        write(*,*) "*         INFORMATION          *"
+        write(*,*) "********************************"
+        write(*,*) "* A custom and spread source   *"
+        write(*,*) "* spatial function was used.   *"
+        write(*,*) "* The actual formulaes are set *"
+        write(*,*) "* up directly in               *"
+        write(*,*) "* 'prepare_source_spatial_function.f90'. *"
+        write(*,*) "********************************"
+        call flush_IMAIN()
+      endif
+    endif
+    
     if(SPREAD_SSF_SAVE) then
       close(504)
       if(myrank == 0) then
