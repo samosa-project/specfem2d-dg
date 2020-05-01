@@ -13,7 +13,7 @@ function [xminmax, zminmax, Xsource] = readExampleFiles(parfile, sourcefile, int
   if(not(exist('Nodes_extMesh','var')))
     Nodes_extMesh=[];
   end
-  if(not(exist('verbose')))
+  if(not(exist('verbose','var')))
     verbose=0;
   end
   
