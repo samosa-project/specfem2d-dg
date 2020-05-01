@@ -39,7 +39,8 @@
 subroutine lns_load_background_model(nlines_header, nlines_model)
 
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par, only: myrank, USE_DISCONTINUOUS_METHOD
+  use specfem_par, only: myrank, USE_DISCONTINUOUS_METHOD, any_elastic
+  use specfem_par_lns, only: USE_LNS
   
   implicit none
   
@@ -56,9 +57,30 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
     write(*,*) "********************************"
-    write(*,*) "* Currently cannot use the     *"
-    write(*,*) "* 'external_DG' model if not   *"
-    write(*,*) "* using the DG method.         *"
+    write(*,*) "* Cannot use the               *"
+    write(*,*) "* 'LNS_generalised' model if   *"
+    write(*,*) "* not using the DG method.     *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(.not. USE_LNS) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot use the               *"
+    write(*,*) "* 'LNS_generalised' model if   *"
+    write(*,*) "* not using the LNS            *"
+    write(*,*) "* implementation.              *"
+    write(*,*) "********************************"
+    stop
+  endif
+  if(any_elastic) then
+    write(*,*) "********************************"
+    write(*,*) "*            ERROR             *"
+    write(*,*) "********************************"
+    write(*,*) "* Cannot yet use the           *"
+    write(*,*) "* 'LNS_generalised' model if   *"
+    write(*,*) "* using elastic elements.      *"
     write(*,*) "********************************"
     stop
   endif
@@ -558,10 +580,10 @@ subroutine output_lns_interpolated_model()
   enddo
   close(504)
   if(myrank==0) then
-    write(*,*) "> > Dumped interpolated model to './OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'. ", &
+    write(*,*) "> > Dumped interpolated model (on proc 0) to './OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'. ", &
                "Use the following Matlab one-liner to plot:"
-    write(*,*) "      OFD=''; [~,lab]=order_bg_model();a=importdata(OFD);x=a(:,1);z=a(:,2);close all;for i=3:10;d=a(:,i);", &
-               "[Xi,Yi,Zi]=interpDumps(x,z,d,50,50);figure(i);surf(Xi,Yi,Zi);view([0,0,1]);shading flat;colorbar;", &
-               "title(lab{i});end;"
+    write(*,*) "      OFD=''; [~,lab]=order_bg_model();a=importdata(OFD);x=a(:,1);z=a(:,2);close all;for i=3:10;", &
+               "d=[];d.rho=[];d.vel=[];d.pre=a(:,i);[Xi,Yi,Zi]=interpDumps(x,z,d,0,0,1);figure(i);surf(Xi,Yi,Zi.pre);", &
+               "view([0,0,1]);shading flat;colorbar;title(lab{i});end;"
   endif
 end subroutine output_lns_interpolated_model
