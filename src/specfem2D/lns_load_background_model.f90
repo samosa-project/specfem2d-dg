@@ -168,7 +168,7 @@ end subroutine lns_load_background_model
 
 subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
-  use specfem_par, only: nspec, nglob, coord, ispec_is_elastic, ispec_is_acoustic_DG, ibool, coord_interface
+  use specfem_par, only: nspec, nglob, coord, ispec_is_elastic, ispec_is_acoustic_DG, ibool_before_perio, coord_interface
   use specfem_par_lns, only: norm2r1
   
   implicit none
@@ -185,17 +185,18 @@ subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
   logical, dimension(nglob) :: FOUND
   
   FOUND = .false.
+  id_line_model = 0
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
       do j = 1, NGLLZ; do i = 1, NGLLX
-        FOUND(ibool(i, j, ispec)) = .true. ! Do not care about elastic points.
+        FOUND(ibool_before_perio(i, j, ispec)) = .true. ! Do not care about elastic points.
       enddo; enddo
     elseif(ispec_is_acoustic_DG(ispec)) then
       ! For DG elements, go through GLL points one by one.
       do j = 1, NGLLZ; do i = 1, NGLLX
         do k = 1, nlines_model
-          cur_ibool = ibool(i, j, ispec)
+          cur_ibool = ibool_before_perio(i, j, ispec)
           if(norm2r1(xmodel(:, k)-(coord(:, cur_ibool)-(/ZEROcr, coord_interface/)))<=TINYVAL) then
             FOUND(cur_ibool) = .true.
             id_line_model(cur_ibool) = k
@@ -213,6 +214,8 @@ subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
   enddo
   ! Meshes agree if all points (in this slice) were found in the model.
   meshes_agree = all(FOUND)
+  !write(*,*) FOUND
+  !stop 'kek'
 end subroutine do_meshes_agree
 
 ! ------------------------------------------------------------ !
@@ -227,7 +230,7 @@ subroutine apply_model_to_mesh(nlines_model, X_m, &
   use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, &
                              LNS_g, LNS_mu, LNS_kappa, LNS_c0
   use specfem_par, only: nspec, ispec_is_elastic, rhoext, vpext, &
-                         ispec_is_acoustic_DG, ibool_DG, ibool, gammaext_DG, nglob
+                         ispec_is_acoustic_DG, ibool_DG, ibool_before_perio, gammaext_DG, nglob
   
   implicit none
   
@@ -250,7 +253,7 @@ subroutine apply_model_to_mesh(nlines_model, X_m, &
     elseif(ispec_is_acoustic_DG(ispec)) then
       ! For DG elements, go through GLL points one by one.
       do j = 1, NGLLZ; do i = 1, NGLLX
-        l_model = idL_m(ibool(i, j, ispec))
+        l_model = idL_m(ibool_before_perio(i, j, ispec))
         iglobDG = ibool_DG(i, j, ispec)
         LNS_rho0(iglobDG)    = rho_m(l_model)
         do v = 1, NDIM
