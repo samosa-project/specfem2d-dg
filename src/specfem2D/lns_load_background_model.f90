@@ -38,9 +38,11 @@
 
 subroutine lns_load_background_model(nlines_header, nlines_model)
 
-  use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par, only: myrank, USE_DISCONTINUOUS_METHOD, any_elastic
-  use specfem_par_lns, only: USE_LNS
+  use constants, only: CUSTOM_REAL, FOUR_THIRDS, NDIM, TINYVAL
+  use specfem_par, only: myrank, nglob, USE_DISCONTINUOUS_METHOD, any_elastic, gammaext_dg
+  use specfem_par_lns, only: USE_LNS, LNS_rho0, LNS_v0, LNS_p0, &
+                             LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_E0, LNS_T0, &
+                             nabla_v0, sigma_v_0
   
   implicit none
   
@@ -48,9 +50,13 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   integer, intent(in) :: nlines_header, nlines_model
   
   ! Local variables.
-  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
+  logical :: meshes_agree
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: TWOcr = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model) :: X_m, v_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: rho_model, p_model, g_model, gam_model, mu_model, kappa_model
+  integer, dimension(nglob) :: id_line_model ! Maps (i, j, ispec) to corresponding line of model, if the model agrees with the current mesh.
   
   ! Safeguard.
   if(.not. USE_DISCONTINUOUS_METHOD) then
@@ -90,29 +96,186 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
                                  rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
                                 )
   
-  ! Check
-!  if(.true.) then
-!    do i=1, nlines_model
-!      write(*,*) X_m(1, i), X_m(2, i), p_model(i)
-!    enddo
-!    stop
-!  endif
-
-  ! Interpolation.
-  if(myrank==0) then
-    write(*,*) "> Performing a 2D linear interpolation on the Delaunay triangulation of the provided model points."
-  endif
-  call delaunay_interp_all_points(nlines_model, X_m, &
-                                  rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
-                                 )
+  ! Initialise initial state registers.
+  LNS_rho0   = ZEROcr
+  LNS_v0     = ZEROcr
+  LNS_E0     = ZEROcr
+  ! Initialise initial auxiliary quantities.
+  LNS_T0     = ZEROcr
+  LNS_p0     = ZEROcr
+  nabla_v0   = ZEROcr ! Will be initialised in 'compute_forces_acoustic_LNS_calling_routine.f90'.
+  sigma_v_0  = ZEROcr ! Will be initialised in 'compute_forces_acoustic_LNS_calling_routine.f90'.
+  ! Physical parameters.
+  LNS_g      = ZEROcr
+  LNS_mu     = ZEROcr
+  LNS_eta    = ZEROcr
+  LNS_kappa  = ZEROcr
   
-  ! Update elastic parts.
-  call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile (see 'define_external_model.f90').
+  ! Check whether current mesh agrees with model mesh (in which case, no interpolation is needed).
+  meshes_agree = .false.
+  call do_meshes_agree(nlines_model, X_m, meshes_agree, id_line_model)
+  
+  if(meshes_agree) then
+    if(myrank==0) then
+      write(*,*) "> The provided model points exactly agree with current mesh, fast-forwarding by applying directly model to mesh."
+    endif
+    call apply_model_to_mesh(nlines_model, X_m, &
+                             rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model, &
+                             id_line_model)
+  else
+    ! If mesh does not agree with model, perform linear interpolation.
+    if(myrank==0) then
+      write(*,*) "> Performing a 2D linear interpolation on the Delaunay triangulation of the provided model points."
+    endif
+    call delaunay_interp_all_points(nlines_model, X_m, &
+                                    rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
+                                   )
+  endif
+  
+  ! Deduce remaining quantities.    
+  LNS_eta = FOUR_THIRDS*LNS_mu
+  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr ! LNS_p0 is uninitialised in solids (remains 0). Crashes compute_E. Hack it.
+  where(gammaext_DG < TINYVAL) gammaext_DG = TWOcr ! gammaext_DG is uninitialised in solids (remains 0). Crashes compute_E. Hack it.
+  call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
+  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr ! LNS_rho0 is uninitialised in solids (remains 0). Crashes compute_T. Hack it.
+  call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
+  
+  !! Debug.
+  !do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
+  !  if(LNS_E0(ibool_DG(i, j, ispec))<TINYVAL) write(*,*) 'E0<=0 at [',coord(1:NDIM, ibool(i, j, ispec)),']: ', &
+  !                                                       LNS_E0(ibool_DG(i, j, ispec)), gammaext_DG(ibool_DG(i, j, ispec))
+  !enddo; enddo; enddo
+  
+  ! Safeguards.
+  call LNS_prevent_nonsense()
+  
+  if(any_elastic) then
+    ! Update elastic parts.
+    call external_DG_update_elastic_from_parfile() ! Update elastic regions by reading parameters directly from parfile (see 'define_external_model.f90').
+  endif
   
   ! Eventually save interpolated model.
   call output_lns_interpolated_model()
   
 end subroutine lns_load_background_model
+
+
+! ------------------------------------------------------------ !
+! do_meshes_agree                                              !
+! ------------------------------------------------------------ !
+! TODO: description
+
+subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
+  use specfem_par, only: nspec, nglob, coord, ispec_is_elastic, ispec_is_acoustic_DG, ibool, coord_interface
+  use specfem_par_lns, only: norm2r1
+  
+  implicit none
+  
+  ! Input/output.
+  integer, intent(in) :: nlines_model
+  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(in) :: xmodel
+  logical, intent(out) :: meshes_agree
+  integer, dimension(nglob), intent(out) :: id_line_model ! Maps (i, j, ispec) to corresponding line of model.
+  
+  ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  integer :: ispec, i, j, k, cur_ibool
+  logical, dimension(nglob) :: FOUND
+  
+  FOUND = .false.
+  
+  do ispec = 1, nspec
+    if(ispec_is_elastic(ispec)) then
+      do j = 1, NGLLZ; do i = 1, NGLLX
+        FOUND(ibool(i, j, ispec)) = .true. ! Do not care about elastic points.
+      enddo; enddo
+    elseif(ispec_is_acoustic_DG(ispec)) then
+      ! For DG elements, go through GLL points one by one.
+      do j = 1, NGLLZ; do i = 1, NGLLX
+        do k = 1, nlines_model
+          cur_ibool = ibool(i, j, ispec)
+          if(norm2r1(xmodel(:, k)-(coord(:, cur_ibool)-(/ZEROcr, coord_interface/)))<=TINYVAL) then
+            FOUND(cur_ibool) = .true.
+            id_line_model(cur_ibool) = k
+          !else
+          !  write(*,*) 'pt', ispec, i, j, '(',(coord(:, ibool(i, j, ispec))-(/0._CUSTOM_REAL, coord_interface/)),')', &
+          !             k, '(', xmodel(:, k) ,'):', &
+          !             norm2r1(xmodel(:, k)-(coord(:, ibool(i, j, ispec))-(/0._CUSTOM_REAL, coord_interface/)))
+          endif
+        enddo
+        !if(.not.(FOUND(cur_ibool))) then
+        !  write(*,*) 'did not find pt', ispec, i, j, '(',(coord(:, cur_ibool)-(/0._CUSTOM_REAL, coord_interface/)),')'
+        !endif
+      enddo; enddo
+    endif
+  enddo
+  ! Meshes agree if all points (in this slice) were found in the model.
+  meshes_agree = all(FOUND)
+end subroutine do_meshes_agree
+
+! ------------------------------------------------------------ !
+! apply_model_to_mesh                                          !
+! ------------------------------------------------------------ !
+
+
+subroutine apply_model_to_mesh(nlines_model, X_m, &
+                               rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m, &
+                               idL_m)
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS, TINYVAL
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, &
+                             LNS_g, LNS_mu, LNS_kappa, LNS_c0
+  use specfem_par, only: nspec, ispec_is_elastic, rhoext, vpext, &
+                         ispec_is_acoustic_DG, ibool_DG, ibool, gammaext_DG, nglob
+  
+  implicit none
+  
+  ! Input/output.
+  integer, intent(in) :: nlines_model
+  real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(inout) :: X_m
+  real(kind=8), dimension(NDIM, nlines_model), intent(in) :: v_m
+  real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
+  integer, dimension(nglob), intent(in) :: idL_m ! Maps (i, j, ispec) to corresponding line of model.
+  
+  ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: TWOcr = 2._CUSTOM_REAL
+  integer :: ispec, i, j, v, l_model, iglobDG
+  
+  do ispec = 1, nspec
+    if(ispec_is_elastic(ispec)) then
+      cycle ! Elastic regions are treated separately (see call to 'external_DG_update_elastic_from_parfile' below).
+    elseif(ispec_is_acoustic_DG(ispec)) then
+      ! For DG elements, go through GLL points one by one.
+      do j = 1, NGLLZ; do i = 1, NGLLX
+        l_model = idL_m(ibool(i, j, ispec))
+        iglobDG = ibool_DG(i, j, ispec)
+        LNS_rho0(iglobDG)    = rho_m(l_model)
+        do v = 1, NDIM
+          LNS_v0(v, iglobDG) = v_m(v, l_model)
+        enddo
+        LNS_p0(iglobDG)      = p_m(l_model)
+        LNS_g(iglobDG)       = g_m(l_model)
+        gammaext_DG(iglobDG) = gam_m(l_model)
+        LNS_mu(iglobDG)      = mu_m(l_model)
+        LNS_kappa(iglobDG)   = kappa_m(l_model)
+        ! For the subroutines in 'invert_mass_matrix.f90', one needs to initialise the following:
+        rhoext(i, j, ispec) = LNS_rho0(iglobDG)
+        LNS_c0(iglobDG) = sqrt(gammaext_DG(iglobDG)*LNS_p0(iglobDG)/LNS_rho0(iglobDG)) ! Take the chance to compute and save c0.
+        vpext(i, j, ispec) = LNS_c0(iglobDG)
+      enddo; enddo
+    else
+      ! Neither elastic nor acoustic_dg.
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* lns_load_background_model.f90"
+      write(*,*) "********************************"
+      stop
+    endif ! Endif on ispec_is_acoustic_DG.
+  enddo
+end subroutine apply_model_to_mesh
 
 
 ! ------------------------------------------------------------ !
@@ -214,12 +377,9 @@ end subroutine lns_read_background_model
 subroutine delaunay_interp_all_points(nlines_model, X_m, &
                                       rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                      )
-  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS, TINYVAL
-  use specfem_par_lns, only: USE_LNS, LNS_rho0, LNS_v0, LNS_p0, &
-                             LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_E0, LNS_T0, &
-                             nabla_v0, sigma_v_0
-  use specfem_par, only: USE_DISCONTINUOUS_METHOD, any_acoustic_DG, myrank, nspec, ispec_is_elastic, &
-                         ispec_is_acoustic_DG, coord, ibool_DG, ibool, gammaext_DG
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
+  !use specfem_par_lns, only: USE_LNS
+  use specfem_par, only: myrank, nspec, ispec_is_elastic, ispec_is_acoustic_DG
   
   implicit none
   
@@ -237,44 +397,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   integer(kind=4) :: tri_num
   integer(kind=4), dimension(3, 2*nlines_model) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
   
-  ! Safeguards.
-  if(.not. (USE_DISCONTINUOUS_METHOD .and. USE_LNS)) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* Currently cannot use the     *"
-    write(*,*) "* 'external_DG' model if not   *"
-    write(*,*) "* using the DG method.         *"
-    write(*,*) "********************************"
-    stop
-  endif
-  if(.not. any_acoustic_DG) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* No acoustic DG elements!     *"
-    write(*,*) "* Cannot import                *"
-    write(*,*) "* LNS_generalised model.       *"
-    write(*,*) "********************************"
-    stop
-  endif
-  
   call delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
-  
-  ! Initialise initial state registers.
-  LNS_rho0   = ZEROcr
-  LNS_v0     = ZEROcr
-  LNS_E0     = ZEROcr
-  ! Initialise initial auxiliary quantities.
-  LNS_T0     = ZEROcr
-  LNS_p0     = ZEROcr
-  nabla_v0   = ZEROcr ! Will be initialised in 'compute_forces_acoustic_LNS_calling_routine.f90'.
-  sigma_v_0  = ZEROcr ! Will be initialised in 'compute_forces_acoustic_LNS_calling_routine.f90'.
-  ! Physical parameters.
-  LNS_g      = ZEROcr
-  LNS_mu     = ZEROcr
-  LNS_eta    = ZEROcr
-  LNS_kappa  = ZEROcr
   
   if(myrank==0) then
     write(*,*) "> > Starting interpolation on the Delaunay triangulation."
@@ -282,18 +405,14 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
-!      write(*,*) 'Element ',ispec,' is elastic.'! DEBUG
       cycle ! Elastic regions are treated separately (see call to 'external_DG_update_elastic_from_parfile' below).
     elseif(ispec_is_acoustic_DG(ispec)) then
       ! For DG elements, go through GLL points one by one.
-!      write(*,*) 'Element ',ispec,' is acoustic DG.'! DEBUG
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
+      do j = 1, NGLLZ; do i = 1, NGLLX
           call delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
                                               rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
                                              )
-        enddo
-      enddo
+      enddo; enddo
     else
       ! Neither elastic nor acoustic_dg.
       write(*,*) "********************************"
@@ -304,26 +423,6 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
       stop
     endif ! Endif on ispec_is_acoustic_DG.
   enddo
-  
-  ! Deduce remaining quantities.    
-  LNS_eta = FOUR_THIRDS*LNS_mu
-  where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr ! LNS_p0 is uninitialised in solids (remains 0). Crashes compute_E. Hack it.
-  where(gammaext_DG < TINYVAL) gammaext_DG = TWOcr ! gammaext_DG is uninitialised in solids (remains 0). Crashes compute_E. Hack it.
-  call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
-  where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr ! LNS_rho0 is uninitialised in solids (remains 0). Crashes compute_T. Hack it.
-  call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
-  
-  ! Debug.
-  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
-    if(LNS_E0(ibool_DG(i, j, ispec))<TINYVAL) write(*,*) 'E0<=0 at [',coord(1:NDIM, ibool(i, j, ispec)),']: ', &
-                                                         LNS_E0(ibool_DG(i, j, ispec)), gammaext_DG(ibool_DG(i, j, ispec))
-  enddo; enddo; enddo
-  
-  ! Safeguards.
-  call LNS_prevent_nonsense()
-!  write(*,*) 'min max E0 reldiff', minval(LNS_E0), maxval(LNS_E0), ABS(maxval(LNS_E0)-minval(LNS_E0))/abs(maxval(LNS_E0))
-!  write(*,*) 'min max T0 reldiff', minval(LNS_T0), maxval(LNS_T0), ABS(maxval(LNS_T0)-minval(LNS_T0))/abs(maxval(LNS_T0))
-!  stop
 end subroutine delaunay_interp_all_points
 
 
@@ -344,12 +443,9 @@ subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tr
   integer(kind=4), dimension(3, 2*nlines_model), intent(out) :: tri_vert, tri_nabe ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
   ! Local variables.
   integer :: t
-  
   call dtris2(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
-  
   if(myrank==0) then
     write(*,*) "> > Delaunay triangulation of the ",nlines_model," model points: ", tri_num, "triangles found."
-    
     ! Debug: print out triangles.
     if(.false.) then
       do t = 1, tri_num
@@ -359,14 +455,12 @@ subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tr
       enddo
     endif
   endif
-  
 end subroutine delaunay_background_model_2d
 
 
 ! ------------------------------------------------------------ !
 ! delaunay_interpolate_one_point                               !
 ! ------------------------------------------------------------ !
-
 
 subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
                                           rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
@@ -378,13 +472,13 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   implicit none
   
   ! Input/output.
-  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer, intent(in) :: nlines_model, ispec, i, j, tri_num
   integer(kind=4), dimension(3, 2*nlines_model), intent(in) :: tri_vert ! Theoretically, tri_vert and tri_nabe are of size (3, tri_num). However, at this point, one does not know tri_num. Nevertheless, an upper bound is 2*nlines_model (cf. dtris2 subroutine in 'table_delaunay').
   real(kind=8), dimension(NDIM, nlines_model), intent(in) :: X_m, v_m
   real(kind=CUSTOM_REAL), dimension(nlines_model), intent(in) :: rho_m, p_m, g_m, gam_m, mu_m, kappa_m
   
   ! Local variables.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   integer :: t, v, iglobDG
   integer, dimension(3) :: loctri_vertices_ids
   real(kind=8), dimension(3, NDIM) :: local_vertice_list
