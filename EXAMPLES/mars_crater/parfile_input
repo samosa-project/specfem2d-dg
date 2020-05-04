@@ -435,10 +435,10 @@ output_energy                   = .false.
 #---------------------------------------------------------------------#
 
 # Time steps between JPEG and/or PostScript snapshots.
-NSTEP_BETWEEN_OUTPUT_IMAGES     = 20000
+NSTEP_BETWEEN_OUTPUT_IMAGES     = 15000
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
-NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 20000
+NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 15000
 
 # Minimum amplitude kept (in %) for the JPEG and PostScript snapshots: amplitudes below that are muted.
 cutsnaps                        = 1.
