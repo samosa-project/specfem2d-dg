@@ -21,9 +21,7 @@ function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
     xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
     xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
     NX = readExampleFiles_extractParam(parfile, 'nx', 'int') + 1;
-    [zmin, zmax] = readExampleFiles_zMinMaxInterfacesFile(intfile);
-
-    [layers, ~] = readExampleFiles_meshfem_mesh(intfile);
+    [layers, ~, zmin, zmax] = readExampleFiles_meshfem_mesh(intfile);
     if(numel(layers)>1)
       error('not implemented');
     end
@@ -33,10 +31,11 @@ function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
     [X, Z] = meshgrid(x, z);
 
     if(isMatrix)
-      [order, tag, tex, unit] = order_bg_model();
+      [order, ~, ~, ~] = order_bg_model();
       nb_qty = size(order, 1);
+%       [min(X(:)), max(X(:)), min(Z(:)), max(Z(:))]
       for iqty = 3:nb_qty
-        bgm.(order(iqty,:)) = interp2(bgm.(order(1,:)), bgm.(order(2,:)), bgm.(order(iqty,:)), X, Z);
+        bgm.(order(iqty, :)) = interp2(bgm.(order(1,:)), bgm.(order(2,:)), bgm.(order(iqty,:)), X, Z);
       end
       bgm.(order(1,:)) = X;
       bgm.(order(2,:)) = Z;
@@ -49,10 +48,26 @@ function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
         id = find(all((order==curQty)'));
         ROWS(:, id) = reshape(bgm.(curQty), npts, 1);
       end
-      copyfile(oldmodel, [regexprep(oldmodel, '\.bin', '_ORIGINAL.bin')]); % save original
-      newmodel = write_bg_model(ROWS, 'outputFolder', EXAMPLE_DIR);
+      
     else
       error('not implemented');
     end
+  end
+  
+  % Ask for confirmation before writing.
+  estimate_size = numel(ROWS)*8/1048576;
+  if(estimate_size>50)
+    userIsSure = -1;
+    while(not(numel(userIsSure)==1 && ismember(userIsSure, [0,1])))
+      userIsSure = input(['[',mfilename,'] You are about to write ',num2str(estimate_size),' Mb (',num2str(numel(ROWS)),' floating point numbers) to disk. Are you sure? > ']);
+    end
+  else
+    userIsSure = 1;
+  end
+  if(userIsSure)
+    copyfile(oldmodel, [regexprep(oldmodel, '\.bin', '_ORIGINAL.bin')]); % save original
+    newmodel = write_bg_model(ROWS, 'outputFolder', EXAMPLE_DIR);
+  else
+    error('aborted');
   end
 end
