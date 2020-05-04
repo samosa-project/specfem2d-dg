@@ -253,7 +253,7 @@
 
         call recompute_jacobian(xi,gamma,x,z,xixl,xizl,gammaxl,gammazl, &
                                 jacobianl,coorg,knods,ispec,ngnod,nspec,npgeo, &
-                                .false.)
+                                read_external_mesh)
 
         if (jacobianl <= ZERO) found_a_negative_jacobian = .true.
 
