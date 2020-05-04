@@ -1,0 +1,210 @@
+// Display. //---------------//
+General.Axes = 0; // Show axes.
+Mesh.Lines = 1; // Display lines.
+Geometry.LineNumbers = 1; // Display line numbers.
+Mesh.LineNumbers = 0; // Display line numbers.
+Mesh.Points = 1; // Display points.
+Geometry.PointNumbers = 1; // Display point numbers.
+Mesh.PointNumbers = 0; // Display point numbers
+Mesh.SurfaceEdges = 1; // Display edges.
+Mesh.SurfaceFaces = 1; // Display surfaces.
+Geometry.SurfaceNumbers = 1; // Display surface numbers.
+Mesh.SurfaceNumbers = 0; // Display surface numbers.
+// Elements. //--------------//
+Mesh.SubdivisionAlgorithm = 1; // Meshing algorithm: all quads.
+Mesh.RecombineAll = 1; // Recombine all triangular elements.
+// Meshing algorithm. //-----//
+Mesh.Algorithm = 5; // 1: MeshAdapt. 5: Delaunay for quads. 9: structured (experimental).
+Mesh.RecombinationAlgorithm = 0; // 0: Standard. 1: Blossom.
+Mesh.ElementOrder = 1; // Element order.
+Mesh.RandomFactor = 0.001; // Perturbate every points positions in order to avoid 3 aligned points. Default is at 1e-9, maximum is 1e-3.
+// Geometry. //--------------//
+// Physical parameters.
+crat_d1x1 = 11.;//9.;
+crat_d2 = -2.5;
+crat_d3 = -4.330127;
+crat_d4 = -5.;
+sem_lefrig = 37.;//16.5;
+sem_lef = 0.-sem_lefrig;
+sem_rig = 27.000000+sem_lefrig;
+firstzsplit = 30.;//20.;
+halftop = 120.;
+zmax = 800.;
+Point(1) = {sem_lef,-50.000000,0};
+Point(2) = {sem_rig,-50.000000,0};
+Point(3) = {sem_lef,-20.000000,0};
+Point(4) = {sem_rig,-20.000000,0};
+Point(5) = {sem_lef,0.000000,0};
+Point(6) = {sem_rig,0.000000,0};
+Point(7) = {sem_lef-1.,firstzsplit,0};
+Point(8) = {sem_rig+1.,firstzsplit,0};
+Point(9) = {27.000000,0.000000,0};
+Point(10) = {25.191343,crat_d2,0};
+Point(11) = {20.250000,crat_d3,0};
+Point(12) = {13.500000,crat_d4,0};
+Point(13) = {6.750000,crat_d3,0};
+Point(14) = {1.808657,crat_d2,0};
+Point(15) = {0.000000,-0.000000,0};
+Point(16) = {-crat_d1x1,-20.000000,0};
+Point(17) = {-1.500000,-20.000000+crat_d2/2.,0};
+Point(18) = {6.000000,-20.000000+crat_d3/2.,0};
+Point(19) = {13.500000,-20.000000+crat_d4/2.,0};
+Point(20) = {21.000000,-20.000000+crat_d3/2.,0};
+Point(21) = {28.500000,-20.000000+crat_d2/2.,0};
+Point(22) = {27.000000+crat_d1x1,-20.000000,0};
+Point(23) = {500.000000,0.000000,0};
+Point(24) = {-500.000000,0.000000,0};
+Point(25) = {-500.000000,-20.000000,0};
+Point(26) = {500.000000,-20.000000,0};
+Point(27) = {-500.000000,-50.000000,0};
+Point(28) = {500.000000,-50.000000,0};
+Point(29) = {-500.000000,-600.000000,0};
+Point(30) = {500.000000,-600.000000,0};
+Point(31) = {500.000000,(2.*firstzsplit+halftop)/3.,0};
+Point(32) = {-500.000000,(2.*firstzsplit+halftop)/3.,0};
+Point(33) = {500.000000,(2.*halftop+zmax)/3.,0};
+Point(34) = {-500.000000,(2.*halftop+zmax)/3.,0};
+Point(35) = {sem_rig+40.,halftop,0};
+i=36;
+Point(i) = {sem_lef-40.,halftop,0}; i=i+1;
+Point(i) = {-500.000000,zmax,0}; i=i+1;
+Point(i) = {sem_lef-40.,zmax,0}; i=i+1;
+Point(i) = {sem_rig+40.,zmax,0}; i=i+1;
+Point(i) = {500.000000,zmax,0}; i=i+1;
+
+// Define lines joining points. Warning: prefer counter-clockwise direction to prevent inverted elements. Warning: do not duplicate lines if two or more materials are needed.
+Line(1) = {1, 2};
+Line(2) = {2, 4};
+Line(3) = {4, 22};
+Line(4) = {22, 21};
+Line(5) = {21, 20};
+Line(6) = {20, 19};
+Line(7) = {19, 18};
+Line(8) = {18, 17};
+Line(9) = {17, 16};
+Line(10) = {16, 3};
+Line(11) = {22, 9};
+Line(12) = {21, 10};
+Line(13) = {20, 11};
+Line(14) = {19, 12};
+Line(15) = {18, 13};
+Line(16) = {17, 14};
+Line(17) = {16, 15};
+Line(18) = {3, 1};
+Line(19) = {4, 6};
+Line(20) = {6, 9};
+Line(21) = {9, 10};
+Line(22) = {10, 11};
+Line(23) = {11, 12};
+Line(24) = {12, 13};
+Line(25) = {13, 14};
+Line(26) = {14, 15};
+Line(27) = {15, 5};
+Line(28) = {9, 15};
+Line(29) = {5, 3};
+Line(30) = {6, 8};
+Line(31) = {8, 7};
+Line(32) = {7, 5};
+Line(33) = {29, 30};
+Line(34) = {30, 28};
+Line(35) = {28, 2};
+Line(36) = {1, 27};
+Line(37) = {27, 29};
+Line(38) = {28, 26};
+Line(39) = {26, 4};
+Line(40) = {3, 25};
+Line(41) = {25, 27};
+Line(42) = {26, 23};
+Line(43) = {23, 6};
+Line(44) = {5, 24};
+Line(45) = {24, 25};
+Line(46) = {23, 31};
+Line(47) = {31, 8};
+Line(48) = {7, 32};
+Line(49) = {32, 24};
+Line(50) = {31, 33};
+Line(51) = {33, 35};
+Line(52) = {35, 8};
+Line(53) = {35, 36};
+Line(54) = {36, 7};
+Line(55) = {36, 34};
+Line(56) = {34, 32};
+i=57;
+Line(i) = {33, 40}; i=i+1;
+Line(i) = {40, 39}; i=i+1;
+Line(i) = {39, 38}; i=i+1;
+Line(i) = {38, 37}; i=i+1;
+Line(i) = {37, 34}; i=i+1;
+
+Line Loop(1) = {33,34, 35, -1, 36, 37};
+Line Loop(2) = {38,39, -2, -35};
+Line Loop(3) = {2, 3 ,4 ,5 ,6 ,7 ,8 ,9 ,10 ,18, 1};
+Line Loop(4) = {-18,40, 41, -36};
+Line Loop(5) = {42,43, -19, -39};
+Line Loop(6) = {19,20, -11, -3};
+Line Loop(7) = {11,21, -12, -4};
+Line Loop(8) = {12,22, -13, -5};
+Line Loop(9) = {13,23, -14, -6};
+Line Loop(10) = {14,24, -15, -7};
+Line Loop(11) = {15,25, -16, -8};
+Line Loop(12) = {16,26, -17, -9};
+Line Loop(13) = {17,27, 29, -10};
+Line Loop(14) = {-29,44, 45, -40};
+Line Loop(15) = {28, -26, -25, -24, -23, -22, -21};
+Line Loop(16) = {46,47, -30, -43};
+Line Loop(17) = {30,31,32,-27, -28, -20};
+Line Loop(18) = {-32,48, 49, -44};
+Line Loop(19) = {50,51, 52, -47};
+Line Loop(20) = {-52,53, 54, -31};
+Line Loop(21) = {-54,55, 56, -48};
+i=22;
+Line Loop(i) = {57, 58, 59, 60, 61, -55, -53, -51}; i=i+1;
+Plane Surface(1) = {1};
+Plane Surface(2) = {2};
+Plane Surface(3) = {3};
+Plane Surface(4) = {4};
+Plane Surface(5) = {5};
+Plane Surface(6) = {6};
+Plane Surface(7) = {7};
+Plane Surface(8) = {8};
+Plane Surface(9) = {9};
+Plane Surface(10) = {10};
+Plane Surface(11) = {11};
+Plane Surface(12) = {12};
+Plane Surface(13) = {13};
+Plane Surface(14) = {14};
+Plane Surface(15) = {15};
+Plane Surface(16) = {16};
+Plane Surface(17) = {17};
+Plane Surface(18) = {18};
+Plane Surface(19) = {19};
+Plane Surface(20) = {20};
+Plane Surface(21) = {21};
+Plane Surface(22) = {22};
+//Physical Line("Top") = {51,53,55};
+Physical Line("Top") = {58}; 
+Physical Line("Left") = {59, 56, 49, 45, 41, 37};
+Physical Line("Bottom") = {1}; 
+Physical Line("Right") = {34,38,42, 46, 50, 57};
+Physical Surface("M4") = {1, 3, 2, 4};
+Physical Surface("M3") = {5, 14,6 ,7 ,8 ,9 ,10 ,11 ,12 ,13 };
+Physical Surface("M2") = {15};
+Physical Surface("M1") = {17, 16, 18, 20, 19, 21, 22};
+Recombine Surface {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21};
+Mesh.CharacteristicLengthFactor = 1; // Scaling of all elements' sizes. 
+dxtop=25.;
+Characteristic Length {1,2} = 2*12.000000; 
+Characteristic Length {8,7} = 2*(1.000000*4.+dxtop)/5.;
+Characteristic Length {10, 11, 12, 13, 14} = 2*1.000000;
+Characteristic Length {9, 15} = 2*1.000000*0.8;
+Characteristic Length {16 , 17, 18, 19, 20, 21, 22} = 2*1.000000*1.2;
+Characteristic Length {4,3} = 2*1.000000*2.;
+Characteristic Length {6,5} = 2*1.000000*2.;
+Characteristic Length {29,30} = 2*110.;
+Characteristic Length {27,28} = 2*15.;
+Characteristic Length {26,25} = 2*10.;
+Characteristic Length {23,24} = 2*10.;
+Characteristic Length {31,32} = 2*12.;
+Characteristic Length {37,38,39,40} = 2*dxtop;
+Characteristic Length {33,34} = 2*dxtop;
+Characteristic Length {35,36} = 2*dxtop*0.6;
