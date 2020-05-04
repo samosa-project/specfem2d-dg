@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 4
+NPROC                           = 320
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -107,11 +107,11 @@ CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydros
 
 # Fluid model (if MODEL\='external').
 USE_ISOTHERMAL_MODEL            = .true.         # Isothermal (.true.) or isobaric (.false.) model for the fluid part.
-SCALE_HEIGHT                    = 14725.1230     # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
-surface_density                 = 1.63458958d-2  # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
+SCALE_HEIGHT                    = 11115.08619947 # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
+surface_density                 = 1.98534950e-2  # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
 sound_velocity                  = 235.137573     # $c$. Unit: m.s^{-1}.
 wind                            = 10.            # Horizontal wind. Unit: m.s^{-1}.
-gravity                         = 3.72581100     # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
+gravity                         = 3.72690773     # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
 dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
 thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
 tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.
@@ -225,59 +225,58 @@ SU_FORMAT                       = .false.        # Single precision binary in Se
 use_existing_STATIONS           = .false.
 
 # Number of receiver sets (i.e. number of receiver lines to create below).
-nreceiversets = 6 # (total number of stations: 81)
+nreceiversets = 6
 # Orientation
 anglerec              = 0.0d0   # Angle to rotate components at receivers.
 rec_normal_to_surface = .false. # Base anglerec normal to surface (external mesh and curve file needed).
-# source
-nrec = 51
-xdeb =                 -10
-zdeb =               1
-xfin =                 40
-zfin =               1
+
+# SEIS and around
+nrec =  17
+xdeb = -12
+zdeb =  -1
+xfin =  12
+zfin =  -1
 record_at_surface_same_vertical = .false.
 
-# source
-nrec = 51
-xdeb =                 -10
-zdeb =               -1
-xfin =                 40
-zfin =               -1
+# APSS and around
+nrec =  17
+xdeb = -12
+zdeb =   1
+xfin =  12
+zfin =   1
 record_at_surface_same_vertical = .false.
 
-# source
-nrec = 13
-xdeb =                 -1220
-zdeb =               1
-xfin =                 -20
-zfin =               1
+# SEIS and around, compute tilt, left
+nrec =  17
+xdeb = -12.5
+zdeb =  -1
+xfin =  11.5
+zfin =  -1
 record_at_surface_same_vertical = .false.
 
-# source
-nrec = 13
-xdeb =                 -1220
-zdeb =               -1
-xfin =                 -20
-zfin =               -1
+# SEIS and around, compute tilt, right
+nrec =  17
+xdeb = -11.5
+zdeb =  -1
+xfin =  12.5
+zfin =  -1
 record_at_surface_same_vertical = .false.
 
-# source
-nrec = 13
-xdeb =                 50
-zdeb =               -1
-xfin =                 1250
-zfin =               -1
+# far from crater, ground velocity + tilt
+nrec = 3
+xdeb = -50.5
+zdeb =  -1
+xfin =  49.5
+zfin =  -1
 record_at_surface_same_vertical = .false.
 
-# source
-nrec = 13
-xdeb =                 50
-zdeb =               1
-xfin =                 1250
-zfin =               1
+# far from crater, air pressure
+nrec = 3
+xdeb = -50.5
+zdeb =   1
+xfin =  49.5
+zfin =   1
 record_at_surface_same_vertical = .false.
-
-
 
 #---------------------------------------------------------------------#
 #                                                                     #
