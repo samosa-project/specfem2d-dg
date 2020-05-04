@@ -155,7 +155,8 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   endif
   
   ! Eventually save interpolated model.
-  call output_lns_interpolated_model()
+  !call output_lns_interpolated_model()
+  call output_lns_interpolated_model_binary()
   
 end subroutine lns_load_background_model
 
@@ -661,7 +662,7 @@ subroutine output_lns_interpolated_model()
   ! Local variables.
   integer :: ispec, i, j, iglobDG
   ! Let all procs write to file (I know this may not be sequential and freak up the file, but I don't care since it's only for debugging purposes).
-  open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL',status='unknown',action='write', position="append")
+  open(unit=504,file='OUTPUT_FILES/LNS_GENERAL_MODEL',status='unknown',action='write', position="append")
   do ispec = 1,nspec
     do j = 1,NGLLZ
       do i = 1,NGLLX
@@ -674,10 +675,53 @@ subroutine output_lns_interpolated_model()
   enddo
   close(504)
   if(myrank==0) then
-    write(*,*) "> > Dumped interpolated model (on proc 0) to './OUTPUT_FILES/LNS_GENERAL_INTERPOLATED_MODEL'. ", &
+    write(*,*) "> > Dumped interpolated model (on proc 0) to './OUTPUT_FILES/LNS_GENERAL_MODEL'. ", &
                "Use the following Matlab one-liner to plot:"
     write(*,*) "      OFD=''; [~,lab]=order_bg_model();a=importdata(OFD);x=a(:,1);z=a(:,2);close all;for i=3:10;", &
                "d=[];d.rho=[];d.vel=[];d.pre=a(:,i);[Xi,Yi,Zi]=interpDumps(x,z,d,0,0,1);figure(i);surf(Xi,Yi,Zi.pre);", &
                "view([0,0,1]);shading flat;colorbar;title(lab{i});end;"
   endif
 end subroutine output_lns_interpolated_model
+
+subroutine output_lns_interpolated_model_binary()
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, SIZE_DOUBLE
+  use specfem_par, only: myrank, nglob, ibool, nspec, ibool_DG, coord, ibool_before_perio, gammaext_DG
+  use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa
+  implicit none
+  ! Local variables.
+  character(len=150) :: THEFILE
+  integer, parameter :: THEUNIT = 504
+  integer :: ispec, i, j, iglobDG, ier, icounter, iglob
+  logical, dimension(nglob) :: mask_ibool
+  write(THEFILE, "('OUTPUT_FILES/LNS_GENERAL_MODEL_',i3.3,'.bin')") myrank
+  open(unit=THEUNIT, file=THEFILE, form='unformatted', access='direct', status='unknown', &
+       action='write', recl=(2*NDIM+6)*SIZE_DOUBLE, iostat=ier)
+  icounter = 0
+  mask_ibool(:) = .false.
+  do ispec = 1,nspec
+    do j = 1,NGLLZ
+      do i = 1,NGLLX
+        iglob = ibool(i, j, ispec)
+        if (.not. mask_ibool(iglob)) then
+          icounter = icounter + 1
+          mask_ibool(iglob) = .true.
+          iglobDG = ibool_DG(i, j, ispec)
+          write(THEUNIT, rec=icounter) dble(coord(:, ibool_before_perio(i, j, ispec))), &
+                                       dble(LNS_rho0(iglobDG)), dble(LNS_v0(:, iglobDG)), dble(LNS_p0(iglobDG)), &
+                                       dble(gammaext_DG(iglobDG)), dble(LNS_g(iglobDG)), &
+                                       dble(LNS_mu(iglobDG)), dble(LNS_kappa(iglobDG))
+        endif
+      enddo
+    enddo
+  enddo
+  close(THEUNIT)
+  if(myrank==0) then
+    write(*,*) "> > Dumped interpolated model (on proc 0) to './OUTPUT_FILES/LNS_GENERAL_MODEL_*'. ", &
+               "Use the following Matlab one-liner to plot:"
+  endif
+  write(*,*) "    plot_bg_model(load_bg_model('OUTPUT_FILES/LNS_GENERAL_MODEL_000.bin', ",&
+             int(sum(merge(1.d0, 0.d0, mask_ibool))),"))"
+end subroutine output_lns_interpolated_model_binary
+
+
+
