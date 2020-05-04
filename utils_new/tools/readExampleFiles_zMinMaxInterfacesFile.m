@@ -10,6 +10,7 @@
 %   TODO.
 
 function [ymin, ymax] = readExampleFiles_zMinMaxInterfacesFile(interfaces_file, verbose)
+  error('now, prefer the use of readExampleFiles_meshfem_mesh');
   if(not(exist('verbose')))
     verbose=0;
   end
