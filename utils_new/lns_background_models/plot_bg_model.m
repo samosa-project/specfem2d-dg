@@ -1,12 +1,17 @@
-function [] = plot_bg_model(DATAFILE)
-  bgm = load_bg_model(DATAFILE);
+function [] = plot_bg_model(MODEL)
+  if(ischar(MODEL))
+    bgm = load_bg_model(MODEL);
+  elseif(isstruct(MODEL))
+    bgm = MODEL;
+  else
+    error('kek');
+  end
   [order, tag, tex, unit] = order_bg_model();
   nb_qty = size(order, 1);
   
   [bgm, isMatrix] = try_make_bg_model_matrix(bgm);
   
-  toKm = 1;
-  if(toKm)
+  if(max(bgm.zz(:))>=1e3)
     bgm.xx = bgm.xx/1e3;
     bgm.zz = bgm.zz/1e3;
     unit{1}=['k',unit{1}];
@@ -40,7 +45,7 @@ function [] = plot_bg_model(DATAFILE)
 %         onlyVaryingVertically = 0;
 %       end
     else
-      error('not implemented');
+      scatter(bgm.xx, bgm.zz, 20, toPlot, 'filled');
     end
     if(mod(iqty-2, ncol)==1)
       ylabel(YLAB);
@@ -71,6 +76,8 @@ function [] = plot_bg_model(DATAFILE)
     title(TIT);
   end
   
-  customSaveFig(thefig,regexprep(DATAFILE,'.bin',''),{'png','eps'}, 9999);
+  if(ischar(MODEL))
+    customSaveFig(thefig,regexprep(MODEL,'.bin',''),{'png','eps'}, 9999);
+  end
 end
 
