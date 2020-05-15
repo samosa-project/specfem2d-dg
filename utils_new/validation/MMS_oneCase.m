@@ -108,7 +108,7 @@ function [errQtity, err_l2, err_rel, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, G
       end
       % update error names
       err_l2.unit = [QtityUnit,'$\cdot$m'];
-      plotFields_YLABCB = ['${\Delta}',errQtity,'$ [',QtityUnit,']'];
+      plotFields_YLABCB = ['$',errQtity,'''$ [',QtityUnit,']'];
       err_l2.prefix = ['$\',err_l2.symbol, '_{',errQtity,'}'];
       err_rel.prefix = ['$\',err_rel.symbol, '_{',errQtity,'}'];
       
