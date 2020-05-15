@@ -3,6 +3,9 @@ function [layers, interfaces, zmin, zmax] = readExampleFiles_meshfem_mesh(intfil
   % intfile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test__LNS_generalised__using_custom_fields/interfaces_input';
 
   ff = fopen(intfile);
+  if(ff==-1)
+    error(['error opening file ''',intfile,'''']);
+  end
 
   line = {};
   i = 1;
@@ -25,6 +28,8 @@ function [layers, interfaces, zmin, zmax] = readExampleFiles_meshfem_mesh(intfil
   end
 
   fclose(ff);
+  
+%   line
 
   line(end)=[]; % remove EOF
   
@@ -32,9 +37,14 @@ function [layers, interfaces, zmin, zmax] = readExampleFiles_meshfem_mesh(intfil
     line{ll} = rmComEndl(line{ll});
   end
   
+%   line
+  
   nint = str2double(line{1});
   line(1)=[]; % remove
-
+  
+%   line
+  
+%   nint
   interfaces = {};
   for i=1:nint
     interfaces{i}.npts = str2double(line{1}); line(1)=[];
@@ -42,6 +52,8 @@ function [layers, interfaces, zmin, zmax] = readExampleFiles_meshfem_mesh(intfil
       interfaces{i}.xz(pt,1:2) = str2num(line{1}); line(1)=[];
     end
   end
+  
+%   line
 
   nlay = nint-1;
 

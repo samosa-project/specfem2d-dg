@@ -23,7 +23,7 @@ function [x_stat, z_stat, y_stat, stat_file] = loadStations(OFdir)
       stat_file = importdata([OFdir,'../DATA/STATIONS']);
       disp(['[',mfilename,'] STATIONS file found in root directory (OUTPUT_FILES*/../DATA/ folder).']);
     catch
-      error(['[',mfilename,', ERROR] Cannot find STATIONS file.']);
+      error(['[',mfilename,', ERROR] Cannot find STATIONS file, neither in folder ''',OFdir,''' nor in parent folder.']);
     end
   end
   pos_stations = [stat_file.data(:, 1) stat_file.data(:, 3) stat_file.data(:, 2)];

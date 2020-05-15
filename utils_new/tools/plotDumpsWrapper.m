@@ -1,7 +1,7 @@
 function [fh,X,Y,V,Xi, Yi, Vi] = plotDumpsWrapper(OFD, IT, verbose, nx, ny)
   removeMeanPressure = 1;
   
-  tags = {'rho', 'pre', 'velx', 'velz'};
+  tags = {'rho', 'pre', 'vel'};
   units = {'kg/m$^3$', 'Pa', 'm/s', 'm/s'};
   
   Ntags = numel(tags);
