@@ -33,7 +33,7 @@
 
   subroutine compute_vector_whole_medium(field_acoustic,field_gravitoacoustic, &
                                          field_gravito,field_elastic,fields_poroelastic,&
-                                         field_acoustic_DG)
+                                         ndimdg, field_acoustic_DG)
 
 ! compute Grad(potential) in acoustic elements
 ! and combine with existing velocity vector field in elastic elements
@@ -51,7 +51,8 @@
   real(kind=CUSTOM_REAL), dimension(nglob_gravitoacoustic) :: field_gravito
   real(kind=CUSTOM_REAL), dimension(NDIM,nglob_elastic) :: field_elastic
   real(kind=CUSTOM_REAL), dimension(NDIM,nglob_poroelastic) :: fields_poroelastic
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: field_acoustic_DG
+  integer, intent(in) :: ndimdg
+  real(kind=CUSTOM_REAL), dimension(ndimdg, nglob_DG) :: field_acoustic_DG
   !real(kind=CUSTOM_REAL), dimension(nglob) :: field_acoustic_DG_temp
   ! vector field in an element
   real(kind=CUSTOM_REAL), dimension(NDIM,NGLLX,NGLLZ) :: vector_field_element
@@ -99,7 +100,7 @@
   
     ! computes vector field in this element
     call compute_vector_one_element(field_acoustic,field_gravitoacoustic, &
-                                    field_gravito,field_elastic,fields_poroelastic,field_acoustic_DG, &
+                                    field_gravito,field_elastic,fields_poroelastic,ndimdg,field_acoustic_DG, &
                                     ispec,vector_field_element)
 
     ! stores the result on global nodes
@@ -118,7 +119,7 @@
 !
 
   subroutine compute_vector_one_element(field_acoustic,field_gravitoacoustic, &
-                                        field_gravito,field_elastic,fields_poroelastic,field_acoustic_DG,&
+                                        field_gravito,field_elastic,fields_poroelastic,ndimdg,field_acoustic_DG,&
                                         ispec,vector_field_element)
 
 ! compute Grad(potential) if acoustic element or copy existing vector if elastic element
@@ -140,7 +141,8 @@
   real(kind=CUSTOM_REAL), dimension(nglob_gravitoacoustic) :: field_gravito
   real(kind=CUSTOM_REAL), dimension(NDIM,nglob_elastic) :: field_elastic
   real(kind=CUSTOM_REAL), dimension(NDIM,nglob_poroelastic) :: fields_poroelastic
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: field_acoustic_DG
+  integer, intent(in) :: ndimdg
+  real(kind=CUSTOM_REAL), dimension(ndimdg,nglob_DG) :: field_acoustic_DG
 
   integer,intent(in) :: ispec
 
@@ -252,8 +254,16 @@
           vector_field_element(2,i,j) = (tempx1l*xizl + tempx2l*gammazl) / rhol        !u_z
           
         else
-          vector_field_element(1,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
-          vector_field_element(2,i,j) = field_acoustic_DG(ibool_DG(i,j,ispec))
+          if(ndimdg==1) then
+            ! Fill whole vector_field_element. Don't really known why it needed, but many crashes if you don't do that.
+            vector_field_element(1,i,j) = field_acoustic_DG(1, ibool_DG(i,j,ispec))
+            vector_field_element(2,i,j) = field_acoustic_DG(1, ibool_DG(i,j,ispec))
+          else
+            ! Fill according to each dimension.
+            do k=1,ndimdg
+              vector_field_element(k,i,j) = field_acoustic_DG(k,ibool_DG(i,j,ispec))
+            enddo
+          endif
         endif ! if(ispec_is_acoustic_DG(ispec))
         
       enddo

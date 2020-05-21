@@ -290,12 +290,13 @@ subroutine compute_energy()
       ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation). Thus, we make the
       ! following call instead.
       if(USE_LNS) then
+        ! Note: for LNS, computation is explicit and done below.
         call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                        potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                        potential_dot_gravito,veloc_elastic,velocs_poroelastic, 1, &
                                         LNS_dummy_1d, ispec,vector_field_element)
       else
         call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                        potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                        potential_dot_gravito,veloc_elastic,velocs_poroelastic, 1, &
                                         (rhovx_DG**2+rhovz_DG**2)**0.5/rho_DG, ispec,vector_field_element)
       endif
       ! IMPORTANT NOTICE -----------!

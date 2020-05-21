@@ -66,7 +66,7 @@
     ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,displ_elastic,displs_poroelastic, &
-                                     potential_dphi_dx_DG)
+                                     1, potential_dphi_dx_DG)
 
     call plot_post()
 
@@ -79,7 +79,7 @@
     ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                     potential_dphi_dx_DG)
+                                     1, potential_dphi_dx_DG)
 
     call plot_post()
 
@@ -92,7 +92,7 @@
     ! TODO: Do something here instead of this poor patch.
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                      potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                     potential_dphi_dx_DG)
+                                     1, potential_dphi_dx_DG)
 
     call plot_post()
 

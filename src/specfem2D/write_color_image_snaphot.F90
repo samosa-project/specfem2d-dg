@@ -110,7 +110,7 @@
     endif
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,displ_elastic,displs_poroelastic, &
-                                     vector_DG_temp)
+                                     1, vector_DG_temp)
   
   ! imagetype_JPEG 4, 5, and 6.
   else if (imagetype_JPEG >= 4 .and. imagetype_JPEG <= 6) then
@@ -156,7 +156,7 @@
     endif
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                     vector_DG_temp)
+                                     1, vector_DG_temp)
   
   ! imagetype_JPEG 7, 8, and 9.
   else if (imagetype_JPEG >= 7 .and. imagetype_JPEG <= 9) then
@@ -189,7 +189,7 @@
     endif
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
                                      potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
-                                     vector_DG_temp)
+                                     1, vector_DG_temp)
   
   ! imagetype_JPEG 11, 12, and 13.
   else if (imagetype_JPEG >= 11 .and. imagetype_JPEG <= 13) then
@@ -201,7 +201,7 @@
     endif
     call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,displ_elastic,displs_poroelastic, &
-                                     rho_DG)
+                                     1, rho_DG)
 
     do ispec = 1, nspec
       do j = 1, NGLLZ
@@ -225,7 +225,7 @@
     ! for an atmosphere model
     call compute_vector_whole_medium(potential_dot_acoustic,potential_dot_gravitoacoustic, &
                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
-                                     rho_DG)
+                                     1, rho_DG)
     do ispec = 1, nspec
       do j = 1, NGLLZ
         do i = 1, NGLLX

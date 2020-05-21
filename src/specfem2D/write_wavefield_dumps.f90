@@ -34,7 +34,7 @@
 
   subroutine write_wavefield_dumps()
 
-  use constants,only: IMAIN,SIZE_REAL,NGLLX,NGLLZ
+  use constants,only: IMAIN,SIZE_REAL,NGLLX,NGLLZ,NDIM
 
   use specfem_par, only: myrank,nglob,nspec, &
                          ibool,coord,P_SV,it,SIMULATION_TYPE, &
@@ -119,12 +119,12 @@
         if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and density in LNS elements...'
         call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                          potential_gravito,displ_elastic,displs_poroelastic,&
-                                         LNS_drho)
+                                         1, LNS_drho)
       else
         if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and density in DG elements...'
         call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                          potential_gravito,displ_elastic,displs_poroelastic,&
-                                         rho_DG)
+                                         1, rho_DG)
       endif
     else
       ! Full classical SPECFEM.
@@ -133,7 +133,7 @@
       ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
       call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                        potential_gravito,displ_elastic,displs_poroelastic,&
-                                       potential_dphi_dx_DG)
+                                       1, potential_dphi_dx_DG)
     endif
   else if (imagetype_wavefield_dumps == 2) then
     if (myrank == 0) write(IMAIN,*) 'dumping the velocity vector...'
@@ -146,20 +146,20 @@
         ! LM: This is not a very complete method, since compute_vector_whole_medium has the capability of sending a vector to vector_field_display. However for DG, compute_vector_whole_medium is implemented in such a way that this becomes impossible, and duplicates a scalar value over the whole vector attributed variable. This is convoluted, and should be modified. I do not have the time to do it right now.
         call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
                                          potential_gravito,veloc_elastic,velocs_poroelastic, &
-                                         LNS_dv(1, :))
+                                         NDIM, LNS_dv(:, :))
       else
         ! Send vx at least.
         ! LM: This is not a very complete method, since compute_vector_whole_medium has the capability of sending a vector to vector_field_display. However for DG, compute_vector_whole_medium is implemented in such a way that this becomes impossible, and duplicates a scalar value over the whole vector attributed variable. This is convoluted, and should be modified. I do not have the time to do it right now.
         call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
                                          potential_gravito,veloc_elastic,velocs_poroelastic, &
-                                         rhovx_DG/rho_DG)
+                                         1, rhovx_DG/rho_DG)
       endif
     else
       ! The DG field in compute_vector_whole_medium serves no purpose.
       ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
       call compute_vector_whole_medium(potential_dot_acoustic,potential_gravitoacoustic, &
                                        potential_gravito,veloc_elastic,velocs_poroelastic, &
-                                       potential_dphi_dx_DG)
+                                       1, potential_dphi_dx_DG)
     endif
 
   else if (imagetype_wavefield_dumps == 3) then
@@ -171,7 +171,7 @@
     ! TODO: Do something here instead of this poor patch. Maybe introduce a dummy variable, or a call to a dedicated method (without the DG argument).
     call compute_vector_whole_medium(potential_dot_dot_acoustic,potential_gravitoacoustic, &
                                      potential_gravito,accel_elastic,accels_poroelastic, &
-                                     potential_dphi_dx_DG)
+                                     1, potential_dphi_dx_DG)
 
   else if (imagetype_wavefield_dumps == 4 .and. P_SV) then
     if (myrank == 0) write(IMAIN,*) 'dumping the pressure field...'
@@ -185,7 +185,7 @@
       if (myrank == 0) write(IMAIN,*) 'Dumping the displacement vector in elastic elements, and temperature in DG elements...'
       call compute_vector_whole_medium(potential_acoustic,potential_gravitoacoustic, &
                                        potential_gravito,displ_elastic,displs_poroelastic,&
-                                       T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
+                                       1, T_init - (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V)
     else
       call exit_MPI(myrank,"Can't use imagetype_wavefield_dumps when USE_DISCONTINUOUS_METHOD isn't used.")
     endif

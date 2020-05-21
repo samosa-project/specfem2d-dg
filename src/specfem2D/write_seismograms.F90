@@ -54,6 +54,7 @@
   
   ! Dummy array. Used in calls to 'compute_vector_one_element' for the DG argument when the DG method is deactivated. This is needed for compatibility with Intel compilers, since an array is needed as argument. With other compilers, a simple "0." was sufficient.
   real(kind=CUSTOM_REAL), dimension(1) :: dummy_array_for_DG_args_when_not_DG
+  real(kind=CUSTOM_REAL), dimension(NDIM,nglob_DG) :: velocity_dg
   
   ! checks subsampling recurrence
   if (mod(it-1,subsamp_seismos) == 0) then
@@ -88,16 +89,16 @@
             if (USE_DISCONTINUOUS_METHOD) then
               ! Send DG v_z in the DG parameter slot.
               if (USE_LNS) then
-                call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
-                                                potential_gravito,displ_elastic,displs_poroelastic, &
-                                                LNS_rho0dv(NDIM,:)/LNS_rho0(:),&
-                                                ispec,vector_field_element)
+                velocity_dg(1,:) = LNS_rho0dv(1,:)/LNS_rho0(:)
+                velocity_dg(2,:) = LNS_rho0dv(2,:)/LNS_rho0(:)
               else
-                call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
-                                                potential_gravito,displ_elastic,displs_poroelastic, &
-                                                rhovz_DG/rho_DG,&
-                                                ispec,vector_field_element)
+                velocity_dg(1,:) = rhovx_DG/rho_DG
+                velocity_dg(2,:) = rhovz_DG/rho_DG
               endif
+              call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
+                                              potential_gravito,displ_elastic,displs_poroelastic, &
+                                              NDIM, velocity_dg, &
+                                              ispec,vector_field_element)
             else
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
@@ -113,12 +114,12 @@
               ! Send DG pressure in the DG parameter slot.
               if (USE_LNS) then
                 call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                                potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                                potential_dot_gravito,veloc_elastic,velocs_poroelastic, 1, &
                                                 LNS_dp, &
                                                 ispec,vector_field_element)
               else
                 call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                                potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                                potential_dot_gravito,veloc_elastic,velocs_poroelastic, 1, &
                                                 (((gammaext_DG - 1.)*( E_DG &
                                                     - (0.5)*rho_DG*( (rhovz_DG/rho_DG)**2 + (rhovx_DG/rho_DG)**2 ) )) &
                                                     - coef*p_DG_init), &
@@ -139,14 +140,14 @@
                 stop "seismotype not implemented yet for LNS."
               else
                 call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
-                                                potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
+                                                potential_dot_dot_gravito,accel_elastic,accels_poroelastic, 1, &
                                                 rhovz_DG/sqrt(rho_DG), &
                                                 ispec,vector_field_element)
               endif
             else
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_dot_dot_acoustic,potential_dot_dot_gravitoacoustic, &
-                                              potential_dot_dot_gravito,accel_elastic,accels_poroelastic, &
+                                              potential_dot_dot_gravito,accel_elastic,accels_poroelastic, 1, &
                                               dummy_array_for_DG_args_when_not_DG, &
                                               ispec,vector_field_element)
             endif
@@ -157,7 +158,7 @@
           case (5)
             ! displacement
             call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
-                                            potential_gravito,displ_elastic,displs_poroelastic, &
+                                            potential_gravito,displ_elastic,displs_poroelastic, 1, &
                                             rhovz_DG, &
                                             ispec,vector_field_element)
             ! curl of displacement
