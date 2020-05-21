@@ -4,6 +4,7 @@
 % Notes:         TODO.
 % Usage:
 %   plot_model_ceff(atmmodelfile)
+%   plot_model_ceff(atmmodelfile, zmax)
 % with:
 %   TODO.
 % yields:
@@ -96,9 +97,13 @@ function [] = plot_model_ceff_wrapper(DATAFILE, maxz)
 %   CEFF=CEFF/CEFF(1);
 %   figure();plot(max(CEFF), Z);,pause
   
+%   size(Z)
+%   size(A)
+%   pause
   plot_radial(Z, A, CEFF, name);
   
   spl=split(DATAFILE,'/');
   set(gcf,'name',spl{end});
+  
   customSaveFig(gcf, regexprep(DATAFILE,'\.dat','_ceff'),{'jpg'});
 end
