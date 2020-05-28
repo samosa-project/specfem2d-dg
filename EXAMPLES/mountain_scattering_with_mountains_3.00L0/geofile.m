@@ -11,7 +11,7 @@ xminmax = [-1,1]*23e3;
 % wo_0__w033L_1__w3L_2__w033Lheight_3 = 1;
 % wo_0__w033L_1__w3L_2__w033Lheight_3 = 2;
 % wo_0__w033L_1__w3L_2__w033Lheight_3 = 3;
-% wo_0__w033L_1__w3L_2__w033Lheight_3 = 4; % realistic, pyrenees
+% wo_0__w033L_1__w3L_2__w033Lheight_3 = 4; % realistic mountains
 
 for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
   switch(wo_0__w033L_1__w3L_2__w033Lheight_3)
@@ -43,7 +43,7 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
       nPerio = -1;
       nptperperio = -1;
     case 4
-      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_pyrenees/EXTMSH/extMesh.geo';
+      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_realistic/EXTMSH/extMesh.geo';
       LTopo = -1;
       nPerio = -1;
       peakHeight = -1;
@@ -59,11 +59,18 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
       z = 0;
     case 4
       % load
-      load('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_pyrenees/cross_section_pyrenees.mat');
+      load('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_realistic/cross_section.mat');
       x = rq-0.5*range(rq);
       xstop = max(x)+1e3;
       xminmax = [-1,1]*xstop;
       z = elvq;
+      
+      buf=5e3;
+      apol = 0.5*(1-cos((x-min(x))*2*pi/(2*buf))) .* (x<=min(x)+buf) + (x>min(x)+buf); %plot(x, apol);
+      apor = 0.5*(1-cos((max(x)-x)*2*pi/(2*buf))) .* (x>=max(x)-buf) + (x<max(x)-buf); %plot(x, apor);
+      apo = apol.*apor; %plot(x, apo);
+      z = z .* apo;
+      
       dx = [2700, 1800, 800, 200, 250];
   %     pause
     otherwise
@@ -230,13 +237,13 @@ end
 function printDisplay(fid)
   showAxes = 1;
   displayLine = 1;
-  displayLineNumber = 1;
-  displayMeshLineNumber = 0;
-  displayMeshPoints = 0;
-  displayPointsNumber = 1;
-  displayMeshPointsNumber = 0;
   displaySurfaceEdge = 1;
   displaySurfaceFaces = 1;
+  displayLineNumber = 0;
+  displayPointsNumber = 0;
+  displayMeshPoints = 0;
+  displayMeshPointsNumber = 0;
+  displayMeshLineNumber = 0;
   displaySurfaceNumber = 1;
   displayMeshSurfaceNumber = 0;
 

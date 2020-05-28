@@ -1,10 +1,10 @@
 // Display. //---------------//
 General.Axes = 1; // Show axes.
 Mesh.Lines = 1; // Display lines.
-Geometry.LineNumbers = 1; // Display line numbers.
+Geometry.LineNumbers = 0; // Display line numbers.
 Mesh.LineNumbers = 0; // Display line numbers.
 Mesh.Points = 0; // Display points.
-Geometry.PointNumbers = 1; // Display point numbers.
+Geometry.PointNumbers = 0; // Display point numbers.
 Mesh.PointNumbers = 0; // Display point numbers
 Mesh.SurfaceEdges = 1; // Display edges.
 Mesh.SurfaceFaces = 1; // Display surfaces.
