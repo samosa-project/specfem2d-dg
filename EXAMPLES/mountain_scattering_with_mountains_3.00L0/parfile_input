@@ -308,26 +308,16 @@ PERIODIC_HORIZ_DIST             = 100.d0
 #                                                                     #
 #---------------------------------------------------------------------#
 # Number of models.
-nbmodels                        = 4
-# Models' description.
-# Available material types (see user manual for more information):
+nbmodels                        = 6
 #   acoustic:    model_number 1  rho  Vp   0   0   0   QKappa Qmu 0   0   0   0    0    0
 #   elastic:     model_number 1  rho  Vp   Vs  0   0   QKappa Qmu 0   0   0   0    0    0
-#   anistoropic: model_number 2  rho  c11  c13 c15 c33 c35    c55 c12 c23 c25 0    0    0
-#   poroelastic: model_number 3  rhos rhof phi c   kxx kxz    kzz Ks  Kf  Kfr etaf mufr Qmu
-#   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
-# Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the 'Attenuation' section above as wanted.
-
-# Sediments: see [1, p92] for Qp, Qs=0.5Qp.
-# Crust: see [1, p96] for Qp, [2, Fig. 5] for Qs (Qs=Qp+100).
-# [1] K. Aki and R.-S. Wu, Scattering and Attenuations of Seismic Waves, vol. 128, no. 1–2. Basel: Springer Basel, 1988.
-# [2] E. Hauksson and P. M. Shearer, “Attenuation models (Qp and Qs) in three dimensions of the southern California crust: Inferred fluid saturation at seismogenic depths,” J. Geophys. Res. Solid Earth, vol. 111, no. 5, p. 21, May 2006.
-1 1 1.164  349.    0. 0 0   10.   10. 0 0 0 0 0 0 # air
-#2 1 2110  2500. 1070. 0 0   25.   10. 0 0 0 0 0 0 # upper sediments: 0-500 (Qp=20, Qs=10)
-#3 1 2460  4600. 2590. 0 0   80.   20. 0 0 0 0 0 0 # middle sediments: 500-3600 (Qp=40, Qs=20)
-2 1 2740  6100. 3530. 0 0  461.  600. 0 0 0 0 0 0 # upper crust: 3600-16560 (Qp=500, Qs=600)
-3 1 2830  6500. 3710. 0 0 2704. 2850. 0 0 0 0 0 0 # middle crust: 16560-31140 (Qp=2750, Qs=2850)
-4 1 2920  6900. 3930. 0 0 2954. 3100. 0 0 0 0 0 0 # lower crust: 31140-44100 (Qp=3000, Qs=3100)
+1 1    1.40   340.00    0.00 0 0 9999.00 9999.00 0 0 0 0 0 0 # Air.
+# LITHO1.0 (doi 10.1002/2013JB010626) model computed at (44.9150°N, 6.2500°E):
+2 1 2110.00  2500.00 1070.00 0 0    0.00  600.00 0 0 0 0 0 0
+3 1 2455.43  4569.51 2566.62 0 0    0.00  600.00 0 0 0 0 0 0
+4 1 2680.72  5968.02 3473.19 0 0    0.00  600.00 0 0 0 0 0 0
+5 1 2798.12  6457.20 3717.78 0 0    0.00  600.00 0 0 0 0 0 0
+6 1 2886.17  6848.54 3903.67 0 0    0.00  600.00 0 0 0 0 0 0
 
 # External tomography file.
 TOMOGRAPHY_FILE                 = ./DATA/tomo_file.xyz
