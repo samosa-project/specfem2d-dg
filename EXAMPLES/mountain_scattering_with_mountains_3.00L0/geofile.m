@@ -23,6 +23,7 @@ model(logical([0; diff(model(:,1))~=0]), :) = []; % make sure no duplicate inter
 model(model(:,1)<depthmax, :) = []; % remove layers too deep
 model = flipud(model);
 itooclose = find(diff(model(:,1))<1000); model(itooclose+[1], :) = []; % find layers too close to each other, remove the top one
+NMATERIALS = size(model, 1)+1;
 
 % Deduce interfaces and dx.
 f0 = 2; % [hz]
@@ -32,10 +33,10 @@ interfaces = [depthmax, model(:,1)', 15e3];
 igrd = find(interfaces==0);
 % dx = [2700, 1800, 800, 110, 132];
 dx = [(model(:,3)'/f0)/nptsperwavelength, 110, 132];
+% dx(1:NMATERIALS-1) = (dx(1:NMATERIALS-1) + 2*dx(NMATERIALS))/3; % reduce dx to allow a nice transition to air
 xminmax = [-1,1]*23e3;
 
 % Print it.
-NMATERIALS = size(model, 1)+1;
 disp('# Number of models.');
 disp(['nbmodels                        = ',num2str(NMATERIALS),'']);
 disp('#   acoustic:    model_number 1  rho  Vp   0   0   0   QKappa Qmu 0   0   0   0    0    0');
@@ -52,6 +53,9 @@ for i=1:(NMATERIALS-1)
   vs = model(i, 4);
   qk = model(i, 5);
   qm = model(i, 6);
+  if(qk==0)
+    qk = qm-100;
+  end
 %   rcsq=(vs./vp).^2;
 %   qp = ((1-rcsq).*qk.^(-1) + rcsq.*qm.^(-1)).^(-1);
 %   qs = qm;
@@ -87,7 +91,7 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
       LTopo = 1000;
       nPerio = 36;
       peakHeight = (1500/9000)*LTopo; % keep the same angle as in the 3L0 simulation
-      nptperperio = 30;
+      nptperperio = 15;
     case 0
       % output to "without" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_without_mountains/EXTMSH/extMesh.geo';
@@ -132,8 +136,15 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
   end
   surface_xz = [x; z];
 
-  % Mesh.
-  meshAlgorithm = 5;
+  % Mesh (1: MeshAdapt. 5: Delaunay for quads. 8: Delaunay (experimental). 9: structured (packing of parallelograms, experimental).).
+  switch(wo_0__w033L_1__w3L_2__w033Lheight_3)
+    case{1,2,3,4}
+      meshAlgorithm = 5;
+    case{0}
+      meshAlgorithm = 5;
+    otherwise
+      error('kfdlkf');
+  end
 
   % Creation. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   fid = fopen(outputFile, 'w');

@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 320
+NPROC                           = 288
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -35,9 +35,9 @@ ngnod                           = 4
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 100000
+NSTEP                           = 140000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 4d-4
+DT                              = 3d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -99,7 +99,7 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-USE_LNS                         = .true.
+USE_LNS                         = .false.
 REMOVE_DG_FLUID_TO_SOLID        = .false.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
@@ -313,11 +313,11 @@ nbmodels                        = 6
 #   elastic:     model_number 1  rho  Vp   Vs  0   0   QKappa Qmu 0   0   0   0    0    0
 1 1    1.40   340.00    0.00 0 0 9999.00 9999.00 0 0 0 0 0 0 # Air.
 # LITHO1.0 (doi 10.1002/2013JB010626) model computed at (44.9150°N, 6.2500°E):
-2 1 2110.00  2500.00 1070.00 0 0    0.00  600.00 0 0 0 0 0 0
-3 1 2455.43  4569.51 2566.62 0 0    0.00  600.00 0 0 0 0 0 0
-4 1 2680.72  5968.02 3473.19 0 0    0.00  600.00 0 0 0 0 0 0
-5 1 2798.12  6457.20 3717.78 0 0    0.00  600.00 0 0 0 0 0 0
-6 1 2886.17  6848.54 3903.67 0 0    0.00  600.00 0 0 0 0 0 0
+2 1 2110.00  2500.00 1070.00 0 0  500.00  600.00 0 0 0 0 0 0
+3 1 2455.43  4569.51 2566.62 0 0  500.00  600.00 0 0 0 0 0 0
+4 1 2680.72  5968.02 3473.19 0 0  500.00  600.00 0 0 0 0 0 0
+5 1 2798.12  6457.20 3717.78 0 0  500.00  600.00 0 0 0 0 0 0
+6 1 2886.17  6848.54 3903.67 0 0  500.00  600.00 0 0 0 0 0 0
 
 # External tomography file.
 TOMOGRAPHY_FILE                 = ./DATA/tomo_file.xyz
