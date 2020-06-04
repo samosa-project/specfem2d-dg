@@ -108,26 +108,19 @@ CONSTRAIN_HYDROSTATIC           = .true.         # Analytically forces an hydros
 # Ionospheric coupling
 IONOSPHERIC_COUPLING            = .false.         # Activate ionospheric coupling. Vertical/Horizontal magnetic fields and background TEC required
 
-# Fluid model (if MODEL\='external').
-USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobaric (.false.) model for the fluid part.
-SCALE_HEIGHT                    = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
-surface_density                 = 0.0362367      # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 271.594        # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
-wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
-gravity                         = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
-dynamic_viscosity               = 1.523993660e-5 # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
-thermal_conductivity            = 6.762074695e-3 # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
-tau_epsilon                     = 1.0            # $\tau_\epsilon$, strain relaxation time. Unit: s.
-tau_sigma                       = 1.0            # $\tau_\sigma$, stress relaxation time. Unit: s.
-constant_p                      = 568.           # $c_p$, isobaric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 1005 for dry air between -40 and 40 °C.
-constant_v                      = 425.           # $c_v$, isochoric specific heat capacity. Unit: m^2.s^{-2}.K^{-1}. Choose 717.3447537473 for dry air between -40 and 25 °C (in order to have gamma=1.401) or 717.8571428571 for dry air between 25 and 40 °C (in order to have gamma=1.400).
-
-# DETAIL OF THE CHOICES:
-# sound_velocity from experimental sound speed analysis
-# p = 2000 from experimental setup
-# (cp, cv) from theory
-# (mu, kappa) from theory
-# rho = p*(cp/cv)/(sound_velocity^2) = 0.0362367
+# Fluid model (if MODEL\='external'). Generated from /home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/aarhus/prepare_parfile.
+USE_ISOTHERMAL_MODEL            = .false.        # Isobaric model for the fluid part.
+SCALE_HEIGHT                    = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true..
+surface_density                 = 0.034937417489 # $\rho_0$ [kg.m^{-3}]: p*(cP/cV)/(sound_velocity^2);.
+sound_velocity                  = 271.5940000000 # $c$ [m.s^{-1}]: experimental setup.
+wind                            = 0.0            # No wind.
+gravity                         = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true., if USE_ISOTHERMAL_MODEL==.false. the gravity field is anyhow forced to 0.
+dynamic_viscosity               = 2.80488338e-05 # $\mu$, dynamic viscosity [kg.s^{-1}.m^{-1}]: ( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2) with dco2=3.30e-10.
+thermal_conductivity            = 1.88967109e-02 # $\kappa$, thermal conductivity [kg.m.s^{-3}.K^{-1}]: from Eucken expression 0.25*(15*R*mu)*(((4*cv)/(15*R)) + 3/5).
+tau_epsilon                     = 2.39394993e-05 # $\tau_\epsilon$, strain relaxation time [s]: CO2 relaxation modelling, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6)..
+tau_sigma                       = 2.28581823e-05 # $\tau_\sigma$, stress relaxation time [s]: CO2 relaxation modelling, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6)..
+constant_p                      = 844.0000000000 # $c_p$, isobaric specific heat capacity [m^2.s^{-2}.K^{-1}]: from pure CO2 at 20°C (yields gamma=1.28855) from https://www.engineeringtoolbox.com/specific-heat-capacity-gases-d_159.html.
+constant_v                      = 655.0000000000 # $c_v$, isochoric specific heat capacity [m^2.s^{-2}.K^{-1}]: from pure CO2 at 20°C (yields gamma=1.28855) from https://www.engineeringtoolbox.com/specific-heat-capacity-gases-d_159.html.
 
 # ID of the DG region (refering to "Velocity and Density Models" below).
 id_region_DG                    = 1
@@ -155,7 +148,7 @@ ABC_STRETCH_RIGHT_LBUF  = 10.                    # Length of the buffer used for
 # Source spatial function.
 USE_SPREAD_SSF   = .true.                        # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
 SPREAD_SSF_SAVE  = .false.                       # Can generate many files when using many CPUs, and huge files when using many elements, use with caution. Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
-SPREAD_SSF_SIGMA = 0.05                           # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r (the distance to the center) and SPREAD_SSF_SIGMA are given in meters. A good rule of thumb is to take at least 1/3 of the mesh size at the source for this parameter.
+SPREAD_SSF_SIGMA = 0.06                          # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r (the distance to the center) and SPREAD_SSF_SIGMA are given in meters. A good rule of thumb is to take at least 1/3 of the mesh size at the source for this parameter.
 SPREAD_SSF_CUSTOM = .false.                      # Use a custom, hardcoded, SSF? If so, set it up directly in the source code (in 'prepare_source_spatial_function.f90').
 
 # Source time function.
@@ -247,35 +240,35 @@ anglerec                        = 0.0d0          # Angle to rotate components at
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 nrec                            =   1
-xdeb                            =   0.3
+xdeb                            =   0.440
 zdeb                            =   0.0
 xfin                            =   0.0
 zfin                            =   0.0
 record_at_surface_same_vertical = .false.
 
 nrec                            =   1
-xdeb                            =   0.5
+xdeb                            =   0.700
 zdeb                            =   0.0
 xfin                            =   0.0
 zfin                            =   0.0
 record_at_surface_same_vertical = .false.
 
 nrec                            =   1
-xdeb                            =   1.0
+xdeb                            =   1.201
 zdeb                            =   0.0
 xfin                            =   0.0
 zfin                            =   0.0
 record_at_surface_same_vertical = .false.
 
 nrec                            =   1
-xdeb                            =   2.0
+xdeb                            =   2.200
 zdeb                            =   0.0
 xfin                            =   0.0
 zfin                            =   0.0
 record_at_surface_same_vertical = .false.
 
 nrec                            =   1
-xdeb                            =   3.0
+xdeb                            =   3.200
 zdeb                            =   0.0
 xfin                            =   0.0
 zfin                            =   0.0

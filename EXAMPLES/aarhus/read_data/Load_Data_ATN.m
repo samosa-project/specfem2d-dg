@@ -2,20 +2,21 @@
 %%%                      Attenuation File Analysis                      %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [time, dataMIC, distMic_Spkr] = Load_Data_ATN(nrun, pre, freq)
+function [time, dataMIC, distMic_Spkr] = Load_Data_ATN(timestamp, nrun, pre, freq)
 	do_plot = 0;
 
   % Selection of a file in the pathData directory
 %   pathData = 'C:\Users\ba.chide\Desktop\Aarhus Data\Aarhus_Data_0410\';
   pathData = '/home/l.martire/Documents/data/aarhus/';
 %   FileATN = ['MIC_ATN_20190410_165702_Run00322_Pre10,0 _Freq1324.tdms'];
-  FileATN = ['MIC_ATN_20190410_165702_Run',sprintf('%05d',nrun),'_Pre',regexprep(sprintf('%.1f',pre),'\.', ','),' _Freq',sprintf('%04d',freq),'.tdms'];
-
+  FileATN = ['MIC_ATN_20190410_',timestamp,'_Run',sprintf('%05d',nrun),'_Pre',regexprep(sprintf('%.1f',pre),'\.', ','),' _Freq',sprintf('%04d',freq),'.tdms'];
+  
   % Parameters for each microphones.
   fs = 200e3; % sampling frequency [Hz]
   dt = 1/fs; % period [s]
   sensitivity = [1.34 1.37 1.36 1.39 1.49]; % conversion to pascal [V/Pa]
-  distMic_Spkr = [0.3, 0.5, 1, 2, 3]; % distance from the speaker [m]
+%   distMic_Spkr = [0.3, 0.5, 1, 2, 3]; % distance from the speaker [m]
+  distMic_Spkr = 0.44 + [0, 0.26, 0.761, 1.76, 2.76]; % mail chide 200604@1600
 
   % Convert data into a .mat file and loading data
   matFile = [FileATN(1:end-5) '.mat'];
@@ -25,6 +26,7 @@ function [time, dataMIC, distMic_Spkr] = Load_Data_ATN(nrun, pre, freq)
     simpleConvertTDMS([pathData, filesep, FileATN]);
   end
   matFile = matfile([pathData, filesep, matFile]);
+%   matFile = save([pathData, filesep, matFile], '-v7.3');
 
   % Data extraction and loading into table dataMIC.
   for iMic = 1:5
