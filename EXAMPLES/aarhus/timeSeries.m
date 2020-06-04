@@ -21,7 +21,9 @@ data_filter_order = 2;
 % synthetics parameters
 switch(data_freq)
   case 2090
-    OFD = [thisFolder,filesep,'OUTPUT_FILES_401255_2090']; rescaleFactor = 36931.5321885834;
+%     OFD = [thisFolder,filesep,'OUTPUT_FILES_401255_2090_old']; rescaleFactor = 36931.5321885834; tshift = (1.74760004-2504.2)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$';
+%     OFD = [thisFolder,filesep,'OUTPUT_FILES_401736_2090']; rescaleFactor = 6.242541e+04; tshift = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=0$, $\alpha_\mathrm{vib}\neq0$';
+%     OFD = [thisFolder,filesep,'OUTPUT_FILES_401741_2090_noatt']; rescaleFactor = 5.191609e+04; tshift = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$';
   otherwise
     error('kek');
 end
@@ -55,10 +57,13 @@ tstacctime{3} = [2.506775, 4.006945, 5.50618, 7.004475, 8.50184, 9.998265, 11.49
 tstacctime{4} = [2.51049, 4.01066, 5.509895, 7.008185, 8.505555, 10.00198, 11.49748, 12.992045, 14.485675, 15.97838];
 tstacctime{5} = [2.514205, 4.01437, 5.5136, 7.0119, 8.50926, 10.00569, 11.501185, 12.995745, 14.48939, 15.982085];
 [tstack, pselsave, pstacc] = get_staccs(Tda, Pda, tstacctime, data_filter_kind, data_filter_fcut, data_filter_order);
-disp(['[',mfilename,'] Ratio between data amplitude and synthetic amplitude (i.e. recommended scaling of synthetics): ',sprintf('%.6e', range(pstacc{1})/range(Psy(1,:))),'.']);
+ratio = range(pstacc{1})/range(Psy(1,:));
+if(abs(1-ratio)>1e-6)
+  disp(['[',mfilename,'] Ratio between data amplitude and synthetic amplitude (i.e. recommended scaling of synthetics): ',sprintf('%.6e', ratio),'.']);
+  pause;
+end
 
 % Adjust timing w.r.t. synthetics.
-tshift = (1.74760004-2504.2)*1e-3;
 % tshift = 0;
 
 % prepare a scale to print
@@ -73,7 +78,7 @@ XLAB = ['time [',pre_t,'s]'];
 XLIM = [0,16e-3]; XTIC = (0:1:16)*1e-3;
 YLAB = ['$r \mathrm{ [m]} + ',sprintf('%.2f',distOverPTP),' \mathrm{ [m/Pa]} \times p'' \mathrm{ [Pa]}$'];
 fig_tvd = figure('units','normalized','outerposition',[0,0,1,1]);
-tightAxes = tight_subplot(1, 1, [0,0], [0.12,0.05], [0.07, 0.02]);
+tightAxes = tight_subplot(1, 1, [0,0], [0.12,0.08], [0.07, 0.02]);
 LS = '-';
 handlesToLines = [];
 for i = 1:NSda
@@ -93,11 +98,12 @@ for i = 1:nstat_synth
   handlesToLines = [handlesToLines, h];
 end
 [pa, fa] = prefix_factor_values({amp});
-hscale = plot(fac_t*[1,1]*tamp, Dsy(idsy)+distOverPTP*[-1,1]*amp, 'linewidth', 5, 'color', [0,1,0]*0.5, 'displayname', [sprintf('%.2f',fa*amp),'~',pa,'Pa scale']);
+hscale = plot(fac_t*[1,1]*tamp, Dsy(idsy)+distOverPTP*[-1,1]*amp, 'linewidth', 6, 'color', [0,1,0]*0.5, 'displayname', [sprintf('%.2f',fa*amp),'~',pa,'Pa scale']);
 xlabel(XLAB);
 ylabel(YLAB);
 xlim(fac_t*XLIM);
 xticks(fac_t*XTIC);
+title(TIT);
 legend([handlesToLines([1, NSda+1]), hscale], 'location', 'best');
 
 if(do_save_plot)

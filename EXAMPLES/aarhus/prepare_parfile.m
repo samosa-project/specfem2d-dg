@@ -50,7 +50,10 @@ FR = 1./(2.*pi*tau_VS);
 SVIB = (Cprime*R)/(C_P_inf*(C_V_inf+Cprime));
 addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/tools'));
 [tau_SIG, tau_EPS] = frsvib2tausigtaueps(FR, SVIB);
-tauepssig_desc = ['CO2 relaxation modelling, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6).'];
+
+freq = 2090;
+a_vib = (((pi*SVIB)./sound_velocity) .* ((freq.^2)./FR)) ./ (1 + (freq./FR).^2);
+tauepssig_desc = ['CO2 relaxation modelling an alpha_vib(f=',sprintf('%.0f',freq),')=',sprintf('%.3e',a_vib),', see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6).'];
 
 % PRINT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(['# Fluid model (if MODEL\=''external''). Generated from ',mfilename('fullpath'),'.']);
@@ -63,7 +66,7 @@ disp(['gravity                         = 0.             # Only used if USE_ISOTH
 disp(['dynamic_viscosity               = ',sprintf('%.8e',mu),' # $\mu$, dynamic viscosity [kg.s^{-1}.m^{-1}]: ',mu_desc,'.']);
 disp(['thermal_conductivity            = ',sprintf('%.8e',kappa),' # $\kappa$, thermal conductivity [kg.m.s^{-3}.K^{-1}]: ',kappa_desc,'.']);
 disp(['tau_epsilon                     = ',sprintf('%.8e',tau_EPS),' # $\tau_\epsilon$, strain relaxation time [s]: ',tauepssig_desc,'.']);
-disp(['tau_sigma                       = ',sprintf('%.8e',tau_SIG),' # $\tau_\sigma$, stress relaxation time [s]: ',tauepssig_desc,'.']);
+disp(['tau_sigma                       = ',sprintf('%.8e',tau_SIG),' # $\tau_\sigma$,   stress relaxation time [s]: ',tauepssig_desc,'.']);
 disp(['constant_p                      = ',sprintf('%.10f',cP),' # $c_p$, isobaric specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
 disp(['constant_v                      = ',sprintf('%.10f',cV),' # $c_v$, isochoric specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
 disp(' ');

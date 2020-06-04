@@ -1,6 +1,6 @@
 % see also /home/l.martire/Documents/work/mars/attenuation_aarhus
 
-function produce_stf(f0)
+function produce_stf(f0, factor)
   do_compare = 0;
   do_plot = 1;
   
@@ -36,7 +36,7 @@ function produce_stf(f0)
   tuk(shift_i+[0:L-1]) = tukeywin(L, 0.6);
 
   % combine
-  v = sinus.*tuk;
+  v = sinus.*tuk * factor;
 
   if(do_compare)
     % compare
@@ -50,8 +50,8 @@ function produce_stf(f0)
   if(do_plot)
     % plot
     figure();
-    plot(t, sinus); hold on;
-    plot(t, tuk); hold on;
+    plot(t, sinus*factor); hold on;
+    plot(t, tuk*factor); hold on;
     plot(t, v);
     xlim([0, 1/f0 + shift+3/f0 + 1/f0]);
   end
