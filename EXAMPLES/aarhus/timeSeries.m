@@ -2,13 +2,13 @@ clear all;
 close all;
 clc;
 
-thisFolder = [regexprep(mfilename('fullpath'),mfilename,'')];
-figfolder = [thisFolder, filesep, 'FIGURES', filesep];
-addpath(genpath(thisFolder));
+cFldr = [regexprep(mfilename('fullpath'),mfilename,'')];
+figfolder = [cFldr, filesep, 'FIGURES', filesep];
+addpath(genpath(cFldr));
 
 % plot parameters
 distOverPTP = 0.75;
-do_save_plot = 0;
+do_save_plot = 1;
 
 % data parameters
 data_timestamp = '182608'; data_nrun = 397; data_pre_Pa = 20*100; data_freq = 2090;
@@ -21,9 +21,10 @@ data_filter_order = 2;
 % synthetics parameters
 switch(data_freq)
   case 2090
-%     OFD = [thisFolder,filesep,'OUTPUT_FILES_401255_2090_old']; rescaleFactor = 36931.5321885834; tshift = (1.74760004-2504.2)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$';
-%     OFD = [thisFolder,filesep,'OUTPUT_FILES_401736_2090']; rescaleFactor = 6.242541e+04; tshift = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=0$, $\alpha_\mathrm{vib}\neq0$';
-%     OFD = [thisFolder,filesep,'OUTPUT_FILES_401741_2090_noatt']; rescaleFactor = 5.191609e+04; tshift = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$';
+%     OFD = [cFldr,filesep,'OUTPUT_FILES_401255_2090_lns_acl']; rsclFctr = 36931.5321885834; tShft = (1.74760004-2504.2)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__lns_acl';
+%     OFD = [cFldr,filesep,'OUTPUT_FILES_401758_2090_lns_noatt']; rsclFctr = 1.309279e+00; tShft = (2.25799996-2504.2)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__lns_noatt';
+%     OFD = [cFldr,filesep,'OUTPUT_FILES_401736_2090_fns_acl_avib']; rsclFctr = 6.242541e+04; tShft = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=0$, $\alpha_\mathrm{vib}\neq0$'; addend='__fns_acl_avib';
+    OFD = [cFldr,filesep,'OUTPUT_FILES_401741_2090_fns_noatt']; rsclFctr = 5.191609e+04; tShft = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__fns_noatt';
   otherwise
     error('kek');
 end
@@ -35,7 +36,7 @@ subsample = 1;
 subsample_wantedDt = 1e-6;
 
 % load synthetics
-[Tsy, Psy, Dsy, Nsy, ~] = gji2020_loadSomeSynthetics(OFD, istattab, typeDisplay, 'BXZ', distChoice, doGeometricAttenuation, rescaleFactor, subsample, subsample_wantedDt);
+[Tsy, Psy, Dsy, Nsy, ~] = gji2020_loadSomeSynthetics(OFD, istattab, typeDisplay, 'BXZ', distChoice, doGeometricAttenuation, rsclFctr, subsample, subsample_wantedDt);
 nstat_synth = size(Tsy,1);
 Dsy = Dsy.vals;
 Csy = repmat([1,0,0], nstat_synth, 1);
@@ -85,10 +86,10 @@ for i = 1:NSda
   dname = 'data';
   colour = Cda(i, :);
   for ti=1:size(pselsave{i}, 1)
-    plot(fac_t*(tstack{i}+tshift), Dda(i) + distOverPTP * pselsave{i}(ti, :), 'linewidth', 2, 'color', min((colour+[1,1,1])/2,1),'linestyle', LS); hold on;
+    plot(fac_t*(tstack{i}+tShft), Dda(i) + distOverPTP * pselsave{i}(ti, :), 'linewidth', 2, 'color', min((colour+[1,1,1])/2,1),'linestyle', LS); hold on;
   end
   dname = 'filtered data stack';
-  h = plot(fac_t*(tstack{i}+tshift), Dda(i) + distOverPTP * pstacc{i}, 'color', colour, 'linestyle', LS, 'displayname', dname);
+  h = plot(fac_t*(tstack{i}+tShft), Dda(i) + distOverPTP * pstacc{i}, 'color', colour, 'linestyle', LS, 'displayname', dname);
   handlesToLines = [handlesToLines, h];
 end
 for i = 1:nstat_synth
@@ -108,5 +109,5 @@ legend([handlesToLines([1, NSda+1]), hscale], 'location', 'best');
 
 if(do_save_plot)
   name_fig = ['synth_v_data__f=',sprintf('%04d', data_freq), 'Hz_p=', sprintf('%04.0f', data_pre_Pa),'Pa'];
-  customSaveFig(fig_tvd, [figfolder, name_fig], {'fig', 'eps', 'png', 'tex'}, 9999);
+  customSaveFig(fig_tvd, [figfolder, name_fig, addend], {'png'}, 9999);
 end
