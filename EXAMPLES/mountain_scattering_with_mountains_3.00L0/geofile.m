@@ -91,7 +91,7 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
       LTopo = 1000;
       nPerio = 36;
       peakHeight = (1500/9000)*LTopo; % keep the same angle as in the 3L0 simulation
-      nptperperio = 15;
+      nptperperio = 16;
     case 0
       % output to "without" folder
       outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_without_mountains/EXTMSH/extMesh.geo';
