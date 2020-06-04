@@ -17,7 +17,7 @@ anglesource                     = 0.d0       # Only for a force. Angle of the so
 Mxx                             = 0.d0       # Only for moment tensor source. Mxx component.
 Mzz                             = 0.d0       # Only for moment tensor source. Mzz component.
 Mxz                             = 0.d0       # Only for moment tensor source. Mxz component.
-factor                          = 5.d7       # Amplification factor. Input negative values at own risk (with force source, it simply flips the angle by 180°).
+factor                          = 1.8465766094291687e+12 # Amplification factor. Input negative values at own risk (with force source, it simply flips the angle by 180°).
 
 # f0 set to 1.2e4 to make the simulation start at t0=-1.2/f0=-1e-5, i.e. basically 0.
 # The source.stf file contains values starting from this t0, up to tmax (i.e., NSTEP), with nonzero values appearing 0.25/f later than start time, i.e. at t_real = t0+0.25/f = 0.25/f-1e-5.
