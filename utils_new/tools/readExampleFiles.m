@@ -46,7 +46,8 @@ function [xminmax, zminmax, Xsource] = readExampleFiles(parfile, sourcefile, int
       xminmax = [readExampleFiles_extractParam(parfile, 'xmin', 'float'), readExampleFiles_extractParam(parfile, 'xmax', 'float')];
   %     [zmin, zmax] = readExampleFiles_zMinMaxInterfacesFile(interfacesfile);
   %     zminmax = [zmin, zmax];
-      [zminmax(1), zminmax(2)] = readExampleFiles_zMinMaxInterfacesFile(interfacesfile);
+%       [zminmax(1), zminmax(2)] = readExampleFiles_zMinMaxInterfacesFile(interfacesfile);
+      [~, ~, zminmax(1), zminmax(2)] = readExampleFiles_meshfem_mesh(interfacesfile);
     end
   end
   
