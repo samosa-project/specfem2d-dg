@@ -942,29 +942,32 @@ subroutine setup_mesh_surface_DG_coupling()
   ! Safeguard when using discontinuous method: output a warning if coord_interface>zmin, and stop program with an error if coord_interface<zmin.
   if(myrank==0) then
     if(USE_DISCONTINUOUS_METHOD) then
-      if(coord_interface>zmin) then
-        write(*,*) "********************************"
-        write(*,*) "*           WARNING            *"
-        write(*,*) "********************************"
-        write(*,*) "* coord_interface>zmin, which  *"
-        write(*,*) "* is curious. Be wary of       *"
-        write(*,*) "* spurious behaviours,         *"
-        write(*,*) "* especially when using bottom *"
-        write(*,*) "* forcing.                     *"
-        write(*,*) "* coord_interface = ", coord_interface
-        write(*,*) "* zmin            = ", zmin
-        write(*,*) "********************************"
-      elseif(coord_interface<zmin) then
-        write(*,*) "********************************"
-        write(*,*) "*            ERROR             *"
-        write(*,*) "********************************"
-        write(*,*) "* coord_interface<zmin, which  *"
-        write(*,*) "* is nonsense.                 *"
-        write(*,*) "* coord_interface = ", coord_interface
-        write(*,*) "* zmin            = ", zmin
-        write(*,*) "********************************"
-        stop
-      endif ! Endif on coord_interface and zmin.
+      if(USE_ISOTHERMAL_MODEL .or. assign_external_model) then
+        ! Check coord_interface only when it is useful.
+        if(coord_interface>zmin) then
+          write(*,*) "********************************"
+          write(*,*) "*           WARNING            *"
+          write(*,*) "********************************"
+          write(*,*) "* coord_interface>zmin, which  *"
+          write(*,*) "* is curious. Be wary of       *"
+          write(*,*) "* spurious behaviours,         *"
+          write(*,*) "* especially when using bottom *"
+          write(*,*) "* forcing.                     *"
+          write(*,*) "* coord_interface = ", coord_interface
+          write(*,*) "* zmin            = ", zmin
+          write(*,*) "********************************"
+        elseif(coord_interface<zmin) then
+          write(*,*) "********************************"
+          write(*,*) "*            ERROR             *"
+          write(*,*) "********************************"
+          write(*,*) "* coord_interface<zmin, which  *"
+          write(*,*) "* is nonsense.                 *"
+          write(*,*) "* coord_interface = ", coord_interface
+          write(*,*) "* zmin            = ", zmin
+          write(*,*) "********************************"
+          stop
+        endif ! Endif on coord_interface and zmin.
+      endif
     endif
   endif
 
