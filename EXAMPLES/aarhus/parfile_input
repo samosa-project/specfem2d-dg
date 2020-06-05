@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 72
+NPROC                           = 108
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -99,7 +99,7 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-USE_LNS                         = .true.
+USE_LNS                         = .false.
 REMOVE_DG_FLUID_TO_SOLID        = .true.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
@@ -425,7 +425,7 @@ ENERGYBOX_ZMAX = 0.
 #---------------------------------------------------------------------#
 
 # Time steps between JPEG and/or PostScript snapshots.
-NSTEP_BETWEEN_OUTPUT_IMAGES     = 2000 # Would like to see every period, i.e. at least every (1/fmax)/dt = (1/4500)/1e-7 = 2200 iterations.
+NSTEP_BETWEEN_OUTPUT_IMAGES     = 10000 # Would like to see every period, i.e. at least every (1/fmax)/dt = (1/4500)/1e-7 = 2200 iterations.
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
 NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 200
