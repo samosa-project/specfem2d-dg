@@ -25,8 +25,9 @@ cpcv_desc = ['from pure CO2 at 20°C (yields gamma=',sprintf('%.5f',gamma),') fr
 dco2 = 3.30e-10; % kinetic diameter of CO2 from [https://en.wikipedia.org/wiki/Kinetic_diameter]=Ismail, Ahmad Fauzi; Khulbe, Kailash; Matsuura, Takeshi, Gas Separation Membranes: Polymeric and Inorganic, Springer, 2015 ISBN 3319010956.
 
 rho = p*(cP/cV)/(sound_velocity^2); rho_desc = ['p*(cP/cV)/(sound_velocity^2);'];
-mu = ( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2); mu_desc = ['( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2) with dco2=',sprintf('%.2e', dco2),''];
+mu = ( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2); mu_desc = ['(k*T*sqrt(rho/p))/(pi^(3/2)*dco2^2) with dco2=',sprintf('%.2e', dco2),''];
 kappa = 0.25*(15*R*mu)*(((4*cV)/(15*R)) + 3/5); kappa_desc = ['from Eucken expression 0.25*(15*R*mu)*(((4*cv)/(15*R)) + 3/5)'];
+
 
 % CO2 ATTENUATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Mostly from Raphaël's MCD script.
@@ -55,19 +56,24 @@ freq = 2090;
 a_vib = (((pi*SVIB)./sound_velocity) .* ((freq.^2)./FR)) ./ (1 + (freq./FR).^2);
 tauepssig_desc = ['CO2 relaxation modelling an alpha_vib(f=',sprintf('%.0f',freq),')=',sprintf('%.3e',a_vib),', see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6).'];
 
+Zrot = 61.1*exp(-16.8*T^(-1/3));
+arot_factor = 1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0);
+mu_withrot = mu * arot_factor;
+mu_desc = ['classical mu=',sprintf('%.8e',mu),' (defined as ',mu_desc,'), but modified by a factor (1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0)) to account for rotational attenuation (see these)'];
+
 % PRINT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(['# Fluid model (if MODEL\=''external''). Generated from ',mfilename('fullpath'),'.']);
 disp(['USE_ISOTHERMAL_MODEL            = .false.        # Isobaric model for the fluid part.']);
 disp(['SCALE_HEIGHT                    = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true..']);
 disp(['surface_density                 = ',sprintf('%.12f',rho),' # $\rho_0$ [kg.m^{-3}]: ', rho_desc, '.']);
 disp(['sound_velocity                  = ',sprintf('%.10f',sound_velocity),' # $c$ [m.s^{-1}]: ', sound_velocity_desc, '.']);
-disp(['wind                            = 0.0            # No wind.']);
+disp(['wind                            = 0.             # No wind.']);
 disp(['gravity                         = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true., if USE_ISOTHERMAL_MODEL==.false. the gravity field is anyhow forced to 0.']);
-disp(['dynamic_viscosity               = ',sprintf('%.8e',mu),' # $\mu$, dynamic viscosity [kg.s^{-1}.m^{-1}]: ',mu_desc,'.']);
+disp(['dynamic_viscosity               = ',sprintf('%.8e',mu_withrot),' # $\mu$, dynamic viscosity [kg.s^{-1}.m^{-1}]: ',mu_desc,'.']);
 disp(['thermal_conductivity            = ',sprintf('%.8e',kappa),' # $\kappa$, thermal conductivity [kg.m.s^{-3}.K^{-1}]: ',kappa_desc,'.']);
 disp(['tau_epsilon                     = ',sprintf('%.8e',tau_EPS),' # $\tau_\epsilon$, strain relaxation time [s]: ',tauepssig_desc,'.']);
 disp(['tau_sigma                       = ',sprintf('%.8e',tau_SIG),' # $\tau_\sigma$,   stress relaxation time [s]: ',tauepssig_desc,'.']);
-disp(['constant_p                      = ',sprintf('%.10f',cP),' # $c_p$, isobaric specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
+disp(['constant_p                      = ',sprintf('%.10f',cP),' # $c_p$, isobaric  specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
 disp(['constant_v                      = ',sprintf('%.10f',cV),' # $c_v$, isochoric specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
 disp(' ');
 disp(' ');
