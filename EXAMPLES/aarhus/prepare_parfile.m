@@ -2,19 +2,23 @@ clear all;
 close all;
 clc;
 
-R=8.31446261815324;
-k=1.380649e-23;
 
+freq = 500;
+% freq = 2090;
 p = 2000;
 T = 273.15+21.6;
 sound_velocity = 271.594; sound_velocity_desc = 'experimental setup';
+
+%%%%%%%%%%%%%%%%
+
+R=8.31446261815324;
+k=1.380649e-23;
 
 % Molar fractions (CO2 attenuation).
 Xco2 = 0.99;
 Xn2 = 0;
 Xar = 0;
 Xh2o = 0.01;
-
 
 % (cP, cV) in m^2.s^{-2}.K^{-1} for pure CO2 at 20°C from https://www.engineeringtoolbox.com/specific-heat-capacity-gases-d_159.html
 cP = 844;
@@ -25,9 +29,8 @@ cpcv_desc = ['from pure CO2 at 20°C (yields gamma=',sprintf('%.5f',gamma),') fr
 dco2 = 3.30e-10; % kinetic diameter of CO2 from [https://en.wikipedia.org/wiki/Kinetic_diameter]=Ismail, Ahmad Fauzi; Khulbe, Kailash; Matsuura, Takeshi, Gas Separation Membranes: Polymeric and Inorganic, Springer, 2015 ISBN 3319010956.
 
 rho = p*(cP/cV)/(sound_velocity^2); rho_desc = ['p*(cP/cV)/(sound_velocity^2);'];
-mu = ( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2); mu_desc = ['(k*T*sqrt(rho/p))/(pi^(3/2)*dco2^2) with dco2=',sprintf('%.2e', dco2),''];
-kappa = 0.25*(15*R*mu)*(((4*cV)/(15*R)) + 3/5); kappa_desc = ['from Eucken expression 0.25*(15*R*mu)*(((4*cv)/(15*R)) + 3/5)'];
-
+mu_cl = ( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2); mu_desc = ['(k*T*sqrt(rho/p))/(pi^(3/2)*dco2^2) with dco2=',sprintf('%.2e', dco2),''];
+kappa = 0.25*(15*R*mu_cl)*(((4*cV)/(15*R)) + 3/5); kappa_desc = ['from Eucken expression 0.25*(15*R*mu)*(((4*cv)/(15*R)) + 3/5)'];
 
 % CO2 ATTENUATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Mostly from Raphaël's MCD script.
@@ -40,10 +43,10 @@ theta = 960.0; % Degenerate bending mode temperature (Bass, 2001).
 Cprime = R * Xco2 * (theta/T)^2 * exp(-theta/T) / ((1-exp(-theta/T))^2); % (Bass, 2001, Eq. (7)).
 % Rate of energy transfer from CO_2 during collisions with CO_2.
 % Don't now where these formulas come from.
-kco2 = ((0.219*p)/(mu))*(exp(-60.75/((T^(1./3.)))));
-kn2 = ((1.44*p)/(mu))*exp(-78.29/((T^(1./3.))));
+kco2 = ((0.219*p)/(mu_cl))*(exp(-60.75/((T^(1./3.)))));
+kn2 = ((1.44*p)/(mu_cl))*exp(-78.29/((T^(1./3.))));
 kar = kn2;
-kh2o = ((6.e-2)*p)/mu;
+kh2o = ((6.e-2)*p)/mu_cl;
 kk = (Xco2*kco2)+(Xn2*kn2)+(Xar*kar)+(Xh2o*kh2o);
 tau_VT = 1.0 / (kk*(1.0-exp(-theta/T)));
 tau_VS = (C_P_inf/C_P_0)*tau_VT;
@@ -52,14 +55,19 @@ SVIB = (Cprime*R)/(C_P_inf*(C_V_inf+Cprime));
 addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/tools'));
 [tau_SIG, tau_EPS] = frsvib2tausigtaueps(FR, SVIB);
 
-freq = 2090;
-a_vib = (((pi*SVIB)./sound_velocity) .* ((freq.^2)./FR)) ./ (1 + (freq./FR).^2);
-tauepssig_desc = ['CO2 relaxation modelling an alpha_vib(f=',sprintf('%.0f',freq),')=',sprintf('%.3e',a_vib),', see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6).'];
+tauepssig_desc = ['CO2 relaxation modelling, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6).'];
 
 Zrot = 61.1*exp(-16.8*T^(-1/3));
 arot_factor = 1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0);
-mu_withrot = mu * arot_factor;
-mu_desc = ['classical mu=',sprintf('%.8e',mu),' (defined as ',mu_desc,'), but modified by a factor (1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0)) to account for rotational attenuation (see these)'];
+mu_withrot = mu_cl * arot_factor;
+mu_desc = ['classical mu=',sprintf('%.8e',mu_cl),' (defined as ',mu_desc,'), but modified by a factor (1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0)) (with Zrot=',sprintf('%.8f', Zrot),') to account for rotational attenuation (see thèse)'];
+
+% compute total attenuation
+[a_cl, a_rot, a_vib] = atmospheric_attenuation(freq, rho, T, sound_velocity, mu_cl, kappa, cP, cV, gamma, FR, SVIB);
+txt_att1 = ['# This models, at f=',sprintf('%.0f',freq),', alpha_cl=',sprintf('%.3e',a_cl),', alpha_rot=',sprintf('%.3e',a_rot),', and alpha_vib=',sprintf('%.3e',a_vib),'.'];
+atot = a_cl+a_rot+a_vib;
+atotdbpm = -20*atot/log(10);
+txt_att2 = ['# Total attenuation at f=',sprintf('%.0f',freq),' = ',sprintf('%.6e',atot),' = ',sprintf('%.6e',atotdbpm),' dB/m = ',sprintf('%.6e',atotdbpm*3),' dB/3m.'];
 
 % PRINT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(['# Fluid model (if MODEL\=''external''). Generated from ',mfilename('fullpath'),'.']);
@@ -75,5 +83,7 @@ disp(['tau_epsilon                     = ',sprintf('%.8e',tau_EPS),' # $\tau_\ep
 disp(['tau_sigma                       = ',sprintf('%.8e',tau_SIG),' # $\tau_\sigma$,   stress relaxation time [s]: ',tauepssig_desc,'.']);
 disp(['constant_p                      = ',sprintf('%.10f',cP),' # $c_p$, isobaric  specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
 disp(['constant_v                      = ',sprintf('%.10f',cV),' # $c_v$, isochoric specific heat capacity [m^2.s^{-2}.K^{-1}]: ',cpcv_desc,'.']);
+disp(txt_att1);
+disp(txt_att2);
 disp(' ');
 disp(' ');

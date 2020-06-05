@@ -9,7 +9,7 @@ figfolder = [cFldr, filesep, 'FIGURES', filesep];
 addpath(genpath(cFldr));
 
 % plot parameters
-distOverPTP = 2;
+distOverPTP = 0.75;
 do_save_plot = 1;
 
 % data parameters
@@ -23,8 +23,11 @@ data_filter_order = 2;
 % synthetics parameters
 switch(data_freq)
   case 2090
+%     OFD = [cFldr,filesep,'OUTPUT_FILES_402141_2090_lns_allatt']; rsclFctr = 1.693495; tShft = (3.204-2504.925)*1e-3; TIT = 'LNS, with all attenuations'; addend='__lns_allatt';
+%     OFD = [cFldr,filesep,'OUTPUT_FILES_402036_2090_fns_allatt']; rsclFctr = 1.693642; tShft = (3.204-2504.925)*1e-3; TIT = 'FNS, with all attenuations'; addend='__fns_allatt';
+    
 %     OFD = [cFldr,filesep,'OUTPUT_FILES_401255_2090_lns_acl']; rsclFctr = 36931.5321885834; tShft = (1.74760004-2504.2)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__lns_acl';
-    OFD = [cFldr,filesep,'OUTPUT_FILES_401758_2090_lns_noatt']; rsclFctr = 1.309279e+00; tShft = (2.25799996-2504.2-5.068+5.309)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__lns_noatt';
+%     OFD = [cFldr,filesep,'OUTPUT_FILES_401758_2090_lns_noatt']; rsclFctr = 1.309279e+00; tShft = (2.25799996-2504.2-5.068+5.309)*1e-3; TIT = 'LNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__lns_noatt';
 %     OFD = [cFldr,filesep,'OUTPUT_FILES_401736_2090_fns_acl_avib']; rsclFctr = 6.242541e+04; tShft = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}\neq0$, $\alpha_\mathrm{rot}=0$, $\alpha_\mathrm{vib}\neq0$'; addend='__fns_acl_avib';
 %     OFD = [cFldr,filesep,'OUTPUT_FILES_401741_2090_fns_noatt']; rsclFctr = 5.191609e+04; tShft = (2.25099991-2504.2)*1e-3; TIT = 'FNS, w/ $\alpha_\mathrm{cl}=\alpha_\mathrm{rot}=\alpha_\mathrm{vib}=0$'; addend='__fns_noatt';
   otherwise
@@ -74,22 +77,17 @@ end
 % Compute Acoustic NRG.
 ANRGda = zeros(NSda, 1);
 ANRGsy = zeros(NSsy, 1);
+window = [0,16]*1e-3; % [ms]
 for i = 1:NSda
-  ANRGda(i) = trapz(t_stack{i}, p_stack{i}.^2);
+  sel = (t_stack{i}+tShft>=min(window)) & (t_stack{i}+tShft<=max(window));
+  ANRGda(i) = trapz(t_stack{i}(sel), p_stack{i}(sel).^2);
 end
 for i = 1:NSsy
-  ANRGsy(i) = trapz(Tsy(i, :), Psy(i, :).^2);
+  sel = (Tsy(i, :)>=min(window)) & (Tsy(i, :)<=max(window));
+  ANRGsy(i) = trapz(Tsy(i, sel), Psy(i, sel).^2);
 end
 ANRGda = ANRGda.^0.5;
 ANRGsy = ANRGsy.^0.5;
-% scale acoustic NRG with distance
-if(max(abs(Dsy-Dda))>1e-6)
-  error('kek');
-end
-fitte = fit(Dsy', (ANRGsy./ANRGda), 'a*x+b');
-NRG_scale_to_data = (Dsy*fitte.a+fitte.b)';
-% Psy = Psy./NRG_scale_to_data; ANRGsy = ANRGsy./NRG_scale_to_data;
-% disp(['[',mfilename,'] WARNING: SCALED SYNTHETICS BY ',sprintf('%.3f', fitte.a),' * R + ',sprintf('%.3f', fitte.b),'.']);
 
 % prepare a scale to print
 idsy = 3;
@@ -105,10 +103,10 @@ NAda = 'filtered data stack';
 NAsy = 'synthetics';
 YLAB = ['$r \mathrm{ [m]} + ',sprintf('%.2f',distOverPTP),' \mathrm{ [m/Pa]} \times p'' \mathrm{ [Pa]}$'];
 fig_tvd = figure('units','normalized','outerposition',[0,0,1,1]);
-tightAxes = tight_subplot(1, 2, [0, 0.05], [0.12,0.08], [0.07, 0.02]);
+tightAxes = tight_subplot(1, 1, [0, 0.05], [0.12,0.08], [0.07, 0.02]);
 LS = '-';
 handlesToLines = [];
-axes(tightAxes(1));
+% axes(tightAxes(1));
 for i = 1:NSda
 %   NAsy = 'data';
   colour = Cda(i, :);
@@ -131,25 +129,54 @@ xlim(fac_t*XLIM);
 xticks(fac_t*XTIC);
 title(TIT);
 legend([handlesToLines([1, NSda+1]), hscale], 'location', 'northwest');
-
 if(do_save_plot)
-  name_fig = ['synth_v_data__f=',sprintf('%04d', data_freq), 'Hz_p=', sprintf('%04.0f', data_pre_Pa),'Pa'];
-  customSaveFig(fig_tvd, [figfolder, name_fig, addend], {'png'}, 9999);
+  name_fig_tvd = ['synth_v_data__f=',sprintf('%04d', data_freq), 'Hz_p=', sprintf('%04.0f', data_pre_Pa),'Pa'];
+%   customSaveFig(fig_tvd, [figfolder, name_fig, addend], {'png'}, 9999);
+  customSaveFig(fig_tvd, [figfolder, name_fig_tvd, addend], {'fig', 'eps', 'png', 'tex'}, 9999);
 end
 
 % acoustic energy
-XLIM = [1e-4, 1e-2];
-axes(tightAxes(2));
-semilogx(ANRGda, Dda, '.', 'color', Cda(1, :), 'markersize', 30, 'displayname', NAda); hold on;
-semilogx(ANRGsy, Dsy, '.', 'color', Csy(1, :), 'markersize', 30, 'displayname', NAsy);
-semilogx(ANRGsy./NRG_scale_to_data, Dsy, 'x', 'color', Csy(1, :), 'markersize', 15, 'displayname', [NAsy, ' $\times\left(',sprintf('%.1f', fitte.a),'r',sprintf('%+.1f', fitte.b),'\right)^{-1}$']);
-yticklabels({});
-legend('location', 'southwest');
-xlim(XLIM);
-xlabel('Acoustic Energy [Pa$\cdot$s]');
+a_tot_sy = 3.191370e-01; % from parfile
+% weight_wrt_dist = flip(logspace(-NSda+1, 0, NSda));
+weight_wrt_dist = 1./abs(1+Dda-min(Dda)).^4;
+% do fits
+fitt = 'c - 2*a*x - 2*b*log(x)'; fitfunc = fittype(fitt); op = fitoptions(fitfunc); op.Weights = weight_wrt_dist;
+fits={}; colfit={};
+i = 1;
+% op.Lower = [0, 0, -Inf]; op.Upper = [Inf, Inf, Inf]; fits{i} = fit(Dsy', log(ANRGsy), fitfunc, op); colfit{i}=[1,0,0]*0.75; i=i+1; % default
+% op.Lower = [a_tot_sy, 0, -Inf]; op.Upper = [a_tot_sy, Inf, Inf]; fits{i} = fit(Dsy', log(ANRGsy), fitfunc, op); colfit{i}=[1,0,0]*0.5; i=i+1; % force known attenuation
+% op.Lower = [0, 0.5, -Inf]; op.Upper = [0, 0.5, Inf]; fits{i} = fit(Dda', log(ANRGda), fitfunc, op); colfit{i}=[0,1,1]; i=i+1; % force cylindrical and no attenuation
+op.Lower = [0, 0.5, -Inf]; op.Upper = [Inf, 0.5, Inf]; fits{i} = fit(Dda', log(ANRGda), fitfunc, op); colfit{i}=[0,1,1]*0.75; i=i+1; % force cylindrical
+op.Lower = [0, 0, -Inf]; op.Upper = [Inf, Inf, Inf]; fits{i} = fit(Dda', log(ANRGda), fitfunc, op); colfit{i}=[0,1,1]*0.5; i=i+1; % default
+op.Lower = [0, 1, -Inf]; op.Upper = [Inf, 1, Inf]; fits{i} = fit(Dda', log(ANRGda), fitfunc, op); colfit{i}=[0,1,1]*0.1; i=i+1; % force spherical
+x = linspace(min(Dda), max(Dda), 40);
+% scale acoustic NRG with distance
+if(max(abs(Dsy-Dda))>1e-6)
+  error('kek');
+end
+fitt_nrg = 'a*x+b'; fitfunc_nrg = fittype(fitt_nrg); op_nrg = fitoptions(fitfunc_nrg); op_nrg.Weights = weight_wrt_dist;
+fitte = fit(Dsy', (ANRGsy./ANRGda), fitfunc_nrg, op_nrg); NRG_scale_to_data = (Dsy*fitte.a+fitte.b)';
+% figure
+fig_anrg = figure('units','normalized','outerposition',[0,0,1,1]);
+tightAxes = tight_subplot(1, 1, [0, 0.05], [0.12,0.08], [0.09, 0.02]);
+hfit=[];
+for i=1:numel(fits)
+%   dnam = ['$\alpha=', scientific_latex_notation(fits{i}.a,2,0), '$, $\beta=',sprintf('%.2f', fits{i}.b),'$, $c_1=',sprintf('%.2f', fits{i}.c),'$'];
+  dnam = ['$\alpha=', scientific_latex_notation(fits{i}.a,2,0), '$, $\beta=',sprintf('%.2f', fits{i}.b),'$'];
+  hfit=[hfit,semilogy(x, exp(fits{i}(x)), 'displayname', dnam, 'color', colfit{i})]; hold on;
+end
+YLIM = [1e-4, 1e-2]; XLIM = [0.25, 3.5]; ms = 250;
+hpts = [];
+hpts = [hpts, scatter(Dda, ANRGda, ms, 'o', 'markerfacecolor', Cda(1, :), 'markeredgecolor', 'none', 'displayname', NAda)]; hold on;
+hpts = [hpts, scatter(Dsy, ANRGsy, ms, 'o', 'markerfacecolor', Csy(1, :), 'markeredgecolor', 'none', 'displayname', [NAsy, ' ($\alpha_\mathrm{tot}=',scientific_latex_notation(a_tot_sy, 5, 0),'$)'])];
+hpts = [hpts, scatter(Dsy, ANRGsy./NRG_scale_to_data, ms*1.5, 'x', 'markeredgecolor', Csy(1, :), 'linewidth', 4, 'displayname', [NAsy, ' scaled $\times\left(',sprintf('%.1f', fitte.a),'r',sprintf('%+.1f', fitte.b),'\right)^{-1}$'])];
+legend([hpts, hfit],'location', 'eastoutside');
+ylim(YLIM); xlim(XLIM);
+set(gca, 'yscale', 'log');
+ylabel('total acoustic energy [Pa$\cdot$s]'); xlabel('distance to the source $r$ [m]');
 
-linkaxes(tightAxes, 'y');
-shift = 0.1;
-tightAxes(1).Position([3]) = tightAxes(1).Position([3]) + shift;
-tightAxes(2).Position([1, 3]) = tightAxes(2).Position([1, 3]) + [1,-1]*shift;
-
+if(do_save_plot)
+  name_fig_nrg = ['synth_v_data__f=',sprintf('%04d', data_freq), 'Hz_p=', sprintf('%04.0f', data_pre_Pa),'Pa__nrg'];
+%   customSaveFig(fig_tvd, [figfolder, name_fig, addend], {'png'}, 9999);
+  customSaveFig(fig_anrg, [figfolder, name_fig_nrg, addend], {'fig', 'eps', 'png', 'tex'}, 9999);
+end

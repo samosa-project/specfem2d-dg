@@ -16,7 +16,8 @@ function [time, dataMIC, distMic_Spkr] = Load_Data_ATN(timestamp, nrun, pre, fre
   dt = 1/fs; % period [s]
   sensitivity = [1.34 1.37 1.36 1.39 1.49]; % conversion to pascal [V/Pa]
 %   distMic_Spkr = [0.3, 0.5, 1, 2, 3]; % distance from the speaker [m]
-  distMic_Spkr = 0.44 + [0, 0.26, 0.761, 1.76, 2.76]; % mail chide 200604@1600
+%   distMic_Spkr = 0.44 + [0, 0.26, 0.761, 1.76, 2.76]; % mail chide 200604@1600
+  [distMic_Spkr] = dist_mic();
 
   % Convert data into a .mat file and loading data
   matFile = [FileATN(1:end-5) '.mat'];

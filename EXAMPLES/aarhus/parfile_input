@@ -99,7 +99,7 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-USE_LNS                         = .false.
+USE_LNS                         = .true.
 REMOVE_DG_FLUID_TO_SOLID        = .true.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
@@ -115,12 +115,14 @@ surface_density                 = 0.034937417489 # $\rho_0$ [kg.m^{-3}]: p*(cP/c
 sound_velocity                  = 271.5940000000 # $c$ [m.s^{-1}]: experimental setup.
 wind                            = 0.             # No wind.
 gravity                         = 0.             # Only used if USE_ISOTHERMAL_MODEL==.true., if USE_ISOTHERMAL_MODEL==.false. the gravity field is anyhow forced to 0.
-dynamic_viscosity               = 3.75560897e-05 # $\mu$, dynamic viscosity [kg.s^{-1}.m^{-1}]: classical mu=2.80488338e-05 (defined as (k*T*sqrt(rho/p))/(pi^(3/2)*dco2^2) with dco2=3.30e-10), but modified by a factor (1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0)) to account for rotational attenuation (see these).
+dynamic_viscosity               = 3.75560897e-05 # $\mu$, dynamic viscosity [kg.s^{-1}.m^{-1}]: classical mu=2.80488338e-05 (defined as (k*T*sqrt(rho/p))/(pi^(3/2)*dco2^2) with dco2=3.30e-10), but modified by a factor (1+3*gamma*(gamma-1)*R*Zrot/(4*1.25*C_P_0)) (with Zrot=4.89450331) to account for rotational attenuation (see thèse).
 thermal_conductivity            = 1.88967109e-02 # $\kappa$, thermal conductivity [kg.m.s^{-3}.K^{-1}]: from Eucken expression 0.25*(15*R*mu)*(((4*cv)/(15*R)) + 3/5).
-tau_epsilon                     = 2.39394993e-05 # $\tau_\epsilon$, strain relaxation time [s]: CO2 relaxation modelling an alpha_vib(f=2090)=3.137e-01, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6)..
-tau_sigma                       = 2.28581823e-05 # $\tau_\sigma$,   stress relaxation time [s]: CO2 relaxation modelling an alpha_vib(f=2090)=3.137e-01, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6)..
+tau_epsilon                     = 2.39394993e-05 # $\tau_\epsilon$, strain relaxation time [s]: CO2 relaxation modelling, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6)..
+tau_sigma                       = 2.28581823e-05 # $\tau_\sigma$,   stress relaxation time [s]: CO2 relaxation modelling, see Bass (2001, 10.1121/1.1365424) and Garcia (2017, 10.1007/s11214-016-0324-6)..
 constant_p                      = 844.0000000000 # $c_p$, isobaric  specific heat capacity [m^2.s^{-2}.K^{-1}]: from pure CO2 at 20°C (yields gamma=1.28855) from https://www.engineeringtoolbox.com/specific-heat-capacity-gases-d_159.html.
 constant_v                      = 655.0000000000 # $c_v$, isochoric specific heat capacity [m^2.s^{-2}.K^{-1}]: from pure CO2 at 20°C (yields gamma=1.28855) from https://www.engineeringtoolbox.com/specific-heat-capacity-gases-d_159.html.
+# This models, at f=500, alpha_cl=3.092e-04, alpha_rot=2.836e-06, and alpha_vib=1.954e-02.
+# Total attenuation at f=500 = 1.985381e-02 = -1.724480e-01 dB/m = -5.173440e-01 dB/3m.
 
 # ID of the DG region (refering to "Velocity and Density Models" below).
 id_region_DG                    = 1

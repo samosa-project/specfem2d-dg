@@ -49,11 +49,17 @@ function produce_stf(f0, factor)
 
   if(do_plot)
     % plot
-    figure();
-    plot(t, sinus*factor); hold on;
-    plot(t, tuk*factor); hold on;
-    plot(t, v);
-    xlim([0, 1/f0 + shift+3/f0 + 1/f0]);
+    fh=figure('units','normalized','outerposition',[0,0,1,0.6]);
+    tightAxes = tight_subplot(1, 1, [0,0], [0.21,0.03], [0.07, 0.02]);
+    h=plot(t*1e3, sinus, ':', 'color', [0,1,0]*0.5, 'linewidth', 4); hold on;
+    plot(t*1e3, tuk, ':', 'color', [1,0,0], 'linewidth', 4); hold on;
+    plot(t*1e3, v/factor, 'k', 'linewidth', 4);
+    legend(h, [sprintf('%.0f', f0),'~Hz sine wave'], 'location', 'southeast');
+    xlim([0, 1/f0 + shift+3/f0 + 1/f0]*1e3);
+    ylim([-1,1]*1.05);
+    ylabel('amplitude');
+    xlabel('time [ms]');
+    customSaveFig(fh, ['/home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap4/aarhus/stf'], {'fig', 'eps', 'png', 'tex'}, 9999);
   end
   
   t0_specfem = -0.000574162679426;
