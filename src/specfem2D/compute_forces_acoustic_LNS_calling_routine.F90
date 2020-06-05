@@ -48,7 +48,9 @@ subroutine compute_forces_acoustic_LNS_main()
     !write(*,*) "min, max E0   on proc ", myrank, " : ", minval(LNS_E0), maxval(LNS_E0) ! DEBUG
     !stop
     
-    ! Initialise state registers. Note: since constitutive variables are perturbations, they are necessarily zero at start.
+    ! Initialise state registers.
+    ! Note: since constitutive variables are perturbations, they are necessarily zero at start.
+    ! Allocations occur in prepare_timerun_wavefields.
     LNS_drho   = ZEROcr
     LNS_rho0dv = ZEROcr
     LNS_dE     = ZEROcr
@@ -68,6 +70,12 @@ subroutine compute_forces_acoustic_LNS_main()
     RHS_drho   = ZEROcr
     RHS_rho0dv = ZEROcr
     RHS_dE     = ZEROcr
+    if(LNS_avib) then
+      ! Deallocated before starting time iterations in initialise_LNS below.
+      LNS_e1 = ZEROcr
+      aux_e1 = ZEROcr
+      RHS_e1 = ZEROcr
+    endif
     
     ! Prepare MPI buffers.
 #ifdef USE_MPI
@@ -148,9 +156,13 @@ subroutine compute_forces_acoustic_LNS_main()
   call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
   
   ! Precompute gradients, only if viscosity exists whatsoever.
-  if(LNS_viscous) then
-    ! Note: this will compute nabla_dv only if viscosity is activated.
-    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
+  if(LNS_viscous .or. LNS_avib) then
+!    ! Note: this will compute nabla_dv only if viscosity is activated.
+!    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
+    ! Note: this will compute nabla_dv only if viscosity is activated OR vibrational attenuation is needed.
+    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous .or. LNS_avib, LNS_viscous, &
+                               LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
+    
     !call compute_viscous_tensors(nabla_dT, nabla_dv, LNS_dummy_1d, LNS_dummy_1d, LNS_rho0, &
     !                             LNS_rho0dv(1,:), LNS_rho0dv(2,:), LNS_dE, timelocal) ! Litteraly no difference.
     !call compute_gradient_TFSF(LNS_dummy_2d, LNS_dv(1,:), .false., .true., LNS_switch_gradient, &
@@ -178,8 +190,8 @@ subroutine compute_forces_acoustic_LNS_main()
       !endif
     enddo; enddo; enddo
 #endif
-    ! Precompute \Sigma_v' from \nabla v'.
-    call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
+    ! Precompute \Sigma_v' from \nabla v', only if viscous (don't care when only vibrational attenuation is needed).
+    if(LNS_viscous) call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
 #if 0
     do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
       if(isNotClose(  sigma_dv(1, ibool_DG(i,j,ispec)) &
@@ -205,7 +217,7 @@ subroutine compute_forces_acoustic_LNS_main()
       endif
     enddo; enddo; enddo
 #endif
-  endif
+  endif ! Endif on (LNS_viscous .or. LNS_avib).
 
 #ifdef USE_MPI
   ! If MPI, assemble at each iteration.
@@ -251,9 +263,9 @@ subroutine compute_forces_acoustic_LNS_main()
   
   ! Compute RHS.
   ! Note: if there is PML BCs, additionnal terms will be queried directly inside the call to compute_forces_acoustic_LNS, since auxiliary variables and coefficients are global variables.
-  call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, & ! Constitutive variables.
-                                   LNS_dm, LNS_dp, nabla_dT, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
-                                   RHS_drho, RHS_rho0dv, RHS_dE, & ! Output.
+  call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, LNS_e1, & ! Constitutive variables.
+                                   LNS_dm, LNS_dp, nabla_dT, nabla_dv, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
+                                   RHS_drho, RHS_rho0dv, RHS_dE, RHS_e1, & ! Output.
                                    timelocal) ! Time.
   
   ! Inverse mass matrix multiplication, in order to obtain actual RHS.
@@ -271,6 +283,12 @@ subroutine compute_forces_acoustic_LNS_main()
     aux_rho0dv(i_aux,:) = LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
     LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + LNS_scheme_B(i_stage)*aux_rho0dv(i_aux,:)
   enddo
+  ! Vibrational attenuation.
+  if(LNS_avib) then
+    RHS_e1 = RHS_e1 * rmass_inverse_acoustic_DG
+    aux_e1 = LNS_scheme_A(i_stage)*aux_e1 + deltat*RHS_e1
+    LNS_e1 = LNS_e1 + LNS_scheme_B(i_stage)*aux_e1
+  endif
   ! If one wants to do all at once (method which should be working but seems to be somewhat more unstable), comment the previous lines and uncomment the following lines.
   !LNS_drho               =   LNS_drho &
   !                         + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_drho &
@@ -543,7 +561,7 @@ end subroutine LNS_PML_updateD0
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
-  use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, &
+  use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, deltat, &
                          !pext_DG, rhoext, windxext, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
                          NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic, ispec_is_acoustic_DG!, &
@@ -552,6 +570,7 @@ subroutine initial_state_LNS()
                              buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
                              LNS_eta, LNS_kappa, LNS_g,LNS_c0, LNS_dummy_1d, LNS_dummy_2d, &
                              VALIDATION_MMS, &
+                             LNS_e1, RHS_e1, aux_e1, LNS_avib, LNS_avib_taueps, LNS_avib_tausig, &
                              LNS_viscous, sigma_v_0, nabla_v0, LNS_switch_gradient
 
   implicit none
@@ -626,6 +645,44 @@ subroutine initial_state_LNS()
   if(allocated(kappa_DG)) deallocate(kappa_DG)
   if(allocated(tau_epsilon)) deallocate(tau_epsilon)
   if(allocated(tau_sigma)) deallocate(tau_sigma)
+  if(LNS_avib) then
+    if(min(minval(LNS_avib_taueps), minval(LNS_avib_tausig)) < 0.2*deltat) then
+      write(*,*) "********************************"
+      write(*,*) "*            ERROR             *"
+      write(*,*) "********************************"
+      write(*,*) "* Some relaxation time for     *"
+      write(*,*) "* vibrational attenuation is   *"
+      write(*,*) "* lower than 0.2*dt (empirical *"
+      write(*,*) "* threshold). You cannot hope  *"
+      write(*,*) "* to model a process with such *"
+      write(*,*) "* a characteristic time with   *"
+      write(*,*) "* such a dt. Set dt lower than *"
+      write(*,*) "* ", min(minval(LNS_avib_taueps), minval(LNS_avib_tausig))/0.2
+      write(*,*) "* or consider relaxation times *"
+      write(*,*) "* higher than                  *"
+      write(*,*) "* ", 0.2*deltat
+      write(*,*) "* If you're feeling extra      *"
+      write(*,*) "* zealous, you may deactivate  *"
+      write(*,*) "* this stop in the source      *"
+      write(*,*) "* code, at                     *"
+      write(*,*) "* 'compute_forces_acoustic_LNS_calling_routine.f90'."
+      write(*,*) "********************************"
+      call exit_MPI(myrank, '')
+    else
+      write(*,*) "********************************"
+      write(*,*) "*           WARNING            *"
+      write(*,*) "********************************"
+      write(*,*) "* Activated vibrational        *"
+      write(*,*) "* attenuation modelling.       *"
+      write(*,*) "* EXPERIMENTAL, as it's NOT    *"
+      write(*,*) "* VALIDATED. Be sure to know   *"
+      write(*,*) "* what you're doing.           *"
+      write(*,*) "********************************"
+    endif
+  else
+    deallocate(LNS_avib_taueps, LNS_avib_tausig)
+    deallocate(LNS_e1, RHS_e1, aux_e1)
+  endif
   
   ! Can't deallocate the following, because next calls to background_physical_parameters (for outer boundary conditions) need them.
   ! TBD: design another routine to call for the OBCs, or a switch using those DG variables only at initialisation.
@@ -957,8 +1014,10 @@ end subroutine background_physical_parameters
 subroutine set_fluid_properties(i, j, ispec)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM, FOUR_THIRDS
   use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, etaext, &
-gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_conductivity_cte_DG, USE_ISOTHERMAL_MODEL
-  use specfem_par_LNS, only: LNS_eta, LNS_kappa, LNS_g, LNS_mu
+                         gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, &
+                         thermal_conductivity_cte_DG, USE_ISOTHERMAL_MODEL, &
+                         tau_eps_cte_DG, tau_sig_cte_DG
+  use specfem_par_LNS, only: isClose, LNS_eta, LNS_kappa, LNS_g, LNS_mu, LNS_avib, LNS_avib_taueps, LNS_avib_tausig
 
   implicit none
   
@@ -970,6 +1029,8 @@ gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_cond
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   
   iglob = ibool_DG(i, j, ispec)
+  
+  ! All these variables are allocated in setup_mesh.f90.
   
   if(assign_external_model) then
     ! If an external model data file is given for initial conditions, read from it.
@@ -991,6 +1052,17 @@ gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, thermal_cond
     LNS_mu(iglob) = dynamic_viscosity_cte_DG
     LNS_eta(iglob) = FOUR_THIRDS*dynamic_viscosity_cte_DG
     LNS_kappa(iglob) = thermal_conductivity_cte_DG
+    
+    ! Vibrational attenuation.
+    if(.not. isClose(tau_eps_cte_DG, tau_sig_cte_DG, 1e-3_CUSTOM_REAL)) then
+      LNS_avib = .true.
+    else
+      LNS_avib = .false.
+    endif
+    if(LNS_avib) then
+      LNS_avib_taueps(iglob) = tau_eps_cte_DG
+      LNS_avib_tausig(iglob) = tau_sig_cte_DG
+    endif
   endif ! Endif on assign_external_model.
 end subroutine set_fluid_properties
 

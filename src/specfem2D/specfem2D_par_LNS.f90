@@ -35,6 +35,7 @@ module specfem_par_LNS
   ! See compute_forces_acoustic_LNS_calling_routine. In the latter case, enables faster verification and thus faster skipping
   ! of some parts of the code.
   logical :: LNS_viscous
+  logical :: LNS_avib
   ! ------------------------------------------------------------ !
   
   ! ---------------------------- !
@@ -73,7 +74,7 @@ module specfem_par_LNS
   ! Pretty much all these arrays are allocated in 'prepare_timerun_wavefields.f90'.
   ! The initial state arrays (ending in "0") are allocated in 'setup_mesh.f90', in order to be able to perform the loading of general external models.
   ! Physical parameters.
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_c0
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_c0, LNS_avib_taueps, LNS_avib_tausig
   
   ! Initial state.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_rho0, LNS_E0
@@ -88,7 +89,7 @@ module specfem_par_LNS
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: sigma_v_0
   
   ! State.
-  real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_drho, LNS_dE
+  real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_drho, LNS_dE, LNS_e1
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_rho0dv
   
   ! Auxiliary state quantities.
@@ -104,11 +105,11 @@ module specfem_par_LNS
   ! LSRK time iteration.
   ! ---------------------------- !
   ! RHS registers.
-  real(kind=CUSTOM_REAL), dimension(:),   allocatable :: RHS_drho, RHS_dE
+  real(kind=CUSTOM_REAL), dimension(:),   allocatable :: RHS_drho, RHS_dE, RHS_e1
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: RHS_rho0dv
   
   ! Auxiliary registers.
-  real(kind=CUSTOM_REAL), dimension(:),   allocatable :: aux_drho, aux_dE
+  real(kind=CUSTOM_REAL), dimension(:),   allocatable :: aux_drho, aux_dE, aux_e1
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: aux_rho0dv
   ! ------------------------------------------------------------ !
   

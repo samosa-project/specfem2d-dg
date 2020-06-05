@@ -3,9 +3,9 @@
 ! ------------------------------------------------------------ !
 ! TODO: Description.
 
-subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constitutive variables.
-                                       in_dm, in_dp, in_nabla_dT, in_sigma_dv, & ! Precomputed quantities.
-                                       outrhs_drho, outrhs_rho0dv, outrhs_dE, & ! Output (RHS for each constitutive variable).
+subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Constitutive variables.
+                                       in_dm, in_dp, in_nabla_dT, in_nabla_dv, in_sigma_dv, & ! Precomputed quantities.
+                                       outrhs_drho, outrhs_rho0dv, outrhs_dE, outrhs_e1, & ! Output (RHS for each constitutive variable).
                                        currentTime) ! Time.
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL, PI
   use specfem_par, only: myrank, &
@@ -24,21 +24,23 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
                              nabla_v0, sigma_v_0, &
                              LNS_kappa, LNS_mu, LNS_eta, LNS_g, &
                              VALIDATION_MMS, &
+                             LNS_avib, LNS_avib_taueps, LNS_avib_tausig, &
                              LNS_verbose, LNS_modprint
   
   implicit none
   
   ! Input/Output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: cv_drho, cv_dE, in_dp!, in_dT
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: cv_drho, cv_dE, cv_e1, in_dp!, in_dT
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(in) :: cv_rho0dv, in_dm, in_nabla_dT
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM, nglob_DG), intent(in) :: in_nabla_dv
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA, nglob_DG), intent(in) :: in_sigma_dv
-  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE
+  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE, outrhs_e1
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: outrhs_rho0dv
   real(kind=CUSTOM_REAL), intent(in) :: currentTime
   
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWOcr  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   
@@ -82,7 +84,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P
   logical :: viscousComputation
-  real(kind=CUSTOM_REAL) :: wxlwzl!,wxlJac_L, wzlJac_L ! Integration weigths.
+  real(kind=CUSTOM_REAL) :: wxlwzl!, DEBUG01, DEBUG02, DEBUG03, DEBUG04!,wxlJac_L, wzlJac_L ! Integration weigths.
   logical :: exact_interface_flux
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
@@ -100,6 +102,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
   outrhs_drho    = ZEROcr
   outrhs_rho0dv  = ZEROcr
   outrhs_dE      = ZEROcr
+  if(LNS_avib) outrhs_e1 = ZEROcr
   
   ! Start by adding source terms.
   select case (TYPE_SOURCE_DG)
@@ -323,6 +326,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
           d0cntrb_dE(i,j) = LNS_g(iglob)*in_dm(NDIM,iglob) * Jac_L
           
+          if(LNS_avib) then
+            ! Add vibrational attenuation memory variable contribution.
+            ! 10.1007/s11214-016-0324-6, equation (19), describes where in the pressure evolution equation the memory variable would be used.
+            d0cntrb_dE(i,j) =   d0cntrb_dE(i,j) &
+                              - Jac_L &
+                                * ((LNS_p0(iglob)*gammaext_DG(iglob))/(gammaext_DG(iglob)-ONEcr)) &
+                                * (   (LNS_avib_taueps(iglob)/LNS_avib_tausig(iglob)-ONEcr) &
+                                      * (in_nabla_dv(1,1,iglob) + in_nabla_dv(NDIM,NDIM,iglob) - cv_e1(iglob)) &
+                                    + cv_e1(iglob))
+          endif
+          
 !          ! 5) Eventually, PML.
 ! 
 !          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -451,6 +465,34 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, & ! Constituti
           enddo ! Enddo on k.
           
           wxlwzl = real(wxgll(i)*wzgll(j), kind=CUSTOM_REAL)
+          
+          ! Vibrational attenuation.
+          if(LNS_avib) then
+            !DEBUG01 = - (ONEcr/LNS_avib_tausig(iglob))
+            !DEBUG02 = (   (ONEcr - (LNS_avib_tausig(iglob)/LNS_avib_taueps(iglob)))              &
+            !                         * (in_nabla_dv(1,1,iglob)+in_nabla_dv(NDIM,NDIM,iglob)) + cv_e1(iglob) )
+            !DEBUG03 = jacobian(i,j,ispec)
+            !!outrhs_e1(iglob) =  - DEBUG01 * DEBUG02
+            !DEBUG04 = wxlwzl*jacobian(i,j,ispec)
+            !if(.false. .and. currentTime>34.8e-3) then
+            !  write(*,*) 'avib', currentTime, DEBUG01, DEBUG02, DEBUG04
+            !  write(*,*) 'avib1', outrhs_e1(iglob)
+            !  write(*,*) 'avib2', ONEcr/LNS_avib_tausig(iglob)
+            !  write(*,*) 'avib3', ONEcr/LNS_avib_taueps(iglob)
+            !  write(*,*) 'avib4', (LNS_avib_tausig(iglob)/LNS_avib_taueps(iglob))
+            !  write(*,*) 'avib5', (in_nabla_dv(1,1,iglob)+in_nabla_dv(NDIM,NDIM,iglob))
+            !  write(*,*) 'avib6', cv_e1(iglob)
+            !  write(*,*) 'avib7', (wxlwzl*jacobian(i,j,ispec))
+            !  write(*,*) ' '
+            !endif
+            !outrhs_e1(iglob) = outrhs_e1(iglob) + &
+            !                   DEBUG01 * DEBUG02 * DEBUG04
+            outrhs_e1(iglob) =   outrhs_e1(iglob) &
+                               - (ONEcr/LNS_avib_tausig(iglob)) &
+                                 * (   (ONEcr - (LNS_avib_tausig(iglob)/LNS_avib_taueps(iglob)))              &
+                                     * (in_nabla_dv(1,1,iglob)+in_nabla_dv(NDIM,NDIM,iglob)) + cv_e1(iglob) ) &
+                                 * wxlwzl*jacobian(i,j,ispec)
+          endif
           
           ! Add zero-th order terms.
 ! 

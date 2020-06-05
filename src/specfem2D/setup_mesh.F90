@@ -1204,7 +1204,7 @@ subroutine setup_mesh_surface_DG_coupling()
   use specfem_par
   use specfem_par_lns, only: NVALSIGMA, USE_LNS, &
                              LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_eta, LNS_kappa, &
-                             LNS_E0, LNS_T0, nabla_v0, sigma_v_0, LNS_c0
+                             LNS_E0, LNS_T0, nabla_v0, sigma_v_0, LNS_c0, LNS_avib_taueps, LNS_avib_tausig
 
   implicit none
 
@@ -1264,7 +1264,9 @@ subroutine setup_mesh_surface_DG_coupling()
       allocate(LNS_g(nglob_DG), &
                LNS_mu(nglob_DG), &
                LNS_eta(nglob_DG), &
-               LNS_kappa(nglob_DG))
+               LNS_kappa(nglob_DG), &
+               LNS_avib_taueps(nglob_DG), &
+               LNS_avib_tausig(nglob_DG))
       
       ! Derived interesting quantities.
       allocate(LNS_c0(nglob_DG))

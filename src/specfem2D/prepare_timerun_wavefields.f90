@@ -352,12 +352,12 @@
                veloc_x_DG, veloc_z_DG, p_DG_init, T_init, V_DG, T_DG, &
                potential_dphi_dx_DG, potential_dphi_dz_DG) ! Not really optimal, but less invasive.
     
-    allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG)) ! State.
+    allocate(LNS_drho(nglob_DG), LNS_dE(nglob_DG), LNS_e1(nglob_DG)) ! State.
     allocate(LNS_rho0dv(NDIM,nglob_DG)) ! State.
     allocate(LNS_dp(nglob_DG), LNS_dT(nglob_DG)) ! Pressure and temperature perturbation.
     allocate(LNS_dv(NDIM,nglob_DG), LNS_dm(NDIM,nglob_DG)) ! Velocity perturbation, and momentum (1st order) perturbation.
-    allocate(RHS_drho(nglob_DG), RHS_rho0dv(NDIM,nglob_DG), RHS_dE(nglob_DG)) ! RHS.
-    allocate(aux_drho(nglob_DG), aux_rho0dv(NDIM,nglob_DG), aux_dE(nglob_DG)) ! Auxiliary registers.
+    allocate(RHS_drho(nglob_DG), RHS_rho0dv(NDIM,nglob_DG), RHS_dE(nglob_DG), RHS_e1(nglob_DG)) ! RHS.
+    allocate(aux_drho(nglob_DG), aux_rho0dv(NDIM,nglob_DG), aux_dE(nglob_DG), aux_e1(nglob_DG)) ! Auxiliary registers.
     
     allocate(nabla_dT(NDIM, nglob_DG)) ! Gradient of temperature perturbation.
     allocate(sigma_dv(NVALSIGMA, nglob_DG)) ! Viscous stress tensor perturbation.
