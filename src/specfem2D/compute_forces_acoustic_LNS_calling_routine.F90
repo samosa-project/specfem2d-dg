@@ -560,7 +560,7 @@ end subroutine LNS_PML_updateD0
 ! iterate_time() and thus compute_forces_acoustic_LNS_main().
 
 subroutine initial_state_LNS()
-  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL, HUGEVAL
   use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, deltat, &
                          !pext_DG, rhoext, windxext, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
@@ -646,6 +646,9 @@ subroutine initial_state_LNS()
   if(allocated(tau_epsilon)) deallocate(tau_epsilon)
   if(allocated(tau_sigma)) deallocate(tau_sigma)
   if(LNS_avib) then
+    ! Make sure taueps tausig nonzero and equal in elastic elements.
+    where(LNS_avib_taueps==0.) LNS_avib_taueps = HUGEVAL
+    where(LNS_avib_tausig==0.) LNS_avib_tausig = HUGEVAL
     if(min(minval(LNS_avib_taueps), minval(LNS_avib_tausig)) < 0.2*deltat) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
