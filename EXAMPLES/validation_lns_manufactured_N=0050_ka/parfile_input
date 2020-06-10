@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 16
+NPROC                           = 32
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)

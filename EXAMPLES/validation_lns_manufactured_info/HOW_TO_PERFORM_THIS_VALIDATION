@@ -1,0 +1,40 @@
+Welcome to the validation case using the method of manufactured solutions (MMS).
+This manual will help you with running all validation on a HPC cluster.
+
+1) Send the configurations to you HPC using the script 'send_examples_to_hpc.sh'.
+Configure it according to the SSH to use, and simply run it.
+It will send all parfile_input, interfaces_input, and source_input for each MMS validation case from your local EXAMPLES folder to your remote EXAMPLES folder.
+
+2) Prepare all cases (or any subset of your choice).
+Use the command:
+  ./prepare_many_examples.sh validation_lns_manufactured_*
+
+3) Cases with 1 <= N <= 5 should be ran with a single proc.
+They will be quite fast, a time limit of 5 minutes should be more than enough.
+You could even run them locally.
+Use the command:
+  ./send_many_examples_to_execution_CALMIP.sh 1 1 0:5:0 validation_lns_manufactured_N\=000*_*
+
+4) Cases with 25 <= N <= 50 should be ran with 32 procs.
+The N=25 will require about 3 minutes, while the N=50 about 30 minutes. Set a time limit of 45 minutes for all of them, to please the scheduler.
+Use the command:
+  ./send_many_examples_to_execution_CALMIP.sh 1 32 0:45:0 validation_lns_manufactured_N\=00{25,50}_*
+
+5) Cases with N => 100 should be ran with 8*32=256 procs.
+The inviscid ones will take about 30 minutes, and the viscous ones a bit more. Set a time limit of 45 minutes to be safe.
+Use the command:
+  ./send_many_examples_to_execution_CALMIP.sh 8 32 0:45:0 validation_lns_manufactured_N\=0100_*
+
+6) Once you have sent all cases to run, wait.
+This should burn at most (due to time limits)
+  (9*1*(5/60) + 3*32*(45/60) + 3*8*32*(45/60)) = 650
+CPU hours on your HPC credits, but most realistically
+  (9*1*(5/60) + 3*32*(4/60+30/60) + 3*8*32*(30/60)) = 440
+CPU hours.
+
+7) Archive all files of interest with maximum compression.
+GZIP=-9 tar -cvzf MMS_RESULTS_ARCHIVE.tar validation_lns_manufactured_N*/OUTPUT_FILES/AA*.BXZ.semv validation_lns_manufactured_N*/OUTPUT_FILES/input* validation_lns_manufactured_N*/OUTPUT_FILES/STATIONS validation_lns_manufactured_N*/OUTPUT_FILES/wavefield*
+
+8) Rappatriate this archive back to your local EXAMPLES folder and unzip.
+
+9) Use the MATLAB script 'utils_new/validation/MMS.m' to plot results.
