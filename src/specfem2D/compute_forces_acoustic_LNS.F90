@@ -1528,7 +1528,7 @@ subroutine build_tau_s(normal, i_el, j_el, ispec_el, TAU_S)
   ! Get elastic parameters.
   mu_elastic_unrelaxed = poroelastcoef(2, 1, kmato(ispec_el))
   rho = density(1, kmato(ispec_el))
-  vp = sqrt((poroelastcoef(1, 1, kmato(ispec_el)) + 2.*mu_elastic_unrelaxed)/rho) ! vp = ((lambda+2mu)/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus, poroelastcoef(1,1,kmato(ispec_el)) = lambda
+  vp = sqrt((poroelastcoef(1, 1, kmato(ispec_el)) + 2._CUSTOM_REAL*mu_elastic_unrelaxed)/rho) ! vp = ((lambda+2mu)/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus, poroelastcoef(1,1,kmato(ispec_el)) = lambda
   vs = sqrt(mu_elastic_unrelaxed/rho) ! vs = (mu/rho)^0.5 http://www.subsurfwiki.org/wiki/P-wave_modulus
   if(assign_external_model) then
     rho = rhoext(i_el, j_el, ispec_el)
@@ -1627,8 +1627,8 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
               
               ! Approx. c^2=c_0^2 & v=v_0. Lowest CPU use, 18% error at Mach .3, 7% error at Mach .3.
               d_dE(iglob) =   d_dE(iglob) &
-                           + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1.) &
-                               + 0.5*norm2r1(LNS_v0(:, iglob)) &
+                           + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1._CUSTOM_REAL) &
+                               + 0.5_CUSTOM_REAL*norm2r1(LNS_v0(:, iglob)) &
                              ) * temp_sourcewxlwzljacobianl
               ! Approx. c^2=c_0^2. TBTested.
               !d_dE(iglob) =   d_dE(iglob) &

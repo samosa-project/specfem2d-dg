@@ -195,7 +195,7 @@ subroutine compute_forces_acoustic_LNS_main()
 #if 0
     do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
       if(isNotClose(  sigma_dv(1, ibool_DG(i,j,ispec)) &
-                    , (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
+                    , EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
                                                            + 0.25*gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)) &
                     , TINYVAL) .or. &
          isNotClose(  sigma_dv(2, ibool_DG(i,j,ispec)) &
@@ -203,16 +203,16 @@ subroutine compute_forces_acoustic_LNS_main()
                                                    + ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1)) &
                     , TINYVAL) .or. &
          isNotClose(  sigma_dv(3, ibool_DG(i,j,ispec)) &
-                    , (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
+                    , EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
                                                            + 0.25*aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1)) &
                     , TINYVAL)) then
         write(*,*) '(x z) (Sv_11 Sv_12 Sv_22)', coord(:,ibool_before_perio(i,j,ispec)), sigma_dv(:, ibool_DG(i,j,ispec)) ! TEST
         write(*,*) 'th =                     ', coord(:,ibool_before_perio(i,j,ispec)), &
-                   (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
+                   EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
                                                         + 0.25*gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)), &
                    LNS_mu(ibool_DG(i,j,ispec))*(  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1) &
                                                 + ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1)), &
-                   (8./3.)*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
+                   EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
                                                         + 0.25*aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1))
       endif
     enddo; enddo; enddo
@@ -628,7 +628,7 @@ subroutine initial_state_LNS()
     !where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
 
     ! Recompute and save globally c0.
-    LNS_c0 = 0.
+    LNS_c0 = ZEROcr
     where(LNS_rho0 > TINYVAL) LNS_c0 = sqrt(gammaext_DG*LNS_p0/LNS_rho0)
 
     ! Initialise T_0.
@@ -647,9 +647,9 @@ subroutine initial_state_LNS()
   if(allocated(tau_sigma)) deallocate(tau_sigma)
   if(LNS_avib) then
     ! Make sure taueps tausig nonzero and equal in elastic elements.
-    where(LNS_avib_taueps==0.) LNS_avib_taueps = HUGEVAL
-    where(LNS_avib_tausig==0.) LNS_avib_tausig = HUGEVAL
-    if(min(minval(LNS_avib_taueps), minval(LNS_avib_tausig)) < 0.2*deltat) then
+    where(LNS_avib_taueps==ZEROcr) LNS_avib_taueps = HUGEVAL
+    where(LNS_avib_tausig==ZEROcr) LNS_avib_tausig = HUGEVAL
+    if(min(minval(LNS_avib_taueps), minval(LNS_avib_tausig)) < 0.2_CUSTOM_REAL*deltat) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"
@@ -660,7 +660,7 @@ subroutine initial_state_LNS()
       write(*,*) "* to model a process with such *"
       write(*,*) "* a characteristic time with   *"
       write(*,*) "* such a dt. Set dt lower than *"
-      write(*,*) "* ", min(minval(LNS_avib_taueps), minval(LNS_avib_tausig))/0.2
+      write(*,*) "* ", min(minval(LNS_avib_taueps), minval(LNS_avib_tausig))/0.2_CUSTOM_REAL
       write(*,*) "* or consider relaxation times *"
       write(*,*) "* higher than                  *"
       write(*,*) "* ", 0.2*deltat
@@ -1057,7 +1057,7 @@ subroutine set_fluid_properties(i, j, ispec)
     LNS_kappa(iglob) = thermal_conductivity_cte_DG
     
     ! Vibrational attenuation.
-    if(.not. isClose(tau_eps_cte_DG, tau_sig_cte_DG, 1e-3_CUSTOM_REAL)) then
+    if(.not. isClose(tau_eps_cte_DG, tau_sig_cte_DG, 1.0e-3_CUSTOM_REAL)) then
       LNS_avib = .true.
     else
       LNS_avib = .false.
@@ -2234,6 +2234,7 @@ end subroutine LNS_warn_nonsense
 
 
 subroutine initialise_VALIDATION_MMS()
+  use constants, only: CUSTOM_REAL
   use specfem_par_LNS, only: USE_LNS, LNS_viscous, &
                              VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU, &
                              MMS_dRHO_cst, MMS_dVX_cst, MMS_dVZ_cst, MMS_dE_cst, &
@@ -2252,29 +2253,29 @@ subroutine initialise_VALIDATION_MMS()
     if(.not. LNS_viscous) stop 'CANNOT TEST MMS MU IF NO VISCOSITY'
   endif
   if(VALIDATION_MMS_IV) then
-    MMS_dRHO_cst = 0.001
-    MMS_dVX_cst  = 0.
-    MMS_dE_cst   = 0.05
+    MMS_dRHO_cst = 0.001_CUSTOM_REAL
+    MMS_dVX_cst  = 0._CUSTOM_REAL
+    MMS_dE_cst   = 0.05_CUSTOM_REAL
   endif
   if(VALIDATION_MMS_KA) then
-    MMS_dRHO_cst = 0.
-    MMS_dVX_cst  = 0.
-    MMS_dE_cst   = 0.05
+    MMS_dRHO_cst = 0._CUSTOM_REAL
+    MMS_dVX_cst  = 0._CUSTOM_REAL
+    MMS_dE_cst   = 0.05_CUSTOM_REAL
   endif
   if(VALIDATION_MMS_MU) then
-    MMS_dRHO_cst = 0.
-    MMS_dVX_cst  = 0.001
-    MMS_dE_cst   = 0.
+    MMS_dRHO_cst = 0._CUSTOM_REAL
+    MMS_dVX_cst  = 0.001_CUSTOM_REAL
+    MMS_dE_cst   = 0._CUSTOM_REAL
   endif
-  MMS_dVZ_cst = 0.
-  MMS_dRHO_x  = 1.
-  MMS_dRHO_z  = 2.
-  MMS_dVX_x   = 2.
-  MMS_dVX_z   = 0.
-  MMS_dVZ_x   = 0.
-  MMS_dVZ_z   = 0.
-  MMS_dE_x    = 3.
-  MMS_dE_z    = 4.
+  MMS_dVZ_cst = 0._CUSTOM_REAL
+  MMS_dRHO_x  = 1._CUSTOM_REAL
+  MMS_dRHO_z  = 2._CUSTOM_REAL
+  MMS_dVX_x   = 2._CUSTOM_REAL
+  MMS_dVX_z   = 0._CUSTOM_REAL
+  MMS_dVZ_x   = 0._CUSTOM_REAL
+  MMS_dVZ_z   = 0._CUSTOM_REAL
+  MMS_dE_x    = 3._CUSTOM_REAL
+  MMS_dE_z    = 4._CUSTOM_REAL
 end subroutine initialise_VALIDATION_MMS
 
 subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
@@ -2298,6 +2299,9 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: outrhs_rho0dv
   ! Local.
+  real(kind=CUSTOM_REAL), parameter :: EIGHT_THIRDScr  = (8._CUSTOM_REAL/3._CUSTOM_REAL)
+  real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFcr  = 0.5_CUSTOM_REAL
   integer :: ispec, i, j, iglob
   real(kind=CUSTOM_REAL), dimension(NDIM) :: X
   real(kind=CUSTOM_REAL) :: GAM, w
@@ -2321,44 +2325,44 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
     outrhs_drho(iglob) = outrhs_drho(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
     ! x-momentum.
     if(VALIDATION_MMS_IV) then
-      outrhs_rho0dv(1, iglob) = (GAM-1.)*PI &
+      outrhs_rho0dv(1, iglob) = (GAM-ONEcr)*PI &
                                      *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
+                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
     endif
     if(VALIDATION_MMS_KA) then
-      outrhs_rho0dv(1, iglob) = (GAM-1.)*PI &
+      outrhs_rho0dv(1, iglob) = (GAM-ONEcr)*PI &
                                      *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
+                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
     endif
     if(VALIDATION_MMS_MU) then
       outrhs_rho0dv(1, iglob) = ( &
                                      LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1)) &
-                                     *(w-(GAM-1.)*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1)))) &
+                                     *(w-(GAM-ONEcr)*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1)))) &
                                    + &
-                                     PI**2*MMS_dVX_cst*MMS_dVX_x**2*(8./3.)*LNS_mu(iglob)*sin(MMS_dVX_x*PI*X(1)) &
+                                     PI**2*MMS_dVX_cst*MMS_dVX_x**2*EIGHT_THIRDScr*LNS_mu(iglob)*sin(MMS_dVX_x*PI*X(1)) &
                                    )
     endif
     outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
     ! z-momentum.
     if(VALIDATION_MMS_IV) then
-      outrhs_rho0dv(2, iglob) = (GAM-1.)*PI &
+      outrhs_rho0dv(2, iglob) = (GAM-ONEcr)*PI &
                                      *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
-                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
+                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
     endif
     if(VALIDATION_MMS_KA) then
-      outrhs_rho0dv(2, iglob) = (GAM-1.)*PI &
+      outrhs_rho0dv(2, iglob) = (GAM-ONEcr)*PI &
                                      *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
-                                       - 0.5*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
+                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
     endif
     if(VALIDATION_MMS_MU) then
-      outrhs_rho0dv(2, iglob) = 0.
+      outrhs_rho0dv(2, iglob) = 0._CUSTOM_REAL
     endif
     outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
     ! Energy.
     if(VALIDATION_MMS_IV) then
       outrhs_dE(iglob) = w*PI &
                               *(  GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                                - 0.5*(GAM-1.)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2)
+                                - HALFcr*(GAM-ONEcr)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2)
     endif
     if(VALIDATION_MMS_KA) then
       outrhs_dE(iglob) = (   w*PI*GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
@@ -2367,17 +2371,17 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
     endif
     if(VALIDATION_MMS_MU) then
       outrhs_dE(iglob) = ( &
-                              (LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))/(GAM-1.)) &
-                              *(   0.5*(GAM-1.)*w**2 &
+                              (LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))/(GAM-ONEcr)) &
+                              *(   HALFcr*(GAM-ONEcr)*w**2 &
                                  + sound_velocity**2 &
-                                 - (GAM-1.)**2*w*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1))) &
+                                 - (GAM-ONEcr)**2*w*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1))) &
                                ) &
                             + &
                               PI**2*MMS_dVX_cst*MMS_dVX_x**2 &
-                              *(   (8./3.)*LNS_mu(iglob)*w*sin(MMS_dVX_x*PI*X(1)) &
+                              *(   EIGHT_THIRDScr*LNS_mu(iglob)*w*sin(MMS_dVX_x*PI*X(1)) &
                                  + (LNS_kappa(iglob)/c_V) &
                                    *( &
-                                        MMS_dVX_cst*sin(2.*MMS_dVX_x*PI*X(1)) &
+                                        MMS_dVX_cst*sin(2._CUSTOM_REAL*MMS_dVX_x*PI*X(1)) &
                                       + w*sin(MMS_dVX_x*PI*X(1)) &
                                     ) &
                               ) &
