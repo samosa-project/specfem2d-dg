@@ -44,12 +44,12 @@ err_rel.symbol = ['epsilon'];
 
 % IDs of dumps to plot packed, for paper.
 commonID2 = 4000;
-generateCase = 5;
+generateCase = 4;
 switch(generateCase)
   case 5
     % test case
-    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0004_mu/OUTPUT_FILES']}; testCase = 'mu';
-    iterationsToPlot_forEachOFD = {[commonID2*4]};
+    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0100_iv/OUTPUT_FILES']}; testCase = 'inviscid';
+    iterationsToPlot_forEachOFD = {[commonID2*100]};
     plotFields_do = 1; % activate plotting of fields
   case 1
     OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_iv/OUTPUT_FILES'], ...
@@ -94,4 +94,4 @@ end
 % Error plots.
 plotProgrWRTTime = 0; % plot progression wrt time?
 
-MMS_masterFigure(errQtity, err_l2, err_rel, globalSave, IDNX, IDDT, IDIT, IDEPS, IDRELERR);
+MMS_masterFigure(testCase, errQtity, err_l2, err_rel, globalSave, IDNX, IDDT, IDIT, IDEPS, IDRELERR, savefigpath, plotProgrWRTTime);

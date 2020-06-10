@@ -1,4 +1,6 @@
 function [Xq, Yq, value] = MMS_grabSyntheticValue(OFd)
+  debug = 0;
+  
   OFd=char(OFd);
   if(not(OFd(end)==filesep))
     OFd = [OFd, filesep];
@@ -14,6 +16,12 @@ function [Xq, Yq, value] = MMS_grabSyntheticValue(OFd)
   end
   
   [Ztime, Zamp, ~, ~, ~] = gji2020_loadSomeSynthetics(OFd, station, typeDisplay, unknown, 1, 0, 1, 0, -1);
-  value = Zamp(end);
+%   value = Zamp(end);
+  value = mean(Zamp(end-999:end)); % more stable value, since oscillates alot
+  
+  if(debug)
+    figure();
+    plot(Zamp);
+  end
 end
 

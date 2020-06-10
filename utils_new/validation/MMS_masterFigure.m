@@ -1,4 +1,4 @@
-function MMS_masterFigure(errQtity, err_l2, err_rel, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR)
+function MMS_masterFigure(testCase, errQtity, err_l2, err_rel, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, GS_ID_EPS, GS_ID_RELERR, savefigpath, plotProgrWRTTime)
   if(size(globalSave,1)<=1)
     error('nothing to do');
   end

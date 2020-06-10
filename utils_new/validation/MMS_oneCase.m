@@ -129,7 +129,7 @@ function [errQtity, err_l2, err_rel, globalSave, GS_ID_NX, GS_ID_DT, GS_ID_IT, G
       % Plot error on field.
       if(plotFields_do)
         plotFields_saveFigName_prefix = ['comparedDump__'];
-        plotFields_extsToSave={'png', 'eps'};
+        plotFields_extsToSave={'eps'};
         spl=split(OFD,'/');
         plotFields_saveFigName_base = [plotFields_saveFigName_prefix, regexprep(spl{end-2},[prefix,'_'],''),'__',regexprep(spl{end-1},'OUTPUT_FILES_',''),'__'];% if sub OUTPUT_FILES folders per case
         savefigname = [plotFields_saveFigName_base, 'IT',sprintf('%012.0f',IT)];

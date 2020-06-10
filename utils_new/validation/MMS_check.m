@@ -1,6 +1,6 @@
 function [VISCOUS] = MMS_check(testCase, MU, KAPPA)
   [RHO_cst, VX_cst, VZ_cst, E_cst, dRHO_x, dRHO_z, dVX_x, dVX_z, dVZ_x, dVZ_z, dE_x, dE_z] = MMS_constants(testCase);
-  MU=0.35; %test
+%   MU=0.35; %test
   if(max(MU,KAPPA)>0)
     VISCOUS = 1;
 %     disp(['[] VISCOUS']);
