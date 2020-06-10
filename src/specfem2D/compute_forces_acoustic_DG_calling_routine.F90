@@ -828,8 +828,13 @@ subroutine prepare_MPI_DG()
         coord_i_1 = coord(1,ibool(i,j,ispec))
         coord_j_1 = coord(2,ibool(i,j,ispec))
         
-        ! QUENTIN: If the current point has no DG neighbors (i.e. no element neighbor in the same parititon) and we are on the right element face (i.e. one_other_node_is_found .OR. one_other_node_is_found_corner) and the current point's coordinates are the same than the ones received in the I_RECV from the MPI neighbor
-        ! QUENTIN: Then, we store this information (link between (iface1, iface, ispec) abd (ipoin, num_interface)) in table MPI_transfer_iface
+        ! [QUENTIN]
+        !   If:
+        !           the current point has no DG neighbors (i.e. no element neighbor in the same parititon)
+        !     .and. we are on the right element face (i.e. one_other_node_is_found .OR. one_other_node_is_found_corner)
+        !     .and. the current point's coordinates are the same than the ones received in the I_RECV from the MPI neighbor
+        !   then:
+        !     we store this information (link between (iface1, iface, ispec) abd (ipoin, num_interface)) in table MPI_transfer_iface.
         if(      (neighbor == -1 .OR. neighbor_corner == -1) &
            .AND. (abs(coord_i_1-coord_i_2)<TINYVAL .AND. abs(coord_j_1-coord_j_2)<TINYVAL) &
            .AND. (one_other_node_is_found .OR. one_other_node_is_found_corner)) then
