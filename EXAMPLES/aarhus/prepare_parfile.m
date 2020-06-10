@@ -3,8 +3,8 @@ close all;
 clc;
 
 
-freq = 500;
-% freq = 2090;
+% freq = 500;
+freq = 2090;
 p = 2000;
 T = 273.15+21.6;
 sound_velocity = 271.594; sound_velocity_desc = 'experimental setup';
