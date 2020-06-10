@@ -26,7 +26,7 @@ clc;
 % Setup.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
-addpath(genpath([SPCFMloc,'utils_new/Atmospheric_Models']));
+addpath(genpath([SPCFMloc,'utils_new']));
 % factor_err = 100; % factor by which multiply difference in plots.
 prefix = 'validation_lns_fk';
 % fignames
@@ -65,7 +65,8 @@ int_file = [OFd, 'input_interfaces'];
 
 % Automatically load parameters from simulation's OUTPUT_FILES directory.
 disp([' ']); disp(['[',mfilename,', INFO] Loading simulation parameters.']);
-[zmin, zmax] = readExampleFiles_zMinMaxInterfacesFile(int_file);
+% [zmin, zmax] = readExampleFiles_zMinMaxInterfacesFile(int_file);
+[~, ~, zmin, zmax] = readExampleFiles_meshfem_mesh(int_file);
 dt = readExampleFiles_extractParam(parfile, 'DT', 'float');
 TYPE_FORCING = readExampleFiles_extractParam(parfile, 'TYPE_FORCING', 'int');
 P_0 = readExampleFiles_extractParam(parfile, 'main_spatial_period', 'float'); % main spatial period
