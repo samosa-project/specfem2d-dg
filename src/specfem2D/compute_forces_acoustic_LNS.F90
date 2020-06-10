@@ -20,9 +20,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                          ABC_STRETCH, stretching_ya, stretching_buffer
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
                              LNS_dummy_1d, &
-                             LNS_rho0, LNS_v0, LNS_p0, LNS_E0, LNS_dv, &
+                             LNS_rho0, &
+                             LNS_v0, LNS_p0, LNS_E0, LNS_dv, &
                              nabla_v0, sigma_v_0, &
-                             LNS_kappa, LNS_mu, LNS_eta, LNS_g, &
+                             LNS_kappa, LNS_mu, LNS_eta, LNS_g, &!LNS_c0, &
                              VALIDATION_MMS, &
                              LNS_avib, LNS_avib_taueps, LNS_avib_tausig, &
                              LNS_verbose, LNS_modprint
