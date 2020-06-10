@@ -47,6 +47,9 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % fig_title = ['ff'];
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
 
+% OKQ
+rootd=['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/']; OFd=[rootd,'OUTPUT_FILES_668844_OKQ45_redone/']; subsample=0;
+
 % Test mountains LNS.
 % rootd = [SPCFMEXloc, 'mountain_scattering_with_mountains/']; OFd = [rootd,'OUTPUT_FILES_4213746_test'];
 
@@ -100,8 +103,8 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'aarhus/'); OFd = strcat(rootd, 'OUTPUT_FILES_173861_2090hz/');
 
 % TNTGlanes
-fig_title = strcat('Tirs de Mine Glanes');
-OFd = [SPCFMEXloc, 'tir_de_mine', filesep, 'OUTPUT_FILES_365931_40hz_redone_flipped/'];
+% fig_title = strcat('Tirs de Mine Glanes');
+% OFd = [SPCFMEXloc, 'tir_de_mine', filesep, 'OUTPUT_FILES_365931_40hz_redone_flipped/'];
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364789_20hz_vp4k/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364671_25hz_lowQ/');
 % rootd = strcat(SPCFMEXloc,'tir_de_mine/'); OFd = strcat(rootd, 'OUTPUT_FILES_364569_30hz_ricker/');
