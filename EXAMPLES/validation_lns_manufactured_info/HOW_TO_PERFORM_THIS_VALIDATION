@@ -35,6 +35,6 @@ CPU hours.
 7) Archive all files of interest with maximum compression.
 GZIP=-9 tar -cvzf MMS_RESULTS_ARCHIVE.tar validation_lns_manufactured_N*/OUTPUT_FILES/AA*.BXZ.semv validation_lns_manufactured_N*/OUTPUT_FILES/input* validation_lns_manufactured_N*/OUTPUT_FILES/STATIONS validation_lns_manufactured_N*/OUTPUT_FILES/wavefield*
 
-8) Rappatriate this archive back to your local EXAMPLES folder and unzip.
+8) Rappatriate this archive (~32 Mb) back to your local EXAMPLES folder and unzip.
 
 9) Use the MATLAB script 'utils_new/validation/MMS.m' to plot results.
