@@ -82,8 +82,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
 !  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa, pml_alp!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: dv_P, dm_P, nabla_dT_P, rho_MP
-  real(kind=CUSTOM_REAL) :: drho_P, dp_P, dE_P
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: v0_P, dv_P, dm_P, nabla_dT_P, rho_MP
+  real(kind=CUSTOM_REAL) :: rho0_P, drho_P, p0_P, dp_P, E0_P, dE_P
+  real(kind=CUSTOM_REAL) :: gam_P, kap_P
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P
   logical :: viscousComputation
   real(kind=CUSTOM_REAL) :: wxlwzl!, DEBUG01, DEBUG02, DEBUG03, DEBUG04!,wxlJac_L, wzlJac_L ! Integration weigths.
@@ -613,6 +614,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                   .false., LNS_dummy_1d(1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
           call check_neighbour_type(neighbour_type) ! Safeguard: crash the program if neighbour_type outside of possible values.
           
+          call LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neighbour_type, &
+                                          iglobP, &
+                                          rho0_P, v0_P, E0_P, p0_P, &
+                                          gam_P, kap_P)
+          
           jump   = ZEROcr ! Safeguard.
           
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
@@ -631,12 +637,12 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           !if(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))<=1e-1) &
           !  write(*,*) LNS_p0(iglob), in_dp(iglob)! , (LNS_rho0(iglob)+cv_drho(iglob))
           rho_MP(1) = LNS_rho0(iglob)+cv_drho(iglob)
-          rho_MP(2) = LNS_rho0(iglobP)+drho_P
+          rho_MP(2) = rho0_P+drho_P
           if(rho_MP(1)>TINYVAL .and. rho_MP(2)>TINYVAL) then
             lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob)+LNS_dv(:,iglob))) &
                          + sqrt(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/rho_MP(1)) &
-                         , abs(dot_product(n_out, LNS_v0(:,iglobP)+dv_P)) &
-                         + sqrt(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/rho_MP(2)) &
+                         , abs(dot_product(n_out, v0_P(:)+dv_P)) &
+                         + sqrt(gam_P*(p0_P+dp_P)/rho_MP(2)) &
                          )
           else
             ! Possibly, in elastic elements, rho_MP is zero (since both LNS_rho0 and cv_drho and drho_P are zero there).
@@ -688,9 +694,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                                 - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P) + lambda*jump)
           ! 1.2) x-Momentum inviscid contributions.
           Sigma_L(1)    =   cv_rho0dv(1,iglob)*LNS_v0(1,iglob) + in_dp(iglob) & ! "M" side.
-                          + rho0dv_P(1)        *LNS_v0(1,iglobP) + dp_P ! "P" side.
+                          + rho0dv_P(1)       *v0_P(1) + dp_P ! "P" side.
           Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob) & ! "M" side.
-                          + rho0dv_P(NDIM)        *LNS_v0(1,iglobP) ! "P" side.
+                          + rho0dv_P(NDIM)       *v0_P(1) ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZEROcr
@@ -702,9 +708,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                                    - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.2) z-Momentum inviscid contributions.
           Sigma_L(1)    =   cv_rho0dv(1,iglob)*LNS_v0(NDIM,iglob) & ! "M" side.
-                          + rho0dv_P(1)        *LNS_v0(NDIM,iglobP) ! "P" side.
+                          + rho0dv_P(1)       *v0_P(NDIM) ! "P" side.
           Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob) & ! "M" side.
-                          + rho0dv_P(NDIM)        *LNS_v0(NDIM,iglobP) + dp_P ! "P" side.
+                          + rho0dv_P(NDIM)       *v0_P(NDIM) + dp_P ! "P" side.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZEROcr
@@ -717,8 +723,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           ! 1.3) Energy inviscid contributions.
           Sigma_L =   LNS_dv(:,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) & ! "M" side, part.
                     + LNS_v0(:,iglob)*(cv_dE(iglob)  + in_dp(iglob)) & ! "M" side, part.
-                    + dv_P(:)         *(LNS_E0(iglobP) + LNS_p0(iglobP)) & ! "P" side, part.
-                    + LNS_v0(:,iglobP)*(dE_P           + dp_P) ! "P" side, part.
+                    + dv_P(:)        *(E0_P          + p0_P) & ! "P" side, part.
+                    + v0_P(:)        *(dE_P          + dp_P) ! "P" side, part.
           !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZEROcr
@@ -754,18 +760,18 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                             - (  dv_P(1)*sigma_v_0(1,iglobP) & ! "P" side, part.
                                + LNS_v0(1,iglob)*sigma_dv_P(1) & ! "P" side, part.
                                + dv_P(NDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
-                               + LNS_v0(NDIM,iglobP)*sigma_dv_P(2) & ! "P" side, part.
-                               + LNS_kappa(iglobP)*nabla_dT_P(1)) ! "P" side, part.
+                               + v0_P(NDIM)*sigma_dv_P(2) & ! "P" side, part.
+                               + kap_P*nabla_dT_P(1)) ! "P" side, part.
             Sigma_L(NDIM) = - (  LNS_dv(NDIM,iglob)*sigma_v_0(3,iglob) & ! "M" side, part.
                                + LNS_v0(NDIM,iglob)*in_sigma_dv(3,iglob) & ! "M" side, part.
                                + LNS_dv(1,iglob)*sigma_v_0(2,iglob) & ! "M" side, part.
                                + LNS_v0(1,iglob)*in_sigma_dv(2,iglob) & ! "M" side, part.
                                + LNS_kappa(iglob)*in_nabla_dT(2,iglob)) & ! "M" side, part.
                             - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
-                               + LNS_v0(NDIM,iglobP)*sigma_dv_P(3) & ! "P" side, part.
+                               + v0_P(NDIM)*sigma_dv_P(3) & ! "P" side, part.
                                + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
-                               + LNS_v0(1,iglobP)*sigma_dv_P(2) & ! "P" side, part.
-                               + LNS_kappa(iglobP)*nabla_dT_P(NDIM)) ! "P" side, part.
+                               + v0_P(1)*sigma_dv_P(2) & ! "P" side, part.
+                               + kap_P*nabla_dT_P(NDIM)) ! "P" side, part.
             !write(*,*) Sigma_L
             outrhs_dE(iglob) = outrhs_dE(iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L)
           endif ! Endif on viscousComputation.
@@ -790,6 +796,91 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   enddo ! End of loop on elements.
   
 end subroutine compute_forces_acoustic_LNS
+
+
+
+
+
+
+
+
+
+
+
+
+subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neighbour_type, &
+                                      iglob_P, &
+                                      rho0_P, v0_P, E0_P, p0_P, &
+                                      gam_P, kap_P)
+  use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: myrank, NPROC, MPI_transfer_iface, ibool_DG, &
+                         gammaext_DG, buffer_DG_gamma_P
+  use specfem_par_lns, only: LNS_viscous, &
+                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_kappa, &
+                             buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa, buffer_LNS_v0
+  ! Input/Output.
+  integer, intent(in) :: i, j, ispec, iglob_P, iface1, iface
+  integer, dimension(3), intent(in) :: neighbor
+  integer, intent(in) :: neighbour_type
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: v0_P
+  real(kind=CUSTOM_REAL), intent(out) :: rho0_P, p0_P, E0_P
+  real(kind=CUSTOM_REAL), intent(out) :: gam_P, kap_P
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
+  integer :: iglob_M, ipoin, num_interface
+  ! Initialisations.
+  iglob_M = ibool_DG(i, j, ispec)
+  rho0_P = ZEROcr
+  v0_P = ZEROcr
+  E0_P = ZEROcr
+  p0_P = ZEROcr
+  gam_P = ZEROcr
+  kap_P = ZEROcr
+  ipoin = -1
+  num_interface = -1
+  if(neighbour_type==1) then
+    ! A neighbouring LNS DG element was found in the same partition.
+    ! Simply grab values from iglob_P.
+    rho0_P = LNS_rho0(iglob_P)
+    v0_P = LNS_v0(:, iglob_P)
+    E0_P = LNS_E0(iglob_P)
+    p0_P = LNS_p0(iglob_P)
+    gam_P = gammaext_DG(iglob_P)
+    if(LNS_viscous) kap_P = LNS_kappa(iglob_P)
+    
+  elseif(neighbour_type==11) then
+    if(NPROC <= 1) then
+      call exit_MPI(myrank, 'Should not have neighbour_type=11 with NPROC<=1.')
+    else
+      ipoin         = MPI_transfer_iface(iface1, iface, ispec, 1)
+      num_interface = MPI_transfer_iface(iface1, iface, ispec, 2)
+    endif
+    ! A neighbouring LNS DG element was found in another partition.
+    ! Use buffers.
+    rho0_P = buffer_LNS_rho0(ipoin, num_interface)
+    v0_P = buffer_LNS_v0(:, ipoin, num_interface)
+    E0_P = buffer_LNS_E0(ipoin, num_interface)
+    p0_P = buffer_LNS_p0(ipoin, num_interface)
+    gam_P = buffer_DG_gamma_P(ipoin, num_interface)
+    if(LNS_viscous) kap_P = buffer_LNS_kappa(ipoin, num_interface)
+    
+  elseif(neighbour_type==21 .or. neighbour_type==99) then
+    ! Other material viscoelastic or outside boundary.
+    ! Neumann condition.
+    rho0_P = LNS_rho0(iglob_M)
+    v0_P = LNS_v0(:, iglob_M)
+    E0_P = LNS_E0(iglob_M)
+    p0_P = LNS_p0(iglob_M)
+    gam_P = gammaext_DG(iglob_M)
+    if(LNS_viscous) kap_P = LNS_kappa(iglob_M)
+    
+  else
+    call exit_MPI(myrank, 'Unexpected value for neighbour_type.')
+    
+  endif
+end subroutine LNS_get_bgqts_at_interface
+
+
 
 
 

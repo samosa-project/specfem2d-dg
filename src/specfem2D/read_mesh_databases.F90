@@ -875,6 +875,15 @@
     
     ! MODIFICATION FOR LNS.
     if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
+      ! Allocate transfer buffers for background state.
+      allocate(buffer_LNS_rho0(             NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_E0(               NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_p0(               NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_kappa(            NGLLX*max_interface_size, ninterface), &
+               buffer_LNS_v0(NDIM,          NGLLX*max_interface_size, ninterface), &
+               stat=ier)
+      if(ier/=0) call exit_MPI(myrank, "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90').")
+      ! Allocate transfer buffers for variables.
       allocate(buffer_LNS_drho_P(             NGLLX*max_interface_size, ninterface), &
                buffer_LNS_dE_P(               NGLLX*max_interface_size, ninterface), &
                !buffer_LNS_dp_P(               NGLLX*max_interface_size, ninterface), &
@@ -883,10 +892,7 @@
                buffer_LNS_nabla_dT(NDIM,      NGLLX*max_interface_size, ninterface), &
                buffer_LNS_sigma_dv(NVALSIGMA, NGLLX*max_interface_size, ninterface), &
                stat=ier)
-      if (ier /= 0) then
-        ! Safeguard.
-        stop "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90')."
-      endif
+      if(ier/=0) call exit_MPI(myrank, "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90').")
       ! Deallocate DG variables.
       deallocate(buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, &
                  buffer_DG_E_P, buffer_DG_e1_P, & !buffer_DG_gamma_P, &

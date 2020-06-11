@@ -95,6 +95,10 @@ subroutine compute_forces_acoustic_LNS_main()
     endif
   
     !call LNS_prevent_nonsense() ! Check initial conditions.
+
+#ifdef USE_MPI
+    call LNS_fill_MPI_buffers_var1_bckg0(.false.) ! Fill the MPI buffers related to background model, ONCE.
+#endif
     
   endif ! Endif on (it == 1) and (i_stage == 1).
   
@@ -213,41 +217,7 @@ subroutine compute_forces_acoustic_LNS_main()
   endif ! Endif on (LNS_viscous .or. LNS_avib).
 
 #ifdef USE_MPI
-  ! If MPI, assemble at each iteration.
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    ! Assemble state buffers.
-    call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
-    do i_aux=1,NDIM
-      call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
-      !call assemble_MPI_vector_DG(LNS_dv(i_aux,:), buffer_LNS_dv_P(i_aux,:,:))
-    enddo
-    call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
-    !call assemble_MPI_vector_DG(LNS_dp, buffer_LNS_dp_P)
-#if 0
-    ! DEBUG
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-         .and. abs(timelocal-.9689999999999)<=0.00001 &
-         .and. myrank==1) then
-        write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                   'sent to buffer', LNS_dE(ibool_DG(i,j,ispec))
-        !stop 'kek'
-      endif
-    enddo; enddo; enddo
-#endif
-    
-    ! Assemble viscous buffers.
-    if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-      do i_aux=1,NDIM
-        call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
-      enddo
-      do i_aux=1,NVALSIGMA
-        call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
-      enddo
-    endif
-  endif
+  call LNS_fill_MPI_buffers_var1_bckg0(.true.) ! Fill MPI buffers related to the variables.
 #endif
 
 #if 0
@@ -463,7 +433,68 @@ end subroutine compute_forces_acoustic_LNS_main
 
 
 
-
+subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
+  use constants, only: NDIM
+  use specfem_par, only: NPROC, ninterface_acoustic
+  use specfem_par_lns, only: NVALSIGMA, LNS_viscous, &
+                             LNS_drho, LNS_rho0dv, LNS_dE, nabla_dT, sigma_dv, &
+                             buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P, &
+                             buffer_LNS_nabla_dT, buffer_LNS_sigma_dv, &
+                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_kappa, &
+                             buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa, buffer_LNS_v0
+  ! Input/Output.
+  logical, intent(in) :: var1_bckg0
+  ! Local.
+  integer :: i_aux
+  if (NPROC > 1 .and. ninterface_acoustic > 0) then
+    if(var1_bckg0) then
+      ! Fill MPI buffers related to the variables.
+      ! Assemble state buffers.
+      call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
+      do i_aux=1,NDIM
+        call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
+      enddo
+      call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
+#if 0
+      ! DEBUG
+      do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+        if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+           .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                  .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+           .and. abs(timelocal-.9689999999999)<=0.00001 &
+           .and. myrank==1) then
+          write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                     'sent to buffer', LNS_dE(ibool_DG(i,j,ispec))
+          !stop 'kek'
+        endif
+      enddo; enddo; enddo
+#endif
+      ! Assemble viscous buffers.
+      if(LNS_viscous) then ! Check if viscosity exists whatsoever.
+        do i_aux=1,NDIM
+          call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
+        enddo
+        do i_aux=1,NVALSIGMA
+          call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
+        enddo
+      endif
+    else
+      ! Fill the MPI buffers related to background model.
+      call assemble_MPI_vector_DG(LNS_rho0, buffer_LNS_rho0)
+      do i_aux=1,NDIM
+        call assemble_MPI_vector_DG(LNS_v0(i_aux,:), buffer_LNS_v0(i_aux,:,:))
+      enddo
+      call assemble_MPI_vector_DG(LNS_E0, buffer_LNS_E0)
+      call assemble_MPI_vector_DG(LNS_p0, buffer_LNS_p0)
+      if(LNS_viscous) then
+        call assemble_MPI_vector_DG(LNS_kappa, buffer_LNS_kappa)
+      else
+        ! Take this opportunity to deallocate unneeded buffers.
+        deallocate(buffer_LNS_kappa)
+      endif
+    endif
+  endif
+end subroutine LNS_fill_MPI_buffers_var1_bckg0
 
 ! ------------------------------------------------------------ !
 ! damp_solution_LNS                                            !
