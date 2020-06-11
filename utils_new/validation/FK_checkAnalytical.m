@@ -15,9 +15,9 @@ else
 %     factor = exp(2*zstattab/(SOUNDSPEED^2)); facttxt = 'exp(2*z/c$^2$)';
 %     factor = exp(1.446e-5 * zstattab); facttxt = 'exp(1.446e-5 * z)';
     isothDecay = [zstattab, factor.* peak2peak(synf(:,:),2)./peak2peak(synf(1,:)), exp( zstattab/(2*H) ), peak2peak(Zamp(:,:),2)/peak2peak(Zamp(1,:))];
-    x=zstattab; y=isothDecay(:,3)./isothDecay(:,2); lel = fit(x,y,'exp1');
+    x=zstattab; y=isothDecay(:,4)./isothDecay(:,3); lel = fit(x,y,'exp1');
 %     if(log10(abs(lel.b))>=-6)
-    if(abs(ratio_anal-ratio_exp)/ratio_anal>1)
+    if(abs(ratio_anal-ratio_exp)/ratio_anal>0.01)
       % If a non-negligible multiplying factor is found, plot and display.
 %       lel
 %       sprintf('%.16f',lel.b)

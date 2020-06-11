@@ -45,9 +45,10 @@ savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',p
 % OFd = [rootd,'OUTPUT_FILES_isothermal_LNS_st1'];
 
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isobaric/']; % EXAMPLE path
-rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
-% OFd = [rootd, 'OUTPUT_FILES'];
-OFd = [rootd, 'OUTPUT_FILES_LNS'];
+% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
+rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal_shorter/']; % EXAMPLE path
+OFd = [rootd, 'OUTPUT_FILES'];
+% OFd = [rootd, 'OUTPUT_FILES_LNS'];
 % OFd = [rootd, 'OUTPUT_FILES_FNS'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
