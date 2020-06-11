@@ -677,6 +677,8 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
           p_DG_P       = ZERO
           
           iglobP = 1
+          ! Note: iglobP should NOT be used except when we are sure it makes sense, i.e. when iglobP does indeed point toward an element within th same CPU partition.
+          !       Otherwise, i.e. if neighbor(1)<=-1, iglobP remains 1, and all quantities queried are from the 1-th index in this partition, which makes NO sense.
           if(neighbor(1) > -1) then
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           endif
