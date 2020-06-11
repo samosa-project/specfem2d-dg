@@ -435,7 +435,7 @@ end subroutine compute_forces_acoustic_LNS_main
 
 subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
   use constants, only: NDIM
-  use specfem_par, only: NPROC, ninterface_acoustic
+  use specfem_par, only: NPROC, ninterface_acoustic, gammaext_DG, buffer_DG_gamma_P
   use specfem_par_lns, only: NVALSIGMA, LNS_viscous, &
                              LNS_drho, LNS_rho0dv, LNS_dE, nabla_dT, sigma_dv, &
                              buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P, &
@@ -486,6 +486,7 @@ subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
       enddo
       call assemble_MPI_vector_DG(LNS_E0, buffer_LNS_E0)
       call assemble_MPI_vector_DG(LNS_p0, buffer_LNS_p0)
+      call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
       if(LNS_viscous) then
         call assemble_MPI_vector_DG(LNS_kappa, buffer_LNS_kappa)
         call assemble_MPI_vector_DG(sigma_v_0, buffer_sigma_v0_P)
@@ -649,7 +650,7 @@ subroutine initial_state_LNS()
   use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, deltat, &
                          !pext_DG, rhoext, windxext, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
-                         NPROC, buffer_DG_gamma_P, gammaext_DG, ninterface_acoustic, ispec_is_acoustic_DG!, &
+                         NPROC, gammaext_DG, ispec_is_acoustic_DG!, &
                          !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
@@ -801,12 +802,6 @@ subroutine initial_state_LNS()
     call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
   endif
   
-#ifdef USE_MPI
-  if (NPROC > 1 .and. ninterface_acoustic > 0) then
-    call assemble_MPI_vector_DG(gammaext_DG, buffer_DG_gamma_P)
-  endif
-#endif
-  
 !  write(*,*) 'min max v0x', minval(LNS_v0(1,:)), maxval(LNS_v0(1,:)) ! DEBUG
 !  write(*,*) 'min max nabla_v0', minval(nabla_v0), maxval(nabla_v0)
 !  write(*,*) 'min max nabla_v0(1,:)=partial_i(vx)', minval(nabla_v0(1,1:2,:)), maxval(nabla_v0(1,1:2,:))
@@ -816,19 +811,22 @@ subroutine initial_state_LNS()
 !  stop
 
   ! DEBUG PRINT MODEL
-  if(.false. .and. myrank==1) then ! DEBUG
+  if(.false. .and. myrank==0) then ! DEBUG
     open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
     do ispec = 1,nspec
       do j = 1,NGLLZ
         do i = 1,NGLLX
           iglob = ibool_DG(i, j, ispec)
           write(504,*) coord(1, ibool_before_perio(i, j, ispec)), coord(2, ibool_before_perio(i, j, ispec)),&
-                       LNS_rho0(iglob)
+                       !LNS_rho0(iglob)
+                       !LNS_p0(iglob)
+                       gammaext_DG(iglob)
+                       
         enddo
       enddo
     enddo
     close(504)
-    stop
+    call exit_MPI(myrank, 'STOPPING')
     ! Matlab one-liner plot:
     !a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_load_external/OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
   endif
@@ -1045,7 +1043,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
     if(USE_ISOTHERMAL_MODEL) then
       ! > Set density.
       H = SCALE_HEIGHT ! Also for pressure, below.
-      z = real(coord(2, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL) - coord_interface
+      z = real(coord(NDIM, ibool_before_perio(i, j, ispec)), kind=CUSTOM_REAL) - coord_interface
       out_rho = surface_density*exp(-z/H)
       ! > Set pressure.
       if(swComputeP) then

@@ -286,7 +286,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           else ! Else on viscousComputation.
             do SPCDM = 1, NDIM
               Sigma_L(SPCDM) =   LNS_dv(SPCDM,iglob)*(LNS_E0(iglob) + LNS_p0(iglob)) &
-                                + LNS_v0(SPCDM,iglob)*(cv_dE(iglob) + in_dp(iglob))
+                               + LNS_v0(SPCDM,iglob)*(cv_dE(iglob)  + in_dp(iglob))
             enddo
           endif ! Endif on viscousComputation.
           do SPCDM = 1, NDIM
