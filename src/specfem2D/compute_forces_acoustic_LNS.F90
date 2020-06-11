@@ -306,9 +306,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           !enddo
           ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
           !do SPCDM = 1, NDIM
-          d0cntrb_rho0dv(1,i,j)    = DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
-          d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) & ! \rho'g_i
-                                     + DOT_PRODUCT(in_dm(:,iglob), nabla_v0(SPCDM,:,iglob)) ! {\delta_m}\cdot\nabla v_{0,i}
+          d0cntrb_rho0dv(1,i,j)    = DOT_PRODUCT(in_dm(:,iglob), nabla_v0(1,:,iglob)) ! \rho'g_1=0; + {\delta_m}\cdot[\nabla v_{0}]_{1,:}
+          d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) & ! \rho'g_i!=0;
+                                     + DOT_PRODUCT(in_dm(:,iglob), nabla_v0(NDIM,:,iglob)) ! {\delta_m}\cdot[\nabla v_{0}]_{d,:}
           !enddo
           ! OLD4.2.2) Version 2: under HV0 (v_{0,z}=0), and SM (d_xv_0=0), dm part of the zero-th degree RHS is simplified.
           !d0cntrb_rho0dv(1,i,j) = - (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
