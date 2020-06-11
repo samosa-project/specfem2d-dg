@@ -166,6 +166,7 @@ module specfem_par_LNS
   ! MPI transfer buffers: background state.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_v0
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_sigma_v0_P
   ! MPI transfer buffers: variables.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_drho_P, buffer_LNS_dE_P!, buffer_LNS_dp_P
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_rho0dv_P!, buffer_LNS_dv_P

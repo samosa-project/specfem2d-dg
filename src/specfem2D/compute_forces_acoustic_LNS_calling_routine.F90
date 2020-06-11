@@ -440,8 +440,8 @@ subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
                              LNS_drho, LNS_rho0dv, LNS_dE, nabla_dT, sigma_dv, &
                              buffer_LNS_drho_P, buffer_LNS_rho0dv_P, buffer_LNS_dE_P, &
                              buffer_LNS_nabla_dT, buffer_LNS_sigma_dv, &
-                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_kappa, &
-                             buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa, buffer_LNS_v0
+                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_kappa, sigma_v_0, &
+                             buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa, buffer_LNS_v0, buffer_sigma_v0_P
   ! Input/Output.
   logical, intent(in) :: var1_bckg0
   ! Local.
@@ -488,9 +488,11 @@ subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
       call assemble_MPI_vector_DG(LNS_p0, buffer_LNS_p0)
       if(LNS_viscous) then
         call assemble_MPI_vector_DG(LNS_kappa, buffer_LNS_kappa)
+        call assemble_MPI_vector_DG(sigma_v_0, buffer_sigma_v0_P)
       else
         ! Take this opportunity to deallocate unneeded buffers.
         deallocate(buffer_LNS_kappa)
+        deallocate(buffer_sigma_v0_P)
       endif
     endif
   endif

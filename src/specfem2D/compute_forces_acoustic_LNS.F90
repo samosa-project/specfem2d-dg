@@ -16,7 +16,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                          it, i_stage, &
                          gammaext_dg, &
                          TYPE_SOURCE_DG, &
-                         coord, ibool_before_perio, myrank, &!, c_V, sound_velocity, & ! For MMS validation.
+                         !coord, ibool_before_perio, &!, c_V, sound_velocity, & ! For MMS validation.
                          ABC_STRETCH, stretching_ya, stretching_buffer
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
                              LNS_dummy_1d, &
@@ -85,7 +85,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   real(kind=CUSTOM_REAL), dimension(NDIM) :: v0_P, dv_P, dm_P, nabla_dT_P, rho_MP
   real(kind=CUSTOM_REAL) :: rho0_P, drho_P, p0_P, dp_P, E0_P, dE_P
   real(kind=CUSTOM_REAL) :: gam_P, kap_P
-  real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P
+  real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P, sigma_v0_p
   logical :: viscousComputation
   real(kind=CUSTOM_REAL) :: wxlwzl!, DEBUG01, DEBUG02, DEBUG03, DEBUG04!,wxlJac_L, wzlJac_L ! Integration weigths.
   logical :: exact_interface_flux
@@ -595,7 +595,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
             ! A neighbouring LNS DG element was found in the same partition.
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           else
-            iglobP = 1 ! Set iglobP like this in order to crash the program whenever this variable is badly used.
+            iglobP = -1000 ! Set iglobP like this in order to crash the program whenever this variable is badly used.
           endif
           
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
@@ -614,10 +614,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                   .false., LNS_dummy_1d(1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
           call check_neighbour_type(neighbour_type) ! Safeguard: crash the program if neighbour_type outside of possible values.
           
-          call LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neighbour_type, &
-                                          iglobP, &
-                                          rho0_P, v0_P, E0_P, p0_P, &
-                                          gam_P, kap_P)
+          call LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neighbour_type, iglobP, &
+                                          rho0_P, v0_P, E0_P, p0_P, sigma_v0_P, gam_P, kap_P)
           
           jump   = ZEROcr ! Safeguard.
           
@@ -757,9 +755,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                                + LNS_dv(NDIM,iglob)*sigma_v_0(2,iglob) & ! "M" side, part.
                                + LNS_v0(NDIM,iglob)*in_sigma_dv(2,iglob) & ! "M" side, part.
                                + LNS_kappa(iglob)*in_nabla_dT(1,iglob)) & ! "M" side, part.
-                            - (  dv_P(1)*sigma_v_0(1,iglobP) & ! "P" side, part.
+                            - (  dv_P(1)*sigma_v0_P(1) & ! "P" side, part.
                                + LNS_v0(1,iglob)*sigma_dv_P(1) & ! "P" side, part.
-                               + dv_P(NDIM)*sigma_v_0(2,iglobP) & ! "P" side, part.
+                               + dv_P(NDIM)*sigma_v0_P(2) & ! "P" side, part.
                                + v0_P(NDIM)*sigma_dv_P(2) & ! "P" side, part.
                                + kap_P*nabla_dT_P(1)) ! "P" side, part.
             Sigma_L(NDIM) = - (  LNS_dv(NDIM,iglob)*sigma_v_0(3,iglob) & ! "M" side, part.
@@ -767,9 +765,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                                + LNS_dv(1,iglob)*sigma_v_0(2,iglob) & ! "M" side, part.
                                + LNS_v0(1,iglob)*in_sigma_dv(2,iglob) & ! "M" side, part.
                                + LNS_kappa(iglob)*in_nabla_dT(2,iglob)) & ! "M" side, part.
-                            - (  dv_P(NDIM)*sigma_v_0(3,iglobP) & ! "P" side, part.
+                            - (  dv_P(NDIM)*sigma_v0_P(3) & ! "P" side, part.
                                + v0_P(NDIM)*sigma_dv_P(3) & ! "P" side, part.
-                               + dv_P(1)*sigma_v_0(2,iglobP) & ! "P" side, part.
+                               + dv_P(1)*sigma_v0_P(2) & ! "P" side, part.
                                + v0_P(1)*sigma_dv_P(2) & ! "P" side, part.
                                + kap_P*nabla_dT_P(NDIM)) ! "P" side, part.
             !write(*,*) Sigma_L
@@ -778,7 +776,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
       
-#if 1
+#if 0
       ! DEBUG
       do j = 1, NGLLZ; do i = 1, NGLLX
         iglob = ibool_DG(i,j,ispec)
@@ -811,19 +809,20 @@ end subroutine compute_forces_acoustic_LNS
 subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neighbour_type, &
                                       iglob_P, &
                                       rho0_P, v0_P, E0_P, p0_P, &
-                                      gam_P, kap_P)
+                                      sigma_v0_P, gam_P, kap_P)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: myrank, NPROC, MPI_transfer_iface, ibool_DG, &
                          gammaext_DG, buffer_DG_gamma_P
-  use specfem_par_lns, only: LNS_viscous, &
-                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_kappa, &
-                             buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa, buffer_LNS_v0
+  use specfem_par_lns, only: LNS_viscous, NVALSIGMA, &
+                             LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_kappa, sigma_v_0, &
+                             buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa, buffer_LNS_v0, buffer_sigma_v0_P
   ! Input/Output.
   integer, intent(in) :: i, j, ispec, iglob_P, iface1, iface
   integer, dimension(3), intent(in) :: neighbor
   integer, intent(in) :: neighbour_type
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(out) :: v0_P
   real(kind=CUSTOM_REAL), intent(out) :: rho0_P, p0_P, E0_P
+  real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(out) :: sigma_v0_P
   real(kind=CUSTOM_REAL), intent(out) :: gam_P, kap_P
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
@@ -846,7 +845,10 @@ subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neig
     E0_P = LNS_E0(iglob_P)
     p0_P = LNS_p0(iglob_P)
     gam_P = gammaext_DG(iglob_P)
-    if(LNS_viscous) kap_P = LNS_kappa(iglob_P)
+    if(LNS_viscous) then
+      kap_P = LNS_kappa(iglob_P)
+      sigma_v0_P = sigma_v_0(:, iglob_P)
+    endif
     
   elseif(neighbour_type==11) then
     if(NPROC <= 1) then
@@ -862,7 +864,10 @@ subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neig
     E0_P = buffer_LNS_E0(ipoin, num_interface)
     p0_P = buffer_LNS_p0(ipoin, num_interface)
     gam_P = buffer_DG_gamma_P(ipoin, num_interface)
-    if(LNS_viscous) kap_P = buffer_LNS_kappa(ipoin, num_interface)
+    if(LNS_viscous) then
+      kap_P = buffer_LNS_kappa(ipoin, num_interface)
+      sigma_v0_P = buffer_sigma_v0_P(:, ipoin, num_interface)
+    endif
     
   elseif(neighbour_type==21 .or. neighbour_type==99) then
     ! Other material viscoelastic or outside boundary.
@@ -872,7 +877,10 @@ subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neig
     E0_P = LNS_E0(iglob_M)
     p0_P = LNS_p0(iglob_M)
     gam_P = gammaext_DG(iglob_M)
-    if(LNS_viscous) kap_P = LNS_kappa(iglob_M)
+    if(LNS_viscous) then
+      kap_P = LNS_kappa(iglob_M)
+      sigma_v0_P = sigma_v_0(:, iglob_M)
+    endif
     
   else
     call exit_MPI(myrank, 'Unexpected value for neighbour_type.')

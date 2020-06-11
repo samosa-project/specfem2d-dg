@@ -881,6 +881,7 @@
                buffer_LNS_p0(               NGLLX*max_interface_size, ninterface), &
                buffer_LNS_kappa(            NGLLX*max_interface_size, ninterface), &
                buffer_LNS_v0(NDIM,          NGLLX*max_interface_size, ninterface), &
+               buffer_sigma_v0_P(NVALSIGMA, NGLLX*max_interface_size, ninterface), &
                stat=ier)
       if(ier/=0) call exit_MPI(myrank, "Error allocating 'buffer_LNS_*' arrays (see 'read_mesh_databases.F90').")
       ! Allocate transfer buffers for variables.
