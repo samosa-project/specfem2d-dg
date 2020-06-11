@@ -16,7 +16,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                          it, i_stage, &
                          gammaext_dg, &
                          TYPE_SOURCE_DG, &
-                         !coord, ibool_before_perio, &!, c_V, sound_velocity, & ! For MMS validation.
+                         coord, ibool_before_perio, myrank, &!, c_V, sound_velocity, & ! For MMS validation.
                          ABC_STRETCH, stretching_ya, stretching_buffer
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
                              LNS_dummy_1d, &
@@ -67,6 +67,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   real(kind=CUSTOM_REAL), dimension(NDIM) :: rho0dv_P
   integer :: iglobP
   integer, dimension(3) :: neighbor
+  integer :: neighbour_type
   
 !  ! Variables specifically for PML.
 !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -516,7 +517,8 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           ! DEBUG
           if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
              .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.)) then
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+             .and. abs(currentTime-.9689999999999)<=0.00001) then
             write(*,*) 'K1K', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
                        cv_drho(iglob), outrhs_drho(iglob)
           endif
@@ -562,15 +564,41 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
             ispec_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 3)
             neighbor(1:2)   = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1:2)
             neighbor(3)     = ispec_neighbor
+            neighbour_type = 1 ! <=> a neighbouring LNS DG element was found in the same partition
+          else
+            neighbour_type = 10
           endif
+          ! At this point, either:
+          !   neighbor(1:3)=[-1, -1, -1]
+          !   neighbour_type=10
+          !     (because neighbor_DG_iface(iface1, iface, ispec, 3)>-1)
+          !     which means the neighbouring "element" is either
+          !       *) of type acoustic DG but in another partition (neighbour_type=11)
+          !       *) of another material type which for now means elastic only (neighbour_type=21)
+          !       *) the outside boundary (neighbour_type=99)
+          ! or:
+          !   neighbor(1:3)=[link_iface_ijispec(...), ispec_neighbor]
+          !   neighbour_type = 1
+          !     (because because neighbor_DG_iface(iface1, iface, ispec, 3)<=-1)
+          !     which means 1) a neighbouring element was found in the same partition, and
+          !                 2) the (i,j,ispec) coordinates are exactly (neighbor(1), neighbor(2), neighbor(3))
           
           ! Step 2: knowing the normals' parameters, compute now the fluxes.
-          iglobP = 1
-          if(neighbor(1) > -1) then
+          !iglobP = -1 ! Set iglobP like this in order to crash the program when this variable is badly used.
+          ! Note: iglobP should NOT be used except when we are sure it makes sense, i.e. when iglobP does indeed point toward an element within th same CPU partition.
+          !       Otherwise, i.e. if neighbor(1)<=-1, iglobP remains 1, and all quantities queried are from the 1-th index in this partition, which makes NO sense.
+          !if(neighbor(1) > -1) then
+          !  iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
+          !endif
+          if(neighbour_type==1) then
+            ! A neighbouring LNS DG element was found in the same partition.
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
+          else
+            iglobP = 1 ! Set iglobP like this in order to crash the program whenever this variable is badly used.
           endif
+          
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
-          call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, currentTime, & ! Point identifier (input).
+          call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, neighbour_type, currentTime, & ! Point identifier (input).
                   cv_drho(iglob), cv_rho0dv(:,iglob), & ! Input constitutive variables, "M" side.
                   cv_drho(iglobP), cv_rho0dv(:,iglobP), cv_dE(iglobP), & ! Input constitutive variables, "P" side. Note they make no sense if neighbor(1)<=-1.
                   in_dp(iglob), & ! Input other variable, "M" side.
@@ -583,6 +611,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                   dm_P, dp_P, dv_P,& ! Output other variables.
                   viscousComputation, nabla_dT_P, sigma_dv_P, & ! Output other variables: viscous.
                   .false., LNS_dummy_1d(1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
+          call check_neighbour_type(neighbour_type) ! Safeguard: crash the program if neighbour_type outside of possible values.
           
           jump   = ZEROcr ! Safeguard.
           
@@ -641,6 +670,19 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           else
             jump = cv_drho(iglob) - drho_P
           endif
+#if 0
+          ! DEBUG
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+             .and. abs(currentTime-.9689999999999)<=0.00001) then
+            write(*,"(A,E13.5,I3,F9.3,E11.3,A,F9.3,F9.3,A,E11.3,E11.3,A,E11.3,E11.3,A,F9.3,A,E11.3)") &
+              'KK', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
+              !cv_drho(iglob),
+              outrhs_drho(iglob), &
+              '|', n_out, '|', in_dm(:,iglob), '|', dm_P, '|', lambda, '|', jump
+          endif
+#endif
           !outrhs_drho(iglob) = outrhs_drho(iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_drho(iglob) =   outrhs_drho(iglob) &
                                 - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P) + lambda*jump)
@@ -730,15 +772,17 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
       
-#if 0
+#if 1
       ! DEBUG
       do j = 1, NGLLZ; do i = 1, NGLLX
         iglob = ibool_DG(i,j,ispec)
           if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
              .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.)) then
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+             .and. abs(currentTime-.9689999999999)<=0.00001) then
           write(*,*) 'K2K', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
-                     cv_drho(iglob), outrhs_drho(iglob)
+                     !cv_drho(iglob), outrhs_drho(iglob)
+                     myrank, iglobP, LNS_E0(iglobP), LNS_p0(iglobP)
         endif
       enddo; enddo
 #endif  
@@ -795,7 +839,7 @@ end subroutine compute_forces_acoustic_LNS
 !                  out_drho_P, out_rho0dv_P, out_dE_P& ! Output constitutive variables.
 !                  !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
 !                  out_dv_P) ! Output other variables.
-subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
+subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, neighbour_type, timelocal, & ! Point identifier (input).
              inp_drho_M, inp_rho0dv_M, & ! Input constitutive variables, "M" side.
              inp_drho_P, inp_rho0dv_P, inp_dE_P, & ! Input constitutive variables, "P" side. They make no sense if neighbor(1)<=-1.
              inp_dp_M, &!inp_sigma_dv_M, & ! Input other variable, "M" side.
@@ -809,7 +853,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
              swCompdT, out_dT_P) ! Output other variables.
   
   use constants, only: CUSTOM_REAL, NDIM, PI
-  use specfem_par, only: NPROC, ibool, ibool_DG, acoustic_forcing, &
+  use specfem_par, only: NPROC, ibool, ibool_DG, acoustic_forcing, myrank, &!coord, &
                          veloc_elastic, sigma_elastic, &
                          mpi_transfer_iface, &!, coord, gammaext_DG, &
                          ibool_before_perio, & ! For MMS validation.
@@ -824,6 +868,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   ! Input/Output.
   integer, intent(in) :: i, j, ispec, iface1, iface
   integer, dimension(3), intent(in) :: neighbor
+  integer, intent(inout) :: neighbour_type ! May be modified (see below).
   real(kind=CUSTOM_REAL), intent(in) :: timelocal
   real(kind=CUSTOM_REAL), intent(in) :: inp_drho_M, inp_drho_P, inp_dE_P ! Input constitutive variables. They make no sense if neighbor(1)<=-1.
   real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: inp_rho0dv_M, inp_rho0dv_P ! Input constitutive variables.
@@ -876,21 +921,54 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   
   iglobM = ibool_DG(i, j, ispec) ! Extract calling point iglob on the "minus" side.
   
-  if(neighbor(3) == -1 ) then
-    ! --------------------------- !
-    ! neighbor(3) == -1, edge is  !
-    ! an 'outside' edge.          !
-    ! --------------------------- !
-    ! That is, either its corresponding edge is in another partition, or the edge is a coupling (with another material) edge (also in another partition, by construction), or the edge is on the outer boundary of the computational domain.
-    
+  
+  ! NEW CHARACTERISATION OF TYPE OF NEIGHBOUR
+  ! TODO: with the introduction of the variable neighbour_type, maybe move this characterisation outside this subroutine. Would clarify things.
+  !   neighbour_type = 1  <=> A neighbouring LNS DG element was found in the same partition.
+  !   neighbour_type = 10 <=> Temporary value waiting for precision.
+  !   neighbour_type = 11 <=> A neighbouring LNS DG element was found in another partition.
+  !   neighbour_type = 21 <=> Other material: viscoelastic.
+  !   neighbour_type = 22 <=> Other material: potential acoustic (not implemented).
+  !   neighbour_type = 99 <=> Outside boundary.
+  if(neighbour_type >= 10) then
     ipoin         = -1 ! By default, specify that for the triplet (iface1,iface,ispec), the values should not be sought in another partition. That is, either the edge is a coupling (with another material) edge, or an edge on the outer boundary of the computational domain.
     num_interface = -1 ! Initialised to this value, but should not be used anywhere as is.
     if(NPROC > 1) then
       ipoin         = MPI_transfer_iface(iface1, iface, ispec, 1)
       num_interface = MPI_transfer_iface(iface1, iface, ispec, 2)
-    endif                  
-    
+    endif
     if(ipoin > -1) then
+      neighbour_type = 11 ! A neighbouring LNS DG element was found in another partition.
+    else
+      if(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
+        neighbour_type = 21 ! Other material: viscoelastic.
+      elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
+        neighbour_type = 22 ! Other material: potential acoustic (not implemented).
+      else
+        neighbour_type = 99 ! Outside boundary.
+      endif
+    endif
+  else
+    ! Unchanged: (neighbour_type >= 10) <=> (neighbour_type == 1) since no types defined in the 2:10 range.
+    neighbour_type = 1 ! A neighbouring LNS DG element was found in the same partition.
+  endif
+  
+!  if(neighbor(3) == -1 ) then
+!    ! --------------------------- !
+!    ! neighbor(3) == -1, edge is  !
+!    ! an 'outside' edge.          !
+!    ! --------------------------- !
+!    ! That is, either its corresponding edge is in another partition, or the edge is a coupling (with another material) edge (also in another partition, by construction), or the edge is on the outer boundary of the computational domain.      
+!    ipoin         = -1 ! By default, specify that for the triplet (iface1,iface,ispec), the values should not be sought in another partition. That is, either the edge is a coupling (with another material) edge, or an edge on the outer boundary of the computational domain.
+!    num_interface = -1 ! Initialised to this value, but should not be used anywhere as is.
+!    if(NPROC > 1) then
+!      ipoin         = MPI_transfer_iface(iface1, iface, ispec, 1)
+!      num_interface = MPI_transfer_iface(iface1, iface, ispec, 2)
+!    endif
+!    
+!    if(ipoin > -1) then
+!      neighbour_type = 11
+    if(neighbour_type==11) then
       ! --------------------------- !
       ! ipoin > -1, values should   !
       ! be sought in another        !
@@ -985,14 +1063,15 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! --------------------------- !
 #if 0
 ! DEBUG
-        if(      abs(coord(1,ibool_before_perio(i,j,ispec))+250.)<=10.&
-           .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-233.33)<=5.&
-                  .or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=5.)) then
-          write(*,*) 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                     'LNS_rho0', LNS_rho0(iglobM), 'LNS_v0', LNS_v0(:, iglobM), 'LNS_E0', LNS_E0(iglobM), &
-                     'LNS_p0', LNS_p0(iglobM), 'gammaext_DG', gammaext_DG(iglobM)
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+             .and. abs(timelocal-.9689999999999)<=0.00001 &
+             .and. myrank==0) then
+          write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                     'buffer_rho0dv', buffer_LNS_dE_P(ipoin, num_interface)
         endif
-#endif   
+#endif
         
         ! Set exact_interface_flux.
         exact_interface_flux = .false.
@@ -1017,13 +1096,26 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
         ! Set out_dp_P.
         call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
+        ! Note (cf. DEBUG below): given the right (drho, dv, dE) from buffers (which seem ok), this locally computed dp_P agrees with the dp on the other side.
         !out_dp_P       = buffer_LNS_dp_P(ipoin, num_interface)
         !out_dp_P = (gamma_P - ONEcr)*( out_dE_P & ! Warning, expression of out_dp_P might not be exact.
         !         - (HALFcr)*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 ) )
         !write(*,*) LNS_rho0(iglobM), LNS_v0(:, iglobM), LNS_E0(iglobM), gammaext_DG(iglobM), LNS_p0(iglobM) ! debug
         !stop 'kek'
+#if 0
+! DEBUG
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+             .and. abs(timelocal-.9689999999999)<=0.00001 &
+             .and. myrank==0) then
+          write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                     'dp other side', out_dp_P
+        endif
+#endif
         
         ! Set out_dm_P: see bottom of routine.
+        ! Note (cf. DEBUG end of routine): given the right (out_rho0dv_P, out_drho_P) from buffers (which seem ok) and LNS_v0(:,iglobM), this locally computed dm_P agrees with the dm on the other side.
         
         if(swCompVisc) then
           ! Set out_nabla_dT_P: get the values from the MPI buffers.
@@ -1042,7 +1134,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         
 !      endif ! 01/08/19 Removed this else with the if above (see comment above on acoustic_DG/acoustic coupling).
       
-    elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
+!    elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
+!      neighbour_type = 22 ! Other material: potential fluid.
+     elseif(neighbour_type==22) then
       ! --------------------------- !
       ! ipoin == -1                 !
       !   and acoustic forcing      !
@@ -1055,8 +1149,10 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       write(*,*) "********************************"
       stop
          
-    elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
-    !elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0 .AND. abs(n_out(1)) < 1.) then ! The condition '|n_x|<1' is there to remove coupling on outer-pointing edges (those having |n_x|>1). However, while this works with flat horizontal topography, this also removes coupling at the vertical boundaries within the domain of interest.
+!    elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
+!    !elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0 .AND. abs(n_out(1)) < 1.) then ! The condition '|n_x|<1' is there to remove coupling on outer-pointing edges (those having |n_x|>1). However, while this works with flat horizontal topography, this also removes coupling at the vertical boundaries within the domain of interest.
+!      neighbour_type = 21 ! Other material: viscoelastic.
+    elseif(neighbour_type==21) then
       ! --------------------------- !
       ! ipoin == -1                 !
       !   and elastic coupling      !
@@ -1189,7 +1285,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       !             velocity_P, out_dv_P, LNS_dv(:,iglobM)
       !endif ! DEBUG
 
-    else
+!    else
+!      neighbour_type = 99 ! Outside boundary.
+    elseif(neighbour_type==99) then
       ! --------------------------- !
       ! ipoin == -1                 !
       !   classical outer boundary  !
@@ -1270,7 +1368,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
                                                               swCompVisc, out_nabla_dT_P, out_sigma_dv_P, &
                                                               swCompdT, out_dT_P)
 !      endif ! Endif on PML.
-    endif ! Endif on ipoin.
+!    endif ! Endif on ipoin.
   
 #if 0
 ! The case below will stop the program anyhow afterwards. Best remove it altogether for now.
@@ -1376,7 +1474,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
     endif
 #endif
     
-  else
+!  else
+  elseif(neighbour_type==1) then
     ! --------------------------- !
     ! neighbor(3) /= -1           !
     !   and not an 'outside' edge !
@@ -1423,11 +1522,26 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
       !call compute_dT_i(LNS_rho0(iglobP)+out_drho_P, LNS_p0(iglobP)+out_dp_P, out_dT_P, iglobP)
     endif
     !out_dT_P = (out_dE_P/out_drho_P - 0.5*((out_rho0dv_P(1)/out_drho_P)**2 + (out_rho0dv_P(NDIM)/out_drho_P)**2))/c_V
+  
+  else
+    ! Safeguard.
+    call exit_MPI(myrank, 'Unexpected value for neighbour_type.')
     
-  endif
+  endif ! Endif on neighbour_type.
   
   ! Set out_dm_P.
   out_dm_P = out_rho0dv_P + out_drho_P*LNS_v0(:,iglobM)
+#if 0
+! DEBUG
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+             .and. abs(timelocal-.9689999999999)<=0.00001 &
+             .and. myrank==0) then
+          write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                     'dm other side', out_dm_P
+        endif
+#endif
   
 end subroutine LNS_get_interfaces_unknowns
 
@@ -1694,9 +1808,6 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
     endif ! Endif on SIGMA_SSF.
   enddo ! Enddo on i_source.
 end subroutine LNS_mass_source
-
-
-
 
 
 

@@ -223,6 +223,20 @@ subroutine compute_forces_acoustic_LNS_main()
     enddo
     call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
     !call assemble_MPI_vector_DG(LNS_dp, buffer_LNS_dp_P)
+#if 0
+    ! DEBUG
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+         .and. abs(timelocal-.9689999999999)<=0.00001 &
+         .and. myrank==1) then
+        write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                   'sent to buffer', LNS_dE(ibool_DG(i,j,ispec))
+        !stop 'kek'
+      endif
+    enddo; enddo; enddo
+#endif
     
     ! Assemble viscous buffers.
     if(LNS_viscous) then ! Check if viscosity exists whatsoever.
@@ -234,6 +248,21 @@ subroutine compute_forces_acoustic_LNS_main()
       enddo
     endif
   endif
+#endif
+
+#if 0
+    ! DEBUG
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
+         .and. abs(timelocal-.9689999999999)<=0.00001 &
+         .and. myrank==1) then
+        write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
+                   'dm one side', LNS_dm(:, ibool_DG(i,j,ispec))
+        !stop 'kek'
+      endif
+    enddo; enddo; enddo
 #endif
   
 #if 0
@@ -1231,6 +1260,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
   logical :: exact_interface_flux
   !integer, dimension(nglob_DG) :: MPI_iglob
   integer, dimension(3) :: neighbor
+  integer :: neighbour_type
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor ,SPCDM
   !real(kind=CUSTOM_REAL) :: DXiEta_L(1,1),DXiEta_L(1,2),DXiEta_L(2,1),DXiEta_L(2,2),Jac_L ! Jacobian matrix and determinant
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM) :: DXiEta_L ! Derivatives in \Lambda.
@@ -1619,6 +1649,9 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
               ispec_neighbor  = neighbor_DG_iface(iface1, iface, ispec, 3)
               neighbor(1:2)   = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,1:2)
               neighbor(3)     = ispec_neighbor
+              neighbour_type = 1 ! <=> a neighbouring LNS DG element was found in the same partition
+            else
+              neighbour_type = 10
             endif
             
             ! Step 2: knowing the normals' parameters, compute now the fluxes.
@@ -1627,7 +1660,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
               iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
             endif
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
-            call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, timelocal, & ! Point identifier (input).
+            call LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, neighbour_type, timelocal, & ! Point identifier (input).
                   LNS_drho(iglob), LNS_rho0dv(:,iglob), & ! Input constitutive variables, "M" side.
                   LNS_drho(iglobP), LNS_rho0dv(:,iglobP), LNS_dE(iglobP), & ! Input constitutive variables, "P" side.
                   LNS_dp(iglob), & ! Input other variable, "M" side.
@@ -1641,6 +1674,7 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
                   .false., LNS_dummy_2d(:,1), LNS_dummy_1d(1:3), & ! Output other variables: viscous.
                   .true., SF_P) ! Output other variables.
             ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. If other fields need to be computed, one will have to use a dedicated routine.
+            call check_neighbour_type(neighbour_type) ! Safeguard: crash the program if neighbour_type outside of possible values.
             
             ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
             ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to LNS_get_interfaces_unknowns. If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
@@ -2254,6 +2288,36 @@ subroutine LNS_warn_nonsense()
     write(*,*) "********************************"
   endif
 end subroutine LNS_warn_nonsense
+
+
+
+
+
+
+
+! NOTE: acceptable values of neighbour_type.
+!   neighbour_type = 1  <=> A neighbouring LNS DG element was found in the same partition.
+!   neighbour_type = 10 <=> Temporary value waiting for precision.
+!   neighbour_type = 11 <=> A neighbouring LNS DG element was found in another partition.
+!   neighbour_type = 21 <=> Other material: viscoelastic.
+!   neighbour_type = 22 <=> Other material: potential acoustic (not implemented).
+!   neighbour_type = 99 <=> Outside boundary.
+subroutine check_neighbour_type(neighbour_type)
+  use specfem_par, only: myrank
+  integer, intent(in) :: neighbour_type
+  if(.not.(neighbour_type==1 .or. &
+           neighbour_type==11 .or. &
+           neighbour_type==21 .or. &
+           neighbour_type==99)) then
+    write(*,*) 'neighbour_type = ', neighbour_type
+    call exit_MPI(myrank,'neighbour_type should not have this value.')
+  endif
+end subroutine check_neighbour_type
+
+
+
+
+
 
 
 subroutine initialise_VALIDATION_MMS()
