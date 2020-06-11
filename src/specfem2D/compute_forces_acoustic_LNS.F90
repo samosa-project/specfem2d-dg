@@ -16,7 +16,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                          it, i_stage, &
                          gammaext_dg, &
                          TYPE_SOURCE_DG, &
-                         !coord, ibool_before_perio, c_V, sound_velocity, & ! For MMS validation.
+                         !coord, ibool_before_perio, &!, c_V, sound_velocity, & ! For MMS validation.
                          ABC_STRETCH, stretching_ya, stretching_buffer
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
                              LNS_dummy_1d, &
@@ -511,6 +511,16 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
             outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxlwzl
           enddo
           outrhs_dE(iglob) = outrhs_dE(iglob) + d0cntrb_dE(i,j) * wxlwzl
+          
+#if 0
+          ! DEBUG
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.)) then
+            write(*,*) 'K1K', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
+                       cv_drho(iglob), outrhs_drho(iglob)
+          endif
+#endif
         enddo
       enddo
       
@@ -614,6 +624,15 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
             enddo
           endif
           
+#if 0
+          ! DEBUG
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+250.)<=50.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-233.33)<=10.&
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=10.)) then
+            write(*,*) 'KEEEEEEEEEEK', coord(:, ibool_before_perio(i,j,ispec)), in_dm(:,iglob), dm_P
+          endif
+#endif
+          
           ! 1) Inviscid contributions.
           ! 1.1) Mass conservation (fully inviscid).
           !flux_n = DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P)
@@ -710,6 +729,19 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
+      
+#if 0
+      ! DEBUG
+      do j = 1, NGLLZ; do i = 1, NGLLX
+        iglob = ibool_DG(i,j,ispec)
+          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
+                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.)) then
+          write(*,*) 'K2K', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
+                     cv_drho(iglob), outrhs_drho(iglob)
+        endif
+      enddo; enddo
+#endif  
     endif ! End of test if acoustic element
   enddo ! End of loop on elements.
   
@@ -779,8 +811,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   use constants, only: CUSTOM_REAL, NDIM, PI
   use specfem_par, only: NPROC, ibool, ibool_DG, acoustic_forcing, &
                          veloc_elastic, sigma_elastic, &
-                         mpi_transfer_iface, &
-                         coord, ibool_before_perio, & ! For MMS validation.
+                         mpi_transfer_iface, &!, coord, gammaext_DG, &
+                         ibool_before_perio, & ! For MMS validation.
                          ispec_is_acoustic_coupling_el, ispec_is_acoustic_forcing
   use specfem_par_LNS, only: NVALSIGMA, LNS_dummy_1d, &
                              LNS_rho0, LNS_v0, LNS_E0, LNS_p0, LNS_c0, LNS_dv, nabla_dT, sigma_dv, &
@@ -815,7 +847,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
   integer :: iglobM, i_el, j_el, ispec_el, iglobP, ipoin, num_interface!, iglob, i_ac, j_ac, ispec_ac
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
   
-  if(.false.) write(*,*) coord, ibool_before_perio ! Only here because compiler is going to râler because of imports necessary to MMS validation.
+  !if(.false.) write(*,*) coord, ibool_before_perio ! Only here because compiler is going to râler because of imports necessary to MMS validation.
   
   ! Initialise output variables to default values.
   exact_interface_flux = .false.
@@ -953,8 +985,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, tim
         ! --------------------------- !
 #if 0
 ! DEBUG
-        if(abs(coord(1,ibool_before_perio(i,j,ispec))-100.)<=100. &
-           .and. abs(coord(2,ibool_before_perio(i,j,ispec))-400.)<=40.) then
+        if(      abs(coord(1,ibool_before_perio(i,j,ispec))+250.)<=10.&
+           .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-233.33)<=5.&
+                  .or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=5.)) then
           write(*,*) 'X', coord(:,ibool_before_perio(i,j,ispec)), &
                      'LNS_rho0', LNS_rho0(iglobM), 'LNS_v0', LNS_v0(:, iglobM), 'LNS_E0', LNS_E0(iglobM), &
                      'LNS_p0', LNS_p0(iglobM), 'gammaext_DG', gammaext_DG(iglobM)

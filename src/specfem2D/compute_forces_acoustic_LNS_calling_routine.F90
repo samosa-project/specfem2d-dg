@@ -143,15 +143,8 @@ subroutine compute_forces_acoustic_LNS_main()
       LNS_dp(iglob) = 0.
     !endif
   enddo; enddo; enddo
-#if 0
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
-        write(*,*) '(x z) (vx vz)', coord(:,ibool_before_perio(i,j,ispec)), LNS_dv(:,ibool_DG(i,j,ispec))
-      endif
-    enddo; enddo; enddo
 #endif
-  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#endif
+  
   !call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
   call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
   
@@ -267,6 +260,20 @@ subroutine compute_forces_acoustic_LNS_main()
                                    LNS_dm, LNS_dp, nabla_dT, nabla_dv, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
                                    RHS_drho, RHS_rho0dv, RHS_dE, RHS_e1, & ! Output.
                                    timelocal) ! Time.
+! DEBUG
+#if 0
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      !if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+      !  write(*,*) '(x z) (vx vz)', coord(:,ibool_before_perio(i,j,ispec)), LNS_dv(:,ibool_DG(i,j,ispec))
+      !endif
+      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-202.9)<=3.)) then!&
+                !.or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=5.)) then
+        write(*,*) 'K', timelocal, coord(2, ibool_before_perio(i,j,ispec)), &
+                   LNS_drho(ibool_DG(i,j,ispec)), LNS_dm(:,ibool_DG(i,j,ispec)), RHS_drho(ibool_DG(i,j,ispec))
+      endif
+    enddo; enddo; enddo
+#endif
   
   ! Inverse mass matrix multiplication, in order to obtain actual RHS.
   RHS_drho               = RHS_drho * rmass_inverse_acoustic_DG ! RHS = A^{-1}*b
@@ -301,6 +308,22 @@ subroutine compute_forces_acoustic_LNS_main()
   !                        + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) &
   !                                             + deltat*(RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)))
   !enddo
+  
+! DEBUG
+#if 0
+    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
+      !if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
+      !  write(*,*) '(x z) (vx vz)', coord(:,ibool_before_perio(i,j,ispec)), LNS_dv(:,ibool_DG(i,j,ispec))
+      !endif
+      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
+         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-208.)<=9.)) then!&
+                !.or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=5.)) then
+        write(*,*) 'KUK', timelocal, coord(2, ibool_before_perio(i,j,ispec)), &
+                   LNS_drho(ibool_DG(i,j,ispec)), LNS_dm(:,ibool_DG(i,j,ispec)), RHS_drho(ibool_DG(i,j,ispec))
+                   !, LNS_rho0dv(:,ibool_DG(i,j,ispec)), LNS_dE(ibool_DG(i,j,ispec))
+      endif
+    enddo; enddo; enddo
+#endif
   
 #if 0
   ! PML, iterate ADEs.

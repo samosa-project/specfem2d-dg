@@ -449,6 +449,16 @@ end subroutine DG_WholeDump_OneWaveField
 ! ------------------------------------------------------------ !
 ! Code factorisation used by DG_WholeDump_OneWaveField. Dump
 ! some wavefield with some file already open.
+! 
+! Remarks:
+! *) A mask is used in order not to dump collocated points (in
+! the DG method, each point at the boundary of each element is
+! collocated with its neighbour). Consequently, only the first
+! encountered point is saved. This should pose not grave issues,
+! but must be noted.
+! *) Since there is one dump per CPU, collocated points at the
+! boundary of CPUs will however be saved twice, once per CPU.
+! Post-processing using these dumps should account for that.
 
 subroutine DG_WholeDump_WriteToUnit(THEUNIT, nbValuesPerPoint, THEFIELD_DG_1D)
   use constants,only: IMAIN,SIZE_REAL,NGLLX,NGLLZ,CUSTOM_REAL,NDIM
