@@ -327,7 +327,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           ! 4.2.1) Version 1: most general.
           !d0cntrb_dE(i,j) = - DOT_PRODUCT(locG, in_dm(:,iglob)) * Jac_L
           ! 4.2.2) Version 2: [gravity is vertical (locG(1)=0, locG(2)=-LNS_g)].
-          d0cntrb_dE(i,j) = LNS_g(iglob)*in_dm(NDIM,iglob) * Jac_L
+          d0cntrb_dE(i,j) = - LNS_g(iglob)*in_dm(NDIM,iglob) * Jac_L
           
           if(LNS_avib) then
             ! Add vibrational attenuation memory variable contribution.
@@ -1839,21 +1839,21 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
               enddo
               
               ! Approx. c^2=c_0^2 & v=v_0. Lowest CPU use, 18% error at Mach .3, 7% error at Mach .3.
-              d_dE(iglob) =   d_dE(iglob) &
-                           + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1._CUSTOM_REAL) &
-                               + 0.5_CUSTOM_REAL*norm2r1(LNS_v0(:, iglob)) &
-                             ) * temp_sourcewxlwzljacobianl
+              !d_dE(iglob) =   d_dE(iglob) &
+              !             + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1._CUSTOM_REAL) &
+              !                 + 0.5_CUSTOM_REAL*norm2r1(LNS_v0(:, iglob)) &
+              !               ) * temp_sourcewxlwzljacobianl
               ! Approx. c^2=c_0^2. TBTested.
               !d_dE(iglob) =   d_dE(iglob) &
               !             + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1.) &
               !                 + 0.5*norm2r1(LNS_v0(:, iglob)+LNS_dv(:, iglob)) &
               !               ) * temp_sourcewxlwzljacobianl
               ! Full. Highest CPU use, but technically exactly what the equations are, same results as "Approx. c^2=c_0^2 & v=v_0".
-              !d_dE(iglob) =   d_dE(iglob) &
-              !             + (   gammaext_DG(iglob) * (LNS_p0(iglob)+LNS_dp(iglob)) &
-              !                   / ((LNS_rho0(iglob)+LNS_drho(iglob))*(gammaext_DG(iglob)-1.)) &
-              !                 + 0.5*norm2r1(LNS_v0(:, iglob)+LNS_dv(:, iglob)) &
-              !               ) * temp_sourcewxlwzljacobianl
+              d_dE(iglob) =   d_dE(iglob) &
+                           + (   gammaext_DG(iglob) * (LNS_p0(iglob)+LNS_dp(iglob)) &
+                                 / ((LNS_rho0(iglob)+LNS_drho(iglob))*(gammaext_DG(iglob)-1._CUSTOM_REAL)) &
+                               + 0.5_CUSTOM_REAL*norm2r1(LNS_v0(:, iglob)+LNS_dv(:, iglob)) &
+                             ) * temp_sourcewxlwzljacobianl
             enddo
           enddo
         endif

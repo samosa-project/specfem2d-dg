@@ -1068,8 +1068,9 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
   
   ! Eventually set vertical wind.
   if(swComputeV) then
-    if(TYPE_FORCING/=0) then
-      ! If forcing exists, apply it.
+    if(TYPE_FORCING/=0 .and. timelocal>ZEROcr) then
+      ! If forcing exists, apply it, but only after very first iteration.
+      ! This should pose no problem, since anyhow the forcing should not be significantly non-zero at the very first iteration.
       call forcing_DG(i, j, ispec, timelocal, out_v(NDIM))
     else
       ! Else, force it to be zero.
