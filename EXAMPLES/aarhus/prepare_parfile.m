@@ -15,10 +15,10 @@ R=8.31446261815324;
 k=1.380649e-23;
 
 % Molar fractions (CO2 attenuation).
-Xco2 = 0.99;
+Xco2 = 0.99; Xh2o = 0.01;
+% Xco2 = 1; Xh2o = 0;
 Xn2 = 0;
 Xar = 0;
-Xh2o = 0.01;
 
 % (cP, cV) in m^2.s^{-2}.K^{-1} for pure CO2 at 20°C from https://www.engineeringtoolbox.com/specific-heat-capacity-gases-d_159.html
 cP = 844;
@@ -29,6 +29,7 @@ cpcv_desc = ['from pure CO2 at 20°C (yields gamma=',sprintf('%.5f',gamma),') fr
 dco2 = 3.30e-10; % kinetic diameter of CO2 from [https://en.wikipedia.org/wiki/Kinetic_diameter]=Ismail, Ahmad Fauzi; Khulbe, Kailash; Matsuura, Takeshi, Gas Separation Membranes: Polymeric and Inorganic, Springer, 2015 ISBN 3319010956.
 
 rho = p*(cP/cV)/(sound_velocity^2); rho_desc = ['p*(cP/cV)/(sound_velocity^2);'];
+% mu_cl = 1.49e-6*(T^0.5) / (1+217/T); mu_desc = ['Sutherland 1.49e-6*(T^0.5) / (1+217/T)'];
 mu_cl = ( k * T * sqrt(rho/p)) / (pi^(3/2) * dco2^2); mu_desc = ['(k*T*sqrt(rho/p))/(pi^(3/2)*dco2^2) with dco2=',sprintf('%.2e', dco2),''];
 kappa = 0.25*(15*R*mu_cl)*(((4*cV)/(15*R)) + 3/5); kappa_desc = ['from Eucken expression 0.25*(15*R*mu)*(((4*cv)/(15*R)) + 3/5)'];
 
