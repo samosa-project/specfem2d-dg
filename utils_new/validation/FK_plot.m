@@ -9,9 +9,9 @@ distance_km = zstattab(stationsToPlot)/1000; unitDist = ['km'];
 % addenduml1 = [' $c=',sprintf('%.0f',SOUNDSPEED),'$~m/s,'];
 addenduml1 = [' Maximum Relative Error = ',sprintf('%.2f',max(max_relative_err_all_stats*100)),'~\%'];
 if(USE_ISOTHERMAL_MODEL)
-  theTitle = {['Isothermal Case,',addenduml1]};
+  theTitle = {['Isothermal Case'],[addenduml1]};
 else
-  theTitle = {['Isobaric Case,',addenduml1]};
+  theTitle = {['Isobaric Case'],[addenduml1]};
 end
 
 savefigname = savefigname_base;
@@ -31,7 +31,9 @@ savefigname = [savefigname, regexprep(spl{end-2}, prefix, '')];
 manyPanels1_timeDistance0 = 0; dOverPTP = 200; unitDoPTP = ['km/(',vunit_wobracc,')'];
 
 XLAB = 'time [s]';
-titt_nlines = numel(theTitle); marg_top_bot = [0.12,0.02+(titt_nlines*0.05)];
+titt_nlines = numel(theTitle);
+% marg_top_bot = [0.12,0.02+(titt_nlines*0.05)];
+marg_top_bot = [0.01,0.02+(titt_nlines*0.05)];
 marg_left_right = [0.06, 0.02];
 COL_anal = [0 0 0]; COL_synth = [1,0,0]; COL_err = [0.5,0,0];
 LW_anal = 2; LW_synth = 3; LW_err = 2;
@@ -88,7 +90,7 @@ else
     hs(i)=plot(t_forErr{i}, yshift + dOverPTP*synth_forErr{i}, LS_synth, 'Color', COL_synth, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
     he(i)=plot(t_forErr{i}, yshift + dOverPTP*err_v{i}, LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']); % Plot difference.
   end
-  legend([ha(1),hs(1),he(1)],'location','northeast');
+  legend([ha(1),hs(1),he(1)],'location','southoutside');
   
   % Adjust both plots.
   axes(axxxx(1));
@@ -100,13 +102,13 @@ else
   xticklabels('auto'); xlabel(XLAB);
   
   linkaxes(axxxx,'x'); xlim([0, 235]);
-  linkaxes(axxxx,'y'); ylim([-10, 75]);
+  linkaxes(axxxx,'y'); ylim([-6, 60]);
 end
 xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);
 
 prettyAxes(fh);
 savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
-customSaveFig(fh, savefigfullpath, {'fig', 'png'});
+customSaveFig(fh, [savefigfullpath, '__', datestr(now,'YYmmDD_HHMM')], {'fig', 'eps'}, 9999);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 

@@ -10,7 +10,6 @@
 %   You will choose the directory in which the ASCII files are.
 %   Then choose the number of receivers with the velocity of the signal and 
 %   finally run this m-file.
-%   This program is made for a maximum number of 9 stations.
 % with:
 %   TODO.
 % yields:
@@ -45,8 +44,8 @@ savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',p
 % OFd = [rootd,'OUTPUT_FILES_isothermal_LNS_st1'];
 
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isobaric/']; % EXAMPLE path
-% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
-rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal_shorter/']; % EXAMPLE path
+rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
+% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal_shorter/']; % EXAMPLE path
 OFd = [rootd, 'OUTPUT_FILES'];
 % OFd = [rootd, 'OUTPUT_FILES_LNS'];
 % OFd = [rootd, 'OUTPUT_FILES_FNS'];
@@ -265,6 +264,11 @@ for locStatNumber = 1:nstat
 
   % Take real part as analytic solution.
   synf(locStatNumber, :) = real(Mz(iy, ix, :));
+  
+  if(z_station>0)
+    % Remove constant offset (the analytical solution should start valued 0).
+    synf(locStatNumber, :) = synf(locStatNumber, :)-synf(locStatNumber, 1);
+  end
 end
 
 % test to see what forms has the analytic solution.
