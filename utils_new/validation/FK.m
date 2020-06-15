@@ -46,8 +46,8 @@ savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',p
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isobaric/']; % EXAMPLE path
 rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal_shorter/']; % EXAMPLE path
-OFd = [rootd, 'OUTPUT_FILES'];
-% OFd = [rootd, 'OUTPUT_FILES_LNS'];
+% OFd = [rootd, 'OUTPUT_FILES'];
+OFd = [rootd, 'OUTPUT_FILES_LNS'];
 % OFd = [rootd, 'OUTPUT_FILES_FNS'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -73,6 +73,7 @@ P_0 = readExampleFiles_extractParam(parfile, 'main_spatial_period', 'float'); % 
 T_0 = readExampleFiles_extractParam(parfile, 'main_time_period', 'float'); % main time period
 X_0 = readExampleFiles_extractParam(parfile, 'forcing_initial_loc', 'float'); % forcing initial location
 t_0 = readExampleFiles_extractParam(parfile, 'forcing_initial_time', 'float'); % forcing initial time
+FORCING_FACTOR = readExampleFiles_extractParam(parfile, 'FORCING_DG_FACTOR', 'float');
 seismotype = readExampleFiles_extractParam(parfile, 'seismotype', 'int');
 xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
 xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
@@ -151,7 +152,7 @@ dt_anal = min(diff(Ztime(1,:))); % Choose a dt corresponding to the dt of the si
                                              xmin, xmax, ymin, ymax, dx, dy, ...
                                              zstattab, ...
                                              externalDGAtmosModel, USE_ISOTHERMAL_MODEL, SOUNDSPEED, H, GRA, NSQ, wind_x, wind_y, GAM, ...
-                                             TYPE_FORCING, T_0, mult_tSpan, mult_xSpan, mult_ySpan);
+                                             TYPE_FORCING, T_0, FORCING_FACTOR, mult_tSpan, mult_xSpan, mult_ySpan);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [Brissaud et al., 2016, Section 5.1]: "Multiplication, in the Fourier

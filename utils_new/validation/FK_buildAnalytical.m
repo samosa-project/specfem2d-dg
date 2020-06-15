@@ -2,7 +2,7 @@ function [t, x, y, TFM0, KX, KZ] = FK_buildAnalytical(t_0, dt_anal, ...
                                        xmin, xmax, ymin, ymax, dx, dy, ...
                                        zstattab, ...
                                        externalDGAtmosModel, USE_ISOTHERMAL_MODEL, SOUNDSPEED, H, GRA, NSQ, wind_x, wind_y, GAM, ...
-                                       TYPE_FORCING, T_0, mult_tSpan, mult_xSpan, mult_ySpan)
+                                       TYPE_FORCING, T_0, FORCING_FACTOR, mult_tSpan, mult_xSpan, mult_ySpan)
   tmax_anal = t_0 + max(zstattab)/SOUNDSPEED(1) + 0.5*T_0 + 1*T_0; % go as far as 2 times the time necessary (roughly) for the signal to pass last station (t_0 + travel time + half period), + full period for safety
   % dt_anal   = T_0 / (2*100); % ensure fmax=1/dt >> 2*f0=2/T_0 by setting 1/dt = (2*2.5)/T_0
   dx_anal = dx;
@@ -59,6 +59,7 @@ function [t, x, y, TFM0, KX, KZ] = FK_buildAnalytical(t_0, dt_anal, ...
     otherwise
       error(['[', mfilename, ',ERROR] Bad TYPE_FORCING.']);
   end
+  Mo = FORCING_FACTOR*Mo;
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % [Brissaud et al., 2016, Section 5.1]: "Calculation of the 3D (or 2D) Fourier transform (spatial and time transformations) of that function."

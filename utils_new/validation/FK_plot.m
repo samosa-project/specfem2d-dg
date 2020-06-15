@@ -28,7 +28,9 @@ spl = split(OFd,'/');
 savefigname = [savefigname, regexprep(spl{end-2}, prefix, '')];
 
 % manyPanels1_timeDistance0 = 1;
-manyPanels1_timeDistance0 = 0; dOverPTP = 200; unitDoPTP = ['km/(',vunit_wobracc,')'];
+manyPanels1_timeDistance0 = 0;
+dOverPTP = 200/FORCING_FACTOR;
+unitDoPTP = ['km/(',vunit_wobracc,')'];
 
 XLAB = 'time [s]';
 titt_nlines = numel(theTitle);
@@ -108,7 +110,7 @@ xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);
 
 prettyAxes(fh);
 savefigfullpath = [savefigpath, regexprep(savefigname,'\.','')]; % regexprep because latex crashed when filenames have dots in it
-customSaveFig(fh, [savefigfullpath, '__', datestr(now,'YYmmDD_HHMM')], {'fig', 'eps'}, 9999);
+customSaveFig(fh, [savefigfullpath, '__', datestr(now,'YYmmDD_HHMM')], {'fig', 'jpg', 'eps'}, 9999);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Figure of the nstat horizontal components and synthetic signals against 
