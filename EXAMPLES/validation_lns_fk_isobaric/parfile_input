@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 4
+NPROC                           = 8
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -271,7 +271,7 @@ STACEY_ABSORBING_CONDITIONS     = .false. # Stacey conditions are not supported 
 
 # Periodic boundary conditions?
 ADD_PERIODIC_CONDITIONS         = .true. # Periodic conditions are not supported for AXISYM.
-PERIODIC_HORIZ_DIST             = 1.e3
+PERIODIC_HORIZ_DIST             = 750
 
 
 #---------------------------------------------------------------------#
@@ -331,9 +331,9 @@ interfacesfile                  = ../interfaces_input
 # Geometry of the model       #
 #-----------------------------#
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
-xmin                            = -500
-xmax                            =  500
-nx                              =  4   # dx = 250
+xmin                            = -375
+xmax                            =  375
+nx                              =  3   # dx = 250
 
 # Absorbing boundary parameters (to be used with PML_BOUNDARY_CONDITIONS or STACEY_ABSORBING_CONDITIONS above).
 absorbbottom                    = .false.
@@ -351,7 +351,7 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 nbregions                       = 1
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 4 1 160 1
+1 3 1 320 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -390,7 +390,7 @@ cutsnaps                        = 1.
 output_color_image              = .true.         # Draw JPEG color snapshot?
 imagetype_JPEG                  = 2              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure 11=? 12=? 13=? 14=? 15=? 16=?
                                                  # DG display: 1=veloc_Vx 2=veloc_Vz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz
-factor_subsample_image          = 2.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
+factor_subsample_image          = 3.5d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
 CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5d0          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images

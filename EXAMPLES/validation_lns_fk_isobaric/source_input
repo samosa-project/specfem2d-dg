@@ -11,7 +11,7 @@ time_function_type              = 3          # Source time function type: Ricker
 name_of_source_file             = "/path/to/file" # Only for time_function_type 8. File containing the source wavelet: two columns file with time and amplitude, dt must be equal (for the moment) to the dt of the simulation. File name can't exceed 150 characters.
 burst_band_width                = 200.d0     # Only for time_function_type 9. Band width of the burst.
 
-f0                              = 1d9        # Dominant source frequency (Hz). Only for time_function_type!=4 and !=5 (for time_function_type==4 or ==5, f0 is hardcoded as 1/(10*dt) in set_source_parameters.f90).
+f0                              = 1.d9       # Dominant source frequency (Hz). Only for time_function_type!=4 and !=5 (for time_function_type==4 or ==5, f0 is hardcoded as 1/(10*dt) in set_source_parameters.f90).
 tshift                          = 0.d0       # Time shift for that source. The source's spike will occur (T0+tshift) seconds after the simulation's beginning, where T0=max(USER_T0, 1.2/f0).
 anglesource                     = 0.d0       # Only for a force. Angle of the source (degrees). 0 is upwards, 180 is downwards.
 Mxx                             = 0.d0       # Only for moment tensor source. Mxx component.
