@@ -99,7 +99,7 @@ NT_DUMP_ATTENUATION             = 500
 #                                                                     #
 #---------------------------------------------------------------------#
 USE_DISCONTINUOUS_METHOD        = .true.
-USE_LNS                         = .false.
+USE_LNS                         = .true.
 REMOVE_DG_FLUID_TO_SOLID        = .false.        # Removes the effect of the fluid on the solid.
 USE_SLOPE_LIMITER               = .false.
 MINMOD_FACTOR                   = 0.001d0
