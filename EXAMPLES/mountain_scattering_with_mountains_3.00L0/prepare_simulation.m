@@ -52,7 +52,10 @@ disp(['Found $L_0=\SI{',sprintf('%.3f',L0/1e3),'}{\km}$.']);
 prepare_geofile
 
 % TODO: copy parfile and sourcefile to all subfolders.
+files_to_copy = {'parfile_input', 'source_input'};
 for i=1:numel(dest_subfolds)
-  command = ['cp ',source_subfold,'/parfile_input ',EXDIR,dest_subfolds{i},filesep,''];
-  system(command);
+  for j=1:numel(files_to_copy)
+    command = ['cp ',source_subfold,'/',files_to_copy{j},' ',EXDIR,dest_subfolds{i},filesep,''];
+    system(command);
+  end
 end

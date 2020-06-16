@@ -1,6 +1,7 @@
 % Produce geo file.
 msg_base = ['// This geofile was created by ''',mfilename('fullpath'),'''.\n'];
 roundage=0;
+meshRandomFactor = 1e-4; % max value seem to be 1e-4
 
 for IDCase = casesToPrepare
   msg = msg_base;
@@ -27,7 +28,7 @@ for IDCase = casesToPrepare
       LTopo = round(0.33*L0, roundage);
       nPerio = 36;
       peakHeight = (1500/9000)*LTopo; % keep the same angle as in the 3L0 simulation
-      nptperperio = 16;
+      nptperperio = 19;
     case 0
       % output to "without" folder
       outputFile = [EXDIR, prfx_0without, '/EXTMSH/extMesh.geo'];
@@ -100,7 +101,7 @@ for IDCase = casesToPrepare
   fprintf(fid, '\n');
   
   printDisplay(fid);
-  printMesh(fid, meshAlgorithm);
+  printMesh(fid, meshAlgorithm, meshRandomFactor);
 
   % Print some variables.
   fprintf(fid, '// Some Variables. //--------//\n');
@@ -265,9 +266,7 @@ function defineVariable(fid, var, value)
   fprintf(fid, [var, ' = %f;\n'], value);
 end
 
-function printMesh(fid, meshAlgorithm)
-  meshRandomFactor = 1e-4;
-
+function printMesh(fid, meshAlgorithm, meshRandomFactor)
   fprintf(fid, '// Elements. //--------------//\n');
   fprintf(fid, 'Mesh.SubdivisionAlgorithm = 1; // Meshing algorithm: all quads.\n');
   fprintf(fid, 'Mesh.RecombineAll = 1; // Recombine all triangular elements.\n');
