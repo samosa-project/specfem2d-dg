@@ -1,106 +1,42 @@
-clear all;
-close all;
-clc;
-
-% Prepare ground model.
-depthmax = -40e3;
-lat = 0.5*(45.05+44.78);
-lon = 0.5*(5.08+7.42);
-[s, res] = system(['/home/l.martire/Documents/software/LITHO1.0/access_litho -p ',sprintf('%.4f',lat),' ',sprintf('%.4f',lat),'']);
-res = split(res, newline);
-res(end) = [];
-model = zeros(1, 6);
-c = 1;
-for i = numel(res):-1:1
-  cur_z_r_vp_vs_qk_qm = str2num(regexp(res{i}, ['( +-?[0-9]+\.[0-9]* ){6}'], 'match', 'once'));
-  if(not(isempty(cur_z_r_vp_vs_qk_qm)))
-    model(c, :) = cur_z_r_vp_vs_qk_qm;
-    c = c + 1;
-  end
-end
-model(:,1) = - (model(:,1) - min(model(:,1)));
-model(logical([0; diff(model(:,1))~=0]), :) = []; % make sure no duplicate interface
-model(model(:,1)<depthmax, :) = []; % remove layers too deep
-model = flipud(model);
-itooclose = find(diff(model(:,1))<1000); model(itooclose+[1], :) = []; % find layers too close to each other, remove the top one
-NMATERIALS = size(model, 1)+1;
-
-% Deduce interfaces and dx.
-f0 = 2; % [hz]
-nptsperwavelength = 2;
-% interfaces = [-41140, -31140, -16560, 0, 15e3];
-interfaces = [depthmax, model(:,1)', 15e3];
-igrd = find(interfaces==0);
-% dx = [2700, 1800, 800, 110, 132];
-dx = [(model(:,3)'/f0)/nptsperwavelength, 110, 132];
-% dx(1:NMATERIALS-1) = (dx(1:NMATERIALS-1) + 2*dx(NMATERIALS))/3; % reduce dx to allow a nice transition to air
-xminmax = [-1,1]*23e3;
-
-% Print it.
-disp('# Number of models.');
-disp(['nbmodels                        = ',num2str(NMATERIALS),'']);
-disp('#   acoustic:    model_number 1  rho  Vp   0   0   0   QKappa Qmu 0   0   0   0    0    0');
-disp('#   elastic:     model_number 1  rho  Vp   Vs  0   0   QKappa Qmu 0   0   0   0    0    0');
-% disp('# Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the ''Attenuation'' section above as wanted.');
-% disp('1 1 1.164  349.    0. 0 0   10.   10. 0 0 0 0 0 0 # air');
-fmt = '%7.2f';
-disp([num2str(1),' 1 ',sprintf(fmt, 1.4),'  ',sprintf(fmt, 340),' ',sprintf(fmt, 0),' 0 0 ',sprintf(fmt, 9999),' ',sprintf(fmt, 9999),' 0 0 0 0 0 0 # Air.']);
-disp(['# LITHO1.0 (doi 10.1002/2013JB010626) model computed at (',sprintf('%.4f',lat),'°N, ',sprintf('%.4f',lon),'°E):']);
-model = flipud(model);
-for i=1:(NMATERIALS-1)
-  rho = model(i, 2);
-  vp = model(i, 3);
-  vs = model(i, 4);
-  qk = model(i, 5);
-  qm = model(i, 6);
-  if(qk==0)
-    qk = qm-100;
-  end
-%   rcsq=(vs./vp).^2;
-%   qp = ((1-rcsq).*qk.^(-1) + rcsq.*qm.^(-1)).^(-1);
-%   qs = qm;
-  disp([num2str(i+1),' 1 ',sprintf(fmt, rho),'  ',sprintf(fmt, vp),' ',sprintf(fmt, vs),' 0 0 ',sprintf(fmt, qk),' ',sprintf(fmt, qm),' 0 0 0 0 0 0']);
-%   3 1 2830  6500. 3710. 0 0 2704. 2850. 0 0 0 0 0 0 # middle crust: 16560-31140 (Qp=2750, Qs=2850)
-%   4 1 2920  6900. 3930. 0 0 2954. 3100. 0 0 0 0 0 0 # lower crust: 31140-44100 (Qp=3000, Qs=3100)
-end
-
 % Produce geo file.
-% wo_0__w033L_1__w3L_2__w033Lheight_3 = 0;
-% wo_0__w033L_1__w3L_2__w033Lheight_3 = 1;
-% wo_0__w033L_1__w3L_2__w033Lheight_3 = 2;
-% wo_0__w033L_1__w3L_2__w033Lheight_3 = 3;
-% wo_0__w033L_1__w3L_2__w033Lheight_3 = 4; % realistic mountains
-for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
-  switch(wo_0__w033L_1__w3L_2__w033Lheight_3)
+msg_base = ['// This geofile was created by ''',mfilename('fullpath'),'''.\n'];
+roundage=0;
+
+for IDCase = casesToPrepare
+  msg = msg_base;
+  switch(IDCase)
     case 1
       % output to "with 0.33L" folder
-      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_0.33L0/EXTMSH/extMesh.geo';
-      LTopo = 1000;
+      outputFile = [EXDIR, prfx_033_high, '/EXTMSH/extMesh.geo'];
+%       LTopo = 1000;
+      LTopo = round(0.33*L0, roundage);
       nPerio = 36;
       peakHeight = 1500;
       nptperperio = 30;
     case 2
-      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_3.00L0/EXTMSH/extMesh.geo';
-      LTopo = 9000;
+      outputFile = [EXDIR, prfx_300_high, '/EXTMSH/extMesh.geo'];
+%       LTopo = 9000;
+      LTopo = round(3*L0, roundage);
       nPerio = 4;
       peakHeight = 1500;
       nptperperio = 30;
     case 3
       % output to "with 0.33L height adjusted" folder
-      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_mountains_0.33L0_lower/EXTMSH/extMesh.geo';
-      LTopo = 1000;
+      outputFile = [EXDIR, prfx_033_loww, '/EXTMSH/extMesh.geo'];
+%       LTopo = 1000;
+      LTopo = round(0.33*L0, roundage);
       nPerio = 36;
       peakHeight = (1500/9000)*LTopo; % keep the same angle as in the 3L0 simulation
       nptperperio = 16;
     case 0
       % output to "without" folder
-      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_without_mountains/EXTMSH/extMesh.geo';
+      outputFile = [EXDIR, prfx_0without, '/EXTMSH/extMesh.geo'];
       LTopo = -1;
       peakHeight = -1;
       nPerio = -1;
       nptperperio = -1;
     case 4
-      outputFile = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_realistic/EXTMSH/extMesh.geo';
+      outputFile = [EXDIR, prfx_real, '/EXTMSH/extMesh.geo'];
       LTopo = -1;
       nPerio = -1;
       peakHeight = -1;
@@ -108,21 +44,31 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
     otherwise
       error('eeorkrkerlk');
   end
+  
+  switch(IDCase)
+    case{1,2,3}
+      msg = [msg, '// Synthetic topography, LTopo=',sprintf(['%.',num2str(roundage),'f'], LTopo),'=',sprintf('%g', LTopo/L0),'*L0.\n'];
+    case{4}
+      msg = [msg, '// Realistic topography.\n'];
+    case{0}
+      msg = [msg, '// No topography.\n'];
+    otherwise
+      error('kfdlkf');
+  end
 
-  % build surface
-  switch(wo_0__w033L_1__w3L_2__w033Lheight_3)
+  % Build surface interface.
+  switch(IDCase)
     case 0
       x = 0;
       z = 0;
     case 4
       % load
-      load('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_realistic/cross_section.mat');
+      load([EXDIR, 'mountain_scattering_with_realistic/cross_section.mat']);
       x = rq-0.5*range(rq);
       xstop = max(x)+1e3;
       xminmax = [-1,1]*xstop;
       z = elvq;
-      
-      buf=5e3;
+      buf = 5e3;
       apol = 0.5*(1-cos((x-min(x))*2*pi/(2*buf))) .* (x<=min(x)+buf) + (x>min(x)+buf); %plot(x, apol);
       apor = 0.5*(1-cos((max(x)-x)*2*pi/(2*buf))) .* (x>=max(x)-buf) + (x<max(x)-buf); %plot(x, apor);
       apo = apol.*apor; %plot(x, apo);
@@ -137,7 +83,7 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
   surface_xz = [x; z];
 
   % Mesh (1: MeshAdapt. 5: Delaunay for quads. 8: Delaunay (experimental). 9: structured (packing of parallelograms, experimental).).
-  switch(wo_0__w033L_1__w3L_2__w033Lheight_3)
+  switch(IDCase)
     case{1,2,3,4}
       meshAlgorithm = 5;
     case{0}
@@ -148,7 +94,11 @@ for wo_0__w033L_1__w3L_2__w033Lheight_3 = 0:4
 
   % Creation. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   fid = fopen(outputFile, 'w');
-
+  
+  fprintf(fid, msg);
+  fprintf(fid, '\n');
+  fprintf(fid, '\n');
+  
   printDisplay(fid);
   printMesh(fid, meshAlgorithm);
 
