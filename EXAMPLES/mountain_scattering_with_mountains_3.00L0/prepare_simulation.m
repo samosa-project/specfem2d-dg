@@ -51,11 +51,20 @@ disp(['Found $L_0=\SI{',sprintf('%.3f',L0/1e3),'}{\km}$.']);
 % Produce geo file.
 prepare_geofile
 
-% TODO: copy parfile and sourcefile to all subfolders.
-files_to_copy = {'parfile_input', 'source_input'};
-for i=1:numel(dest_subfolds)
-  for j=1:numel(files_to_copy)
-    command = ['cp ',source_subfold,'/',files_to_copy{j},' ',EXDIR,dest_subfolds{i},filesep,''];
-    system(command);
+propagate_input_files = 0;
+if(propagate_input_files)
+  % Copy parfile and sourcefile to all subfolders.
+  
+  % NOTE:
+  % for 3L0, dt=3e-4 (cfl 0.429 cf 408826), nstep=140000, runs in ~45 minutes
+  % for 0.33, dt=1e-4 (dt=3e-4 causes cfl>1 cf 40882{4,5}), nstep=420000, runs in ??
+  % for no topo, dt=3e-4 (cfl 0.29 cf 408827), nstep=140000, should run ~45 minutes
+  
+  files_to_copy = {'parfile_input', 'source_input'};
+  for i=1:numel(dest_subfolds)
+    for j=1:numel(files_to_copy)
+      command = ['cp ',source_subfold,'/',files_to_copy{j},' ',EXDIR,dest_subfolds{i},filesep,''];
+      system(command);
+    end
   end
 end

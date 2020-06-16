@@ -24,10 +24,11 @@ baseline_fft_path = [output_figures_folder,filesep,'BASELINE_PRESSURE_SPECTRUM']
 
 wavenumber0_wavelength1 = 1; % plot in terms of wavenumber (0) or wavelength (1)
 boxabsx = 28e3; boxy = [1501, 15e3];
-forceDGMesh = 0; % Force the use of the DG mesh for interpolation? Might be heavy, but is less wrong.
-dx = 20; dz = dx; % If forceDGMesh=0, wanted dx and dz for interpolation.
-climfft = [4.5, 6.5];
-climcomp = [-1, 1]*6;
+forceDGMesh = 0; dx = 10; dz = dx; % dx=10 ok, dx<10 chugs hard
+
+climpfield = [-1, 1]*175; thrsh_pfield = 0.25; blk_pfield=0.98;
+climfft = [4.5, 6.25];
+climcomp = [-1, 1]*6; maxneg_fftcomp = abs(min(climcomp)); maxpos_fftcomp = abs(max(climcomp)); thresh_fftcomp = max([maxneg_fftcomp, maxpos_fftcomp])-0.5;
 extToSave = {'eps'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,10 +58,12 @@ extToSave = {'eps'};
 % OFDroots = {[rtdwprfx,'without_mountains']};
 % OFs{}
 
-tg_bsln = '4214695_lns'; tg_03hig = '4214696_lns'; tg_03low = '4219868_lns'; tg_3 = '4214697_lns'; IT = 100000;
+% tg_bsln = '4214695_lns'; tg_03hig = '4214696_lns'; tg_03low = '4219868_lns'; tg_3 = '4214697_lns'; IT = 100000;
 % tg_bsln = '398709_fns'; tg_03hig = '4214696_lns'; tg_03low = '4219868_lns'; tg_3 = '398703_fns'; IT = 140000;
+tg_bsln = '408827_lns'; tg_03hig = '4214696_lns'; tg_03low = '4219868_lns'; tg_3 = '408826_lns'; IT = 100000;
 
-zoombox_x = [-1,1]*15e3; zoombox_z = [11,15]*1e3;
+zoombox_x = [-1,1]*14e3; zoombox_z = [8,12]*1e3;
+
 OFDs = {[rtdwprfx, 'without_mountains', filesep, 'OUTPUT_FILES_', tg_bsln], ...
         [rtdwprfx, 'with_mountains_0.33L0', filesep, 'OUTPUT_FILES_', tg_03hig], ...
         [rtdwprfx, 'with_mountains_0.33L0_lower', filesep, 'OUTPUT_FILES_', tg_03low], ...
@@ -138,7 +141,7 @@ if(do_load)
   end
 end
 
-if(not(numel(unique(dt))==1))
+if(not(numel(unique(dt*IT))==1))
   error('dt varies from one simulation to the other');
 end
 
@@ -159,15 +162,14 @@ if(do_pfield)
   xlabel(['$x$ [km]']);
   
   hcb = colorbar(); ylabel(hcb, CBYLAB_PRESPEC, 'interpreter', 'latex');
-  CLIM_PFIELD=[-1,1]*150;
   XTCK_pfield = (min(zoombox_x):2e3:max(zoombox_x))/1e3;
   ZTCK_pfield = (min(zoombox_z):2e3:max(zoombox_z))/1e3;
 %   caxis([-1,1]*max(abs(Vi.pre(:))));
-  thrsh = 0.33; blk=0.97;
-  CMAP = colormaps_custom([-1,-blk, -(1+thrsh)/2, -thrsh, 0, thrsh, (1+thrsh)/2, blk,1], [[0,0,1].*[0.2,0.75,1]';[0.9,0.9,1];[1,1,1];[1,0.9,0.9];[1,0,0].*[1,0.75,0.2]'], 0);
+  
+  CMAP = colormaps_custom([-1,-blk_pfield, -(1+thrsh_pfield)/2, -thrsh_pfield, 0, thrsh_pfield, (1+thrsh_pfield)/2, blk_pfield,1], [[0,0,1].*[0.2,0.75,1]';[0.9,0.9,1];[1,1,1];[1,0.9,0.9];[1,0,0].*[1,0.75,0.2]'], 0);
   
 %   set(tightAxes, 'DataAspectRatio', [1,1,1]);
-  set(tightAxes, 'CLim', CLIM_PFIELD, 'Colormap', CMAP, 'XLim', zoombox_x/1e3, 'YLim', zoombox_z/1e3, 'XTick', XTCK_pfield, 'YTick', ZTCK_pfield);
+  set(tightAxes, 'CLim', climpfield, 'Colormap', CMAP, 'XLim', zoombox_x/1e3, 'YLim', zoombox_z/1e3, 'XTick', XTCK_pfield, 'YTick', ZTCK_pfield);
   for i=1:numel(tightAxes)
     tightAxes(i).Position = [tightAxes(end).Position(1), tightAxes(i).Position(2), tightAxes(4).Position(3:4)];
   end
@@ -246,7 +248,9 @@ if(do_fft)
   
 %   title(TIT);
   
-  CMAP = colormaps_fromPython('magma', 0);
+%   CMAP = colormaps_fromPython('magma', 0, floor(0.25*512):floor(1*512));
+  CMAP = colormaps_fromPython('bone', 0);
+  CMAP = flipud(CMAP);
   set(tightAxes_spec, 'xscale', 'log', 'yscale', 'log', 'colormap', CMAP, 'clim', climfft);
   set(tightAxes_spec(2:end), 'YTickLabel', {});
   
@@ -307,9 +311,7 @@ if(do_comparefft)
     % adjust colormap
 %     maxneg = abs(min(toPlot(:))); maxpos = max(toPlot(:));
 
-    maxneg = abs(min(climcomp)); maxpos = abs(max(climcomp));
-    thresh = max([maxneg, maxpos])-1;
-    CMAP = colormaps_custom([-maxneg, [-1,-0.85,0,0.85,1]*thresh, maxpos], [[0,0,1].*[0.25,1]';[0.9,0.9,1];[1,1,1];[1,0.9,0.9];[1,0,0].*[1,0.25]'], 0);
+    CMAP = colormaps_custom([-maxneg_fftcomp, [-1,-0.85,0,0.85,1]*thresh_fftcomp, maxpos_fftcomp], [[0,0,1].*[0.25,1]';[0.9,0.9,1];[1,1,1];[1,0.9,0.9];[1,0,0].*[1,0.25]'], 0);
 %     caxis([-maxneg,maxpos]);
 %       caxis(climcomp);
     set(tightAxes_diff, 'xscale', 'log', 'yscale', 'log', 'colormap', CMAP, 'clim', climcomp);
@@ -342,6 +344,11 @@ if(do_comparefft)
 end
 
 % move produced figures to thesis
+disp(['[] Starting to move Figures to thesis folder.']);
 system(['cp ', figfieldpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
 system(['cp ', figspectpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
 system(['cp ', figspectdiffpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
+
+for i=1:numel(OFDs)
+  system(['cp ', OFDs{i},filesep,'image0000005.jpg /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
+end

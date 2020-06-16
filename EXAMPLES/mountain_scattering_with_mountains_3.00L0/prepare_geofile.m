@@ -14,13 +14,6 @@ for IDCase = casesToPrepare
       nPerio = 36;
       peakHeight = 1500;
       nptperperio = 30;
-    case 2
-      outputFile = [EXDIR, prfx_300_high, '/EXTMSH/extMesh.geo'];
-%       LTopo = 9000;
-      LTopo = round(3*L0, roundage);
-      nPerio = 4;
-      peakHeight = 1500;
-      nptperperio = 30;
     case 3
       % output to "with 0.33L height adjusted" folder
       outputFile = [EXDIR, prfx_033_loww, '/EXTMSH/extMesh.geo'];
@@ -29,6 +22,13 @@ for IDCase = casesToPrepare
       nPerio = 36;
       peakHeight = (1500/9000)*LTopo; % keep the same angle as in the 3L0 simulation
       nptperperio = 19;
+    case 2
+      outputFile = [EXDIR, prfx_300_high, '/EXTMSH/extMesh.geo'];
+%       LTopo = 9000;
+      LTopo = round(3*L0, roundage);
+      nPerio = 4;
+      peakHeight = 1500;
+      nptperperio = 30;
     case 0
       % output to "without" folder
       outputFile = [EXDIR, prfx_0without, '/EXTMSH/extMesh.geo'];
