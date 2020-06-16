@@ -308,16 +308,12 @@ PERIODIC_HORIZ_DIST             = 100.d0
 #                                                                     #
 #---------------------------------------------------------------------#
 # Number of models.
-nbmodels                        = 6
+nbmodels                        = 2
 #   acoustic:    model_number 1  rho  Vp   0   0   0   QKappa Qmu 0   0   0   0    0    0
 #   elastic:     model_number 1  rho  Vp   Vs  0   0   QKappa Qmu 0   0   0   0    0    0
 1 1    1.40   340.00    0.00 0 0 9999.00 9999.00 0 0 0 0 0 0 # Air.
-# LITHO1.0 (doi 10.1002/2013JB010626) model computed at (44.9150°N, 6.2500°E):
-2 1 2110.00  2500.00 1070.00 0 0  500.00  600.00 0 0 0 0 0 0
-3 1 2455.43  4569.51 2566.62 0 0  500.00  600.00 0 0 0 0 0 0
-4 1 2680.72  5968.02 3473.19 0 0  500.00  600.00 0 0 0 0 0 0
-5 1 2798.12  6457.20 3717.78 0 0  500.00  600.00 0 0 0 0 0 0
-6 1 2886.17  6848.54 3903.67 0 0  500.00  600.00 0 0 0 0 0 0
+# LITHO1.0 (doi 10.1002/2013JB010626) model computed at (42.6000°N, 0.3000°E):
+2 1 2730.14  6078.06 3537.23 0 0  500.00  600.00 0 0 0 0 0 0 # Ground layer, from z=      0 to z= -15000.
 
 # External tomography file.
 TOMOGRAPHY_FILE                 = ./DATA/tomo_file.xyz
