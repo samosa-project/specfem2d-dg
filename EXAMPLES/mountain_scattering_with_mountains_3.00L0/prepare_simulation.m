@@ -3,6 +3,7 @@ close all;
 clc;
 
 % Choices.
+xminmax = [-1,1]*23e3;
 depthmax = -15e3; altitudemax = 15e3;
 casesToPrepare = 0:4; % 0 = without, 1 = short high, 2 = long high, 3 = short low, 4 = realistic
 
@@ -47,6 +48,8 @@ vp_at_source = layer_which_has_source(3);
 L0 = vp_at_source/f0;
 disp(' ');
 disp(['Found $L_0=\SI{',sprintf('%.3f',L0/1e3),'}{\km}$.']);
+% disp(['Domain = ']);
+disp(['DX at interface asked to be at most ',num2str(dx(end-1)),'.']);
 
 % Produce geo file.
 prepare_geofile

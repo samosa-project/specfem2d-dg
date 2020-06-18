@@ -21,7 +21,7 @@ for IDCase = casesToPrepare
       LTopo = round(0.33*L0, roundage);
       nPerio = 36;
       peakHeight = (1500/9000)*LTopo; % keep the same angle as in the 3L0 simulation
-      nptperperio = 19;
+      nptperperio = 8;
     case 2
       outputFile = [EXDIR, prfx_300_high, '/EXTMSH/extMesh.geo'];
 %       LTopo = 9000;
@@ -78,7 +78,25 @@ for IDCase = casesToPrepare
     otherwise
       xstop = nPerio*0.5*LTopo;
       n = nPerio*nptperperio;
+%       x = unique(sort([linspace(-xstop, xstop, n), (-xstop:LTopo/2:xstop)]));
       x = linspace(-xstop, xstop, n);
+      
+%       % Try homogeneous sampling.
+%       d=[]; for i=1:(numel(x)-1); d(i)=sqrt((x(i)-x(i+1))^2 + (z(i)-z(i+1))^2); end;
+%       i=1;xn=[x(i)];zn=[z(i)];stop=0;
+%       step = max(d)*0.9;
+%       while (xn(end)<xstop & not(stop))
+%         j=i+find(cumsum(d(i:end))>step,1,'first')+1;
+%         if(isempty(j))
+%           stop=1;
+%         else
+%           xn=[xn, x(j)]; zn=[zn, z(j)];
+%           i=j;
+%         end
+%       end
+%       plot(x, z, '.', xn, zn, 'x')
+%       dn=[]; for i=1:(numel(xn)-1); dn(i)=sqrt((xn(i)-xn(i+1))^2 + (zn(i)-zn(i+1))^2); end;
+      
       z = peakHeight * 0.5 * (1-cos(x*2*pi/LTopo)) .* (x>=-xstop) .* (x<=xstop);
   end
   surface_xz = [x; z];

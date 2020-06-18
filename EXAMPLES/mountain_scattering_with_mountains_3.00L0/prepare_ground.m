@@ -41,7 +41,6 @@ igrd = find(interfaces==0);
 % dx = [2700, 1800, 800, 110, 132];
 dx = [(model(:,3)'/f0)/nptsperwavelength, 110, 132];
 % dx(1:NMATERIALS-1) = (dx(1:NMATERIALS-1) + 2*dx(NMATERIALS))/3; % reduce dx to allow a nice transition to air
-xminmax = [-1,1]*23e3;
 
 % Print it.
 disp('# Number of models.');
