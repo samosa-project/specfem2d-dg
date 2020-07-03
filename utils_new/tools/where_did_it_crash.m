@@ -8,10 +8,6 @@ clear all;
 % close all;
 % clc;
 format compact;
-set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
 
 % FILE='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratoexplo_66_june_1200/OUTPUT_FILES_597316/Database00201';
 disp(['[',mfilename,'] 1) Find the ID of CPU which crashed. Typically, look up the error message, and remember the number of the task which is mentionned.']);

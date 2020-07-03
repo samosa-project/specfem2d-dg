@@ -27,6 +27,7 @@ SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % You can re-set those parameters inline for each OUTPUT_FILES directory (see "OUTPUT_FILES location" section below) individually.
+fig_title = [''];
 rescale_factor = 1; % Rescaling factor, applied on all stations (confirmation will be asked).
 convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordinates: x = 0 above source, z = 0 on surface (defined by pos_interface).
 plot_amplitude = 0; % Plot amplitude (0 for no, 1 for yes sorted by x, 2 for yes sorted by z, 3 for yes sorted by d)?
@@ -48,10 +49,13 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd = strcat(SPCFMEXloc,'mars_insight__sol189__var01_THICKENED/'); OFd = strcat(rootd, 'OUTPUT_FILES_291534_slightlyhigher/'); subsample = 1; wanted_dt = 0.05; fig_title = [fig_title, ', sol189, var01, T H I C C duct but outside'];
 
 % OKQ
-rootd=['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/']; OFd=[rootd,'OUTPUT_FILES_668844_OKQ45_redone/']; subsample=0;
+% rootd=['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/']; OFd=[rootd,'OUTPUT_FILES_668844_OKQ45_redone/']; subsample=0;
 
 % Test mountains LNS.
 % rootd = [SPCFMEXloc, 'mountain_scattering_with_mountains/']; OFd = [rootd,'OUTPUT_FILES_4213746_test'];
+
+% Seismic Hammer.
+rootd = [SPCFMEXloc, 'seismic_hammer_hard_thicker/']; OFd = [rootd,'OUTPUT_FILES_4194294'];
 
 % Mars.
 % fig_title = strcat('Mars InSight');

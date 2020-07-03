@@ -104,19 +104,19 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
       
       % prepare lon lat str human readable
       if(lon<=180)
-        lonstr=[sprintf('%1.1f',lon),'$^\circ$E'];
+        lonstr=[sprintf('%1.1f',lon),'^\circ\mathrm{E}'];
       else
-        lonstr=[sprintf('%1.1f',360-lon),'$^\circ$W'];
+        lonstr=[sprintf('%1.1f',360-lon),'^\circ\mathrm{W}'];
       end
       if(lat>=0)
-        latstr=[sprintf('%1.1f',lat),'$^\circ$N'];
+        latstr=[sprintf('%1.1f',lat),'^\circ\mathrm{N}'];
       else
-        latstr=[sprintf('%1.1f',-lat),'$^\circ$S'];
+        latstr=[sprintf('%1.1f',-lat),'^\circ\mathrm{S}'];
       end
       
       % Build position string.
 %       posstr=['(lat., lon.) = (',latstr,', ',lonstr,')'];
-      positionString=[planettt{PLA},'(',latstr,', ',lonstr,')'];
+      positionString=[planettt{PLA},'$\left(',latstr,', ',lonstr,'\right)$'];
       
       % Build date string.
       switch(PLA)
@@ -150,7 +150,7 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
           splitlocalsat=split(localsat, ' ');
           % Build date string.
     %       datestr=[num2str(daysincenewyear), '$^{th}$ of ', num2str(year), ', ',num2str(floor(secondssincenewday/3600)),':',num2str(floor((secondssincenewday - floor(secondssincenewday/3600)*3600)/60)), ' UT'];
-          dateString=[yyyymmdd, ', ', hhmmss, ' UT, ', splitlocalsat{2}, ' LT'];
+          dateString=[yyyymmdd, ', ', hhmmss, ' UTC, ', splitlocalsat{2}, ' LT'];
         case 4
           % mars case
           dateString = ['LS ',sprintf('%.3f',LS), '$^\circ$, LT ',sprintf('%.3f',LT), 'h'];
