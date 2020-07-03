@@ -30,9 +30,10 @@ interp_forceDGMesh = 0;
 interp_dx = 20;
 interp_dz = interp_dx; % dx=10 ok, dx<10 chugs hard
 
-do_pfield = 0;
-do_fft = 1;
+do_pfield = 1;
+do_fft = 0;
 do_comparefft = 0;
+do_mosaic = 0;
 
 pfield_zoombox_x = [-1,1]*14e3;
 pfield_zoombox_z = [7,11.5]*1e3;
@@ -133,12 +134,11 @@ if(do_load)
   end
 end
 
-if(max(abs(diff(dt.*IT))) > 1e-9)
-  error('dt*IT varies from one simulation to the other');
-end
-
 % Figure.
 if(do_pfield)
+  if(max(abs(diff(dt.*IT))) > 1e-9)
+    error('dt*IT varies from one simulation to the other');
+  end
   CBYLAB_PRESPEC = ['field of pressure perturbations $p''$ at $t=',num2str(IT(1)*dt(1)),'$~s [Pa]'];
   fig_field = figure('units','normalized','outerposition',[0,0,1,1]);
   tightAxes = tight_subplot(4, 1, [0.03,0.], [0.11,0.05], [0.06, 0.06]);
@@ -180,7 +180,7 @@ if(any([do_fft, do_comparefft]))
   
   % Plot parameters.
   if(fft_wavenumber0_wavelength1)
-    fac = 1e-3; XLAB = 'horizontal wavelength $(1/k_x)$ [km]'; YLAB = 'vertical wavelength $(1/k_z)$ [km]';
+    fac = 1e-3; XLAB = 'horizontal wavelength $(2\pi/k_x)$ [km]'; YLAB = 'vertical wavelength $(2\pi/k_z)$ [km]';
     pow = -1;
     minx = 50*fac; minz = minx;
     maxx = round(max(kx(kx>0).^pow)*fac, -1);
@@ -194,21 +194,21 @@ if(any([do_fft, do_comparefft]))
   CBYLAB_PRESPEC = ['$\log_{10}\left(',absfftname,'\right)$'];
 %   CBYLAB_diff = ['signed difference of ',CBYLAB_PRESPEC];
   CBYLAB_diff = ['$',absfftname,'$ difference'];
+  
+  % Build theoretical curves.
+  LW_thkxkz = 3;
+  c = 342;
+  vp = 6078.06;
+  vs = 3537.23;
+  rho = 2730.14;
+  f0 = 2;
+  [E_nu] = conversion('r', rho, 'p', vp, 's', vs, 'E', 'n');
+  nu = E_nu(2);
+  vrayleigh = vs / ((1+nu)/(0.862+1.14*nu));
+  thcurvs = {}; i=1;
+  thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c/f0; thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '-'; i=i+1;
+  thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c*vp/(f0*vrayleigh); thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '--'; i=i+1;
 end
-
-% Build theoretical curves.
-LW_thkxkz = 3;
-c = 342;
-vp = 6078.06;
-vs = 3537.23;
-rho = 2730.14;
-f0 = 2;
-[E_nu] = conversion('r', rho, 'p', vp, 's', vs, 'E', 'n');
-nu = E_nu(2);
-vrayleigh = vs / ((1+nu)/(0.862+1.14*nu));
-thcurvs = {}; i=1;
-thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c/f0; thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '-'; i=i+1;
-thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c*vp/(f0*vrayleigh); thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '--'; i=i+1;
 
 % Plot FFT.
 if(do_fft)
@@ -306,100 +306,27 @@ if(do_comparefft)
   end
 end
 
+if(do_mosaic)
+  error('do not do this anymore please this is ugly');
+  name_fig = ['snapshot_mosaic'];
+  topoMosaic;
+  figpath_mosaic = [thisFolder, name_fig];
+  customSaveFig(fmosaic, figpath_mosaic, {'fig', 'eps'}, 9999);
+end
+
 % move produced figures to thesis
 disp(['[] Starting to move Figures to thesis folder.']);
 system(['cp ', figfieldpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
 system(['cp ', figspectpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
 system(['cp ', figspectdiffpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
-
-for i=1:numel(OFDs)
-  system(['cp ', OFDs{i},filesep,'image0000005.jpg /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/snap_',TAGS{i},'.jpg']);
-end
-
-
-
-
-
-function [labels] = add_labels_subplots_local(figure_handle, list_of_axes, scale_factor, offset, xzshift)
-  if(not(exist('scale_factor', 'var')))
-    scale_factor = 1;
-  end
-  if(not(exist('offset', 'var')))
-    offset = 0;
-  end
-  if(not(exist('xzshift', 'var')))
-    xzshift = [1,1]*0;
-  end
-  
-%   labtype = 'roman'; % a), b), ...
-  labtype = 'numeric'; % 1), 2), ...
-  
-%   children = figure_handle.Children;
-%   
-%   list_of_axes = [];
-  AX_leftCoordinate = [];
-  AX_topCoordinate = [];
-%   c = 1;
-  for c=1:numel(list_of_axes)
-%     if(strcmp(class(children(i)),'matlab.graphics.axis.Axes'))
-%       list_of_axes = [list_of_axes, children(i)];
-      AX_leftCoordinate(c) = list_of_axes(c).Position(1); % left
-  %     list_of_axes_y(c) = list_of_axes(c).Position(2); % bottom
-      AX_topCoordinate(c) = sum(list_of_axes(c).Position([2,4])); % top
-%       c = c+1;
-%     end
-  end
-% %   list_of_axes'
-% 
-%   % Sort from top to bottom first.
-%   [~, isort_y] = sort(AX_topCoordinate, 'descend');
-%   list_of_axes = list_of_axes(isort_y);
-%   AX_leftCoordinate = AX_leftCoordinate(isort_y);
-%   AX_topCoordinate = AX_topCoordinate(isort_y);
-% %   list_of_axes'
-% 
-%   % Find axes which have same y but different x, and sort them left to right.
-%   isort_x = 1:numel(list_of_axes);
-%   unique_top_coords = unique(AX_topCoordinate);
-%   for tt=1:numel(unique_top_coords)
-%     original_ids = find(AX_topCoordinate==unique_top_coords(tt));
-%     x_to_sort = AX_leftCoordinate(AX_topCoordinate==unique_top_coords(tt));
-%     [~, x_sorted_ids] = sort(x_to_sort);
-%     isort_x(original_ids) = original_ids(x_sorted_ids);
-%   end
-%   list_of_axes = list_of_axes(isort_x);
-%   AX_leftCoordinate = AX_leftCoordinate(isort_x);
-%   AX_topCoordinate = AX_topCoordinate(isort_x);
-% %   list_of_axes'
-%   
-  % Prepare size of annotations.
-  set(figure_handle,'units','pixels');
-  figsiz = get(figure_handle, 'Position');
-  set(figure_handle,'units','normalized');
-%   hsiz = 0.025; % proportion
-  hsiz = 0.03*scale_factor; % proportion
-%   hsiz = 0.035; % proportion
-  vsiz = hsiz*figsiz(3)/figsiz(4);
-
-  % Create annotations.
-  labels = [];
-  for i=1:numel(list_of_axes)
-    switch(labtype)
-      case 'roman'
-        lab = [char(96+offset+i),')'];
-      case 'numeric'
-        lab = ['S',num2str(offset+i)];
-      otherwise
-        error([' label type unknown']);
-    end
-
-    labels(i) = annotation('textbox',[min(AX_leftCoordinate(i)+xzshift(1),1), min(AX_topCoordinate(i)-vsiz+xzshift(2),1), hsiz, vsiz], ...
-                          'String',lab, ...
-                          'FitBoxToText', 'off', ...
-                          'color', 'k', ...
-                          'backgroundcolor', 'w', ...
-                          'interpreter', 'latex', ...
-                          'horizontalalignment', 'center', ...
-                          'linewidth', get(list_of_axes(i),'linewidth')*0.8);
+if(do_mosaic)
+  system(['cp ', figpath_mosaic, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/']);
+else
+  for i=1:numel(OFDs)
+    system(['cp ', OFDs{i},filesep,'image0000005.jpg /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/snap_',TAGS{i},'.jpg']);
   end
 end
+
+
+
+
