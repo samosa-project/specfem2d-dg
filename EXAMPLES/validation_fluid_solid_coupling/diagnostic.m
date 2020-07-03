@@ -19,14 +19,18 @@ addpath(genpath('../../utils_new'));
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES';
-OFD='OUTPUT_FILES_LNS_S2F_plotvz';
-% OFD='OUTPUT_FILES_LNS_F2S_plotvz';
+% OFD='OUTPUT_FILES_LNS_S2F_plotvz';
+OFD='OUTPUT_FILES_LNS_F2S_plotvz';
 
-% Plots?
 inline1_table0 = 1;
 plot_timeseries = 0;
 normalise_ylims = 0;
 
+classical1_zhang0 = 1; % theoretical values choice
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Setup.                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Stations' geometry.
 th_separation = 20; % we expect stations to be separated by 20 [m] across the interface
 breakOnWrongSeparation = 0; % break script if stations are not rightly spaced?
@@ -47,7 +51,7 @@ disp(['**************** ', OFD, ' ****************']);
 reportname = [OFD,'_report'];
 if(exist(reportname,'file'))
   delete(reportname);
-  disp(['> Deleted existing previous report.']);
+  disp(['[',mfilename,', INFO] Deleted existing previous report.']);
 end
 diary(reportname); % Start logging to file.
 
@@ -58,72 +62,25 @@ sourcefile = [OFD,'input_source'];
 
 % Test method used.
 if(not(readExampleFiles_extractParam(parfile,'USE_DISCONTINUOUS_METHOD','bool')))
-  error(['must use DG, set ''USE_DISCONTINUOUS_METHOD = .true.''']);
+  error(['[',mfilename,'] Must use DG, set ''USE_DISCONTINUOUS_METHOD = .true.''']);
 end
-
-% Test models used.
+% Test models and get parameters.
 default_model = strcmp(readExampleFiles_extractParam(parfile,'MODEL','string'),'default');
 isobaric_model = not(readExampleFiles_extractParam(parfile,'USE_ISOTHERMAL_MODEL','bool'));
 if(not(default_model & isobaric_model))
-  error('DG model must be default isobaric, set ''MODEL = default'' and ''USE_ISOTHERMAL_MODEL = .false.''');
+  error('[',mfilename,'] DG model must be default isobaric, set ''MODEL = default'' and ''USE_ISOTHERMAL_MODEL = .false.''');
 end
+[rho_1, vp_1, Z_1, rho_2, vp_2, vs_2, Z_2P, Z_2S] = grab_models(parfile); % Get impedances from the models.
+[s2f1_or_f2s0, fig_title, f0] = check_test_case(parfile, sourcefile); % Load interface (should be z=0), source altitude, frequency of the source. Return deduced test case and corresponding title.
+spatial_wavelength_f = vp_1/f0; % maybe will be useful
+spatial_wavelength_s = vp_2/f0; % maybe will be useful
 
-% Get impedances from the models.
-rho_f = readExampleFiles_extractParam(parfile,'surface_density','float');
-vp_f = readExampleFiles_extractParam(parfile,'sound_velocity','float');
-Z_f = rho_f*vp_f;
-[~, mas]=readExampleFiles_extractParfileModels(parfile);
-if(not(numel(mas)==2))
-  error(['Must use exactly 2 models (one for air and one for solid).']);
-end
-mas(readExampleFiles_extractParam(parfile,'id_region_DG','int'))=[]; % remove dg model
-rho_s = mas.rho;
-vp_s = mas.vp;
-Z_s = rho_s*vp_s;
-
-% Load interface (should be z=0), source altitude, frequency of the source.
-zinterface = readExampleFiles_extractParam(parfile,'coord_interface','float');
-zs = readExampleFiles_extractParam(sourcefile,'zs','float');
-if(numel(zs)>1)
-  % If many sources found (in the case of S2F coupling), check if all same altitude and keep only one.
-  if(numel(unique(zs))==1)
-    zs = zs(1);
-  else
-    error(['Sources must be at same altitude.']);
-  end
-end
-f0 = readExampleFiles_extractParam(sourcefile,'f0','float');
-if(numel(f0)>1)
-  % If many f0 found (in the case of S2F coupling), check if all same and keep only one.
-  if(numel(unique(f0))==1)
-    f0 = f0(1);
-  else
-    error(['Sources must have same frequency.']);
-  end
-end
-spatial_wavelength_f = vp_f/f0; % maybe will be useful
-spatial_wavelength_s = vp_s/f0; % maybe will be useful
-% Distinguish type of coupling based on source altitude.
-if(zs>zinterface)
-  % source is above ground, coupling is thus fluid to solid
-  s2f1_or_f2s0 = 0;
-  fig_title = ['F2S'];
-else
-  if(zs==zinterface)
-    error(['source must not be on interface']);
-  end
-  % source is above ground, coupling is thus solid to fluid
-  s2f1_or_f2s0 = 1;
-  fig_title = ['S2F'];
-end
 disp([' ']);
-disp(['> ',fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),'.']);
+disp(['> ',fig_title, ' coupling, Z_s = ',num2str(Z_2P), ', Z_f = ',num2str(Z_1),'.']);
 
-% Load stations.
-STATIONS = importdata([OFD,'STATIONS']);
-STATPOS = STATIONS.data(:,1:2);
-nstat = size(STATIONS.data,1);
-station_ids = 1:nstat;
+% Load stations and synthetics.
+STATIONS = importdata([OFD,'STATIONS']); STATPOS = STATIONS.data(:,1:2);
+nstat = size(STATIONS.data,1); station_ids = 1:nstat;
 % Match station couples.
 % disp(['[] (ID, x_s, z_s):']); disp([(1:size(STATPOS,1))',STATPOS]); pause
 disp(['> Association of stations by couples.']);
@@ -132,39 +89,10 @@ couples = [[(1:3)',(4:6)']; [(7:9)',(10:12)']];
 distance_between_each_couple = sum((STATPOS(couples(:,1),:) - STATPOS(couples(:,2),:)).^2,2).^0.5;
 if(breakOnWrongSeparation)
   if(any(abs(distance_between_each_couple-th_separation)>1e-9))
-    error(['[,ERROR] Some station couple is separated by more than ',num2str(th_separation),' [m].']);
+    error(['[',mfilename,',ERROR] Some station couple is separated by more than ',num2str(th_separation),' [m].']);
   end
 end
-
-% Prepare synthetics loading.
-subsample = 0; wanted_dt = -1; % do not subsample synthetics
-type_display = readExampleFiles_extractParam(parfile,'seismotype','int');
-[extension, ~] = getUnknowns(type_display, 'BXZ');
-% Load synthetics.
-for istat = 1:nstat
-  istatglob = station_ids(istat);
-  [data, nsamples] = readAndSubsampleSynth(OFD, istatglob, 'BXZ', extension, subsample, wanted_dt, istatglob);
-  Ztime(istat, 1:nsamples) = data(:, 1)';
-  Zamp(istat, 1:nsamples) = data(:, 2)';
-  [data, nsamples] = readAndSubsampleSynth(OFD, istatglob, 'BXX', extension, subsample, wanted_dt, istatglob);
-  Xtime(istat, 1:nsamples) = data(:, 1)';
-  Xamp(istat, 1:nsamples) = data(:, 2)';
-%   max(abs(Xamp(istat,:)-Zamp(istat,:)))
-  
-  if(all(abs(Xamp(istat,1:nsamples)-Zamp(istat,1:nsamples))==0))
-    % channel X is exactly channel Z, this means we have loaded a DG station
-    % thus save either one, that is pressure
-    time(istat, 1:nsamples) = Xtime(istat, 1:nsamples);
-    amp(istat, 1:nsamples) = Xamp(istat, 1:nsamples);
-  else
-    % else, we have loaded a v station
-    % thus, save velocity norm
-    time(istat, 1:nsamples) = Xtime(istat, 1:nsamples);
-    amp(istat, 1:nsamples) = (Xamp(istat, 1:nsamples).^2 + Zamp(istat, 1:nsamples).^2).^0.5;
-  end
-  
-  clear('Xtime', 'Xamp', 'Ztime', 'Zamp');
-end
+[time, amp] = load_synthetics(OFD, parfile, station_ids); % Load synthetics.
 
 % If plot asked, plot time series.
 if(plot_timeseries)
@@ -200,9 +128,9 @@ for i=1:size(couples,1)
     ID_inc = find(z_of_this_couple==max(z_of_this_couple));
     ID_out = find(z_of_this_couple==min(z_of_this_couple));
   end
-  incoming_reflected = amp(correspondingIDs(ID_inc),:);
+  incoming_reflected_v = amp(correspondingIDs(ID_inc),:);
   incoming_reflected_t = time(correspondingIDs(ID_inc),:);
-  transmitted = amp(correspondingIDs(ID_out),:);
+  transmitted_v = amp(correspondingIDs(ID_out),:);
   transmitted_t = time(correspondingIDs(ID_out),:);
 %   incoming_reflected = abs(incoming_reflected); % work in magnitude
 %   transmitted = abs(transmitted); % work in magnitude
@@ -219,13 +147,18 @@ for i=1:size(couples,1)
   end
   % Obtain theoretical values.
   if(s2f1_or_f2s0)
-    [R_s2f, T_s2f] = ReflexionTransmissionCoefs(Z_s, Z_f, incident_angle, snells(vp_s, vp_f, incident_angle));
+    if(classical1_zhang0)
+      [R_s2f, T_s2f] = ReflexionTransmissionCoefs(Z_2P, Z_1, incident_angle, snells(vp_2, vp_1, incident_angle));
+    else
+      [R_s2f, T_s2f] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, incident_angle);
+      T_s2f = sum(T_s2f); % assume we are measuring both the P and the S
+    end
     R_s2f = abs(R_s2f); % work in magnitude only
     % Rationale:
     % pt = T*pi, pr = R*pi
     % pt = Zs*vi => pt = T*Zs*vi => vi/pt = 1/(T*Zs)
     % (vi+vr) = (1+R)*vi => (vi+vr)/pt = T*Zs/(1+R)
-    Vi_over_Pt_th = 1/(T_s2f*Z_f); % v incident over p transmitted
+    Vi_over_Pt_th = 1/(T_s2f*Z_1); % v incident over p transmitted
   %   ViVr_over_Pt = (1+R_s2f)/(T_s2f*Z_s); % If too close to interface, v transmitted over (p incident + p reflected)
 %     disp(['CONVERSION COEFFICIENT NOT SURE']);
 %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_s2f), ', R = ',num2str(R_s2f), '.']);
@@ -235,12 +168,18 @@ for i=1:size(couples,1)
     localV_over_P_th = Vi_over_Pt_th;
     localR = R_s2f;
   else
-    [R_f2s, T_f2s] = ReflexionTransmissionCoefs(Z_f, Z_s, incident_angle, snells(vp_f, vp_s, incident_angle));
+    if(classical1_zhang0)
+      [R_f2s, T_f2s] = ReflexionTransmissionCoefs(Z_1, Z_2P, incident_angle, snells(vp_1, vp_2, incident_angle));
+    else
+      [R_f2s, T_f2s] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, i_inc);
+      T_s2f = sum(T_s2f); % assume we are measuring both the P and the S
+    end
+    
     % Rationale:
     % pt = Tpi, pr=Rpi
     % pt=vtZs => vtZs=Tpi => vt/pi=T/Zs
     % (pi+pr) = (1+R)pi => vt/(pi+pr)=T/(Zs*(1+R))
-    Vt_over_Pi_th = T_f2s/Z_f; % v transmitted over p incident
+    Vt_over_Pi_th = T_f2s/Z_1; % v transmitted over p incident
   %   Vt_over_PiPr_th = T_f2s/(Z_s*(1+R_f2s)); % if too close to interface, v transmitted over (p incident + p reflected)
 %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_f2s), ', R = ',num2str(R_f2s), '.']);
 %     spatial_wavelength = spatial_wavelength_f;
@@ -252,14 +191,14 @@ for i=1:size(couples,1)
   
   maxit = 50;
   % Find incoming wave.
-  inc_peak_time = findFirstPeak(incoming_reflected_t,incoming_reflected);
-  inc_peak = incoming_reflected(incoming_reflected_t==inc_peak_time);
+  inc_peak_time = findFirstPeak(incoming_reflected_t, incoming_reflected_v);
+  inc_peak = incoming_reflected_v(incoming_reflected_t==inc_peak_time);
   % Find transmitted wave.
-  transm_peak_time = findFirstPeak(transmitted_t,transmitted);
-  transm_peak = transmitted(transmitted_t==transm_peak_time);
+  transm_peak_time = findFirstPeak(transmitted_t, transmitted_v);
+  transm_peak = transmitted_v(transmitted_t==transm_peak_time);
   % Find reflected wave. Method below assumes there is exactly two peaks in the signal (tries to find 'first' peak of flipped array).
-  refl_peak_time = findFirstPeak(fliplr(incoming_reflected_t),fliplr(incoming_reflected), localR*0.6, 2, maxit);
-  refl_peak = incoming_reflected(incoming_reflected_t==refl_peak_time);
+  refl_peak_time = findFirstPeak(fliplr(incoming_reflected_t),fliplr(incoming_reflected_v), localR*0.6, 2, maxit);
+  refl_peak = incoming_reflected_v(incoming_reflected_t==refl_peak_time);
   
   % Obtain experimental values.
   if(s2f1_or_f2s0)
@@ -294,13 +233,10 @@ for i=1:size(couples,1)
 
   % Display.
   if(inline1_table0)
-  %   disp(['@z=+/-',sprintf(format_positions,ztotest),', TRANSMISSION: ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, theoretical value = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
-    disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
-    disp(['    > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(time_format,inc_peak_time),'s.)']);
-    disp(['    > (t=',sprintf(time_format,transm_peak_time),'s) T',fig_title,'_th = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, T',fig_title,' = ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
-  %     disp(['@z=+/-',sprintf(format_positions,ztotest),', REFLEXION:    ',roveriname,' = ',sprintf(format_values,RoverI),'       , theoretical value = ',sprintf(format_values,R),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-R)/abs(R)),'%.'])
-    disp(['    > (t=',sprintf(time_format,refl_peak_time),'s) R',fig_title,'_th = ',sprintf(format_values,localR),'       , R',fig_title,' = ',roveriname,' = ',sprintf(format_values,RoverI),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR)/abs(localR)),'%.'])
-  %   end
+%     disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
+    disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(time_format,inc_peak_time),'s.)']);
+    disp(['  > (t=',sprintf(time_format,transm_peak_time),'s) T',fig_title,'_th = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, T',fig_title,' = ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.']);
+    disp(['  > (t=',sprintf(time_format,refl_peak_time),'s) R',fig_title,'_th = ',sprintf(format_values,localR),'       , R',fig_title,' = ',roveriname,' = ',sprintf(format_values,RoverI),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR)/abs(localR)),'%.']);
   end
   
   disp(' ');
