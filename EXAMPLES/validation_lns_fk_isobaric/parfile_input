@@ -35,7 +35,7 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 8000
+NSTEP                           = 4500
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 3e-2
 
@@ -160,9 +160,9 @@ REMOVE_STF_INITIAL_DISCONTINUITY=.false.         # Only used if USE_TRICK_FOR_BE
 # FOR THIS TEST CASE, SEE [Brissaud et al., 2016, Section 5.2].
 TYPE_FORCING                    = 1
 main_spatial_period             = 0. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2,4.
-main_time_period                = 60. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
+main_time_period                = 5. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
 forcing_initial_loc             = 0. # Self-explanatory. Unit: m. Used for TYPE_FORCING=2,4.
-forcing_initial_time            = 55. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
+forcing_initial_time            = 10. # Self-explanatory. Unit: s. Used for TYPE_FORCING=1,2,3,4.
 FORCING_DG_FACTOR               = 1.
 
 #---------------------------------------------------------------------#
