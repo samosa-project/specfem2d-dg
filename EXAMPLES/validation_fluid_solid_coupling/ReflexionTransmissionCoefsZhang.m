@@ -1,5 +1,10 @@
 
 function [R, T] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, i_inc)
+  % Coefficients from Zhang (2018).
+  % Zhang, G., Hao, C., & Yao, C. (2018). Analytical study of the reflection and transmission coefficient of the submarine interface. Acta Geophysica, 66(4), 449–460. https://doi.org/10.1007/s11600-018-0153-y
+  
+  % Conversion from fluid P to solid S is strangely low...
+  
   normalise = 0; % add the sqrt() factor to transmissions
   if(s2f1_or_f2s0)
     R = 0;

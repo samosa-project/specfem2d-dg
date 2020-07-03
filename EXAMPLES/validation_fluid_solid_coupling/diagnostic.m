@@ -19,8 +19,8 @@ addpath(genpath('../../utils_new'));
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES';
-% OFD='OUTPUT_FILES_LNS_S2F_plotvz';
-OFD='OUTPUT_FILES_LNS_F2S_plotvz';
+OFD='OUTPUT_FILES_LNS_S2F_plotvz';
+% OFD='OUTPUT_FILES_LNS_F2S_plotvz';
 
 inline1_table0 = 1;
 plot_timeseries = 0;
@@ -28,7 +28,7 @@ debug_fig = 0;
 summary_fig = 1;
 normalise_ylims = 0;
 
-classical1_zhang0 = 0; % theoretical values choice
+classical1_zhang0 = 1; % theoretical values choice
 
 mindelayincrefl = 0.01;
 
@@ -90,7 +90,7 @@ STATIONS = importdata([OFD,'STATIONS']); STATPOS = STATIONS.data(:,1:2);
 nstat = size(STATIONS.data,1); station_ids = 1:nstat;
 % Match station couples.
 % disp(['[] (ID, x_s, z_s):']); disp([(1:size(STATPOS,1))',STATPOS]); pause
-disp(['> Association of stations by couples.']);
+% disp(['> Association of stations by couples.']);
 couples = [[(1:3)',(4:6)']; [(7:9)',(10:12)']];
 % check distance between each station couple
 distance_between_each_couple = sum((STATPOS(couples(:,1),:) - STATPOS(couples(:,2),:)).^2,2).^0.5;
@@ -155,7 +155,7 @@ for i=1:size(couples,1)
   
   % Compute experimental ratios.
   if(s2f1_or_f2s0)
-%     error('not impl');
+    % SOLID-TO-FLUID
     incoming_reflected_vx = squeeze(amp(1, correspondingIDs(ID_inc),:)); % solid waves
     incoming_reflected_vz = squeeze(amp(2, correspondingIDs(ID_inc),:)); % solid waves
     incoming_reflected_t = time(correspondingIDs(ID_inc),:);
@@ -180,22 +180,29 @@ for i=1:size(couples,1)
       [transmitted_vp, transmitted_vs] = vxz2vps(transmitted_vx, transmitted_vz, incident_angle, i2, j2);
       
       if(debug_fig); do_debug_figure;end
+    end
+  end
 
-      if(summary_fig)
-        axes(tightAxes(mapta(i)));
-        [vang, vmag] = cart2pol(transmitted_vx, transmitted_vz);
-        scatter(vang*180/pi, vmag*facmag, 50, transmitted_t, 'filled', 'displayname', ['ground velocity [',unit,']']); hold on;
-        colormaps_fromPython('hsv', 1);
-        plot((incident_angle*180/pi-90)*[1,1],ylim, 'displayname', '$n_2$');
-        plot((incident_angle*180/pi-90-i2*180/pi)*[1,1],ylim, ':', 'displayname', '$i_2$');
-        plot((incident_angle*180/pi-90-(j2*180/pi-90))*[1,1],ylim, ':', 'displayname', '$\left(j_2-90^\circ\right)$');
-        if(ismember(mapta(i),[1,2]))
-          title(['Incidence Angle = $',num2str(incident_angle*180/pi),'^\circ$']);
-        end
-        if(ismember(mapta(i),[5,6]))
-          xlabel(['solid angle anti-clockwise from horizontal [$^\circ$]']);
-        end
-      end
+  if(summary_fig)
+    if(s2f1_or_f2s0)
+      vx = -incoming_reflected_vx; % adjust sign for normal
+      vz = -incoming_reflected_vz;
+    else
+      vx = transmitted_vx;
+      vz = transmitted_vz;
+    end
+    axes(tightAxes(mapta(i)));
+    [vang, vmag] = cart2pol(vx, vz);
+    scatter(vang*180/pi, vmag*facmag, 50, transmitted_t, 'filled', 'displayname', ['ground velocity [',unit,']']); hold on;
+    colormaps_fromPython('hsv', 1);
+    plot((incident_angle*180/pi-90)*[1,1],ylim, 'displayname', '$n_2$');
+    plot((incident_angle*180/pi-90-i2*180/pi)*[1,1],ylim, ':', 'displayname', '$i_2$');
+    plot((incident_angle*180/pi-90-(j2*180/pi-90))*[1,1],ylim, ':', 'displayname', '$\left(j_2-90^\circ\right)$');
+    if(ismember(mapta(i),[1,2]))
+      title(['Incidence Angle = $',num2str(incident_angle*180/pi),'^\circ$']);
+    end
+    if(ismember(mapta(i),[5,6]))
+      xlabel(['solid angle anti-clockwise from horizontal [$^\circ$]']);
     end
   end
   
@@ -203,40 +210,18 @@ for i=1:size(couples,1)
   if(s2f1_or_f2s0)
     if(classical1_zhang0)
       [R_th, T_th] = ReflexionTransmissionCoefs(Z_2P, Z_1, incident_angle, snells(vp_2, vp_1, incident_angle));
+      PoV_th = T_th*Z_1;
+      localT_th_name = 'Pt/Vi';
+      localR_th_name = 'Vr/Vi';
     else
       [R_th, T_th] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, incident_angle);
       T_th = sum(T_th); % assume we are measuring both the P and the S
     end
-    R_th = abs(R_th); % work in magnitude only
-    % Rationale:
-    % pt = T*pi, pr = R*pi
-    % pt = Zs*vi => pt = T*Zs*vi => vi/pt = 1/(T*Zs)
-    % (vi+vr) = (1+R)*vi => (vi+vr)/pt = T*Zs/(1+R)
-%     Vi_over_Pt_th = 1/(T_s2f*Z_1); % v incident over p transmitted
-    Pt_over_Vi_th = T_th*Z_1; % p transmitted over v incident
-  %   ViVr_over_Pt = (1+R_s2f)/(T_s2f*Z_s); % If too close to interface, v transmitted over (p incident + p reflected)
-%     disp(['CONVERSION COEFFICIENT NOT SURE']);
-%     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_s2f), ', R = ',num2str(R_s2f), '.']);
-%     spatial_wavelength = spatial_wavelength_s;
-%     localT_th = Vi_over_Pt_th; localT_th_name = 'Vi/Pt';
-    T_th = Pt_over_Vi_th;
-    R_th = R_th;
-    localT_th_name = 'Pt/Vi';
-    localR_th_name = 'Vr/Vi';
   else
     % FLUID-TO-SOLID
     if(classical1_zhang0)
       [R_th, T_th] = ReflexionTransmissionCoefs(Z_1, Z_2P, incident_angle, snells(vp_1, vp_2, incident_angle));
-      % Rationale:
-      % pt = Tpi, pr=Rpi
-      % pt=vtZs => vtZs=Tpi => vt/pi=T/Zs
-      % (pi+pr) = (1+R)pi => vt/(pi+pr)=T/(Zs*(1+R))
-      Vt_over_Pi_th = T_th/Z_1; % v transmitted over p incident
-    %   Vt_over_PiPr_th = T_f2s/(Z_s*(1+R_f2s)); % if too close to interface, v transmitted over (p incident + p reflected)
-  %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_f2s), ', R = ',num2str(R_f2s), '.']);
-  %     spatial_wavelength = spatial_wavelength_f;
-      T_th = Vt_over_Pi_th;
-      R_th = R_th;
+      VoP_th = T_th/Z_1;
       localT_th_name = 'Vt/Pi';
       localR_th_name = 'Pr/Pi';
     else
@@ -254,13 +239,21 @@ for i=1:size(couples,1)
     [T_peak_t, T_peak_v] = findFirstPeak(transmitted_t, transmitted_v); % Find transmitted wave.
     [R_peak_t, R_peak_v] = findFirstPeak(incoming_reflected_t(incoming_reflected_t>I_peak_t+mindelayincrefl),incoming_reflected_v(incoming_reflected_t>I_peak_t+mindelayincrefl)); % Find reflected wave.
     if(R_peak_t<I_peak_t); error(['good job, you found the reflection before the incident wave']); end
-    T_exp = T_peak_v/I_peak_v;
     R_exp = R_peak_v/I_peak_v;
+    
     %
   %     disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
     disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(tfmt,I_peak_t),'s.)']);
-    disp(['  > (t=',sprintf(tfmt,T_peak_t),'s) T^{',fig_title,'}_th = ',sprintf(vfmt,T_th),' m/s/Pa, T',fig_title,' = ',localT_th_name,' = ',sprintf(vfmt,T_exp),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(T_exp-T_th)/abs(T_th)),'%.']);
-    disp(['  > (t=',sprintf(tfmt,R_peak_t),'s) R^{',fig_title,'}_th = ',sprintf(vfmt,R_th),'       , R',fig_title,' = ',localR_th_name,' = ',sprintf(vfmt,R_exp),'       , relative error = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+    if(s2f1_or_f2s0)
+      PoV_exp = T_peak_v/I_peak_v;
+      R_exp = -R_exp; % for this case, flip sign because wave changes direction
+      disp(['    > T^{f->s}_th = ',sprintf(vfmt,PoV_th),' | ',localT_th_name,' = ',sprintf(vfmt,PoV_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(PoV_exp-PoV_th)/abs(PoV_th)),'%.']);
+      disp(['    > R^{f}_th    = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+    else
+      VoP_exp = T_peak_v/I_peak_v;
+      disp(['    > T^{f->s}_th = ',sprintf(vfmt,VoP_th),' | ',localT_th_name,' = ',sprintf(vfmt,VoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VoP_exp-VoP_th)/abs(VoP_th)),'%.']);
+      disp(['    > R^{f}_th    = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+    end
   else
     if(s2f1_or_f2s0)
       %error()
@@ -269,23 +262,19 @@ for i=1:size(couples,1)
       [~, R_peak_v] = findFirstPeak(incoming_reflected_t(incoming_reflected_t>I_peak_t+mindelayincrefl),incoming_reflected_v(incoming_reflected_t>I_peak_t+mindelayincrefl)); % Find reflected wave.
       R_exp = R_peak_v/I_peak_v;
       
-%       [TP_peak_t, TP_peak_v] = findFirstPeak(transmitted_t, transmitted_vp); % Find transmitted P-wave.
-%       try [TS_peak_t, TS_peak_v] = findFirstPeak(transmitted_t, transmitted_vs); catch TS_peak_v=max(abs(transmitted_vs)); TS_peak_t=0; end % Find transmitted S-wave.
-      TP_peak_v = range(transmitted_vp); % transmitted P-wave amplitude
-      TS_peak_v = range(transmitted_vs); % transmitted S-wave amplitude
+      [TP_peak_t, TP_peak_v] = findFirstPeak(transmitted_t, transmitted_vp); % Find transmitted P-wave.
+      try [TS_peak_t, TS_peak_v] = findFirstPeak(transmitted_t, transmitted_vs); catch TS_peak_v=max(abs(transmitted_vs)); TS_peak_t=0; end % Find transmitted S-wave.
       VPoP_exp = TP_peak_v/I_peak_v;
       VSoP_exp = TS_peak_v/I_peak_v;
       
-      disp(['  > R_{f}     = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
-      disp(['  > T_{f->Pw} = ',sprintf(vfmt,T_th(1)),' | ',localTP_th_name,' = ',sprintf(vfmt,VPoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VPoP_exp-VPoP_th)/abs(VPoP_th)),'%.']);
-      disp(['  > T_{f->Sw} = ',sprintf(vfmt,T_th(2)),' | ',localTS_th_name,' = ',sprintf(vfmt,VSoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VSoP_exp-VSoP_th)/abs(VSoP_th)),'%.']);
+      disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(tfmt,I_peak_t),'s.)']);
+      disp(['    > R_{f}     = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+      disp(['    > T_{f->Pw} = ',sprintf(vfmt,VPoP_th),' | ',localTP_th_name,' = ',sprintf(vfmt,VPoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VPoP_exp-VPoP_th)/abs(VPoP_th)),'%.']);
+      disp(['    > T_{f->Sw} = ',sprintf(vfmt,VSoP_th),' | ',localTS_th_name,' = ',sprintf(vfmt,VSoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VSoP_exp-VSoP_th)/abs(VSoP_th)),'%.']);
     end
   end
   disp(' ');
-  % TODO: save agreements.
 end
-
-% TODO: plot of saved agreements.
 
 if(summary_fig)
   linkaxes(tightAxes,'xy');
@@ -296,7 +285,3 @@ if(summary_fig)
 end
 
 diary off; % End logging.
-
-% Function for Snell's law
-
-% Function for reflexion and transmission coefficients computation.
