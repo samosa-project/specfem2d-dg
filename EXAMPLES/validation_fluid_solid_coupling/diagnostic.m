@@ -19,20 +19,25 @@ addpath(genpath('../../utils_new'));
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES';
-OFD='OUTPUT_FILES_LNS_S2F_plotvz';
-% OFD='OUTPUT_FILES_LNS_F2S_plotvz';
+% OFD='OUTPUT_FILES_LNS_S2F_plotvz';
+OFD='OUTPUT_FILES_LNS_F2S_plotvz';
 
 inline1_table0 = 1;
 plot_timeseries = 0;
+debug_fig = 0;
+summary_fig = 1;
 normalise_ylims = 0;
 
-classical1_zhang0 = 1; % theoretical values choice
+classical1_zhang0 = 0; % theoretical values choice
 
 mindelayincrefl = 0.01;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup.                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format_positions = ['%',num2str(floor(log10(max(abs(STATPOS(:,2)))))+6)','.1f'];
+vfmt = ['%11.4e'];
+tfmt = ['%.4f'];
 % Stations' geometry.
 th_separation = 20; % we expect stations to be separated by 20 [m] across the interface
 breakOnWrongSeparation = 0; % break script if stations are not rightly spaced?
@@ -101,13 +106,17 @@ if(plot_timeseries)
   plotOneByOne(time, squeeze(amp(1,:,:)), station_ids, STATPOS(:,1), STATPOS(:,2), normalise_ylims, fig_title, '$\delta p$ [Pa] or $v_x$ [m/s]');
 end
 
-% format_positions = ['%',num2str(floor(log10(max(abs(STATPOS(:,2)))))+6)','.1f'];
-val_fmt = ['%11.4e'];
-tim_fmt = ['%.4f'];
 
 % Loop over couples of stations and compute ratios.
 disp([' ']);
 disp(['> Computing ratios.']);
+
+if(summary_fig)
+  figure('units','normalized','outerposition',[0,0,1,1]);
+  tightAxes = tight_subplot(3, 2, [0.03,0.06], [0.11,0.07], [0.08, 0.01]);
+  mapta = [1,3,5,2,4,6];
+  facmag=1e6; unit='nm/s';
+end
 
 for i=1:size(couples,1)
 % for i=1
@@ -141,6 +150,8 @@ for i=1:size(couples,1)
   else
     error(['at exactly ',num2str(triangle_xmin), ' or if on either side of ',num2str(triangle_xmin), ', cannot compute']);
   end
+  i2 = snells(vp_1, vp_2, incident_angle); % deduce i2
+  j2 = snells(vp_1, vs_2, incident_angle); % deduce j2
   
   % Compute experimental ratios.
   if(s2f1_or_f2s0)
@@ -148,11 +159,14 @@ for i=1:size(couples,1)
     incoming_reflected_vx = squeeze(amp(1, correspondingIDs(ID_inc),:)); % solid waves
     incoming_reflected_vz = squeeze(amp(2, correspondingIDs(ID_inc),:)); % solid waves
     incoming_reflected_t = time(correspondingIDs(ID_inc),:);
-    
-    incoming_reflected_v = (incoming_reflected_vx.^2+incoming_reflected_vz.^2).^0.5; % version not allowing to distinguish P from S
-    
     transmitted_v = squeeze(amp(1,correspondingIDs(ID_out),:)); % pressure waves
     transmitted_t = time(correspondingIDs(ID_out),:);
+    if(classical1_zhang0)
+      incoming_reflected_v = (incoming_reflected_vx.^2+incoming_reflected_vz.^2).^0.5; % version not allowing to distinguish P from S
+    else
+      incoming_vp = incoming_reflected_vz; % incoming P-wave is along z axis
+      [reflected_vp, reflected_vs] = vxz2vps(incoming_reflected_vx, incoming_reflected_vz, i2, j2);
+    end
   else
     % FLUID-TO-SOLID
     incoming_reflected_v = squeeze(amp(1, correspondingIDs(ID_inc),:)); % pressure waves
@@ -160,120 +174,126 @@ for i=1:size(couples,1)
     transmitted_vx = squeeze(amp(1,correspondingIDs(ID_out),:)); % solid waves
     transmitted_vz = squeeze(amp(2,correspondingIDs(ID_out),:)); % solid waves
     transmitted_t = time(correspondingIDs(ID_out),:);
-    
-    transmitted_v = (transmitted_vx.^2+transmitted_vz.^2).^0.5; % version not allowing to distinguish P from S
-    
-    i2 = snells(vp_1, vp_2, incident_angle); % deduce i2
-    j2 = snells(vp_1, vs_2, incident_angle); % deduce j2
-    transmitted_vp = sin(i2)*transmitted_vx + cos(i2)*transmitted_vz; % ground velocity along P-wave direction
-    transmitted_vs = cos(j2)*transmitted_vx + sin(j2)*transmitted_vz; % ground velocity 90° from S-wave direction
+    if(classical1_zhang0)
+      transmitted_v = (transmitted_vx.^2+transmitted_vz.^2).^0.5; % version not allowing to distinguish P from S
+    else
+      [transmitted_vp, transmitted_vs] = vxz2vps(transmitted_vx, transmitted_vz, incident_angle, i2, j2);
+      
+      if(debug_fig); do_debug_figure;end
+
+      if(summary_fig)
+        axes(tightAxes(mapta(i)));
+        [vang, vmag] = cart2pol(transmitted_vx, transmitted_vz);
+        scatter(vang*180/pi, vmag*facmag, 50, transmitted_t, 'filled', 'displayname', ['ground velocity [',unit,']']); hold on;
+        colormaps_fromPython('hsv', 1);
+        plot((incident_angle*180/pi-90)*[1,1],ylim, 'displayname', '$n_2$');
+        plot((incident_angle*180/pi-90-i2*180/pi)*[1,1],ylim, ':', 'displayname', '$i_2$');
+        plot((incident_angle*180/pi-90-(j2*180/pi-90))*[1,1],ylim, ':', 'displayname', '$\left(j_2-90^\circ\right)$');
+        if(ismember(mapta(i),[1,2]))
+          title(['Incidence Angle = $',num2str(incident_angle*180/pi),'^\circ$']);
+        end
+        if(ismember(mapta(i),[5,6]))
+          xlabel(['solid angle anti-clockwise from horizontal [$^\circ$]']);
+        end
+      end
+    end
   end
   
   % Obtain theoretical values.
   if(s2f1_or_f2s0)
     if(classical1_zhang0)
-      [R_s2f, T_s2f] = ReflexionTransmissionCoefs(Z_2P, Z_1, incident_angle, snells(vp_2, vp_1, incident_angle));
+      [R_th, T_th] = ReflexionTransmissionCoefs(Z_2P, Z_1, incident_angle, snells(vp_2, vp_1, incident_angle));
     else
-      [R_s2f, T_s2f] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, incident_angle);
-      T_s2f = sum(T_s2f); % assume we are measuring both the P and the S
+      [R_th, T_th] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, incident_angle);
+      T_th = sum(T_th); % assume we are measuring both the P and the S
     end
-    R_s2f = abs(R_s2f); % work in magnitude only
+    R_th = abs(R_th); % work in magnitude only
     % Rationale:
     % pt = T*pi, pr = R*pi
     % pt = Zs*vi => pt = T*Zs*vi => vi/pt = 1/(T*Zs)
     % (vi+vr) = (1+R)*vi => (vi+vr)/pt = T*Zs/(1+R)
 %     Vi_over_Pt_th = 1/(T_s2f*Z_1); % v incident over p transmitted
-    Pt_over_Vi_th = T_s2f*Z_1; % p transmitted over v incident
+    Pt_over_Vi_th = T_th*Z_1; % p transmitted over v incident
   %   ViVr_over_Pt = (1+R_s2f)/(T_s2f*Z_s); % If too close to interface, v transmitted over (p incident + p reflected)
 %     disp(['CONVERSION COEFFICIENT NOT SURE']);
 %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_s2f), ', R = ',num2str(R_s2f), '.']);
 %     spatial_wavelength = spatial_wavelength_s;
 %     localT_th = Vi_over_Pt_th; localT_th_name = 'Vi/Pt';
-    localT_th = Pt_over_Vi_th; localT_th_name = 'Pt/Vi';
-    localR_th = R_s2f; localR_th_name = 'Vr/Vi';
+    T_th = Pt_over_Vi_th;
+    R_th = R_th;
+    localT_th_name = 'Pt/Vi';
+    localR_th_name = 'Vr/Vi';
   else
     % FLUID-TO-SOLID
     if(classical1_zhang0)
-      [R_f2s, T_f2s] = ReflexionTransmissionCoefs(Z_1, Z_2P, incident_angle, snells(vp_1, vp_2, incident_angle));
+      [R_th, T_th] = ReflexionTransmissionCoefs(Z_1, Z_2P, incident_angle, snells(vp_1, vp_2, incident_angle));
+      % Rationale:
+      % pt = Tpi, pr=Rpi
+      % pt=vtZs => vtZs=Tpi => vt/pi=T/Zs
+      % (pi+pr) = (1+R)pi => vt/(pi+pr)=T/(Zs*(1+R))
+      Vt_over_Pi_th = T_th/Z_1; % v transmitted over p incident
+    %   Vt_over_PiPr_th = T_f2s/(Z_s*(1+R_f2s)); % if too close to interface, v transmitted over (p incident + p reflected)
+  %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_f2s), ', R = ',num2str(R_f2s), '.']);
+  %     spatial_wavelength = spatial_wavelength_f;
+      T_th = Vt_over_Pi_th;
+      R_th = R_th;
+      localT_th_name = 'Vt/Pi';
+      localR_th_name = 'Pr/Pi';
     else
-      [R_f2s, T_f2s] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, incident_angle);
-      T_f2s = sum(T_f2s); % assume we are measuring both the P and the S
+      [R_th, T_th] = ReflexionTransmissionCoefsZhang(s2f1_or_f2s0, vp_1, Z_1, vp_2, vs_2, Z_2P, Z_2S, incident_angle);
+      VPSoP_th = T_th/Z_1;
+      VPoP_th = VPSoP_th(1); localTP_th_name = 'VPt/Pi';
+      VSoP_th = VPSoP_th(2); localTS_th_name = 'VSt/Pi';
+      localR_th_name = 'Pr/Pi ';
     end
-    
-    % Rationale:
-    % pt = Tpi, pr=Rpi
-    % pt=vtZs => vtZs=Tpi => vt/pi=T/Zs
-    % (pi+pr) = (1+R)pi => vt/(pi+pr)=T/(Zs*(1+R))
-    Vt_over_Pi_th = T_f2s/Z_1; % v transmitted over p incident
-  %   Vt_over_PiPr_th = T_f2s/(Z_s*(1+R_f2s)); % if too close to interface, v transmitted over (p incident + p reflected)
-%     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_f2s), ', R = ',num2str(R_f2s), '.']);
-%     spatial_wavelength = spatial_wavelength_f;
-    localT_th = Vt_over_Pi_th; localT_th_name = 'Vt/Pi';
-    localR_th = R_f2s; localR_th_name = 'Pr/Pi';
   end
   
-  maxit = 50;
-  % Find incoming wave.
-  inc_peak_time = findFirstPeak(incoming_reflected_t, incoming_reflected_v);
-  inc_peak = incoming_reflected_v(incoming_reflected_t==inc_peak_time);
-  % Find transmitted wave.
-  transm_peak_time = findFirstPeak(transmitted_t, transmitted_v);
-  transm_peak = transmitted_v(transmitted_t==transm_peak_time);
-  % Find reflected wave.
-  refl_peak_time = findFirstPeak(fliplr(incoming_reflected_t),fliplr(incoming_reflected_v), localR_th*0.6, 2, maxit); % Method below assumes there is exactly two peaks in the signal (tries to find 'first' peak of flipped array).
-  refl_peak_time = findFirstPeak(incoming_reflected_t(incoming_reflected_t>inc_peak_time+mindelayincrefl),incoming_reflected_v(incoming_reflected_t>inc_peak_time+mindelayincrefl));
-  if(refl_peak_time<inc_peak_time)
-    error(['good job, you found the reflection before the incident wave']);
-  end
-  refl_peak = incoming_reflected_v(incoming_reflected_t==refl_peak_time);
-  
-  % Obtain experimental values.
-  if(s2f1_or_f2s0)
-    P_over_V_ex = transm_peak/inc_peak; % transmitted is pressure, incoming is velocity
-    expval = P_over_V_ex;
+  % Obtain experimental values and display.
+  if(classical1_zhang0)
+    [I_peak_t, I_peak_v] = findFirstPeak(incoming_reflected_t, incoming_reflected_v); % Find incoming wave.
+    [T_peak_t, T_peak_v] = findFirstPeak(transmitted_t, transmitted_v); % Find transmitted wave.
+    [R_peak_t, R_peak_v] = findFirstPeak(incoming_reflected_t(incoming_reflected_t>I_peak_t+mindelayincrefl),incoming_reflected_v(incoming_reflected_t>I_peak_t+mindelayincrefl)); % Find reflected wave.
+    if(R_peak_t<I_peak_t); error(['good job, you found the reflection before the incident wave']); end
+    T_exp = T_peak_v/I_peak_v;
+    R_exp = R_peak_v/I_peak_v;
+    %
+  %     disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
+    disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(tfmt,I_peak_t),'s.)']);
+    disp(['  > (t=',sprintf(tfmt,T_peak_t),'s) T^{',fig_title,'}_th = ',sprintf(vfmt,T_th),' m/s/Pa, T',fig_title,' = ',localT_th_name,' = ',sprintf(vfmt,T_exp),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(T_exp-T_th)/abs(T_th)),'%.']);
+    disp(['  > (t=',sprintf(tfmt,R_peak_t),'s) R^{',fig_title,'}_th = ',sprintf(vfmt,R_th),'       , R',fig_title,' = ',localR_th_name,' = ',sprintf(vfmt,R_exp),'       , relative error = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
   else
-    % FLUID-TO-SOLID
-    V_over_P_ex = transm_peak/inc_peak; % transmitted is velocity, incoming is pressure
-    expval = V_over_P_ex;
+    if(s2f1_or_f2s0)
+      %error()
+    else
+      [I_peak_t, I_peak_v] = findFirstPeak(incoming_reflected_t, incoming_reflected_v); % Find incoming pressure wave.
+      [~, R_peak_v] = findFirstPeak(incoming_reflected_t(incoming_reflected_t>I_peak_t+mindelayincrefl),incoming_reflected_v(incoming_reflected_t>I_peak_t+mindelayincrefl)); % Find reflected wave.
+      R_exp = R_peak_v/I_peak_v;
+      
+%       [TP_peak_t, TP_peak_v] = findFirstPeak(transmitted_t, transmitted_vp); % Find transmitted P-wave.
+%       try [TS_peak_t, TS_peak_v] = findFirstPeak(transmitted_t, transmitted_vs); catch TS_peak_v=max(abs(transmitted_vs)); TS_peak_t=0; end % Find transmitted S-wave.
+      TP_peak_v = range(transmitted_vp); % transmitted P-wave amplitude
+      TS_peak_v = range(transmitted_vs); % transmitted S-wave amplitude
+      VPoP_exp = TP_peak_v/I_peak_v;
+      VSoP_exp = TS_peak_v/I_peak_v;
+      
+      disp(['  > R_{f}     = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+      disp(['  > T_{f->Pw} = ',sprintf(vfmt,T_th(1)),' | ',localTP_th_name,' = ',sprintf(vfmt,VPoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VPoP_exp-VPoP_th)/abs(VPoP_th)),'%.']);
+      disp(['  > T_{f->Sw} = ',sprintf(vfmt,T_th(2)),' | ',localTS_th_name,' = ',sprintf(vfmt,VSoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VSoP_exp-VSoP_th)/abs(VSoP_th)),'%.']);
+    end
   end
-  RoverI = refl_peak/inc_peak;
-
-%   threshold_1_peak = 0.1; % (* spatial_wavelength)
-%   threshold_2_peaks = 0.5; % (* spatial_wavelength)
-
-%   % Boundary cases.
-%   if(ztotest<threshold_1_peak*spatial_wavelength)
-%     % close enough to boundary, consider double peak (incoming + reflected)
-%     if(f2s0_or_s2f1)
-%       % s2f
-%       localV_over_P_th = ViVr_over_Pt;
-%       voverpname = '(Vi+Vr)/Pt';
-%     else
-%       % f2s
-%       localV_over_P_th = Vt_over_PiPr_th;
-%       voverpname = 'Vt/(Pi+Pr)';
-%     end
-%   elseif(ztotest<threshold_2_peaks*spatial_wavelength)
-%     % far from boundary, but not far enough to separate the two peaks
-%     disp(['@z=+/-',sprintf(format_positions,ztotest),': Skipping this station, because we can neither separate 2 peaks nor consider they form only 1. Incoming spatial wavelength = ',num2str(spatial_wavelength),' m.']);
-%     continue;
-%   else
-%     % okay, change nothing (use first detected peak)
-%   end
-
-  % Display.
-  if(inline1_table0)
-%     disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
-    disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(tim_fmt,inc_peak_time),'s.)']);
-    disp(['  > (t=',sprintf(tim_fmt,transm_peak_time),'s) T',fig_title,'_th = ',sprintf(val_fmt,localT_th),' m/s/Pa, T',fig_title,' = ',localT_th_name,' = ',sprintf(val_fmt,expval),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(expval-localT_th)/abs(localT_th)),'%.']);
-    disp(['  > (t=',sprintf(tim_fmt,refl_peak_time),'s) R',fig_title,'_th = ',sprintf(val_fmt,localR_th),'       , R',fig_title,' = ',localR_th_name,' = ',sprintf(val_fmt,RoverI),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR_th)/abs(localR_th)),'%.']);
-  end
-  
   disp(' ');
   % TODO: save agreements.
 end
 
 % TODO: plot of saved agreements.
+
+if(summary_fig)
+  linkaxes(tightAxes,'xy');
+  set(tightAxes, 'xlim', [-1,1]*180, 'xtick', -180:45:180);
+  set(tightAxes([1:end-2]), 'xticklabel', {});
+  legend('location', 'southoutside', 'NumColumns', 4);
+  colorbar;
+end
 
 diary off; % End logging.
 
