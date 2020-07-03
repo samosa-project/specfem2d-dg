@@ -4,6 +4,7 @@ function [time, amp] = load_synthetics(OFD, parfile, station_ids)
   [extension, ~] = getUnknowns(type_display, 'BXZ');
   % Load synthetics.
   nstat = numel(station_ids);
+  amp = [];
   for istat = 1:nstat
     istatglob = station_ids(istat);
     [data, nsamples] = readAndSubsampleSynth(OFD, istatglob, 'BXZ', extension, subsample, wanted_dt, istatglob);
@@ -16,14 +17,15 @@ function [time, amp] = load_synthetics(OFD, parfile, station_ids)
 
     if(all(abs(Xamp(istat,1:nsamples)-Zamp(istat,1:nsamples))==0))
       % channel X is exactly channel Z, this means we have loaded a DG station
-      % thus save either one, that is pressure
+      % thus save either one (that is pressure) in the first cmponent of amp
       time(istat, 1:nsamples) = Xtime(istat, 1:nsamples);
-      amp(istat, 1:nsamples) = Xamp(istat, 1:nsamples);
+      amp(1, istat, 1:nsamples) = Xamp(istat, 1:nsamples);
     else
       % else, we have loaded a v station
-      % thus, save velocity norm
+      % thus, save FULL velocity (for further treatments)
       time(istat, 1:nsamples) = Xtime(istat, 1:nsamples);
-      amp(istat, 1:nsamples) = (Xamp(istat, 1:nsamples).^2 + Zamp(istat, 1:nsamples).^2).^0.5;
+      amp(1, istat, 1:nsamples) = Xamp(istat, 1:nsamples);
+      amp(2, istat, 1:nsamples) = Zamp(istat, 1:nsamples);
     end
 
     clear('Xtime', 'Xamp', 'Ztime', 'Zamp');
