@@ -10,20 +10,21 @@ clear all;
 clc;
 thisFilePath = mfilename('fullpath'); spl = split(thisFilePath,filesep); spl(end)=[]; spl = join(spl,filesep); thisFilePath = spl{1}; cd(thisFilePath);
 addpath(genpath('../../utils_new'));
-set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-set(0, 'defaultTextFontSize', 24); set(0, 'defaultAxesFontSize', 24);
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
+% set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
+% set(0, 'defaultTextFontSize', 24); set(0, 'defaultAxesFontSize', 24);
+% set(0, 'DefaultTextInterpreter', 'latex');
+% set(0, 'DefaultLegendInterpreter', 'latex');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES';
-% OFD='OUTPUT_FILES_LNS_S2F_plotvz';
-OFD='OUTPUT_FILES_LNS_F2S_plotvcz';
+OFD='OUTPUT_FILES_LNS_S2F_plotvz';
+% OFD='OUTPUT_FILES_LNS_F2S_plotvz';
 
 % Plots?
-plot_timeseries = 1;
+inline1_table0 = 1;
+plot_timeseries = 0;
 normalise_ylims = 0;
 
 % Stations' geometry.
@@ -148,6 +149,7 @@ for istat = 1:nstat
   [data, nsamples] = readAndSubsampleSynth(OFD, istatglob, 'BXX', extension, subsample, wanted_dt, istatglob);
   Xtime(istat, 1:nsamples) = data(:, 1)';
   Xamp(istat, 1:nsamples) = data(:, 2)';
+%   max(abs(Xamp(istat,:)-Zamp(istat,:)))
   
   if(all(abs(Xamp(istat,1:nsamples)-Zamp(istat,1:nsamples))==0))
     % channel X is exactly channel Z, this means we have loaded a DG station
@@ -176,6 +178,7 @@ time_format = ['%.4f'];
 % Loop over couples of stations and compute ratios.
 disp([' ']);
 disp(['> Computing ratios.']);
+
 for i=1:size(couples,1)
 % for i=1
 %   ztotest=zlist(i);
@@ -227,8 +230,8 @@ for i=1:size(couples,1)
 %     disp(['CONVERSION COEFFICIENT NOT SURE']);
 %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_s2f), ', R = ',num2str(R_s2f), '.']);
 %     spatial_wavelength = spatial_wavelength_s;
-    voverpname = 'Vi/Pt     ';
-    roveriname = 'Vr/Vi     ';
+    voverpname = 'Vi/Pt';
+    roveriname = 'Vr/Vi';
     localV_over_P_th = Vi_over_Pt_th;
     localR = R_s2f;
   else
@@ -241,8 +244,8 @@ for i=1:size(couples,1)
   %   Vt_over_PiPr_th = T_f2s/(Z_s*(1+R_f2s)); % if too close to interface, v transmitted over (p incident + p reflected)
 %     disp([fig_title, ' coupling, Z_s = ',num2str(Z_s), ', Z_f = ',num2str(Z_f),', T = ',num2str(T_f2s), ', R = ',num2str(R_f2s), '.']);
 %     spatial_wavelength = spatial_wavelength_f;
-    voverpname = 'Vt/Pi     ';
-    roveriname = 'Pr/Pi     ';
+    voverpname = 'Vt/Pi';
+    roveriname = 'Pr/Pi';
     localV_over_P_th = Vt_over_Pi_th;
     localR = R_f2s;
   end
@@ -290,13 +293,15 @@ for i=1:size(couples,1)
 %   end
 
   % Display.
-%   disp(['@z=+/-',sprintf(format_positions,ztotest),', TRANSMISSION: ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, theoretical value = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
-  disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
-  disp(['    > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(time_format,inc_peak_time),'s.)']);
-  disp(['    > Transmission (found at t=',sprintf(time_format,transm_peak_time),'s): ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, theoretical value = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
-%     disp(['@z=+/-',sprintf(format_positions,ztotest),', REFLEXION:    ',roveriname,' = ',sprintf(format_values,RoverI),'       , theoretical value = ',sprintf(format_values,R),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-R)/abs(R)),'%.'])
-  disp(['    > Reflexion    (found at t=',sprintf(time_format,refl_peak_time),'s): ',roveriname,' = ',sprintf(format_values,RoverI),'       , theoretical value = ',sprintf(format_values,localR),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR)/abs(localR)),'%.'])
-%   end
+  if(inline1_table0)
+  %   disp(['@z=+/-',sprintf(format_positions,ztotest),', TRANSMISSION: ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, theoretical value = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
+    disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
+    disp(['    > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(time_format,inc_peak_time),'s.)']);
+    disp(['    > (t=',sprintf(time_format,transm_peak_time),'s) T',fig_title,'_th = ',sprintf(format_values,localV_over_P_th),' m/s/Pa, T',fig_title,' = ',voverpname,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localV_over_P_th)/abs(localV_over_P_th)),'%.'])
+  %     disp(['@z=+/-',sprintf(format_positions,ztotest),', REFLEXION:    ',roveriname,' = ',sprintf(format_values,RoverI),'       , theoretical value = ',sprintf(format_values,R),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-R)/abs(R)),'%.'])
+    disp(['    > (t=',sprintf(time_format,refl_peak_time),'s) R',fig_title,'_th = ',sprintf(format_values,localR),'       , R',fig_title,' = ',roveriname,' = ',sprintf(format_values,RoverI),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR)/abs(localR)),'%.'])
+  %   end
+  end
   
   disp(' ');
   % TODO: save agreements.
