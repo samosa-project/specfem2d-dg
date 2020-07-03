@@ -19,8 +19,8 @@ addpath(genpath('../../utils_new'));
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES';
-% OFD='OUTPUT_FILES_LNS_S2F_plotvz';
-OFD='OUTPUT_FILES_LNS_F2S_plotvz';
+OFD='OUTPUT_FILES_LNS_S2F_plotvz';
+% OFD='OUTPUT_FILES_LNS_F2S_plotvz';
 
 inline1_table0 = 1;
 plot_timeseries = 0;
@@ -101,9 +101,9 @@ if(plot_timeseries)
   plotOneByOne(time, squeeze(amp(1,:,:)), station_ids, STATPOS(:,1), STATPOS(:,2), normalise_ylims, fig_title, '$\delta p$ [Pa] or $v_x$ [m/s]');
 end
 
-format_positions = ['%',num2str(floor(log10(max(abs(STATPOS(:,2)))))+6)','.1f'];
-format_values = ['%11.4e'];
-time_format = ['%.4f'];
+% format_positions = ['%',num2str(floor(log10(max(abs(STATPOS(:,2)))))+6)','.1f'];
+val_fmt = ['%11.4e'];
+tim_fmt = ['%.4f'];
 
 % Loop over couples of stations and compute ratios.
 disp([' ']);
@@ -144,7 +144,15 @@ for i=1:size(couples,1)
   
   % Compute experimental ratios.
   if(s2f1_or_f2s0)
-    error('not impl');
+%     error('not impl');
+    incoming_reflected_vx = squeeze(amp(1, correspondingIDs(ID_inc),:)); % solid waves
+    incoming_reflected_vz = squeeze(amp(2, correspondingIDs(ID_inc),:)); % solid waves
+    incoming_reflected_t = time(correspondingIDs(ID_inc),:);
+    
+    incoming_reflected_v = (incoming_reflected_vx.^2+incoming_reflected_vz.^2).^0.5; % version not allowing to distinguish P from S
+    
+    transmitted_v = squeeze(amp(1,correspondingIDs(ID_out),:)); % pressure waves
+    transmitted_t = time(correspondingIDs(ID_out),:);
   else
     % FLUID-TO-SOLID
     incoming_reflected_v = squeeze(amp(1, correspondingIDs(ID_inc),:)); % pressure waves
@@ -153,7 +161,7 @@ for i=1:size(couples,1)
     transmitted_vz = squeeze(amp(2,correspondingIDs(ID_out),:)); % solid waves
     transmitted_t = time(correspondingIDs(ID_out),:);
     
-    transmitted_v = (transmitted_vx.^2+transmitted_vz.^2).^0.5; % shit version
+    transmitted_v = (transmitted_vx.^2+transmitted_vz.^2).^0.5; % version not allowing to distinguish P from S
     
     i2 = snells(vp_1, vp_2, incident_angle); % deduce i2
     j2 = snells(vp_1, vs_2, incident_angle); % deduce j2
@@ -222,9 +230,11 @@ for i=1:size(couples,1)
   % Obtain experimental values.
   if(s2f1_or_f2s0)
     P_over_V_ex = transm_peak/inc_peak; % transmitted is pressure, incoming is velocity
+    expval = P_over_V_ex;
   else
     % FLUID-TO-SOLID
     V_over_P_ex = transm_peak/inc_peak; % transmitted is velocity, incoming is pressure
+    expval = V_over_P_ex;
   end
   RoverI = refl_peak/inc_peak;
 
@@ -254,9 +264,9 @@ for i=1:size(couples,1)
   % Display.
   if(inline1_table0)
 %     disp(['  > Couple at (x_1, x_2, z_1, z_2)=(',sprintf(format_positions,STATPOS(correspondingIDs,:)),'):']);
-    disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(time_format,inc_peak_time),'s.)']);
-    disp(['  > (t=',sprintf(time_format,transm_peak_time),'s) T',fig_title,'_th = ',sprintf(format_values,localT_th),' m/s/Pa, T',fig_title,' = ',localT_th_name,' = ',sprintf(format_values,V_over_P_ex),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(V_over_P_ex-localT_th)/abs(localT_th)),'%.']);
-    disp(['  > (t=',sprintf(time_format,refl_peak_time),'s) R',fig_title,'_th = ',sprintf(format_values,localR_th),'       , R',fig_title,' = ',localR_th_name,' = ',sprintf(format_values,RoverI),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR_th)/abs(localR_th)),'%.']);
+    disp(['  > Incident angle = ',sprintf('%3.0f',incident_angle*180/pi),'°. (Incident wave found at t=',sprintf(tim_fmt,inc_peak_time),'s.)']);
+    disp(['  > (t=',sprintf(tim_fmt,transm_peak_time),'s) T',fig_title,'_th = ',sprintf(val_fmt,localT_th),' m/s/Pa, T',fig_title,' = ',localT_th_name,' = ',sprintf(val_fmt,expval),' m/s/Pa, relative error = ',sprintf('%6.3f',100*abs(expval-localT_th)/abs(localT_th)),'%.']);
+    disp(['  > (t=',sprintf(tim_fmt,refl_peak_time),'s) R',fig_title,'_th = ',sprintf(val_fmt,localR_th),'       , R',fig_title,' = ',localR_th_name,' = ',sprintf(val_fmt,RoverI),'       , relative error = ',sprintf('%6.3f',100*abs(RoverI-localR_th)/abs(localR_th)),'%.']);
   end
   
   disp(' ');
