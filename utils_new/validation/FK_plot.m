@@ -1,5 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Prepare.
+dOverPTP = 15/FORCING_FACTOR;
+XLIM = [0,120];
+
 vunit_wobracc = regexprep(regexprep(vunit, '[', ''),']','');
 
 distance_km = zstattab(stationsToPlot)/1000; unitDist = ['km'];
@@ -29,7 +32,6 @@ savefigname = [savefigname, regexprep(spl{end-2}, prefix, '')];
 
 % manyPanels1_timeDistance0 = 1;
 manyPanels1_timeDistance0 = 0;
-dOverPTP = 200/FORCING_FACTOR;
 unitDoPTP = ['km/(',vunit_wobracc,')'];
 
 XLAB = 'time [s]';
@@ -43,6 +45,11 @@ LS_anal = '-'; LS_synth = '--'; LS_err = ':';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Actually plot.
+if(factor_err~=1)
+  dnamerr = ['$',num2str(factor_err),'{\times}|$analytic$-$synthetic$|$'];
+else
+  dnamerr = ['$|$analytic$-$synthetic$|$'];
+end
 fh = figure('units','normalized','outerposition',[0 0 1 1]);
 if(manyPanels1_timeDistance0)
   error(['[] NOT CHECKED IN A LONG TIME. Before you use it, check it.']);
@@ -53,7 +60,7 @@ if(manyPanels1_timeDistance0)
     plot(t_forErr{i}, anal_forErr{i}, LS_anal, 'Color', COL_anal, 'LineWidth', LW_anal, 'displayname', 'analytical'); % Plot analytic value.
     plot(t_forErr{i}, synth_forErr{i}, LS_synth, 'Color', COL_synth, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
     ylim_b4_err = get(gca,'ylim'); ylim_b4_err=max(abs(ylim_b4_err))*1.1; pow10=10^(-floor(log10(max(ylim_b4_err)))); ylim_b4_err = ceil(pow10*ylim_b4_err)/pow10*[-1,1]; % save and round ylim
-    plot(t_forErr{i},err_v{i},LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']); % Plot difference.
+    plot(t_forErr{i},err_v{i},LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',dnamerr); % Plot difference.
     ylim([ylim_b4_err]); % Redo ylim.
     if(j==round(nstatToPlot/2))
       ylabel(['$',vname_long,'_z$ ',vunit,'']);
@@ -90,7 +97,7 @@ else
     hold on;
     ha(i)=plot(t_forErr{i}, yshift + dOverPTP*anal_forErr{i}, LS_anal, 'Color', COL_anal, 'LineWidth', LW_anal, 'displayname', 'analytical'); % Plot analytic value.
     hs(i)=plot(t_forErr{i}, yshift + dOverPTP*synth_forErr{i}, LS_synth, 'Color', COL_synth, 'LineWidth', LW_synth, 'displayname', 'synthetic'); % Plot synthetic.
-    he(i)=plot(t_forErr{i}, yshift + dOverPTP*err_v{i}, LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',['$',num2str(factor_err),'{\times}|$anal.$-$synth.$|$']); % Plot difference.
+    he(i)=plot(t_forErr{i}, yshift + dOverPTP*err_v{i}, LS_err,'Color', COL_err, 'LineWidth',LW_err,'displayname',dnamerr); % Plot difference.
   end
   legend([ha(1),hs(1),he(1)],'location','southoutside');
   
@@ -103,7 +110,7 @@ else
   yticks(distance_km); yticklabels({});
   xticklabels('auto'); xlabel(XLAB);
   
-  linkaxes(axxxx,'x'); xlim([0, 235]);
+  linkaxes(axxxx,'x'); xlim(XLIM);
   linkaxes(axxxx,'y'); ylim([-6, 60]);
 end
 xlim([max(min(min(Ztime)),min(t)), min(max(max(Ztime)),max(t))]);

@@ -42,7 +42,7 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
   % do the fig
   figureHandle = figure('units','normalized','outerposition', [0 0 1 0.75]);
   gap_h = 0.01; gap_w = 0.01;
-  marg_h_low = 0.13; marg_h_upp = 0.075;
+  marg_h_low = 0.14; marg_h_upp = 0.08;
   marg_w_lef = 0.085; marg_w_rig = 0.01;
   axxx = tight_subplot(2, 3, [gap_h, gap_w], [marg_h_low, marg_h_upp], [marg_w_lef, marg_w_rig]); % not mandatory, but prettier
   for i = 1:num_cases
@@ -103,5 +103,5 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
   set(ylab_top_h, 'Position', [min_ylab_h_pos, ylab_top_h.Position(2:3)]);
   set(ylab_bot_h, 'Position', [min_ylab_h_pos, ylab_bot_h.Position(2:3)]);
   
-  customSaveFig(figureHandle,outputfigpath,{'fig', 'png', 'eps', 'tex'});
+  customSaveFig(figureHandle,outputfigpath,{'fig', 'eps', 'tex'},9999);
 end

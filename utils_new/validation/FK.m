@@ -46,8 +46,8 @@ savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',p
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isobaric/']; % EXAMPLE path
 rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal_shorter/']; % EXAMPLE path
-% OFd = [rootd, 'OUTPUT_FILES'];
-OFd = [rootd, 'OUTPUT_FILES_LNS'];
+OFd = [rootd, 'OUTPUT_FILES'];
+% OFd = [rootd, 'OUTPUT_FILES_LNS'];
 % OFd = [rootd, 'OUTPUT_FILES_FNS'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -287,7 +287,7 @@ timef = t;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Finalise.
-factor_err = 100;
+factor_err = 1;
 allStations = 1:nstat;
 stationsToPlot = allStations;
 nstatToPlot = numel(stationsToPlot);
