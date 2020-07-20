@@ -52,10 +52,11 @@ type_display = 2; % Quantity to display (should be the same as the seismotype va
 % rootd=['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/OKQ/']; OFd=[rootd,'OUTPUT_FILES_668844_OKQ45_redone/']; subsample=0;
 
 % Test mountains LNS.
+rootd = [SPCFMEXloc, 'mountain_scattering_with_mountains_3.00L0/']; OFd = [rootd,'OUTPUT_FILES_408826_lns'];
 % rootd = [SPCFMEXloc, 'mountain_scattering_with_mountains/']; OFd = [rootd,'OUTPUT_FILES_4213746_test'];
 
 % Seismic Hammer.
-rootd = [SPCFMEXloc, 'seismic_hammer_hard_thicker/']; OFd = [rootd,'OUTPUT_FILES_4194294'];
+% rootd = [SPCFMEXloc, 'seismic_hammer_hard_thicker/']; OFd = [rootd,'OUTPUT_FILES_4194294'];
 
 % Mars.
 % fig_title = strcat('Mars InSight');

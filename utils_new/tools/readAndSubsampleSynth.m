@@ -28,6 +28,9 @@ function [outputdata, nsamp] = readAndSubsampleSynth(OFd, stationGlobalNumber, c
   end
   file = [OFd, 'AA.', stattag, '.', channel, '.', extension];
 %   data = load(file);
+  if(not(exist(file,'file')))
+    error(['[',mfilename,', ERROR] File ''',file,''' does not exist.']);
+  end
   fid = fopen(file); data = textscan(fid, '%f %f', 'CollectOutput', 1); data = data{1}; fclose(fid); % New version, about 3 times faster.
   nt = max(size(data));
   meanactualdt = mean(diff(data(:,1)));
