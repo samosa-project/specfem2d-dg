@@ -19,8 +19,8 @@ addpath(genpath('../../utils_new'));
 % Parameters.                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OFD='OUTPUT_FILES';
-OFD='OUTPUT_FILES_LNS_S2F_plotvz';
-% OFD='OUTPUT_FILES_LNS_F2S_plotvz';
+OFD='OUTPUT_FILES_LNS_F2S_plotvz';
+% OFD='OUTPUT_FILES_LNS_S2F_plotvz';
 
 inline1_table0 = 1;
 plot_timeseries = 0;
@@ -247,12 +247,12 @@ for i=1:size(couples,1)
     if(s2f1_or_f2s0)
       PoV_exp = T_peak_v/I_peak_v;
       R_exp = -R_exp; % for this case, flip sign because wave changes direction
-      disp(['    > T^{f->s}_th = ',sprintf(vfmt,PoV_th),' | ',localT_th_name,' = ',sprintf(vfmt,PoV_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(PoV_exp-PoV_th)/abs(PoV_th)),'%.']);
-      disp(['    > R^{f}_th    = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+      disp(['    > C^{S2F}_th = ',sprintf(vfmt,PoV_th),' | ',localT_th_name,' = ',sprintf(vfmt,PoV_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(PoV_exp-PoV_th)/abs(PoV_th)),'%.']);
+      disp(['    > R^{S}_th   = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
     else
       VoP_exp = T_peak_v/I_peak_v;
-      disp(['    > T^{f->s}_th = ',sprintf(vfmt,VoP_th),' | ',localT_th_name,' = ',sprintf(vfmt,VoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VoP_exp-VoP_th)/abs(VoP_th)),'%.']);
-      disp(['    > R^{f}_th    = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
+      disp(['    > T^{F2S}_th = ',sprintf(vfmt,VoP_th),' | ',localT_th_name,' = ',sprintf(vfmt,VoP_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(VoP_exp-VoP_th)/abs(VoP_th)),'%.']);
+      disp(['    > R^{F}_th   = ',sprintf(vfmt,R_th),' | ',localR_th_name,' = ',sprintf(vfmt,R_exp),' | rel. err. = ',sprintf('%6.3f',100*abs(R_exp-R_th)/abs(R_th)),'%.']);
     end
   else
     if(s2f1_or_f2s0)
