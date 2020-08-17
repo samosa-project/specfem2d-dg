@@ -1,7 +1,7 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_LNS                                  !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Computes the right-hand side of the differential LNS (Linear Navier-Stokes) system
 
 subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Constitutive variables.
                                        in_dm, in_dp, in_nabla_dT, in_nabla_dv, in_sigma_dv, & ! Precomputed quantities.
@@ -11,19 +11,14 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   use specfem_par, only: myrank, &
                          jacobian, xix, xiz, gammax, gammaz, wxgll, wzgll, hprimewgll_xx, hprimewgll_zz, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_dg_iface, &
-                         nspec, nglob_DG, ibool_DG, ibool_before_perio, &
-                         ispec_is_acoustic_dg, &
-                         it, i_stage, &
-                         gammaext_dg, &
-                         TYPE_SOURCE_DG, &
-                         !coord, ibool_before_perio, &!, c_V, sound_velocity, & ! For MMS validation.
-                         ABC_STRETCH, stretching_ya, stretching_buffer
+                         nspec, nglob_DG, ibool_DG, ibool_before_perio, ispec_is_acoustic_dg, it, i_stage, gammaext_dg, &
+                         TYPE_SOURCE_DG, ABC_STRETCH, stretching_ya, stretching_buffer
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, LNS_viscous, &
                              LNS_dummy_1d, &
                              LNS_rho0, &
                              LNS_v0, LNS_p0, LNS_E0, LNS_dv, &
                              nabla_v0, sigma_v_0, &
-                             LNS_kappa, LNS_mu, LNS_eta, LNS_g, &!LNS_c0, &
+                             LNS_kappa, LNS_mu, LNS_eta, LNS_g, &
                              VALIDATION_MMS, &
                              LNS_avib, LNS_avib_taueps, LNS_avib_tausig, &
                              LNS_verbose, LNS_modprint
@@ -44,23 +39,20 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWOcr  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  integer :: ispec, i, j, k, iglob, SPCDM, iglob_unique
   
-  ! MESSY
-  integer :: ispec, i,j, k,iglob,SPCDM, iglob_unique
+  ! > Variables "cntrb_*" are aimed at assembling the different contributions to constitutive variables.
+  !   For drho and dE, "cntrb_*(:,:,1)" contains the contribution along xi, and "cntrb_*(:,:,2)" the contribution along gamma.
+  !   For rho0dv, "cntrb_*(1,:,:,1)" contains the contribution to rho0dvx along xi, "cntrb_*(1,:,:,2)" the contribution to rho0dvx along gamma, "cntrb_*(2,:,:,1)" the contribution to rhodvz along xi, and "cntrb_*(2,:,:,2)" the contribution to rhodvz along gamma.
+  ! > Variables "d0cntrb_*" are aimed at assembling contributions of zero-th degree (outside divergence operator).
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ, NDIM) :: cntrb_drho, cntrb_dE
   real(kind=CUSTOM_REAL), dimension(NDIM, NGLLX, NGLLZ, NDIM) :: cntrb_rho0dv
-  ! Variables "cntrb_*" are aimed at assembling the different contributions to constitutive variables.
-  ! For drho and dE, "cntrb_*(:,:,1)" contains the contribution along xi, and "cntrb_*(:,:,2)" the contribution along gamma.
-  ! For rho0dv, "cntrb_*(1,:,:,1)" contains the contribution to rho0dvx along xi, "cntrb_*(1,:,:,2)" the contribution to rho0dvx along gamma, "cntrb_*(2,:,:,1)" the contribution to rhodvz along xi, and "cntrb_*(2,:,:,2)" the contribution to rhodvz along gamma.
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_dE
   real(kind=CUSTOM_REAL), dimension(NDIM, NGLLX,NGLLZ) :: d0cntrb_rho0dv
-  ! Variable "d0cntrb_*" are aimed at assembling contributions of zero-th degree (outside divergence operator).
-  
   
   real(kind=CUSTOM_REAL) :: Jac_L ! Jacobian matrix determinant.
-  real(kind=CUSTOM_REAL) :: lambda, halfWeight, jump!, flux_n
-  
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: Sigma_L!, locG ! Local tensor, local gravity.
+  real(kind=CUSTOM_REAL) :: lambda, halfWeight, jump
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: Sigma_L ! Local stress tensor.
   real(kind=CUSTOM_REAL), dimension(NDIM,NDIM) :: DXiEta_L
   real(kind=CUSTOM_REAL), dimension(NDIM) :: Jac_WzWx_L
   real(kind=CUSTOM_REAL), dimension(NDIM) :: n_out
@@ -68,34 +60,30 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   integer :: iglobP
   integer, dimension(3) :: neighbor
   integer :: neighbour_type
-  
-!  ! Variables specifically for PML.
-!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  ! IMPORTANT INFORMATION:
-!  ! The following block of code is commented out to prevent confusion.
-!  ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
-!  ! Please do not remove those lines, even if they are commented out for now.
-!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
-!  integer :: ispec_PML, iglobPML
-!  real(kind=CUSTOM_REAL) :: pml_a0,pml_a1
-!  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa, pml_alp!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
+
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+#if 0  
+  ! Variables specifically for PML.
+  ! IMPORTANT INFORMATION: The following block of code is commented out to prevent confusion. But it might be useful in the future, when someone actually tries to finish the full PML implementation. Please do not remove those lines, even if they are commented out for now.
+  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: d0cntrb_drho
+  integer :: ispec_PML, iglobPML
+  real(kind=CUSTOM_REAL) :: pml_a0,pml_a1
+  real(kind=CUSTOM_REAL), dimension(NDIM) :: pml_b, pml_boa, pml_alp!, pml_ade_rho0dv ! Those two are of dimension NDIM, but not for the same reason: for rho0dv it's because it's actually of dimension NDIM, while for pml_b it's because we happen to have as many ADEs as space dimensions.
+#endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
   
   ! Variables specifically for LNS_get_interfaces_unknowns.
   real(kind=CUSTOM_REAL), dimension(NDIM) :: v0_P, dv_P, dm_P, nabla_dT_P, rho_MP
   real(kind=CUSTOM_REAL) :: rho0_P, drho_P, p0_P, dp_P, E0_P, dE_P
   real(kind=CUSTOM_REAL) :: gam_P, kap_P
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: sigma_dv_P, sigma_v0_p
-  logical :: viscousComputation
-  real(kind=CUSTOM_REAL) :: wxlwzl!, DEBUG01, DEBUG02, DEBUG03, DEBUG04!,wxlJac_L, wzlJac_L ! Integration weigths.
-  logical :: exact_interface_flux
+  real(kind=CUSTOM_REAL) :: wxlwzl
+  logical :: viscousComputation, exact_interface_flux
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
-  !real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l ! Stretching absorbing boundary conditions.
-  !real(kind=CUSTOM_REAL), dimension(NVALSIGMA) :: mean_sigma_viscous_local
-  !real(kind=CUSTOM_REAL), dimension(NDIM,NDIM) :: mean_nabla_dv_local
-!  ! Variables specifically for manufactured solutions.
-!  real(kind=CUSTOM_REAL), dimension(NDIM) :: X
-!  real(kind=CUSTOM_REAL) :: GAM, w
   
   if(.not. USE_LNS) then
     stop "THIS ROUTINE SHOULD NOT BE CALLED IF USE_LNS=.false."
@@ -126,39 +114,38 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   if(myrank == 0 .and. LNS_VERBOSE>=51 .and. mod(it, LNS_MODPRINT) == 0) then
     write(*,"(a,i6,a)") "Informations for process number ", myrank, "."
     write(*,"(a)")                   " quantity [                 max    ,                  min    ]"
-    WRITE(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
+    write(*,"(a,e24.16,a,e24.16,a)") " drho     [", maxval(cv_drho), ", ", minval(cv_drho), "]"
     do SPCDM = 1, NDIM
-      WRITE(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(SPCDM,:)), ", ", minval(cv_rho0dv(SPCDM,:)), "], i=",SPCDM
+      write(*,"(a,e24.16,a,e24.16,a,i1)") " rho0dv_i [", maxval(cv_rho0dv(SPCDM,:)), ", ", minval(cv_rho0dv(SPCDM,:)), "], i=",SPCDM
     enddo
-    WRITE(*,"(a,e24.16,a,e24.16,a)") " dE       [", maxval(cv_dE), ", ", minval(cv_dE), "]"
-    !WRITE(*,"(a,e23.16,a)")        "Ratio |p-p_{init}|/p_{init}:", maxval(abs((p_DG-p_DG_init)/p_DG_init)), "."
+    write(*,"(a,e24.16,a,e24.16,a)") " dE       [", maxval(cv_dE), ", ", minval(cv_dE), "]"
   endif
   
   do ispec = 1, nspec ! Loop over elements.
     if (ispec_is_acoustic_DG(ispec)) then ! Only do something for DG elements.
-! 
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! IMPORTANT INFORMATION:
-!          ! The following block of code is commented out to prevent confusion.
-!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
-!          ! Please do not remove those lines, even if they are commented out for now.
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
-!      if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
-!        ! If PML, save ispec_PML now (instead of recalling it for each (i,j)).
-!        ispec_PML=spec_to_PML(ispec)
-!      endif
+
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+#if 0 
+      ! IMPORTANT INFORMATION: The following block of code is commented out to prevent confusion. But it might be useful in the future, when someone actually tries to finish the full PML implementation. Please do not remove those lines, even if they are commented out for now.
+      if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+        ! If PML, save ispec_PML now (instead of recalling it for each (i,j)).
+        ispec_PML=spec_to_PML(ispec)
+      endif
+#endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
       
       ! --------------------------- !
       ! First set of loops: compute !
       ! volumic contributions.      !
       ! --------------------------- !
-      ! First, zero the temporary contribution fields.
-      ! This might not be needed, since they are strictly overwritten below, but this is safer.
+      ! First, zero the temporary contribution fields. This might not be needed, since they are strictly overwritten below, but this is safer.
       cntrb_drho     = ZEROcr
       cntrb_rho0dv   = ZEROcr
       cntrb_dE       = ZEROcr
-    !  d0cntrb_drho   = ZEROcr
       d0cntrb_rho0dv = ZEROcr
       d0cntrb_dE     = ZEROcr
       
@@ -166,56 +153,57 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
       do j = 1, NGLLZ
         do i = 1, NGLLX
           iglob = ibool_DG(i,j,ispec)
-! 
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! IMPORTANT INFORMATION:
-!          ! The following block of code is commented out to prevent confusion.
-!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
-!          ! Please do not remove those lines, even if they are commented out for now.
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
-!          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
-!            ! If PML, save iglobPML now.
-!            iglobPML = ibool_LNS_PML(i, j, ispec_PML)
-!          endif
+          
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+#if 0
+          ! IMPORTANT INFORMATION: The following block of code is commented out to prevent confusion. But it might be useful in the future, when someone actually tries to finish the full PML implementation. Please do not remove those lines, even if they are commented out for now.
+          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then
+            ! If PML, save iglobPML now.
+            iglobPML = ibool_LNS_PML(i, j, ispec_PML)
+          endif
+#endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+          
           Jac_L                = jacobian(i,j,ispec)
-          DXiEta_L(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
-          DXiEta_L(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
-          DXiEta_L(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
-          DXiEta_L(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
+          DXiEta_L(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi
+          DXiEta_L(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi
+          DXiEta_L(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta
+          DXiEta_L(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta
           
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
             ! Here, in the volume integrations, easiest is the local derivatives involved in the change of reference.
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             iglob_unique      = ibool_before_perio(i,j,ispec)
-            !ya_x_l            = stretching_ya(1, iglob_unique)
-            !ya_z_l            = stretching_ya(2, iglob_unique)
             DXiEta_L(:, 1)    = stretching_ya(1, iglob_unique)*DXiEta_L(:, 1)    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
             DXiEta_L(:, NDIM) = stretching_ya(2, iglob_unique)*DXiEta_L(:, NDIM) ! Multiply x component by ya_z. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
-            !Jac_L            = ya_x_l * ya_z_l * Jac_L     ! TODO: something on jacobian?? ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
           endif
           
-! 
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! IMPORTANT INFORMATION:
-!          ! The following block of code is commented out to prevent confusion.
-!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
-!          ! Please do not remove those lines, even if they are commented out for now.
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
-!          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
-!            ! Need to include stretching on base stress tensor.
-!            ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
-!            ! \Sigma_x needs to become \kappa_2\Sigma_x, and \Sigma_z needs to become \kappa_1\Sigma_z.
-!            ! Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include kappa_i in those directly.
-!            DXiEta_L(:, 1)    = LNS_PML_kapp(NDIM, i,j,ispec_PML)*DXiEta_L(:, 1)    ! Multiply x component by kappa_2.
-!            DXiEta_L(:, NDIM) = LNS_PML_kapp(1,    i,j,ispec_PML)*DXiEta_L(:, NDIM) ! Multiply z component by kappa_1.
-!          endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+#if 0
+          ! IMPORTANT INFORMATION: The following block of code is commented out to prevent confusion. But it might be useful in the future, when someone actually tries to finish the full PML implementation. Please do not remove those lines, even if they are commented out for now.
+          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+            ! Need to include stretching on base stress tensor.
+            ! We do it as follows. While not very readable, it gets the job done in a somewhat efficient way.
+            ! \Sigma_x needs to become \kappa_2\Sigma_x, and \Sigma_z needs to become \kappa_1\Sigma_z.
+            ! Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include kappa_i in those directly.
+            DXiEta_L(:, 1)    = LNS_PML_kapp(NDIM, i,j,ispec_PML)*DXiEta_L(:, 1)    ! Multiply x component by kappa_2.
+            DXiEta_L(:, NDIM) = LNS_PML_kapp(1,    i,j,ispec_PML)*DXiEta_L(:, NDIM) ! Multiply z component by kappa_1.
+          endif
+#endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
           
           Jac_WzWx_L(1)    = wzgll(j)*Jac_L
           Jac_WzWx_L(NDIM) = wxgll(i)*Jac_L
-          ! In Jac_WzWx_L, notice how 1 is z and 2 is x. This comes from the use of the chain rule on the bilinear form, and reorganisation. See Leo's LNS paper, or thesis manuscript.
+          ! In Jac_WzWx_L, notice how 1 is z and 2 is x. This comes from the use of the chain rule on the bilinear form, and reorganisation. See Martire's PhD thesis manuscript.
           
           if(LNS_viscous) then ! Check if viscosity exists whatsoever.
             ! Activate/deactivate, for this particular point (iglob), computation of quantities only needed when viscosity is present.
@@ -294,9 +282,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           enddo
           
           ! 4) Zero-th degree contributions.
-          !locG(1) = potential_dphi_dx_DG(ibool(i,j,ispec)); ! TODO: something more general than this hack
-          !locG(1) = ZEROcr; ! TODO: something more general than this hack
-          !locG(NDIM) = - LNS_g(iglob)
           ! Notice the "-" sign, needed to make sure these terms are added on the right "side" of the RHS.
           ! 4.1) Mass conservation: none.
           !d0cntrb_drho(i,j)     = ZERO
@@ -311,18 +296,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           d0cntrb_rho0dv(1,i,j)    = DOT_PRODUCT(in_dm(:,iglob), nabla_v0(1,:,iglob)) ! \rho'g_1=0; + {\delta_m}\cdot[\nabla v_{0}]_{1,:}
           d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) & ! \rho'g_i!=0;
                                      + DOT_PRODUCT(in_dm(:,iglob), nabla_v0(NDIM,:,iglob)) ! {\delta_m}\cdot[\nabla v_{0}]_{d,:}
-          !enddo
-          ! OLD4.2.2) Version 2: under HV0 (v_{0,z}=0), and SM (d_xv_0=0), dm part of the zero-th degree RHS is simplified.
-          !d0cntrb_rho0dv(1,i,j) = - (  cv_drho(iglob)*potential_dphi_dx_DG(ibool(i,j,ispec)) & ! \rho'g_x
-          !                           + cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) * Jac_L ! \rho_0v'_z\partial_zv_{0,x}
-          !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*potential_dphi_dz_DG(ibool(i,j,ispec)) * Jac_L ! \rho'g_z
-          ! OLD4.2.3) Version 3: under HV0 (v_{0,z}=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          !d0cntrb_rho0dv(1,i,j) = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * Jac_L ! \rho_0v'_z\partial_zv_{0,x}
-          !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * Jac_L ! \rho'g_z
-          ! OLD4.2.4) Version 4: under HV0 (v_{0,z}=0), SM (d_xv_0=0), potential_dphi_dx_DG=0, and potential_dphi_dz_DG=LNS_g
-          !d0cntrb_rho0dv(1,i,j)    = - cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob) * Jac_L !  \rho_0v'_z\partial_zv_{0,x}
-          !d0cntrb_rho0dv(NDIM,i,j) = - cv_drho(iglob)*LNS_g(iglob) * Jac_L ! -\rho'g_z, but LNS_g=9.81=-g_z
-          d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) * Jac_L ! small optimisation
+          d0cntrb_rho0dv(:,i,j) = d0cntrb_rho0dv(:,i,j) * Jac_L ! Factor Jacobian (small optimisation).
           ! 4.3) Energy.
           ! 4.2.1) Version 1: most general.
           !d0cntrb_dE(i,j) = - DOT_PRODUCT(locG, in_dm(:,iglob)) * Jac_L
@@ -340,111 +314,114 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                                     + cv_e1(iglob))
           endif
           
-!          ! 5) Eventually, PML.
-! 
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! IMPORTANT INFORMATION:
-!          ! These blocks of code are commented out to prevent confusion.
-!          ! But they may be useful in the future, when someone actually tries to finish the full PML implementation.
-!          ! Please do not remove those lines, even if they are commented out for now.
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
-!          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
-!            ! Do two things here:
-!            ! 1) Add auxiliary variables to main RHS.
-!            ! 2) Prepare auxiliary variables RHS.
-!            
-!            pml_a1 = product(LNS_PML_kapp(:,i,j,ispec_PML))
-!            pml_a0 = LNS_PML_a0(i,j,ispec_PML) ! LNS_PML_a0 initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-!            pml_alp = LNS_PML_alpha(:,i,j,ispec_PML)
-!            pml_b  = LNS_PML_b(:,i,j,ispec_PML) ! LNS_PML_b initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
-!            pml_boa = ZEROcr
-!            where(pml_b/=ZEROcr) pml_boa = pml_b / pml_alp ! b_i/alpha_i, only where b_i!=0
-!            !write(*,*) "pml_a1, pml_a0, pml_alp, pml_b, pml_boa", pml_a1, pml_a0, pml_alp, pml_b, pml_boa! debuG
-!            !stop 'kek'
-!            
-!            ! 1) Add auxiliary variables to main RHS.
-!            ! 1.1) Update degree 0 contributions (set G=a1*G ***FIRST***), add a_0q, add G auxiliary variables, and add YU's auxiliary variables.
-!            call LNS_PML_updateD0(d0cntrb_drho(i,j), cv_drho(iglob), 1, &
-!                                  pml_a1, pml_a0, pml_boa, pml_b, Jac_L, iglobPML)
-!            do k = 1, NDIM
-!              call LNS_PML_updateD0(d0cntrb_rho0dv(k,i,j), cv_rho0dv(k,iglob), 1+k, &
-!                                    pml_a1, pml_a0, pml_boa, pml_b, Jac_L, iglobPML)
-!            enddo
-!            call LNS_PML_updateD0(d0cntrb_dE(i,j), cv_dE(iglob), 2+NDIM, &
-!                                  pml_a1, pml_a0, pml_boa, pml_b, Jac_L, iglobPML)
-!            ! 1.2) Update degree 1 contributions.
-!            ! 1.2.1) First, reset DXiEta_L.
-!            DXiEta_L(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi from report
-!            DXiEta_L(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi from report
-!            DXiEta_L(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta from report
-!            DXiEta_L(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta from report
-!            ! 1.2.2) Need to include d_i on auxiliary stress tensor \Sigma=(R^{alpha_2}_{\sigma_1}, R^{alpha_1}_{\sigma_2}). We do it as follows. While not very readable, it gets the job done in a somewhat efficient way. \Sigma_1 needs to become d_2\Sigma_1, and \Sigma_2 needs to become d_1\Sigma_2. Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include d_i in those directly.
-!            DXiEta_L(:, 1)    = LNS_PML_d(NDIM, i,j,ispec_PML)*DXiEta_L(:, 1)    ! Multiply x component by d_2.
-!            DXiEta_L(:, NDIM) = LNS_PML_d(1,    i,j,ispec_PML)*DXiEta_L(:, NDIM) ! Multiply z component by d_1.
-!            ! 1.2.3)
-!            do SPCDM = 1, NDIM ! rho'
-!              cntrb_drho(i,j,SPCDM) =   cntrb_drho(i,j,SPCDM) &
-!                                      + Jac_WzWx_L(SPCDM)*DOT_PRODUCT(DXiEta_L(SPCDM,:), LNS_PML(1,3:4,iglobPML))
-!            enddo
-!            do k = 1, NDIM ! rho0v'
-!              do SPCDM = 1, NDIM
-!                cntrb_rho0dv(k,i,j,SPCDM) =   cntrb_rho0dv(k,i,j,SPCDM) &
-!                                            + Jac_WzWx_L(SPCDM)*DOT_PRODUCT(DXiEta_L(SPCDM,:), LNS_PML(1+k,3:4,iglobPML))
-!              enddo
-!            enddo
-!            do SPCDM = 1, NDIM ! E'
-!              cntrb_dE(i,j,SPCDM) =   cntrb_dE(i,j,SPCDM) &
-!                                    + Jac_WzWx_L(SPCDM)*DOT_PRODUCT(DXiEta_L(SPCDM,:), LNS_PML(2+NDIM,3:4,iglobPML))
-!            enddo
-!            
-!            ! 2) Prepare auxiliary variables RHS. Recall pattern for R^beta_q: rhs = beta*R^beta_q - q.
-!            !if(.false.) then
-!            ! 2.1) YU*q (:,1:2,:)
-!            ! 2.1.1) rho' (1,:,:)
-!            call LNS_PML_buildRHS(1, 1, iglobPML, pml_alp(1), cv_drho(iglob))
-!            call LNS_PML_buildRHS(1, 2, iglobPML, pml_alp(2), cv_drho(iglob))
-!            ! 2.1.2) rho0v' (2:3,:,:)
-!            do k=1,NDIM
-!              call LNS_PML_buildRHS(1+k, 1, iglobPML, pml_alp(1), cv_rho0dv(k, iglob))
-!              call LNS_PML_buildRHS(1+k, 2, iglobPML, pml_alp(2), cv_rho0dv(k, iglob))
-!            enddo
-!            ! 2.1.3) E' (2+NDIM,:,:)
-!            call LNS_PML_buildRHS(2+NDIM, 1, iglobPML, pml_alp(1), cv_dE(iglob))
-!            call LNS_PML_buildRHS(2+NDIM, 2, iglobPML, pml_alp(2), cv_dE(iglob))
-!            ! 2.2) Sigma (:,3:4,:) : care for indices flipping (alpha2 with sigma1 and alpha1 with sigma2) ! TODO: TAKE CARE OF VISCOUS TENSOR
-!            ! 2.2.1) rho' (1,:,:)
-!            call LNS_PML_buildRHS(1, 3, iglobPML, pml_alp(2), in_dm(1,iglob))
-!            call LNS_PML_buildRHS(1, 4, iglobPML, pml_alp(1), in_dm(2,iglob))
-!            ! 2.2.2) rho0v' (2:3,:,:)
-!            call LNS_PML_buildRHS(2, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(1,iglob)   +in_dp(iglob)) ! vx sig1
-!            call LNS_PML_buildRHS(2, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
-!            call LNS_PML_buildRHS(3, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(NDIM,iglob)) ! vz sig1
-!            call LNS_PML_buildRHS(3, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+in_dp(iglob)) ! vz sig2
-!            ! 2.2.3) E' (2+NDIM,:,:)
-!            call LNS_PML_buildRHS(2+NDIM, 3, iglobPML, pml_alp(2), &
-!                                     LNS_dv(1,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
-!                                   + LNS_v0(1,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig1
-!            call LNS_PML_buildRHS(2+NDIM, 4, iglobPML, pml_alp(1), &
-!                                     LNS_dv(2,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
-!                                   + LNS_v0(2,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig2
-!            ! 2.3) G (:,5:6,:) : zeroth degree contribution
-!            ! 2.3.1) rho' (1,:,:): G=0
-!            !call LNS_PML_buildRHS(1, 5, iglobPML, pml_alp(1), ZEROcr) ! rho a1G, do nothing
-!            !call LNS_PML_buildRHS(1, 6, iglobPML, pml_alp(2), ZEROcr) ! rho a2G, do nothing
-!            LNS_PML_RHS(1,5:6,iglobPML) = ZEROcr ! force to zero
-!            ! 2.3.2) rho0v' (2:3,:,:): G=...
-!            call LNS_PML_buildRHS(2, 5, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
-!            call LNS_PML_buildRHS(2, 6, iglobPML, pml_alp(2), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
-!            call LNS_PML_buildRHS(3, 5, iglobPML, pml_alp(1), - cv_drho(iglob)*LNS_g(iglob)) ! vz a1G
-!            call LNS_PML_buildRHS(3, 6, iglobPML, pml_alp(2), - cv_drho(iglob)*LNS_g(iglob)) ! vz a2G
-!            ! 2.3.3) E' (2+NDIM,:,:): G=g*dm_z
-!            call LNS_PML_buildRHS(2+NDIM, 5, iglobPML, pml_alp(1), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a1G
-!            call LNS_PML_buildRHS(2+NDIM, 6, iglobPML, pml_alp(2), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
-!            !endif
-!          else
-!            d0cntrb_drho = ZEROcr ! Safeguard: make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
-!          endif ! Endif on PML_BOUNDARY_CONDITIONS.
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+#if 0 
+          ! IMPORTANT INFORMATION: The following block of code is commented out to prevent confusion. But it might be useful in the future, when someone actually tries to finish the full PML implementation. Please do not remove those lines, even if they are commented out for now.
+          ! 5) Eventually, PML.
+ 
+          if(PML_BOUNDARY_CONDITIONS .and. ispec_is_PML(ispec)) then
+            ! Do two things here:
+            ! 1) Add auxiliary variables to main RHS.
+            ! 2) Prepare auxiliary variables RHS.
+            
+            pml_a1 = product(LNS_PML_kapp(:,i,j,ispec_PML))
+            pml_a0 = LNS_PML_a0(i,j,ispec_PML) ! LNS_PML_a0 initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
+            pml_alp = LNS_PML_alpha(:,i,j,ispec_PML)
+            pml_b  = LNS_PML_b(:,i,j,ispec_PML) ! LNS_PML_b initialised in 'compute_forces_acoustic_LNS_calling_routine.F90'.
+            pml_boa = ZEROcr
+            where(pml_b/=ZEROcr) pml_boa = pml_b / pml_alp ! b_i/alpha_i, only where b_i!=0
+            !write(*,*) "pml_a1, pml_a0, pml_alp, pml_b, pml_boa", pml_a1, pml_a0, pml_alp, pml_b, pml_boa! debuG
+            !stop 'kek'
+            
+            ! 1) Add auxiliary variables to main RHS.
+            ! 1.1) Update degree 0 contributions (set G=a1*G ***FIRST***), add a_0q, add G auxiliary variables, and add YU's auxiliary variables.
+            call LNS_PML_updateD0(d0cntrb_drho(i,j), cv_drho(iglob), 1, &
+                                  pml_a1, pml_a0, pml_boa, pml_b, Jac_L, iglobPML)
+            do k = 1, NDIM
+              call LNS_PML_updateD0(d0cntrb_rho0dv(k,i,j), cv_rho0dv(k,iglob), 1+k, &
+                                    pml_a1, pml_a0, pml_boa, pml_b, Jac_L, iglobPML)
+            enddo
+            call LNS_PML_updateD0(d0cntrb_dE(i,j), cv_dE(iglob), 2+NDIM, &
+                                  pml_a1, pml_a0, pml_boa, pml_b, Jac_L, iglobPML)
+            ! 1.2) Update degree 1 contributions.
+            ! 1.2.1) First, reset DXiEta_L.
+            DXiEta_L(1,    1)    = xix(i,j,ispec) ! = \partial_x\xi
+            DXiEta_L(1,    NDIM) = xiz(i,j,ispec) ! = \partial_z\xi
+            DXiEta_L(NDIM, 1)    = gammax(i,j,ispec) ! = \partial_x\eta
+            DXiEta_L(NDIM, NDIM) = gammaz(i,j,ispec) ! = \partial_z\eta
+            ! 1.2.2) Need to include d_i on auxiliary stress tensor \Sigma=(R^{alpha_2}_{\sigma_1}, R^{alpha_1}_{\sigma_2}). We do it as follows. While not very readable, it gets the job done in a somewhat efficient way. \Sigma_1 needs to become d_2\Sigma_1, and \Sigma_2 needs to become d_1\Sigma_2. Since all \Sigma_i contributions are added through the dot product with (xix,xiz,gammax,gammaz), we include d_i in those directly.
+            DXiEta_L(:, 1)    = LNS_PML_d(NDIM, i,j,ispec_PML)*DXiEta_L(:, 1)    ! Multiply x component by d_2.
+            DXiEta_L(:, NDIM) = LNS_PML_d(1,    i,j,ispec_PML)*DXiEta_L(:, NDIM) ! Multiply z component by d_1.
+            ! 1.2.3)
+            do SPCDM = 1, NDIM ! rho'
+              cntrb_drho(i,j,SPCDM) =   cntrb_drho(i,j,SPCDM) &
+                                      + Jac_WzWx_L(SPCDM)*DOT_PRODUCT(DXiEta_L(SPCDM,:), LNS_PML(1,3:4,iglobPML))
+            enddo
+            do k = 1, NDIM ! rho0v'
+              do SPCDM = 1, NDIM
+                cntrb_rho0dv(k,i,j,SPCDM) =   cntrb_rho0dv(k,i,j,SPCDM) &
+                                            + Jac_WzWx_L(SPCDM)*DOT_PRODUCT(DXiEta_L(SPCDM,:), LNS_PML(1+k,3:4,iglobPML))
+              enddo
+            enddo
+            do SPCDM = 1, NDIM ! E'
+              cntrb_dE(i,j,SPCDM) =   cntrb_dE(i,j,SPCDM) &
+                                    + Jac_WzWx_L(SPCDM)*DOT_PRODUCT(DXiEta_L(SPCDM,:), LNS_PML(2+NDIM,3:4,iglobPML))
+            enddo
+            
+            ! 2) Prepare auxiliary variables RHS. Recall pattern for R^beta_q: rhs = beta*R^beta_q - q.
+            !if(.false.) then
+            ! 2.1) YU*q (:,1:2,:)
+            ! 2.1.1) rho' (1,:,:)
+            call LNS_PML_buildRHS(1, 1, iglobPML, pml_alp(1), cv_drho(iglob))
+            call LNS_PML_buildRHS(1, 2, iglobPML, pml_alp(2), cv_drho(iglob))
+            ! 2.1.2) rho0v' (2:3,:,:)
+            do k=1,NDIM
+              call LNS_PML_buildRHS(1+k, 1, iglobPML, pml_alp(1), cv_rho0dv(k, iglob))
+              call LNS_PML_buildRHS(1+k, 2, iglobPML, pml_alp(2), cv_rho0dv(k, iglob))
+            enddo
+            ! 2.1.3) E' (2+NDIM,:,:)
+            call LNS_PML_buildRHS(2+NDIM, 1, iglobPML, pml_alp(1), cv_dE(iglob))
+            call LNS_PML_buildRHS(2+NDIM, 2, iglobPML, pml_alp(2), cv_dE(iglob))
+            ! 2.2) Sigma (:,3:4,:) : care for indices flipping (alpha2 with sigma1 and alpha1 with sigma2)
+            ! 2.2.1) rho' (1,:,:)
+            call LNS_PML_buildRHS(1, 3, iglobPML, pml_alp(2), in_dm(1,iglob))
+            call LNS_PML_buildRHS(1, 4, iglobPML, pml_alp(1), in_dm(2,iglob))
+            ! 2.2.2) rho0v' (2:3,:,:)
+            call LNS_PML_buildRHS(2, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(1,iglob)   +in_dp(iglob)) ! vx sig1
+            call LNS_PML_buildRHS(2, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob)) ! vx sig2
+            call LNS_PML_buildRHS(3, 3, iglobPML, pml_alp(2), cv_rho0dv(1,iglob)   *LNS_v0(NDIM,iglob)) ! vz sig1
+            call LNS_PML_buildRHS(3, 4, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob)+in_dp(iglob)) ! vz sig2
+            ! 2.2.3) E' (2+NDIM,:,:)
+            call LNS_PML_buildRHS(2+NDIM, 3, iglobPML, pml_alp(2), &
+                                     LNS_dv(1,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
+                                   + LNS_v0(1,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig1
+            call LNS_PML_buildRHS(2+NDIM, 4, iglobPML, pml_alp(1), &
+                                     LNS_dv(2,iglob)*(LNS_E0(iglob)+LNS_p0(iglob)) &
+                                   + LNS_v0(2,iglob)*(cv_dE(iglob)+in_dp(iglob))) ! E sig2
+            ! 2.3) G (:,5:6,:) : zeroth degree contribution
+            ! 2.3.1) rho' (1,:,:): G=0
+            !call LNS_PML_buildRHS(1, 5, iglobPML, pml_alp(1), ZEROcr) ! rho a1G, do nothing
+            !call LNS_PML_buildRHS(1, 6, iglobPML, pml_alp(2), ZEROcr) ! rho a2G, do nothing
+            LNS_PML_RHS(1,5:6,iglobPML) = ZEROcr ! force to zero
+            ! 2.3.2) rho0v' (2:3,:,:): G=...
+            call LNS_PML_buildRHS(2, 5, iglobPML, pml_alp(1), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a1G
+            call LNS_PML_buildRHS(2, 6, iglobPML, pml_alp(2), cv_rho0dv(NDIM,iglob)*nabla_v0(1,NDIM,iglob)) ! vx a2G
+            call LNS_PML_buildRHS(3, 5, iglobPML, pml_alp(1), - cv_drho(iglob)*LNS_g(iglob)) ! vz a1G
+            call LNS_PML_buildRHS(3, 6, iglobPML, pml_alp(2), - cv_drho(iglob)*LNS_g(iglob)) ! vz a2G
+            ! 2.3.3) E' (2+NDIM,:,:): G=g*dm_z
+            call LNS_PML_buildRHS(2+NDIM, 5, iglobPML, pml_alp(1), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a1G
+            call LNS_PML_buildRHS(2+NDIM, 6, iglobPML, pml_alp(2), - LNS_g(iglob)*in_dm(NDIM,iglob)) ! vx a2G
+            !endif
+          else
+            d0cntrb_drho = ZEROcr ! Safeguard: make sure d0cntrb_drho is zero when not in PMLs or when not using PMLs at all.
+          endif ! Endif on PML_BOUNDARY_CONDITIONS.
+#endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+
         enddo ! Enddo on i.
       enddo ! Enddo on j.
       
@@ -471,25 +448,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           
           ! Vibrational attenuation.
           if(LNS_avib) then
-            !DEBUG01 = - (ONEcr/LNS_avib_tausig(iglob))
-            !DEBUG02 = (   (ONEcr - (LNS_avib_tausig(iglob)/LNS_avib_taueps(iglob)))              &
-            !                         * (in_nabla_dv(1,1,iglob)+in_nabla_dv(NDIM,NDIM,iglob)) + cv_e1(iglob) )
-            !DEBUG03 = jacobian(i,j,ispec)
-            !!outrhs_e1(iglob) =  - DEBUG01 * DEBUG02
-            !DEBUG04 = wxlwzl*jacobian(i,j,ispec)
-            !if(.false. .and. currentTime>34.8e-3) then
-            !  write(*,*) 'avib', currentTime, DEBUG01, DEBUG02, DEBUG04
-            !  write(*,*) 'avib1', outrhs_e1(iglob)
-            !  write(*,*) 'avib2', ONEcr/LNS_avib_tausig(iglob)
-            !  write(*,*) 'avib3', ONEcr/LNS_avib_taueps(iglob)
-            !  write(*,*) 'avib4', (LNS_avib_tausig(iglob)/LNS_avib_taueps(iglob))
-            !  write(*,*) 'avib5', (in_nabla_dv(1,1,iglob)+in_nabla_dv(NDIM,NDIM,iglob))
-            !  write(*,*) 'avib6', cv_e1(iglob)
-            !  write(*,*) 'avib7', (wxlwzl*jacobian(i,j,ispec))
-            !  write(*,*) ' '
-            !endif
-            !outrhs_e1(iglob) = outrhs_e1(iglob) + &
-            !                   DEBUG01 * DEBUG02 * DEBUG04
             outrhs_e1(iglob) =   outrhs_e1(iglob) &
                                - (ONEcr/LNS_avib_tausig(iglob)) &
                                  * (   (ONEcr - (LNS_avib_tausig(iglob)/LNS_avib_taueps(iglob)))              &
@@ -498,32 +456,23 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           endif
           
           ! Add zero-th order terms.
-! 
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! IMPORTANT INFORMATION:
-!          ! The following block of code is commented out to prevent confusion.
-!          ! But it might be useful in the future, when someone actually tries to finish the full PML implementation.
-!          ! Please do not remove those lines, even if they are commented out for now.
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
-!          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! Degree 0 contribution to rho' only exists if there are PMLs. TODO: a better condition.
-!            outrhs_drho(iglob) = outrhs_drho(iglob) + d0cntrb_drho(i,j) * wxlwzl
-!          endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+#if 0 
+          ! IMPORTANT INFORMATION: The following block of code is commented out to prevent confusion. But it might be useful in the future, when someone actually tries to finish the full PML implementation. Please do not remove those lines, even if they are commented out for now.
+          if(PML_BOUNDARY_CONDITIONS .and. anyabs .and. ispec_is_PML(ispec)) then ! Degree 0 contribution to rho' only exists if there are PMLs.
+            outrhs_drho(iglob) = outrhs_drho(iglob) + d0cntrb_drho(i,j) * wxlwzl
+          endif
+#endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
           do SPCDM = 1, NDIM
             outrhs_rho0dv(SPCDM,iglob) = outrhs_rho0dv(SPCDM,iglob) + d0cntrb_rho0dv(SPCDM,i,j) * wxlwzl
           enddo
           outrhs_dE(iglob) = outrhs_dE(iglob) + d0cntrb_dE(i,j) * wxlwzl
           
-#if 0
-          ! DEBUG
-          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-             .and. abs(currentTime-.9689999999999)<=0.00001) then
-            write(*,*) 'K1K', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
-                       cv_drho(iglob), outrhs_drho(iglob)
-          endif
-#endif
         enddo
       enddo
       
@@ -595,7 +544,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
             ! A neighbouring LNS DG element was found in the same partition.
             iglobP = ibool_DG(neighbor(1), neighbor(2), neighbor(3))
           else
-            iglobP = -1000 ! Set iglobP like this in order to crash the program whenever this variable is badly used.
+            iglobP = -1000 ! Set iglobP like this in order to deliberately crash the program whenever this variable is badly used.
           endif
           
           exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to LNS_get_interfaces_unknowns), the flux can be exact (jump==0).
@@ -603,12 +552,9 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                   cv_drho(iglob), cv_rho0dv(:,iglob), & ! Input constitutive variables, "M" side.
                   cv_drho(iglobP), cv_rho0dv(:,iglobP), cv_dE(iglobP), & ! Input constitutive variables, "P" side. Note they make no sense if neighbor(1)<=-1.
                   in_dp(iglob), & ! Input other variable, "M" side.
-                  !V_DG(:,:,iglob), T_DG(:,iglob), & ! Input derivatives, "M" side. MIGHT NEED.
-                  !V_DG(:,:,iglobP), T_DG(:,iglobP), & ! Input derivatives, "M" side. MIGHT NEED.
                   n_out, & ! Normal vector (input).
                   exact_interface_flux, & ! Switch to disable jump in some cases (output).
                   drho_P, rho0dv_P, dE_P, & ! Output constitutive variables.
-                  !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
                   dm_P, dp_P, dv_P,& ! Output other variables.
                   viscousComputation, nabla_dT_P, sigma_dv_P, & ! Output other variables: viscous.
                   .false., LNS_dummy_1d(1)) ! Use dummies and set the switch to false not to compute unecessary quantities.
@@ -622,18 +568,15 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           ! Recover an approximate local maximum linearized acoustic wave speed. See for example Hesthaven (doi.org/10.1007/9780387720678), page 208.
           lambda = ZEROcr
 #if 0
+          ! Approximate lambda (i.e., using the initial speed of sound c0).
           lambda = max(  abs(dot_product(n_out, LNS_v0(:,iglob))) & ! v_-\cdot n
                        + LNS_c0(iglob) & ! Local sound speed, side "M".
                        , abs(dot_product(n_out, LNS_v0(:,iglobP))) & ! v_+\cdot n
                        + LNS_c0(iglobP) & ! Local sound speed, side "P".
                        )
-#endif
-          ! Exact lambda (i.e. with exact full v=v0+v' and c=c0+c').
+#endif          
 #if 1
-          !if(gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)<=1e-1) &
-          !  write(*,*) gammaext_DG(iglobP)*(LNS_p0(iglobP)+dp_P)/(LNS_rho0(iglobP)+drho_P)
-          !if(gammaext_DG(iglob)*(LNS_p0(iglob)+in_dp(iglob))/(LNS_rho0(iglob)+cv_drho(iglob))<=1e-1) &
-          !  write(*,*) LNS_p0(iglob), in_dp(iglob)! , (LNS_rho0(iglob)+cv_drho(iglob))
+          ! Exact lambda (i.e., with the exact full v=v0+v' and c=c0+c').
           rho_MP(1) = LNS_rho0(iglob)+cv_drho(iglob)
           rho_MP(2) = rho0_P+drho_P
           if(rho_MP(1)>TINYVAL .and. rho_MP(2)>TINYVAL) then
@@ -643,28 +586,20 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                          + sqrt(gam_P*(p0_P+dp_P)/rho_MP(2)) &
                          )
           else
-            ! Possibly, in elastic elements, rho_MP is zero (since both LNS_rho0 and cv_drho and drho_P are zero there).
+            ! Possibly, in elastic elements, rho_MP is zero (since both LNS_rho0 and cv_drho and drho_P are zero there). Correct lambda over there to prevent errors.
             lambda = ZEROcr
           endif
 #endif
           
-          ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
-          ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to LNS_get_interfaces_unknowns and the affectation of lambda. If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+          ! For the real stretching boundary conditions , \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
+          ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to the 'LNS_get_interfaces_unknowns' routine and the affectation of lambda.
+          ! If you change anything to this, remember to do it also in the 'compute_gradient_TFSF' subroutine ('compute_forces_acoustic_LNS_calling_routine.f90').
           if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
             iglob_unique = ibool_before_perio(i,j,ispec)
             do SPCDM = 1, NDIM
               n_out(SPCDM) = n_out(SPCDM) * stretching_ya(SPCDM, iglob_unique)
             enddo
           endif
-          
-#if 0
-          ! DEBUG
-          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+250.)<=50.&
-             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-233.33)<=10.&
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=10.)) then
-            write(*,*) 'KEEEEEEEEEEK', coord(:, ibool_before_perio(i,j,ispec)), in_dm(:,iglob), dm_P
-          endif
-#endif
           
           ! 1) Inviscid contributions.
           ! 1.1) Mass conservation (fully inviscid).
@@ -674,20 +609,6 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           else
             jump = cv_drho(iglob) - drho_P
           endif
-#if 0
-          ! DEBUG
-          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-             .and. abs(currentTime-.9689999999999)<=0.00001) then
-            write(*,"(A,E13.5,I3,F9.3,E11.3,A,F9.3,F9.3,A,E11.3,E11.3,A,E11.3,E11.3,A,F9.3,A,E11.3)") &
-              'KK', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
-              !cv_drho(iglob),
-              outrhs_drho(iglob), &
-              '|', n_out, '|', in_dm(:,iglob), '|', dm_P, '|', lambda, '|', jump
-          endif
-#endif
-          !outrhs_drho(iglob) = outrhs_drho(iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_drho(iglob) =   outrhs_drho(iglob) &
                                 - halfWeight*(DOT_PRODUCT(n_out, in_dm(:,iglob)+dm_P) + lambda*jump)
           ! 1.2) x-Momentum inviscid contributions.
@@ -695,13 +616,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                           + rho0dv_P(1)       *v0_P(1) + dp_P ! "P" side.
           Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglob)*LNS_v0(1,iglob) & ! "M" side.
                           + rho0dv_P(NDIM)       *v0_P(1) ! "P" side.
-          !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZEROcr
           else
             jump = cv_rho0dv(1,iglob) - rho0dv_P(1)
           endif
-          !outrhs_rho0dv(1,iglob) = outrhs_rho0dv(1,iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_rho0dv(1,iglob) =   outrhs_rho0dv(1,iglob) &
                                    - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.2) z-Momentum inviscid contributions.
@@ -709,13 +628,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                           + rho0dv_P(1)       *v0_P(NDIM) ! "P" side.
           Sigma_L(NDIM) =   cv_rho0dv(NDIM,iglob)*LNS_v0(NDIM,iglob) + in_dp(iglob) & ! "M" side.
                           + rho0dv_P(NDIM)       *v0_P(NDIM) + dp_P ! "P" side.
-          !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZEROcr
           else
             jump = cv_rho0dv(NDIM,iglob) - rho0dv_P(NDIM)
           endif
-          !outrhs_rho0dv(NDIM,iglob) = outrhs_rho0dv(NDIM,iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
                                       - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           ! 1.3) Energy inviscid contributions.
@@ -723,13 +640,11 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                     + LNS_v0(:,iglob)*(cv_dE(iglob)  + in_dp(iglob)) & ! "M" side, part.
                     + dv_P(:)        *(E0_P          + p0_P) & ! "P" side, part.
                     + v0_P(:)        *(dE_P          + dp_P) ! "P" side, part.
-          !flux_n = DOT_PRODUCT(n_out, Sigma_L)
           if(exact_interface_flux) then
             jump = ZEROcr
           else
             jump = cv_dE(iglob) - dE_P
           endif
-          !outrhs_dE(iglob) = outrhs_dE(iglob) - halfWeight*(flux_n + lambda*jump) ! Add flux' contribution.
           outrhs_dE(iglob) =   outrhs_dE(iglob) &
                              - halfWeight*(DOT_PRODUCT(n_out, Sigma_L) + lambda*jump)
           
@@ -737,16 +652,10 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
           if(viscousComputation) then
             ! Note: since we consider here viscous terms, that is purely diffusive phenomena, the acoustic wave speed makes no sense, and thus the jump in the Lax-Friedrich approximation does not appear in the formulations.
             ! 2.1) Mass conservation: nothing.
-            ! 2.2) x-Momentum viscous contributions. The vector [Sigma_L_x, Sigma_L_z] represents the mean average flux at the boundary of the x-momentum (based on the 1st line of \Sigma_v).
-            !Sigma_L(1)    = -in_sigma_dv(1,iglob) -sigma_dv_P(1) ! Recall, this corresponds to \Sigma_v(v')_{1,1}.
-            !Sigma_L(NDIM) = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{1,2} (and \Sigma_v(v')_{2,1}).
-            !outrhs_rho0dv(1,iglob) = outrhs_rho0dv(1,iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            ! 2.2) x-Momentum viscous contributions.
             outrhs_rho0dv(1,iglob) =   outrhs_rho0dv(1,iglob) &
                                       - halfWeight*DOT_PRODUCT(n_out, -(in_sigma_dv(1:2,iglob)+sigma_dv_P(1:2)))
-            ! 2.2) z-Momentum viscous contributions. The vector [Sigma_L_x, Sigma_L_z] represents the mean average flux at the boundary of the z-momentum (based on the 2nd line of \Sigma_v).
-            !Sigma_L(1)    = -in_sigma_dv(2,iglob) -sigma_dv_P(2) ! Recall, this corresponds to \Sigma_v(v')_{2,1} (and \Sigma_v(v')_{1,2}).
-            !Sigma_L(NDIM) = -in_sigma_dv(3,iglob) -sigma_dv_P(3) ! Recall, this corresponds to \Sigma_v(v')_{2,2}.
-            !outrhs_rho0dv(NDIM,iglob) = outrhs_rho0dv(NDIM,iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L) ! Add flux' contribution, with dot product \Sigma\cdot n.
+            ! 2.2) z-Momentum viscous contributions.
             outrhs_rho0dv(NDIM,iglob) =   outrhs_rho0dv(NDIM,iglob) &
                                          - halfWeight*DOT_PRODUCT(n_out, -(in_sigma_dv(2:3,iglob)+sigma_dv_P(2:3)))
             ! 2.3) Energy viscous contributions.
@@ -770,41 +679,21 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
                                + dv_P(1)*sigma_v0_P(2) & ! "P" side, part.
                                + v0_P(1)*sigma_dv_P(2) & ! "P" side, part.
                                + kap_P*nabla_dT_P(NDIM)) ! "P" side, part.
-            !write(*,*) Sigma_L
             outrhs_dE(iglob) = outrhs_dE(iglob) - halfWeight*DOT_PRODUCT(n_out, Sigma_L)
           endif ! Endif on viscousComputation.
         enddo ! Enddo on iface.
       enddo ! Enddo on iface1.
-      
-#if 0
-      ! DEBUG
-      do j = 1, NGLLZ; do i = 1, NGLLX
-        iglob = ibool_DG(i,j,ispec)
-          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-             .and. abs(currentTime-.9689999999999)<=0.00001) then
-          write(*,*) 'K2K', currentTime, ispec, coord(2, ibool_before_perio(i,j,ispec)), &
-                     !cv_drho(iglob), outrhs_drho(iglob)
-                     myrank, iglobP, LNS_E0(iglobP), LNS_p0(iglobP)
-        endif
-      enddo; enddo
-#endif  
     endif ! End of test if acoustic element
   enddo ! End of loop on elements.
   
 end subroutine compute_forces_acoustic_LNS
 
 
-
-
-
-
-
-
-
-
-
+! ------------------------------------------------------------ !
+! LNS_get_bgqts_at_interface                                   !
+! ------------------------------------------------------------ !
+! This routine complements the 'LNS_get_interfaces_unknowns' routine below.
+! This routine returns the background state quantities at the queried point, while 'LNS_get_interfaces_unknowns' returns the constitutive variables.
 
 subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neighbour_type, &
                                       iglob_P, &
@@ -889,26 +778,6 @@ subroutine LNS_get_bgqts_at_interface(i, j, ispec, iface1, iface, neighbor, neig
 end subroutine LNS_get_bgqts_at_interface
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ! ------------------------------------------------------------ !
 ! LNS_get_interfaces_unknowns                                  !
 ! ------------------------------------------------------------ !
@@ -926,27 +795,13 @@ end subroutine LNS_get_bgqts_at_interface
 ! nabla_dT_P: \nabla T', for "P" side. It is needed only for the energy equation viscous contribution.
 ! sigma_dv_P: \Sigma_v(v'), for "P" side. It is (obviously) needed only for viscous contributions, both for momenta and energy equations.
 
-!subroutine LNS_get_interfaces_unknowns(i, j, ispec, neighbor, & ! Point identifier.
-!                  veloc_x_DG_P, veloc_z_DG_P, in_dp_P, T_P, & ! Precomputed quantities.
-!                  exact_interface_flux, &
-!                  inp_drho_M, inp_rho0dv_M, inp_dE_M, & ! Input constitutive variables, "M" side.
-!                  inp_drho_P, inp_dE_P, inp_rho0dv_P, & ! Input constitutive variables, "P" side.
-!                  !V_DG_iM, T_DG_iM, & ! Input derivatives, "M" side. MIGHT NEED.
-!                  !V_DG_iP, T_DG_iP, & ! Input derivatives, "P" side. MIGHT NEED.
-!                  nx, nz, weight, currentTime, iface1, iface&
-!                  
-!                  out_drho_P, out_rho0dv_P, out_dE_P& ! Output constitutive variables.
-!                  !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
-!                  out_dv_P) ! Output other variables.
 subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, neighbour_type, timelocal, & ! Point identifier (input).
              inp_drho_M, inp_rho0dv_M, & ! Input constitutive variables, "M" side.
              inp_drho_P, inp_rho0dv_P, inp_dE_P, & ! Input constitutive variables, "P" side. They make no sense if neighbor(1)<=-1.
-             inp_dp_M, &!inp_sigma_dv_M, & ! Input other variable, "M" side.
-             !V_DG_iM, T_DG_iM, V_DG_iP, T_DG_iP, & ! Input derivatives. MIGHT NEED.
+             inp_dp_M, & ! Input other variable, "M" side.
              n_out, & ! Normal vector (input).
              exact_interface_flux, & ! Switch to disable jump in some cases (output).
              out_drho_P, out_rho0dv_P, out_dE_P, & ! Output constitutive variables.
-             !Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P,& ! Output derivatives. MIGHT NEED.
              out_dm_P, out_dp_P, out_dv_P, & ! Output other variables.
              swCompVisc, out_nabla_dT_P, out_sigma_dv_P, & ! Output other variables: viscous.
              swCompdT, out_dT_P) ! Output other variables.
@@ -954,7 +809,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
   use constants, only: CUSTOM_REAL, NDIM, PI
   use specfem_par, only: NPROC, ibool, ibool_DG, acoustic_forcing, myrank, &!coord, &
                          veloc_elastic, sigma_elastic, &
-                         mpi_transfer_iface, &!, coord, gammaext_DG, &
+                         mpi_transfer_iface, &
                          ibool_before_perio, & ! For MMS validation.
                          ispec_is_acoustic_coupling_el, ispec_is_acoustic_forcing
   use specfem_par_LNS, only: NVALSIGMA, LNS_dummy_1d, &
@@ -988,7 +843,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
   real(kind=CUSTOM_REAL), dimension(NDIM) :: velocity_P
   real(kind=CUSTOM_REAL), dimension(NDIM) :: tang ! Tangential vector.
   real(kind=CUSTOM_REAL) :: normal_v, tangential_v
-  integer :: iglobM, i_el, j_el, ispec_el, iglobP, ipoin, num_interface!, iglob, i_ac, j_ac, ispec_ac
+  integer :: iglobM, i_el, j_el, ispec_el, iglobP, ipoin, num_interface
   real(kind=CUSTOM_REAL), dimension(NDIM, NDIM) :: trans_boundary
   
   !if(.false.) write(*,*) coord, ibool_before_perio ! Only here because compiler is going to râler because of imports necessary to MMS validation.
@@ -1020,15 +875,8 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
   
   iglobM = ibool_DG(i, j, ispec) ! Extract calling point iglob on the "minus" side.
   
-  
-  ! NEW CHARACTERISATION OF TYPE OF NEIGHBOUR
-  ! TODO: with the introduction of the variable neighbour_type, maybe move this characterisation outside this subroutine. Would clarify things.
-  !   neighbour_type = 1  <=> A neighbouring LNS DG element was found in the same partition.
-  !   neighbour_type = 10 <=> Temporary value waiting for precision.
-  !   neighbour_type = 11 <=> A neighbouring LNS DG element was found in another partition.
-  !   neighbour_type = 21 <=> Other material: viscoelastic.
-  !   neighbour_type = 22 <=> Other material: potential acoustic (not implemented).
-  !   neighbour_type = 99 <=> Outside boundary.
+  ! Characterise the type of neighbour.
+  ! The definition of each type of neighbour is detailed alongside the 'check_neighbour_type' routine ('compute_forces_acoustic_LNS_calling_routine.f90').
   if(neighbour_type >= 10) then
     ipoin         = -1 ! By default, specify that for the triplet (iface1,iface,ispec), the values should not be sought in another partition. That is, either the edge is a coupling (with another material) edge, or an edge on the outer boundary of the computational domain.
     num_interface = -1 ! Initialised to this value, but should not be used anywhere as is.
@@ -1048,157 +896,20 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
       endif
     endif
   else
-    ! Unchanged: (neighbour_type >= 10) <=> (neighbour_type == 1) since no types defined in the 2:10 range.
+    ! Unchanged: (neighbour_type < 10) <=> (neighbour_type == 1) since no types defined in the 2:10 range.
     neighbour_type = 1 ! A neighbouring LNS DG element was found in the same partition.
   endif
   
-!  if(neighbor(3) == -1 ) then
-!    ! --------------------------- !
-!    ! neighbor(3) == -1, edge is  !
-!    ! an 'outside' edge.          !
-!    ! --------------------------- !
-!    ! That is, either its corresponding edge is in another partition, or the edge is a coupling (with another material) edge (also in another partition, by construction), or the edge is on the outer boundary of the computational domain.      
-!    ipoin         = -1 ! By default, specify that for the triplet (iface1,iface,ispec), the values should not be sought in another partition. That is, either the edge is a coupling (with another material) edge, or an edge on the outer boundary of the computational domain.
-!    num_interface = -1 ! Initialised to this value, but should not be used anywhere as is.
-!    if(NPROC > 1) then
-!      ipoin         = MPI_transfer_iface(iface1, iface, ispec, 1)
-!      num_interface = MPI_transfer_iface(iface1, iface, ispec, 2)
-!    endif
-!    
-!    if(ipoin > -1) then
-!      neighbour_type = 11
+  ! Depending on the type of neighbour, set the boundary conditionz.
+  !--------------------------------------------------------------
   if(neighbour_type==11) then
-      ! --------------------------- !
-      ! ipoin > -1, values should   !
-      ! be sought in another        !
-      ! partition, thus on an       !
-      ! interface, thus DG buffers  !
-      ! should be used.             !
-      ! --------------------------- !
-      
-#if 0
-! The case below will stop the program anyhow afterwards. Best remove it altogether for now.
-! Moreover, ispec_is_acoustic_coupling_ac is allocated in a bad place (in compute_forces_acoustic_DG_calling_routine.F90), and so testing it causes a segfault. So, best remove it altogether for now.
-! You may have to bring it back onboard if you plan on implementing acoustic_DG/acoustic coupling.  
-      if(ispec_is_acoustic_coupling_ac(ibool_DG(i, j, ispec)) >= 0) then
-        ! --------------------------- !
-        ! MPI acoustic potential      !
-        ! neighbour.                  !
-        ! --------------------------- !
-        write(*,*) "********************************"
-        write(*,*) "*            ERROR             *"
-        write(*,*) "********************************"
-        write(*,*) "* Interfaces between LNS and   *"
-        write(*,*) "* acoustic potential elements  *"
-        write(*,*) "* are not implemented yet.     *"
-        write(*,*) "********************************"
-        stop
-        ! Set exact_interface_flux.
-        exact_interface_flux = .true.
-        ! Coordinates of elastic element
-        iglob = ibool(i, j, ispec)
-        ! Set out_drho_P.
-        call background_physical_parameters(i, j, ispec, timelocal, out_drho_P, &
-                                            .true., velocity_P(1), & ! "(1)" here is to please Intel compilers. It should not interfere too much since the concerned array is nicely allocated.
-                                            .false., LNS_dummy_1d(1), &
-                                            .false., LNS_dummy_1d(1)) ! Get needed background parameters. Use dummies for values we're not interested in.
-        ! Set velocity_P: free slip and normal velocity continuity.
-        !call boundary_condition_DG(i, j, ispec, timelocal, out_drho_P, out_rho0dv_P(1), out_rho0dv_P(NDIM), out_dE_P, &
-        !                           out_dv_P(1), out_dv_P(NDIM), out_dp_P, e1_DG_P) ! Warning, expression of out_dp_P might not be exact.
-        veloc_P = veloc_vector_acoustic_DG_coupling(iglob, :)
-        !veloc_x = veloc_vector_acoustic_DG_coupling(iglob, 1)
-        !veloc_z = veloc_vector_acoustic_DG_coupling(iglob, 2)
-        call build_trans_boundary(n_out, tang, trans_boundary)
-        ! Tangential vector
-        ! Since only bottom topography n_out(NDIM) > 0
-        !tang(1) = -n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
-        !tang(NDIM) = n_out(1) ! Recall: n_out(1)=n_x.
-        ! Normal velocity of the solid perturbation and tangential velocity of the fluid flow
-        !normal_v     = veloc_P(1)*n_out(1) + veloc_P(1)*n_out(NDIM) ! Recall: n_out(NDIM)=n_z.
-        !tangential_v = veloc_P(1)*tang(1) + veloc_P(1)*tang(NDIM)
-        normal_v     = DOT_PRODUCT(n_out, veloc_P)
-        tangential_v = DOT_PRODUCT(tang, veloc_P)
-        
-        do SPCDM = 1, NDIM
-          velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v!veloc_elastic(1,iglob)
-          !velocity_P(1) = trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v!veloc_elastic(1,iglob)
-          !velocity_P(NDIM) = trans_boundary(2, 1)*normal_v + trans_boundary(2, 2)*tangential_v
-        enddo
-        
-        ! TODO: ! QUICK HACK: DEACTIVATE COUPLING IN BUFFER ZONES. See boundary_terms_DG.f90.
-        
-        ! Set out_dv_P.
-        out_dv_P = velocity_P - LNS_v0(:, iglobM) ! Requesting iglobM might be technically inexact, but on elements' boundaries points should overlap. Plus, iglobP does not exist on outer computational domain boundaries.
-        ! Set out_dp_P: traction continuity.
-        out_dp_P = LNS_p0(iglobM) - potential_dot_dot_acoustic(iglob) ! Warning, expression of out_dp_P might not be exact.
-        ! Set out_dE_P.
-        call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM) ! Warning, expression of out_dp_P might not be exact.
-        !out_dE_P       = out_dp_P/(gammaext_DG(iglobM) - 1.) + HALFcr*out_drho_P*( out_dv_P(1)**2 + out_dv_P(NDIM)**2 )
-        ! Set out_rho0dv_P.
-        do SPCDM = 1, NDIM
-          out_rho0dv_P(SPCDM) = out_drho_P*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
-        enddo
-        !out_rho0dv_P=out_drho_P*out_dv_P
-        ! Set out_dm_P: see bottom of routine.
-        if(swCompVisc) then
-          ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
-          out_nabla_dT_P = nabla_dT(:,iglobM)
-          ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
-          out_sigma_dv_P = sigma_dv(:,iglobM)
-        endif
-        ! Set out_dT_P.
-        if(swCompdT) then
-          !out_dT_P = (inp_dE_M/inp_drho_M - 0.5*(dv_M(1)**2 + dv_M(NDIM)**2))/c_V
-          call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-          !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
-        endif
-#endif
-        
-!      else ! 01/08/19 Removed this else with the if above (see comment above on acoustic_DG/acoustic coupling).
-        ! --------------------------- !
-        ! MPI acoustic DG neighbour   !
-        ! (not acoustic potential     !
-        ! neighbour).                 !
-        ! --------------------------- !
-#if 0
-! DEBUG
-          if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-             .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                    .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-             .and. abs(timelocal-.9689999999999)<=0.00001 &
-             .and. myrank==0) then
-          write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                     'buffer_rho0dv', buffer_LNS_dE_P(ipoin, num_interface)
-        endif
-#endif
-      
     exact_interface_flux = .false. ! Set exact_interface_flux.
     out_drho_P     = buffer_LNS_drho_P(ipoin, num_interface) ! Set out_drho_P.
     out_rho0dv_P   = buffer_LNS_rho0dv_P(:, ipoin, num_interface) ! Set out_rho0dv_P.
     out_dE_P       = buffer_LNS_dE_P(ipoin, num_interface) ! Set out_dE_P.
-    !gamma_P        = buffer_DG_gamma_P(ipoin,num_interface)
     out_dv_P(:) = out_rho0dv_P(:)/LNS_rho0(iglobM) ! Set out_dv_P.
-    !out_dv_P(1) = out_rho0dv_P(1)/LNS_rho0(iglobM)
-    !out_dv_P(NDIM) = out_rho0dv_P(NDIM)/LNS_rho0(iglobM)
-    !out_dv_P(1) = buffer_LNS_dv_P(1, ipoin, num_interface)
-    !out_dv_P(2) = buffer_LNS_dv_P(2, ipoin, num_interface)
     call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM) ! Set out_dp_P.
-    ! Note (cf. DEBUG below): given the right (drho, dv, dE) from buffers (which seem ok), this locally computed dp_P agrees with the dp on the other side.
-#if 0
-    ! DEBUG
-      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-         .and. abs(timelocal-.9689999999999)<=0.00001 &
-         .and. myrank==0) then
-      write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                 'dp other side', out_dp_P
-    endif
-#endif
-
     ! Set out_dm_P: see bottom of routine.
-    ! Note (cf. DEBUG end of routine): given the right (out_rho0dv_P, out_drho_P) from buffers (which seem ok) and LNS_v0(:,iglobM), this locally computed dm_P agrees with the dm on the other side.
-
     if(swCompVisc) then
       out_nabla_dT_P = buffer_LNS_nabla_dT(:, ipoin, num_interface) ! Set out_nabla_dT_P: get the values from the MPI buffers.
       out_sigma_dv_P = buffer_LNS_sigma_dv(:, ipoin, num_interface) ! Set out_sigma_dv_P: get the values from the MPI buffers.
@@ -1206,16 +917,9 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
     if(swCompdT) then
       call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:, iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P.
     endif
-    
-!      endif ! 01/08/19 Removed this else with the if above (see comment above on acoustic_DG/acoustic coupling).
-      
-!    elseif(ACOUSTIC_FORCING .AND. ispec_is_acoustic_forcing(i, j, ispec)) then
-!      neighbour_type = 22 ! Other material: potential fluid.
+  
+  !--------------------------------------------------------------  
   elseif(neighbour_type==22) then
-    ! --------------------------- !
-    ! ipoin == -1                 !
-    !   and acoustic forcing      !
-    ! --------------------------- !
     write(*,*) "********************************"
     write(*,*) "*            ERROR             *"
     write(*,*) "********************************"
@@ -1223,38 +927,16 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
     write(*,*) "* for DG simulations.          *"
     write(*,*) "********************************"
     stop
-         
-!    elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0) then
-!    !elseif(ispec_is_acoustic_coupling_el(i, j, ispec, 3) >= 0 .AND. abs(n_out(1)) < 1.) then ! The condition '|n_x|<1' is there to remove coupling on outer-pointing edges (those having |n_x|>1). However, while this works with flat horizontal topography, this also removes coupling at the vertical boundaries within the domain of interest.
-!      neighbour_type = 21 ! Other material: viscoelastic.
+  
+  !--------------------------------------------------------------
   elseif(neighbour_type==21) then
-    ! --------------------------- !
-    ! ipoin == -1                 !
-    !   and elastic coupling      !
-    ! --------------------------- !
-    
     exact_interface_flux = .false. ! Set exact_interface_flux.
-    
     ! Coordinates of elastic element
     i_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 1)
     j_el     = ispec_is_acoustic_coupling_el(i, j, ispec, 2)
     ispec_el = ispec_is_acoustic_coupling_el(i, j, ispec, 3)
-    !iglob    = ibool(i_el, j_el, ispec_el)
     
     out_drho_P = inp_drho_M ! Set out_drho_P: same as other side, that is a Neumann condition.
-    
-    !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
-    !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
-    !   .and. abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<1. .and. timelocal>=2.) then ! DEBUG
-    !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
-    !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
-    !             !out_rho0dv_P ! DEBUG
-    !             !out_dv_P ! DEBUG
-    !             !trans_boundary ! DEBUG
-    !             !LNS_rho0(iglobM), LNS_v0(:,iglobM), LNS_p0(iglobM), &
-    !             !veloc_elastic(:,ibool(i_el, j_el, ispec_el)), (LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-    !             LNS_dv(:,iglobM)
-    !endif ! DEBUG
     
     ! Set velocity_P.
     call build_trans_boundary(n_out, tang, trans_boundary)
@@ -1262,45 +944,27 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
 #define USECLASSICALCOUPLING 0
 #if USECLASSICALCOUPLING
     ! VERSION 1: normal velocity from elastic velocity, and slip condition for tangential.
-    !veloc_P = veloc_elastic(:, iglob)
-    !normal_v     = veloc_elastic(1, iglob)*n_out(1)  + veloc_elastic(NDIM, iglob)*n_out(NDIM)
     normal_v     = DOT_PRODUCT(n_out, veloc_elastic(:,ibool(i_el, j_el, ispec_el)))
-    !tangential_v = veloc_x_DG_P*tang(1) + veloc_z_DG_P*tang(NDIM)
     tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
     do SPCDM = 1, NDIM
       velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
     enddo
-    !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
-    !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
-    !   .and. abs(coord(1,ibool_before_perio(i,j,ispec)))<1.) then ! DEBUG
-    !  write(*,*) 'x', coord(:,ibool_before_perio(i,j,ispec)), 'nt', n_out, tang, 'T', trans_boundary ! debug
-    !endif
 #else
     ! VERSION 2: normal velocity from Terrana velocity, and slip condition for tangential.
-    !write(*,*) '----------------------------------- timelocal', timelocal ! DEBUG
     call S2F_Terrana_coupling(n_out, &
                               LNS_rho0(iglobM)+inp_drho_M, &
-                              !inp_drho_M, &
                               LNS_v0(:,iglobM)+LNS_dv(:,iglobM), &
-                              !LNS_dv(:,iglobM), &
-                              !LNS_p0(iglobM)+inp_dp_M, &
                               inp_dp_M, &
-                              LNS_c0(iglobM), & ! either that, or recomputing using sqrt(gammaext_DG(iglobM)*(p0+dp)/rho_fluid)
-                              !sqrt(gammaext_DG(iglobM)*(LNS_p0(iglobM)+inp_dp_M)/(LNS_rho0(iglobM)+inp_drho_M)), &
+                              LNS_c0(iglobM), &
                               iglobM, &
                               veloc_elastic(:,ibool(i_el, j_el, ispec_el)), &
                               sigma_elastic(:,:,ibool(i_el, j_el, ispec_el)), &
                               i_el, j_el, ispec_el, &
                               velocity_P, out_dp_P)
-    !write(*,*) "velocity_P", velocity_P ! DEBUG
-    !write(*,*) 'sigma_elastic(:,:,ibool(i_el, j_el, ispec_el))', sigma_elastic(:,:,ibool(i_el, j_el, ispec_el))
-    !! Set out_dv_P.
-    !out_dv_P = velocity_P
     ! Set out_dv_P: do as in FNS, put Terrana's velocity in normal component, and leave tangential untouched (slip condition).
     call build_trans_boundary(n_out, tang, trans_boundary)
     normal_v     = DOT_PRODUCT(n_out, velocity_P)
     tangential_v = DOT_PRODUCT(tang, LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-    !tangential_v = DOT_PRODUCT(tang, velocity_P) ! Using velocity_P in both normal and tanenial should not be done like this, this is for testing purposes. If you want to use full Terrana continuity, comment out the whole "trans_boundary" section and keep velocity_P as it was in the output of S2F_Terrana_coupling.
     do SPCDM = 1, NDIM
       velocity_P(SPCDM) = trans_boundary(SPCDM, 1)*normal_v + trans_boundary(SPCDM, 2)*tangential_v
     enddo
@@ -1315,16 +979,12 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
 #else
     ! VERSION 2: TERRANA.
     ! done above in the call to S2F_Terrana_coupling
-    !out_dp_P = out_dp_P - LNS_p0(iglobM) ! If we recovered full p instead of dp.
 #endif
 
     ! Set out_dE_P.
     call compute_dE_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_p0(iglobM)+out_dp_P, out_dE_P, iglobM)
 
     ! Set out_rho0dv_P.
-    !do SPCDM = 1, NDIM
-    !  out_rho0dv_P(SPCDM) = LNS_rho0(iglobM)*out_dv_P(SPCDM) ! Safe version, just in case element-wise mutiplication fails somehow.
-    !enddo
     out_rho0dv_P(:) = LNS_rho0(iglobM)*out_dv_P(:)
     
     ! Set out_dm_P: see bottom of routine.
@@ -1337,21 +997,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
       call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, velocity_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM) ! Set out_dT_P.
     endif
     
-    !if(      coord(2,ibool_before_perio(i,j,ispec))<1. & ! DEBUG
-    !   .and. coord(2,ibool_before_perio(i,j,ispec))>=ZEROcr & ! DEBUG
-    !   .and. abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<1. .and. timelocal>=2.) then ! DEBUG
-    !  write(*,*) timelocal, coord(:,ibool_before_perio(i,j,ispec)), & ! DEBUG
-    !             !LNS_p0(iglobM)+inp_dp_M, LNS_p0(iglobM)+out_dp_P ! DEBUG
-    !             !out_rho0dv_P ! DEBUG
-    !             !out_dv_P ! DEBUG
-    !             !trans_boundary ! DEBUG
-    !             !LNS_rho0(iglobM), LNS_v0(:,iglobM), LNS_p0(iglobM), &
-    !             !veloc_elastic(:,ibool(i_el, j_el, ispec_el)), (LNS_v0(:,iglobM)+LNS_dv(:,iglobM))
-    !             velocity_P, out_dv_P, LNS_dv(:,iglobM)
-    !endif ! DEBUG
-
-!    else
-!      neighbour_type = 99 ! Outside boundary.
+  !--------------------------------------------------------------
   elseif(neighbour_type==99) then
     ! --------------------------- !
     ! ipoin == -1                 !
@@ -1460,7 +1106,7 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
     ispec_ac = neighbor(3)
     iglob = ibool(i_ac,j_ac,ispec_ac)!ibool(i, j, ispec)
     !if(.false.) then ! DEBUG
-    !  WRITE(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
+    !  write(*,*) ibool(i_ac,j_ac,ispec_ac), xixl, xizl, gammaxl, gammazl, duz_dxi, duz_dgamma, k
     !endif
     ! Set out_drho_P.
     call background_physical_parameters(i_ac, j_ac, ispec_ac, timelocal, out_drho_P, &

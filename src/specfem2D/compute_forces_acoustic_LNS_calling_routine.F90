@@ -7,7 +7,6 @@
 ! This routine is called by iterate_time().
 
 subroutine compute_forces_acoustic_LNS_main()
-  ! TODO: select variables to use.
   use constants
   use specfem_par
   use specfem_par_LNS
@@ -1172,8 +1171,9 @@ subroutine compute_gradient_TFSF(TF, SF, swTF, swSF, swMETHOD, nabla_TF, nabla_S
             ! We know that the scalar field will always be temperature, and that the tensor field will always be the velocity, so we use the already-built LNS_get_interfaces_unknowns routine to get them. The switch is here to prevent unecessary quantites to be computed during that specific call. If other fields need to be computed, one will have to use a dedicated routine.
             call check_neighbour_type(neighbour_type) ! Safeguard: crash the program if neighbour_type outside of possible values.
             
-            ! For real stretching, \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
-            ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to LNS_get_interfaces_unknowns. If you change anything, remember to do it also in the 'compute_forces_acoustic_LNS' subroutine.
+            ! For the real stretching boundary conditions , \Sigma for each constitutive variable becomes \Ya\Sigma. It is heavy to change each and every expression where \Sigma arises. Rather, we make use of what is multiplying \Sigma.
+            ! Here, in the surface integrations, easiest is the normals. But we have to do it after the call to the 'LNS_get_interfaces_unknowns' routine and the affectation of lambda.
+            ! If you change anything to this, remember to do it also in the 'compute_gradient_TFSF' subroutine ('compute_forces_acoustic_LNS_calling_routine.f90').
             if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
               do SPCDM = 1, NDIM
                 n_out(SPCDM) = n_out(SPCDM) * stretching_ya(SPCDM, ibool_before_perio(i,j,ispec))
