@@ -1,3 +1,5 @@
+! This module contains the global variables useful for the implementation of the LNS (Linear Navier-Stokes) module.
+
 module specfem_par_LNS
 
   use constants
@@ -5,66 +7,69 @@ module specfem_par_LNS
   implicit none
   
   ! ---------------------------- !
-  ! Generalised background model parameters.
+  ! Generalised background model
+  ! parameters.
   ! ---------------------------- !
-  ! File name for generalised background model.
+  ! Parameters for the loading of general range-dependent atmospheric models.
+  ! The models should be generated using the format and scripts available in './utils_new/lns_background_models'.
+  ! > Should the program load a binary file (set to .true.) or a column-formatted ASCII file (set to .false.).
   logical, parameter :: BCKGRD_MDL_LNS_is_binary = .true.
+  ! > File name for the generalised background model (care for the extension, cf. the parameter above).
   character(len=100), parameter :: BCKGRD_MDL_LNS_FILENAME = './background_model.bin'
+  ! > Header file name, only for binary generalised background models (cf. the parameter above). Extension should remain '.dat'.
   character(len=100), parameter :: BCKGRD_MDL_LNS_FILENAME_HEADER = './background_model_header.dat'
+  ! > Number of quantities to load from the model. This corresponds to the number of columns in the file if ASCII.
   integer, parameter :: BCKGRD_MDL_LNS_NCOL = 10 ! (x, z, rho, vx, vz, p, g, gamma, mu, kappa)
   
   ! ---------------------------- !
   ! Switches.
   ! ---------------------------- !
-  ! Switch enabling the use of LNS instead of FNS.
+  ! Various switches to activate/deactivate techniques in the program.
+  ! Most switches should be set up in the parfile.
+  ! > Main switch, enabling the use of the LNS module (set to .true.) or of the FNS module (set to .false.).
   logical :: USE_LNS
+  ! > Switch to activate the use of the "desintegration method" for gradient computation methods, and to desactivate to use the
+  !   SEM definition of the gradient.
+  !   Switching to LNS_switch_gradient = .false. enables a somewhat little acceleration (~28% total runtime gain), but is
+  !   expected to be less accurate.
+  logical, parameter :: LNS_switch_gradient = .false.
+  ! > Switch being .true. if (maxval(LNS_mu) > 0. .OR. maxval(LNS_eta) > 0. .OR. maxval(LNS_kappa) > 0.) and .false. if not. See
+  !   'compute_forces_acoustic_LNS_calling_routine.f90'. Speeds up some parts of the code.
+  logical :: LNS_viscous
+  ! > Switch dictating the use of vibrational relaxation. It becomes .true. when the relaxation times sepecified in the parfile
+  !   are not equal, and remains .false. otherwise. See 'compute_forces_acoustic_LNS_calling_routine.f90' and
+  !   'compute_forces_acoustic_LNS.f90'. Speeds up some parts of the code.
+  logical :: LNS_avib
+  ! ------------------------------------------------------------ !
+  
+  ! ---------------------------- !
+  ! Validation of the fluid
+  ! equations.
+  ! ---------------------------- !
+  ! Switches for the validation of the fluid equations.
   logical :: VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU
+  ! Constants used in the validation of the fluid equations.
   real(kind=CUSTOM_REAL) :: MMS_dRHO_cst, MMS_dVX_cst, MMS_dVZ_cst, MMS_dE_cst, &
                             MMS_dRHO_x, MMS_dRHO_z, &
                             MMS_dVX_x, MMS_dVX_z, MMS_dVZ_x, MMS_dVZ_z, &
                             MMS_dE_x, MMS_dE_z
   
-  ! Switch to activate the use of the "desintegration method" for gradient computation methods, and to desactivate to use the
-  ! SEM definition of the gradient.
-  ! Switching to LNS_switch_gradient = .false. enables a somewhat little acceleration (~28% total runtime gain), but is
-  ! expected to be less accurate.
-  ! LNS_switch_gradient=.true. has an issue when background wind and viscosity are on both at the same time. Not understood yet, to be corrected.
-  logical, parameter :: LNS_switch_gradient = .false.
-  
-  ! General switch being true if (maxval(LNS_mu) > 0. .OR. maxval(LNS_eta) > 0. .OR. maxval(LNS_kappa) > 0.) and false if not.
-  ! See compute_forces_acoustic_LNS_calling_routine. In the latter case, enables faster verification and thus faster skipping
-  ! of some parts of the code.
-  logical :: LNS_viscous
-  logical :: LNS_avib
-  ! ------------------------------------------------------------ !
-  
-  ! ---------------------------- !
-  ! Constants and coefficients.
-  ! ---------------------------- !
-  ! Constants (TODO maybe move to constants.h.in).
-  !real(kind=CUSTOM_REAL), parameter :: R_ADIAB = 8.3144598
-  
-  ! LSRK coefficients. ! Size should be stage_time_scheme.
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_scheme_A, LNS_scheme_B, LNS_scheme_C
-  ! ------------------------------------------------------------ !
-  
   ! ---------------------------- !
   ! 2D/3D generalisation
   ! pre-work.
   ! ---------------------------- !
-  integer, parameter :: NVALSIGMA = int(0.5*NDIM*(NDIM+1)) ! Number of distinct values in the symmetric viscous tensor.
+  ! > Number of distinct values in the symmetric viscous tensor.
+  integer, parameter :: NVALSIGMA = int(0.5*NDIM*(NDIM+1))
   ! ------------------------------------------------------------ !
   
   ! ---------------------------- !
   ! Printing parameters.
   ! ---------------------------- !
-  ! Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
+  ! > Verbosity parameter. Min/Maximum values: [-10^2+1=-99, 10^2-1=99].
+  !   LNS_VERBOSE>= 1: printing iteration, stages, and local times, every LNS_MODPRINT iterations.
+  !   LNS_VERBOSE>=51: printing min/max values for each constitutive variable on CPU 0 every LNS_MODPRINT iterations.
   integer(kind=selected_int_kind(2)), parameter :: LNS_VERBOSE = 99
-  ! LNS_VERBOSE>= 1: printing iteration, stages, and local times, every LNS_MODPRINT iterations
-  ! LNS_VERBOSE>=51: printing min/max values for each constitutive variable on CPU 0 every LNS_MODPRINT iterations
-  
-  ! Integer used in modulo for condition on printing min/max values for each constitutive variable on CPU 0 every 100
-  ! iterations. To be added in parfile later.
+  ! > Integer used in modulo for condition on printing min/max values for each constitutive variable on CPU 0.
   integer, parameter :: LNS_MODPRINT = 500
   ! ------------------------------------------------------------ !
   
@@ -72,43 +77,44 @@ module specfem_par_LNS
   ! Physical quantities.
   ! ---------------------------- !
   ! Pretty much all these arrays are allocated in 'prepare_timerun_wavefields.f90'.
-  ! The initial state arrays (ending in "0") are allocated in 'setup_mesh.f90', in order to be able to perform the loading of general external models.
-  ! Physical parameters.
+  ! The initial state arrays (ending in "0") are allocated in 'setup_mesh.f90', in order to be able to perform the loading of
+  ! general external models.
+  ! > Physical parameters.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_g, LNS_mu, LNS_eta, LNS_kappa, LNS_c0, LNS_avib_taueps, LNS_avib_tausig
-  
-  ! Initial state.
+  ! > Initial state.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_rho0, LNS_E0
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_v0
-  
-  ! Auxiliary initial state quantities.
+  ! > Auxiliary initial state quantities.
   real(kind=CUSTOM_REAL), dimension(:),     allocatable :: LNS_p0, LNS_T0
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: nabla_v0 ! Gradient of initial velocity.
-  ! Initial viscous stress tensor. Symmetric, thus only need to save few (NVALSIGMA) entries. In 2D : (1,:) index must
-  ! correspond to the index (1, 1) of the actual tensor, (2, :) <-> (1, 2) and (2, 1) of the actual tensor,
-  ! and (3, :) <-> (2, 2) of the actual tensor.
+  ! > Initial viscous stress tensor. Symmetric, thus only need to save few (NVALSIGMA) entries.
+  !   In 2D : (1,:) index must correspond to the index (1, 1) of the actual tensor,
+  !           (2, :) <-> (1, 2) and (2, 1) of the actual tensor, and
+  !           (3, :) <-> (2, 2) of the actual tensor.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: sigma_v_0
-  
-  ! State.
+  ! > State.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_drho, LNS_dE, LNS_e1
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_rho0dv
-  
-  ! Auxiliary state quantities.
+  ! > Auxiliary state quantities.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: LNS_dp, LNS_dT
-  ! Velocity perturbation, and momentum (1st order) perturbation.
+  ! > Velocity perturbation, and momentum (1st order) perturbation.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: LNS_dv, LNS_dm
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: nabla_dT ! Gradient of temperature perturbation.
-  ! Viscous stress tensor perturbation. Symmetric, thus only need to save few entries (see sigma_v_0).
+  ! > Gradient of temperature perturbation.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: nabla_dT
+  ! > Viscous stress tensor perturbation. Symmetric, thus only need to save few entries (see sigma_v_0).
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: sigma_dv
   ! ------------------------------------------------------------ !
   
   ! ---------------------------- !
   ! LSRK time iteration.
   ! ---------------------------- !
-  ! RHS registers.
+  ! > LSRK coefficients. Size should be stage_time_scheme, as defined in 'initialize_simulation.f90' by the
+  !   time_stepping_scheme parameter defined in the parfile.
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: LNS_scheme_A, LNS_scheme_B, LNS_scheme_C
+  ! > RHS registers.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: RHS_drho, RHS_dE, RHS_e1
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: RHS_rho0dv
-  
-  ! Auxiliary registers.
+  ! > Auxiliary registers.
   real(kind=CUSTOM_REAL), dimension(:),   allocatable :: aux_drho, aux_dE, aux_e1
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: aux_rho0dv
   ! ------------------------------------------------------------ !
@@ -117,14 +123,16 @@ module specfem_par_LNS
   ! Absorbing boundary
   ! conditions.
   ! ---------------------------- !
-  ! Real stretching.
-  ! See 'specfem2D_par.f90', variables:
-  ! ABC_STRETCH_*,
-  ! iy_image_color_*_buffer, ix_image_color_*_buffer,
-  ! stretching_ya,
-  ! stretching_buffer
+  ! For the variables and parameters related to the real stretching absorbing boundary conditions, see 'specfem2D_par.f90'
+  ! (variables ABC_STRETCH_*, iy_image_color_*_buffer, ix_image_color_*_buffer, stretching_ya, stretching_buffer).
+  ! ------------------------------------------------------------ !
   
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+  ! ---------------------------- !
   ! PMLs.
+  ! ---------------------------- !
   ! Pretty much all these arrays are allocated in 'prepare_timerun_pml.f90'.
   ! /!\ PMLs are still under developement.
   integer :: nglob_PML ! Number of PML points (spatial duplicates included). Computed in 'pml_init.f90'.
@@ -158,16 +166,19 @@ module specfem_par_LNS
   ! each variable, hence the first dimension.
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: LNS_PML_b, LNS_PML_d
   ! ------------------------------------------------------------ !
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
   
   ! ---------------------------- !
   ! Parallel computing.
   ! ---------------------------- !
   ! The following variables are allocated in read_mesh_databases.F90.
-  ! MPI transfer buffers: background state.
+  ! > MPI transfer buffers: background state.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_rho0, buffer_LNS_E0, buffer_LNS_p0, buffer_LNS_kappa
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_v0
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_sigma_v0_P
-  ! MPI transfer buffers: variables.
+  ! > MPI transfer buffers: variables.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: buffer_LNS_drho_P, buffer_LNS_dE_P!, buffer_LNS_dp_P
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_rho0dv_P!, buffer_LNS_dv_P
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: buffer_LNS_nabla_dT, buffer_LNS_sigma_dv
@@ -253,7 +264,7 @@ module specfem_par_LNS
   end function isNotClose
   
   ! Implement a test to check whether a point is in a triangle or not.
-  ! Used for general background model loading.
+  ! Used for general background model loading (see 'lns_load_background_model.f90').
   ! From https://blackpawn.com/texts/pointinpoly/default.html
   logical function point_is_in_triangle(vert_list, point)
     use constants, only: CUSTOM_REAL, NDIM
@@ -282,31 +293,5 @@ module specfem_par_LNS
     ! Check if point is in triangle
     point_is_in_triangle = ((u >= 0) .and. (v >= 0) .and. (u + v < 1))
   end function point_is_in_triangle
-
-!  ! ------------------------------------------------------------ !
-!  ! RusanovFlux                                                  !
-!  ! ------------------------------------------------------------ !
-!  ! Implements the Rusanov approximation for the computation of the flux across an interface where the following Riemann
-!  ! problem is posed:
-!  !   \partial_t q + \nabla\cdot\Sigma = S
-!  function RusanovFlux(Sigma_M, Sigma_P, q_M, q_P, normal_vec, exact_interface_flux, lambda) result(flux)
-!    use constants, only: CUSTOM_REAL, NDIM
-!    implicit none
-!    ! Input/Output.
-!    real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: Sigma_M, Sigma_P ! tensor field on either side
-!    real(kind=CUSTOM_REAL), intent(in) :: q_M, q_P ! constitutive variable on either side
-!    real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: normal_vec ! normal vector at the interface
-!    logical, intent(in) :: exact_interface_flux ! whether to implement a jump or not
-!    real(kind=CUSTOM_REAL), intent(in) :: lambda ! a pre-computed approximate maximum linearised acoustic wave speed
-!    real(kind=CUSTOM_REAL) :: flux
-!    ! Local.
-!    !N./A.
-!    if(exact_interface_flux) then
-!      flux = 0.5_CUSTOM_REAL * DOT_PRODUCT(normal_vec, Sigma_M+Sigma_P)
-!    else
-!      flux = 0.5_CUSTOM_REAL * (DOT_PRODUCT(normal_vec, Sigma_M+Sigma_P) - lambda*(q_P-q_M))
-!    endif
-!  end function RusanovFlux
-  ! ------------------------------------------------------------ !
   
 end module specfem_par_LNS

@@ -34,7 +34,8 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_DG_main                              !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Main routine taking care of the DG elements to be solved with the FNS (Full Navier-Stokes) module.
+! This routine is called by iterate_time().
 
 subroutine compute_forces_acoustic_DG_main()
 

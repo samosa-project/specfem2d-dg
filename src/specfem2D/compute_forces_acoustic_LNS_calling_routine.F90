@@ -1,11 +1,9 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_LNS_main                             !
 ! ------------------------------------------------------------ !
-! TODO: Description.
-! 
-! Initialisation (routine initial_state_LNS()) was done way before, in
-! prepare_timerun().
-! 
+! Main routine taking care of the DG elements to be solved with the LNS (Linear Navier-Stokes) module.
+! The initialisation of the background parameters (see routine 'initial_state_LNS()' below) is done before the call to this routine, in
+! 'prepare_timerun.f90'.
 ! This routine is called by iterate_time().
 
 subroutine compute_forces_acoustic_LNS_main()
@@ -20,40 +18,30 @@ subroutine compute_forces_acoustic_LNS_main()
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: timelocal
-  real(kind=CUSTOM_REAL), dimension(NDIM,NDIM,nglob_DG) :: nabla_dv
-  integer :: ier, i_aux!, i, j, ispec!, iglob
-  logical check_linearHypothesis
+  real(kind=CUSTOM_REAL), dimension(NDIM, NDIM, nglob_DG) :: nabla_dv
+  integer :: ier, i_aux
+  logical check_linear_hypothesis, check_initial_conditions
   
   ! Checks if anything has to be done.
-  if (.not. any_acoustic_DG) then
-    return
-  endif
+  if(.not. any_acoustic_DG) return
   
-  ! Debug switches. They are computationaly very heavy and should not be used on every simulation.
-  check_linearHypothesis=.true.
+  ! Switch dictating whether the linear hypothesis should be checked at every iteration (set to .true.) or not (set to .false).
+  check_linear_hypothesis = .true.
+  ! Switch dictating whether the initial conditions should be checked at the first iteration (set to .true.) or not (set to .false).
+  check_initial_conditions = .false.
   
   ! Compute current time.
   timelocal = (it-1)*deltat + LNS_scheme_C(i_stage)*deltat
   
   ! Intialisation.
   if(it == 1 .and. i_stage == 1) then
-    !if(USE_SLOPE_LIMITER) then
-    !  ! The Vandermonde matrices are only used when the slope limiter is.
-    !  call setUpVandermonde()
-    !endif
-    
-    !write(*,*) "min, max RHO0 on proc ", myrank, " : ", minval(LNS_rho0), maxval(LNS_rho0) ! DEBUG
-    !write(*,*) "min, max V0   on proc ", myrank, " : ", minval(LNS_v0), maxval(LNS_v0) ! DEBUG
-    !write(*,*) "min, max P0   on proc ", myrank, " : ", minval(LNS_p0), maxval(LNS_p0) ! DEBUG
-    !write(*,*) "min, max E0   on proc ", myrank, " : ", minval(LNS_E0), maxval(LNS_E0) ! DEBUG
-    !stop
-    
     ! Initialise state registers.
     ! Note: since constitutive variables are perturbations, they are necessarily zero at start.
-    ! Allocations occur in prepare_timerun_wavefields.
+    ! Allocations occur in 'prepare_timerun_wavefields.f90'.
     LNS_drho   = ZEROcr
     LNS_rho0dv = ZEROcr
     LNS_dE     = ZEROcr
+    
     ! Initialise state auxiliary quantities.
     LNS_dT     = ZEROcr
     LNS_dp     = ZEROcr
@@ -63,6 +51,7 @@ subroutine compute_forces_acoustic_LNS_main()
       sigma_dv   = ZEROcr
       nabla_dT   = ZEROcr
     endif
+    
     ! Initialise auxiliary registers (for RK).
     aux_drho   = ZEROcr
     aux_rho0dv = ZEROcr
@@ -71,7 +60,7 @@ subroutine compute_forces_acoustic_LNS_main()
     RHS_rho0dv = ZEROcr
     RHS_dE     = ZEROcr
     if(LNS_avib) then
-      ! Deallocated before starting time iterations in initialise_LNS below.
+      ! Those variables are deallocated before even starting time iterations in initialise_LNS below.
       LNS_e1 = ZEROcr
       aux_e1 = ZEROcr
       RHS_e1 = ZEROcr
@@ -94,15 +83,17 @@ subroutine compute_forces_acoustic_LNS_main()
       call find_DG_acoustic_coupling()
     endif
   
-    !call LNS_prevent_nonsense() ! Check initial conditions.
+    ! Check initial conditions.
+    if(check_initial_conditions) call LNS_prevent_nonsense()
 
 #ifdef USE_MPI
-    call LNS_fill_MPI_buffers_var1_bckg0(.false.) ! Fill the MPI buffers related to background model, ONCE.
+    ! Fill the MPI buffers related to background model, but only once at the first iteration.
+    call LNS_fill_MPI_buffers_var1_bckg0(.false.)
 #endif
     
   endif ! Endif on (it == 1) and (i_stage == 1).
   
-  if(LNS_VERBOSE>=1 .and. myrank == 0 .AND. mod(it, LNS_MODPRINT)==0) then
+  if(LNS_VERBOSE>=1 .and. myrank == 0 .and. mod(it, LNS_MODPRINT)==0) then
     WRITE(*, *) "****************************************************************"
     WRITE(*, "(a,i9,a,i1,a,e23.16,a)") "Iteration", it, ", stage ", i_stage, ", local time", timelocal, "."
   endif
@@ -112,167 +103,30 @@ subroutine compute_forces_acoustic_LNS_main()
   LNS_dv = ZEROcr
   do i_aux = 1, NDIM
     LNS_dm(i_aux, :) = LNS_rho0dv(i_aux, :) + LNS_drho*LNS_v0(i_aux, :)
-    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux, :) = LNS_rho0dv(i_aux, :)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should not happen.
+    where(LNS_rho0/=ZEROcr) LNS_dv(i_aux, :) = LNS_rho0dv(i_aux, :)/LNS_rho0 ! 'where(...)' as safeguard, as rho0=0 should never happen.
   enddo
   call compute_dp(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dp)
-#if 0
-  ! TEST MANUFACTURED SOLUTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Exact formulas, for manufactured solutions' validation check.
-  !write(*,*) "minval(ibool_DG), maxval(ibool_DG), nglob_DG", minval(ibool_DG), maxval(ibool_DG), nglob_DG
-  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-    !if(     abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
-    !   .or. abs(coord(1,ibool_before_perio(i,j,ispec))-1.)<TINYVAL &
-    !   .or. abs(coord(2,ibool_before_perio(i,j,ispec))-0.)<TINYVAL &
-    !   .or. abs(coord(2,ibool_before_perio(i,j,ispec))-1.)<TINYVAL) then
-      iglob = ibool_DG(i,j,ispec)
-      LNS_drho(iglob) = 0.
-#define aa 2.
-#define cc 3.
-#define ee 5.
-#define gg 7.
-#define bb 4.
-#define dd 4.
-#define ff 4.
-#define hh 4.
-      LNS_dv(1,iglob) = aa*coord(1,ibool_before_perio(i,j,ispec))**bb + cc*coord(2,ibool_before_perio(i,j,ispec))**dd
-      LNS_dv(2,iglob) = ee*coord(1,ibool_before_perio(i,j,ispec))**ff + gg*coord(2,ibool_before_perio(i,j,ispec))**hh
-      !LNS_dv(1,iglob) = coord(1,ibool_before_perio(i,j,ispec))+coord(2,ibool_before_perio(i,j,ispec))
-      !LNS_dv(2,iglob) = coord(1,ibool_before_perio(i,j,ispec))+coord(2,ibool_before_perio(i,j,ispec))
-      LNS_rho0dv(:,iglob) = LNS_rho0(iglob)*LNS_dv(:,iglob)
-      LNS_dE(iglob) = 0.
-      !LNS_dE(iglob) = coord(2,ibool_before_perio(i,j,ispec)) - 0.5
-      !LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*(  sin(1.5*PI*coord(1,ibool_before_perio(i,j,ispec))) &
-      !                                         + sin(1.5*PI*coord(2,ibool_before_perio(i,j,ispec))))
-      !LNS_dp(iglob) = (gammaext_DG(iglob)-1.)*LNS_dE(iglob)
-      LNS_dp(iglob) = 0.
-    !endif
-  enddo; enddo; enddo
-#endif
-  
-  !call compute_dT(LNS_rho0+LNS_drho, LNS_p0+LNS_dp, LNS_dT)
   call compute_dT(LNS_rho0+LNS_drho, LNS_v0+LNS_dv, LNS_E0+LNS_dE, LNS_dT)
   
-  ! Precompute gradients, only if viscosity exists whatsoever.
+  ! Precompute gradients, only if viscosity (classical or vibrational) exists whatsoever.
   if(LNS_viscous .or. LNS_avib) then
-!    ! Note: this will compute nabla_dv only if viscosity is activated.
-!    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous, LNS_viscous, LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
     ! Note: this will compute nabla_dv only if viscosity is activated OR vibrational attenuation is needed.
-    call compute_gradient_TFSF(LNS_dv, LNS_dT, LNS_viscous .or. LNS_avib, LNS_viscous, &
+    call compute_gradient_TFSF(LNS_dv, LNS_dT, (LNS_viscous .or. LNS_avib), LNS_viscous, &
                                LNS_switch_gradient, nabla_dv, nabla_dT, timelocal)
-    
-    !call compute_viscous_tensors(nabla_dT, nabla_dv, LNS_dummy_1d, LNS_dummy_1d, LNS_rho0, &
-    !                             LNS_rho0dv(1,:), LNS_rho0dv(2,:), LNS_dE, timelocal) ! Litteraly no difference.
-    !call compute_gradient_TFSF(LNS_dummy_2d, LNS_dv(1,:), .false., .true., LNS_switch_gradient, &
-    !                           LNS_dummy_2d, nabla_dv(1,:,:), timelocal)
-    !call compute_gradient_TFSF(LNS_dummy_2d, LNS_dv(2,:), .false., .true., LNS_switch_gradient, &
-    !                           LNS_dummy_2d, nabla_dv(2,:,:), timelocal) ! Litteraly no difference.
-#if 0
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      !if(abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<TINYVAL .and. abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
-      if(abs(nabla_dv(1, 1, ibool_DG(i,j,ispec))-aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1))>TINYVAL .or. &
-         abs(nabla_dv(1, 2, ibool_DG(i,j,ispec))-cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1))>TINYVAL .or. &
-         abs(nabla_dv(2, 1, ibool_DG(i,j,ispec))-ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1))>TINYVAL .or. &
-         abs(nabla_dv(2, 2, ibool_DG(i,j,ispec))-gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1))>TINYVAL ) then
-        write(*,*) '(x z) (dxvx dzvx dxvz dzvz)',&
-                                            coord(:,ibool_before_perio(i,j,ispec)), &
-                                            nabla_dv(1, 1, ibool_DG(i,j,ispec)), nabla_dv(1, 2, ibool_DG(i,j,ispec)), & ! TEST
-                                            nabla_dv(2, 1, ibool_DG(i,j,ispec)), nabla_dv(2, 2, ibool_DG(i,j,ispec)) ! TEST
-        write(*,*) 'th =                       ', &
-                                                  coord(:,ibool_before_perio(i,j,ispec)), &
-                                                  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1), &
-                                                  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1), &
-                                                  ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1), &
-                                                  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)
-        endif
-      !endif
-    enddo; enddo; enddo
-#endif
-    ! Precompute \Sigma_v' from \nabla v', only if viscous (don't care when only vibrational attenuation is needed).
+    ! Precompute \Sigma_v' from \nabla v', only if viscosity exists whatsoever. This is not needed when only vibrational attenuation is needed.
     if(LNS_viscous) call LNS_compute_viscous_stress_tensor(nabla_dv, sigma_dv)
-#if 0
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      if(isNotClose(  sigma_dv(1, ibool_DG(i,j,ispec)) &
-                    , EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
-                                                           + 0.25*gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)) &
-                    , TINYVAL) .or. &
-         isNotClose(  sigma_dv(2, ibool_DG(i,j,ispec)) &
-                    , LNS_mu(ibool_DG(i,j,ispec))*(  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1) &
-                                                   + ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1)) &
-                    , TINYVAL) .or. &
-         isNotClose(  sigma_dv(3, ibool_DG(i,j,ispec)) &
-                    , EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
-                                                           + 0.25*aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1)) &
-                    , TINYVAL)) then
-        write(*,*) '(x z) (Sv_11 Sv_12 Sv_22)', coord(:,ibool_before_perio(i,j,ispec)), sigma_dv(:, ibool_DG(i,j,ispec)) ! TEST
-        write(*,*) 'th =                     ', coord(:,ibool_before_perio(i,j,ispec)), &
-                   EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1) &
-                                                        + 0.25*gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1)), &
-                   LNS_mu(ibool_DG(i,j,ispec))*(  cc*dd*coord(2,ibool_before_perio(i,j,ispec))**(dd-1) &
-                                                + ee*ff*coord(1,ibool_before_perio(i,j,ispec))**(ff-1)), &
-                   EIGHT_THIRDScr*LNS_mu(ibool_DG(i,j,ispec))*(  gg*hh*coord(2,ibool_before_perio(i,j,ispec))**(hh-1) &
-                                                        + 0.25*aa*bb*coord(1,ibool_before_perio(i,j,ispec))**(bb-1))
-      endif
-    enddo; enddo; enddo
-#endif
   endif ! Endif on (LNS_viscous .or. LNS_avib).
 
 #ifdef USE_MPI
-  call LNS_fill_MPI_buffers_var1_bckg0(.true.) ! Fill MPI buffers related to the variables.
-#endif
-
-#if 0
-    ! DEBUG
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-         .and. abs(timelocal-.9689999999999)<=0.00001 &
-         .and. myrank==1) then
-        write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                   'dm one side', LNS_dm(:, ibool_DG(i,j,ispec))
-        !stop 'kek'
-      endif
-    enddo; enddo; enddo
+  ! Fill MPI buffers related to the variables.
+  call LNS_fill_MPI_buffers_var1_bckg0(.true.)
 #endif
   
-#if 0
-  ! DEBUG
-  if(timelocal>=2. .and. timelocal<=2.2) then
-  do ispec=1,nspec
-  do i=1,NGLLX
-  do j=1,NGLLZ
-  if(      abs(coord(1,ibool_before_perio(i,j,ispec))-0.)<2. &
-     .and. abs(coord(2,ibool_before_perio(i,j,ispec))-100.)<150.) then
-    write(*,*) it, i_stage, timelocal, coord(:,ibool_before_perio(i,j,ispec)), LNS_dp(ibool_DG(i,j,ispec))
-  endif
-  enddo
-  enddo
-  enddo
-  endif
-#endif
-  
-  !write(*,*) "minval(LNS_dv), maxval(LNS_dv)", minval(LNS_dv), maxval(LNS_dv)! DEBUG
-  
-  ! Compute RHS.
-  ! Note: if there is PML BCs, additionnal terms will be queried directly inside the call to compute_forces_acoustic_LNS, since auxiliary variables and coefficients are global variables.
+  ! Compute right-hand side (RHS) of the differential system.
   call compute_forces_acoustic_LNS(LNS_drho, LNS_rho0dv, LNS_dE, LNS_e1, & ! Constitutive variables.
                                    LNS_dm, LNS_dp, nabla_dT, nabla_dv, sigma_dv, & ! Precomputed quantities. sigma_dv is sent even if viscosity is deactivated, but in that case it should be zero and unused in the subroutine.
                                    RHS_drho, RHS_rho0dv, RHS_dE, RHS_e1, & ! Output.
                                    timelocal) ! Time.
-! DEBUG
-#if 0
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      !if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
-      !  write(*,*) '(x z) (vx vz)', coord(:,ibool_before_perio(i,j,ispec)), LNS_dv(:,ibool_DG(i,j,ispec))
-      !endif
-      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-202.9)<=3.)) then!&
-                !.or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=5.)) then
-        write(*,*) 'K', timelocal, coord(2, ibool_before_perio(i,j,ispec)), &
-                   LNS_drho(ibool_DG(i,j,ispec)), LNS_dm(:,ibool_DG(i,j,ispec)), RHS_drho(ibool_DG(i,j,ispec))
-      endif
-    enddo; enddo; enddo
-#endif
   
   ! Inverse mass matrix multiplication, in order to obtain actual RHS.
   RHS_drho               = RHS_drho * rmass_inverse_acoustic_DG ! RHS = A^{-1}*b
@@ -283,155 +137,66 @@ subroutine compute_forces_acoustic_LNS_main()
   ! Update the state register.
   LNS_drho               = LNS_drho + LNS_scheme_B(i_stage)*aux_drho ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
   LNS_dE                 = LNS_dE   + LNS_scheme_B(i_stage)*aux_dE
-  ! Group momentum treatment in loop on dimension.
+  
+  ! Group treatment for momentum in a loop on spatial dimension.
   do i_aux=1,NDIM
     RHS_rho0dv(i_aux,:) = RHS_rho0dv(i_aux,:) * rmass_inverse_acoustic_DG(:)
     aux_rho0dv(i_aux,:) = LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) + deltat*RHS_rho0dv(i_aux,:)
     LNS_rho0dv(i_aux,:) = LNS_rho0dv(i_aux,:) + LNS_scheme_B(i_stage)*aux_rho0dv(i_aux,:)
   enddo
+  
   ! Vibrational attenuation.
   if(LNS_avib) then
     RHS_e1 = RHS_e1 * rmass_inverse_acoustic_DG
     aux_e1 = LNS_scheme_A(i_stage)*aux_e1 + deltat*RHS_e1
     LNS_e1 = LNS_e1 + LNS_scheme_B(i_stage)*aux_e1
   endif
-  ! If one wants to do all at once (method which should be working but seems to be somewhat more unstable), comment the previous lines and uncomment the following lines.
-  !LNS_drho               =   LNS_drho &
-  !                         + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_drho &
-  !                                              + deltat*(RHS_drho(:)*rmass_inverse_acoustic_DG(:))) ! Y^{n+1} = Y^{n+1} + b_i*U_{i}
-  !LNS_dE                 =   LNS_dE &
-  !                         + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_dE &
-  !                                              + deltat*(RHS_dE(:)*rmass_inverse_acoustic_DG(:)))
-  !do i_aux=1,NDIM
-  !  LNS_rho0dv(i_aux,:) =   LNS_rho0dv(i_aux,:) &
-  !                        + LNS_scheme_B(i_stage)*(  LNS_scheme_A(i_stage)*aux_rho0dv(i_aux,:) &
-  !                                             + deltat*(RHS_rho0dv(i_aux,:)*rmass_inverse_acoustic_DG(:)))
-  !enddo
-  
-! DEBUG
-#if 0
-    do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-      !if(abs(coord(2,ibool_before_perio(i,j,ispec))-2.5)<TINYVAL) then
-      !  write(*,*) '(x z) (vx vz)', coord(:,ibool_before_perio(i,j,ispec)), LNS_dv(:,ibool_DG(i,j,ispec))
-      !endif
-      if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-         .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-208.)<=9.)) then!&
-                !.or. abs(coord(2,ibool_before_perio(i,j,ispec))-400.00)<=5.)) then
-        write(*,*) 'KUK', timelocal, coord(2, ibool_before_perio(i,j,ispec)), &
-                   LNS_drho(ibool_DG(i,j,ispec)), LNS_dm(:,ibool_DG(i,j,ispec)), RHS_drho(ibool_DG(i,j,ispec))
-                   !, LNS_rho0dv(:,ibool_DG(i,j,ispec)), LNS_dE(ibool_DG(i,j,ispec))
-      endif
-    enddo; enddo; enddo
-#endif
-  
+
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
 #if 0
   ! PML, iterate ADEs.
   if(PML_BOUNDARY_CONDITIONS) then
-    LNS_PML_aux(:,:,:) = LNS_scheme_A(i_stage)*LNS_PML_aux(:,:,:) + deltat*LNS_PML_RHS(:,:,:)
-    LNS_PML(:,:,:)     = LNS_PML(:,:,:) + LNS_scheme_B(i_stage)*LNS_PML_aux(:,:,:)
-    LNS_PML(1,5:6,:)   = ZEROcr ! for q=rho', G=0, thus no convolution, thus no need for aux vars. hack, TODO something better
+    LNS_PML_aux(:, :, :) = LNS_scheme_A(i_stage)*LNS_PML_aux(:, :, :) + deltat*LNS_PML_RHS(:, :, :)
+    LNS_PML(:, :, :)     = LNS_PML(:, :, :) + LNS_scheme_B(i_stage)*LNS_PML_aux(:, :, :)
+    LNS_PML(1,5:6,:)   = ZEROcr ! for q=rho', G=0, thus no convolution, thus no need for aux vars. This is something of a hack.
   endif
 #endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
   
-  ! test
-  !if(PML_BOUNDARY_CONDITIONS) then
-  !  if(myrank==1) then
-  !    write(*,*) timelocal, minval(aux_PML_drho), maxval(aux_PML_drho)
-  !  endif
-  !endif
-  !write(*,*) maxval(abs(LNS_dT)), minval(abs(LNS_dT)), maxval(abs(nabla_dT)), minval(abs(nabla_dT))
-  !stop
-  !write(*,*) "soudnspeed lol", minval(sqrt(gammaext_DG*LNS_p0/LNS_rho0)), maxval(sqrt(gammaext_DG*LNS_p0/LNS_rho0))
-  !write(*,*) allocated(gravityext), allocated(muext), allocated(etaext), &
-  !           allocated(kappa_DG), allocated(tau_epsilon), allocated(tau_sigma)
-  !kek = reshape(LNS_rho0dv(:,5),(/2,1/))
-  !write(*,*) 'kek', kek
-  !write(*,*) 'v1', norm2(LNS_rho0dv(:,5:6))
-  !write(*,*) 'v2', norm2(reshape(LNS_rho0dv(:,5),(/2,1/)))
-  !write(*,*) '|v1-v2|', abs(norm2(LNS_rho0dv(:,5:8))-(LNS_rho0dv(1,5:8)**2 + LNS_rho0dv(NDIM,5:8)**2))
-  !write(*,*) "kek"
-  !write(*,*) size(ibool_before_perio) ! 0 to nspec
-  !write(*,*) size(ibool) ! 0 to nspec
-  !write(*,*) size(ibool_DG) ! 0 to nglob_dg
-  !write(*,*) size(coord(2,:))
-  !write(*,*) ibool
-  !write(*,*) size(pack(ibool(:,:,:), ibool(:,:,:)<4))
-  !write(*,*) size(LNS_rho0dv(2,:))
-  !write(*,*) pack(LNS_rho0dv(2,:),abs(coord(2,:))<1.)
-  !stop
+  ! Check linear hypothesis.
+  if(check_linear_hypothesis) call LNS_warn_nonsense()
   
-  ! Eventually check non-positivity.
-  !LNS_dv(1,:)=1e4*LNS_dv(1,:)
-  !LNS_v0=0.*LNS_v0+1d-5
-  
-  if(check_linearHypothesis) then
-    call LNS_warn_nonsense()
-  endif ! Endif on check_linearHypothesis.
-  
-  ! --------------------------- !
-  ! Remove high-order           !
-  ! coefficients of the         !
-  ! solution.                   !
-  ! --------------------------- !
-  !if(USE_SLOPE_LIMITER) then
-  !  ! rho.
-  !  if(CONSTRAIN_HYDROSTATIC) then
-  !    veloc_x = LNS_drho - LNS_rho0
-  !    call SlopeLimit1(veloc_x, timelocal, 1)
-  !    LNS_drho = veloc_x + LNS_rho0
-  !  else
-  !    call SlopeLimit1(LNS_drho, timelocal, 1)
-  !  endif
-  !  ! rhovx.
-  !  if(CONSTRAIN_HYDROSTATIC) then
-  !    veloc_x = LNS_rho0dv(1,:) - LNS_v0(1,:)
-  !    call SlopeLimit1(veloc_x, timelocal, 1)
-  !    LNS_rho0dv(1,:) = veloc_x + LNS_v0(1,:)
-  !  else
-  !    call SlopeLimit1(LNS_rho0dv(1,:), timelocal, 2)
-  !  endif
-  !  ! rhovz.
-  !  if(CONSTRAIN_HYDROSTATIC) then
-  !    veloc_x = LNS_rho0dv(NDIM,:) - LNS_v0(NDIM,:)
-  !    call SlopeLimit1(veloc_x, timelocal, 1)
-  !    LNS_rho0dv(NDIM,:) = veloc_x + LNS_v0(NDIM,:)
-  !  else
-  !    call SlopeLimit1(LNS_rho0dv(NDIM,:), timelocal, 3)
-  !  endif
-  !  ! E.
-  !  if(CONSTRAIN_HYDROSTATIC) then
-  !    veloc_x = LNS_dE - LNS_E0
-  !    call SlopeLimit1(veloc_x, timelocal, 1)
-  !    LNS_dE = veloc_x + LNS_E0
-  !  else
-  !    call SlopeLimit1(LNS_dE, timelocal, 4)
-  !  endif
-  !endif
-  
-  ! TEST POSTERIORI DAMPING
-  !if(.false.) then
-  !if(ABC_STRETCH) then
-  !  if(it==1 .and. i_stage==1 .and. myrank==0) then
-  !      write(*,*) "********************************"
-  !      write(*,*) "*           WARNING            *"
-  !      write(*,*) "********************************"
-  !      write(*,*) "* A posteriori damping of the  *"
-  !      write(*,*) "* solution activated. Solution *"
-  !      write(*,*) "* is being damped in the       *"
-  !      write(*,*) "* absorbing buffers.           *"
-  !      write(*,*) "********************************"
-  !  endif
-  !  call damp_solution_LNS(LNS_drho, LNS_rho0dv, LNS_dE) ! See 'prepare_stretching.f90'.
-  !endif
-  !endif
+#if 0
+  ! Test: posteriori damping in absorbing boundary condition buffers.
+  if(.false.) then
+    if(ABC_STRETCH) then
+      if(it==1 .and. i_stage==1 .and. myrank==0) then
+        write(*,*) "********************************"
+        write(*,*) "*           WARNING            *"
+        write(*,*) "********************************"
+        write(*,*) "* A posteriori damping of the  *"
+        write(*,*) "* solution activated. Solution *"
+        write(*,*) "* is being damped in the       *"
+        write(*,*) "* absorbing buffers.           *"
+        write(*,*) "********************************"
+      endif
+      call damp_solution_LNS(LNS_drho, LNS_rho0dv, LNS_dE) ! See 'prepare_stretching.f90'.
+    endif
+  endif
+#endif
+
 end subroutine compute_forces_acoustic_LNS_main
 
 
-
-
-
-
-
+! ------------------------------------------------------------ !
+! LNS_fill_MPI_buffers_var1_bckg0                              !
+! ------------------------------------------------------------ !
+! Fills MPI buffers with either the background state or the constitutive variables.
+! Called exclusively by the 'compute_forces_acoustic_LNS_main' routine above.
 
 subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
   use constants, only: NDIM
@@ -452,37 +217,23 @@ subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
       ! Assemble state buffers.
       call assemble_MPI_vector_DG(LNS_drho, buffer_LNS_drho_P)
       do i_aux=1,NDIM
-        call assemble_MPI_vector_DG(LNS_rho0dv(i_aux,:), buffer_LNS_rho0dv_P(i_aux,:,:))
+        call assemble_MPI_vector_DG(LNS_rho0dv(i_aux, :), buffer_LNS_rho0dv_P(i_aux, :, :))
       enddo
       call assemble_MPI_vector_DG(LNS_dE, buffer_LNS_dE_P)
-#if 0
-      ! DEBUG
-      do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-        if(      abs(coord(1,ibool_before_perio(i,j,ispec))+200.)<=5.&
-           .and. (     abs(coord(2,ibool_before_perio(i,j,ispec))-200.)<=3. &
-                  .or. abs(coord(2,ibool_before_perio(i,j,ispec))-233.)<=3.) &
-           .and. abs(timelocal-.9689999999999)<=0.00001 &
-           .and. myrank==1) then
-          write(*,*) myrank, 'X', coord(:,ibool_before_perio(i,j,ispec)), &
-                     'sent to buffer', LNS_dE(ibool_DG(i,j,ispec))
-          !stop 'kek'
-        endif
-      enddo; enddo; enddo
-#endif
       ! Assemble viscous buffers.
       if(LNS_viscous) then ! Check if viscosity exists whatsoever.
         do i_aux=1,NDIM
-          call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux,:,:))
+          call assemble_MPI_vector_DG(nabla_dT(i_aux, :), buffer_LNS_nabla_dT(i_aux, :, :))
         enddo
         do i_aux=1,NVALSIGMA
-          call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux,:,:))
+          call assemble_MPI_vector_DG(sigma_dv(i_aux, :), buffer_LNS_sigma_dv(i_aux, :, :))
         enddo
       endif
     else
       ! Fill the MPI buffers related to background model.
       call assemble_MPI_vector_DG(LNS_rho0, buffer_LNS_rho0)
       do i_aux=1,NDIM
-        call assemble_MPI_vector_DG(LNS_v0(i_aux,:), buffer_LNS_v0(i_aux,:,:))
+        call assemble_MPI_vector_DG(LNS_v0(i_aux,:), buffer_LNS_v0(i_aux, :, :))
       enddo
       call assemble_MPI_vector_DG(LNS_E0, buffer_LNS_E0)
       call assemble_MPI_vector_DG(LNS_p0, buffer_LNS_p0)
@@ -499,28 +250,28 @@ subroutine LNS_fill_MPI_buffers_var1_bckg0(var1_bckg0)
   endif
 end subroutine LNS_fill_MPI_buffers_var1_bckg0
 
+
 ! ------------------------------------------------------------ !
 ! damp_solution_LNS                                            !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Function used to damp the constitutive variables in pre-defined buffers.
+! Possibly called in the 'compute_forces_acoustic_LNS_main' routine (see above), but commented out for now.
 
 subroutine damp_solution_LNS(drho, rho0dv, dE)
 
   use specfem_par, only: nspec, coord, ibool_DG, nglob_DG, &
-        ibool_before_perio,&
-        ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF,&
-        !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
-        ispec_is_acoustic_DG,stretching_buffer,&
+        ibool_before_perio, &
+        ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF, &
+        ispec_is_acoustic_DG, stretching_buffer, &
         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
   
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM
+  use constants, only: CUSTOM_REAL,NGLLX,NGLLZ,NDIM
 
   implicit none
   
   ! Input/output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: drho, dE
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(inout) :: rho0dv
-  
   
   ! Local
   integer :: iglob
@@ -540,35 +291,29 @@ subroutine damp_solution_LNS(drho, rho0dv, dE)
             iglob = ibool_DG(i, j, ispec)
             x = coord(1, iglob_unique)
             z = coord(2, iglob_unique)
-            !if(stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-              sigma = ONE ! In case something bad happens.
-              ! Load damping value.
-              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1) then
-              !if(ABC_STRETCH_TOP) then
-                r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
-                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-              endif
-              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then
-              !if(ABC_STRETCH_LEFT) then
-                r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
-                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-              endif
-              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then
-              !if(ABC_STRETCH_BOTTOM) then
-                r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
-                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-              endif
-              if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then
-              !if(ABC_STRETCH_RIGHT) then
-                r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
-                if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-              endif
-              ! Quiet state is zero.
-              ! Damp perturbation.
-              drho(iglob)     = sigma*drho(iglob)
-              rho0dv(:,iglob) = sigma*rho0dv(:,iglob)
-              dE(iglob)       = sigma*dE(iglob)
-            !endif
+            sigma = ONE ! In case something bad happens.
+            ! Load damping value.
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1) then
+              r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+            endif
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then
+              r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+            endif
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then
+              r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+            endif
+            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then
+              r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
+              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
+            endif
+            ! Quiet state is zero.
+            ! Damp perturbation.
+            drho(iglob)     = sigma*drho(iglob)
+            rho0dv(:,iglob) = sigma*rho0dv(:,iglob)
+            dE(iglob)       = sigma*dE(iglob)
           enddo
         enddo
       endif
@@ -577,13 +322,9 @@ subroutine damp_solution_LNS(drho, rho0dv, dE)
 end subroutine damp_solution_LNS
 
 
-
-
-
-
-
-
-
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
 #if 0
 subroutine LNS_PML_buildRHS(idQ, idR, iglobPML, beta, q)
   ! TODO: select variables to use.
@@ -631,27 +372,23 @@ subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, Jac_L, iglobPML)
   endif
 end subroutine LNS_PML_updateD0
 #endif
-
-
-
-
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
 
 
 ! ------------------------------------------------------------ !
 ! initial_state_LNS                                            !
 ! ------------------------------------------------------------ !
-! Computes initial state.
-! 
-! This routine is called by prepare_timerun(), well before
-! iterate_time() and thus compute_forces_acoustic_LNS_main().
+! Computes the initial state for the LNS module.
+! This routine is called by the 'prepare_timerun' routine ('prepare_timerun.f90'), well before the 'iterate_time' routine
+! ('iterate_time.f90'), and therefore before the 'compute_forces_acoustic_LNS_main' routine (above).
 
 subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL, HUGEVAL
   use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, deltat, &
-                         !pext_DG, rhoext, windxext, &
-                         gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &!etaext, &
-                         NPROC, gammaext_DG, ispec_is_acoustic_DG!, &
-                         !PML_BOUNDARY_CONDITIONS !, ispec_is_acoustic_DG, nspec
+                         gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &
+                         NPROC, gammaext_DG, ispec_is_acoustic_DG
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
                              LNS_eta, LNS_kappa, LNS_g,LNS_c0, LNS_dummy_1d, LNS_dummy_2d, &
@@ -668,7 +405,6 @@ subroutine initial_state_LNS()
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   integer :: ispec, iglob, i, j
-  !real(kind=CUSTOM_REAL) :: rho_P, veloc_x_P, veloc_z_P, E_P
   
   ! Initialisation of the background state.
   if(trim(MODEL)=='LNS_generalised') then
@@ -703,15 +439,6 @@ subroutine initial_state_LNS()
         enddo
       endif
     enddo
-    
-    ! Ugly patch to make it work.
-    ! It seems nglob_DG includes EVERY POINT on the mesh, including those in elastic materials. See nglob_DG definition in 'createnum_slow.f90'.
-    ! Thus, since DG-related variables are badly initialised in other materials (since they make little to no sense in those), arithmetic errors can arise.
-    ! However, we leave it as is and use the following patches, in fear of breaking the FNS implementation.
-    ! TODO: something else, maybe involving correcting the FNS implementation.
-    !where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr
-    !where(LNS_p0 < TINYVAL) LNS_p0 = ONEcr
-    !where(LNS_E0 < TINYVAL) LNS_E0 = ONEcr
 
     ! Recompute and save globally c0.
     LNS_c0 = ZEROcr
@@ -719,15 +446,12 @@ subroutine initial_state_LNS()
 
     ! Initialise T_0.
     call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
-    !call compute_T(LNS_rho0, LNS_p0, LNS_T0)
-    !LNS_T0=LNS_p0/(LNS_rho0*287.05684504212125397) ! Approximation assuming air molar mass is constant at 0.028964.
   endif
   
   ! Deallocate old DG variables in all cases.
   ! Not really optimal, but less invasive.
   if(allocated(gravityext)) deallocate(gravityext)
   if(allocated(muext)) deallocate(muext)
-  !if(allocated(etaext)) deallocate(etaext) ! Somehow this now (at least as of commit 5d9152885007a8c8dfc42a60f203ec12afe43b1e, maybe earlier) crashes the code when using external models. I do not have the time to look more into it.
   if(allocated(kappa_DG)) deallocate(kappa_DG)
   if(allocated(tau_epsilon)) deallocate(tau_epsilon)
   if(allocated(tau_sigma)) deallocate(tau_sigma)
@@ -773,19 +497,13 @@ subroutine initial_state_LNS()
     deallocate(LNS_e1, RHS_e1, aux_e1)
   endif
   
-  ! Can't deallocate the following, because next calls to background_physical_parameters (for outer boundary conditions) need them.
-  ! TBD: design another routine to call for the OBCs, or a switch using those DG variables only at initialisation.
-  !if(allocated(pext_DG)) deallocate(pext_DG)
-  !if(allocated(rhoext)) deallocate(rhoext)
-  !if(allocated(windxext)) deallocate(windxext)
-  
-  ! Detect if viscosity exists somewhere on this CPU.
+  ! Detect if viscosity exists somewhere on this CPU, and set the LNS_viscous switch accordingly.
   if(     maxval(LNS_mu) > TINYVAL &
-     .OR. maxval(LNS_eta) > TINYVAL &
-     .OR. maxval(LNS_kappa) > TINYVAL) then
-    LNS_viscous=.true.
+     .or. maxval(LNS_eta) > TINYVAL &
+     .or. maxval(LNS_kappa) > TINYVAL) then
+    LNS_viscous = .true.
   else
-    LNS_viscous=.false.
+    LNS_viscous = .false.
     deallocate(LNS_mu, LNS_eta, LNS_kappa) ! Ambitious deallocate to free memory in the inviscid case.
 #ifdef USE_MPI
     if(NPROC > 1) then
@@ -795,23 +513,15 @@ subroutine initial_state_LNS()
     deallocate(sigma_dv) ! Even more ambitious deallocate. nabla_dv may be added here if it was declared in specfem_par_lns.
   endif
   
-  ! Initialise \nabla v_0.
+  ! Initialise the gradient of background velocity, \nabla v_0.
   call compute_gradient_TFSF(LNS_v0, LNS_dummy_1d, .true., .false., LNS_switch_gradient, nabla_v0, LNS_dummy_2d, ZEROcr) ! Dummy variables are not optimal, but prevent from duplicating subroutines.
   if(LNS_viscous) then ! Check if viscosity exists whatsoever.
     ! Initialise \Sigma_v_0.
     call LNS_compute_viscous_stress_tensor(nabla_v0, sigma_v_0)
   endif
-  
-!  write(*,*) 'min max v0x', minval(LNS_v0(1,:)), maxval(LNS_v0(1,:)) ! DEBUG
-!  write(*,*) 'min max nabla_v0', minval(nabla_v0), maxval(nabla_v0)
-!  write(*,*) 'min max nabla_v0(1,:)=partial_i(vx)', minval(nabla_v0(1,1:2,:)), maxval(nabla_v0(1,1:2,:))
-!  write(*,*) 'min max nabla_v0(2,:)=partial_i(vz)', minval(nabla_v0(2,1:2,:)), maxval(nabla_v0(2,1:2,:))
-!  write(*,*) 'min max nabla_v0(:,1)=partial_x(vi)', minval(nabla_v0(1:2,1,:)), maxval(nabla_v0(1:2,1,:))
-!  write(*,*) 'min max nabla_v0(:,2)=partial_z(vi)', minval(nabla_v0(1:2,2,:)), maxval(nabla_v0(1:2,2,:))
-!  stop
 
-  ! DEBUG PRINT MODEL
-  if(.false. .and. myrank==0) then ! DEBUG
+  ! DEBUG. Print the model to some file.
+  if(.false. .and. myrank==0) then
     open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
     do ispec = 1,nspec
       do j = 1,NGLLZ
@@ -828,13 +538,19 @@ subroutine initial_state_LNS()
     close(504)
     call exit_MPI(myrank, 'STOPPING')
     ! Matlab one-liner plot:
-    !a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_load_external/OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
+    !a=importdata("../OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
   endif
     
   ! Eventually initialise MMS validation coefficients.
   IF(VALIDATION_MMS) call initialise_VALIDATION_MMS()
+  
 end subroutine initial_state_LNS
 
+
+
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
 #if 0
 ! ------------------------------------------------------------ !
 ! LNS_PML_init_coefs                                           !
@@ -942,24 +658,29 @@ subroutine LNS_PML_init_coefs()
   enddo
 end subroutine LNS_PML_init_coefs
 #endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
+
 
 ! ------------------------------------------------------------ !
 ! background_physical_parameters                               !
 ! ------------------------------------------------------------ !
-! Affects values of background state. May thus be used as initialiser (if time is 0), for far-field boundary conditions, or for bottom forcings.
+! Initialises the values for the background state. May thus be used as initialiser (if time is 0), or for far-field boundary
+! conditions or for bottom forcings. Both reasons rely on the specified background parameters, or initial state.
 ! Notes:
-!   *) This model-building routine builds essentially the same model as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
-!   *) This function is called for two reasons at two different places:
+!   *) This model-building routine builds essentially the same model as the 'boundary_condition_DG' routine (in
+!      'boundary_terms_DG.f90') does.
+!   *) This routine is called for two reasons at two different places:
 !      *) In 'initial_state_LNS' to initialise the simulation.
-!      *) In 'LNS_get_interfaces_unknowns' (in 'compute_forces_acoustic_LNS.f90') to set the far-field outer boundary conditions.
-!   *) Both reasons rely on the specified background parameters, or initial state.
+!      *) In 'LNS_get_interfaces_unknowns' (in 'compute_forces_acoustic_LNS.f90') to set the far-field outer boundary
+!         conditions.
 
 subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swComputeV, out_v, swComputeE, out_E, swComputeP, out_p)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
   use specfem_par, only: MODEL, assign_external_model, coord, coord_interface, gammaext_DG, ibool_DG, ibool_before_perio, &
-  pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, wind, &
-  windxext!, &
-!ABC_STRETCH, ibool_before_perio, stretching_buffer, stretching_ya
+                         pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, &
+                         wind, windxext
   use specfem_par_LNS, only: LNS_g, LNS_rho0, LNS_v0, LNS_p0
 
   implicit none
@@ -976,7 +697,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: z, H!, G!, A
+  real(kind=CUSTOM_REAL) :: z, H
   
   if(swComputeE .and. (.not. swComputeV)) then
     write(*,*) "********************************"
@@ -1033,8 +754,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
       ! > Set wind.
       if(swComputeV) then
         out_v(1) = windxext(i, j, ispec)
-        out_v(NDIM) = ZEROcr
-        ! One might want to set vertical wind here, too.
+        out_v(NDIM) = ZEROcr ! One could set vertical wind here, too.
       endif
     endif
   else
@@ -1055,14 +775,13 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
       ! > Set pressure.
       if(swComputeP) then
         out_p = (sound_velocity**2)*out_rho/gammaext_DG(iglob) ! Acoustic only (under ideal gas hypothesis): p = c^2 * \rho / \gamma.
-        !out_p = ( 100.+(coord(1,ibool_before_perio(i,j,ispec))-50.)**2/30. )*out_rho/gammaext_DG(iglob)
       endif
     endif
     
     ! > Set wind.
     if(swComputeV) then
       out_v(1) = wind ! Re-read horizontal wind from the scalar value read from parfile.
-      ! One might want to set vertical wind here, too.
+      out_v(NDIM) = ZEROcr ! One could set vertical wind here, too.
     endif
   endif ! Endif on assign_external_model.
   
@@ -1074,15 +793,9 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
       call forcing_DG(i, j, ispec, timelocal, out_v(NDIM))
     else
       ! Else, force it to be zero.
-      out_v(NDIM) = ZEROcr
-      ! One might want to set vertical wind here, too.
+      out_v(NDIM) = ZEROcr ! One could set vertical wind here, too.
     endif
   endif
-  
-  !! Test for stretching
-  !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-  !  out_v(1) = out_v(1) + (1.-stretching_ya(1, ibool_before_perio(i,j,ispec)))*340.*0.1
-  !endif
   
   ! Set energy based on pressure.
   if(swComputeE) then
@@ -1090,13 +803,14 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
   endif
 end subroutine background_physical_parameters
 
+
 ! ------------------------------------------------------------ !
 ! set_fluid_properties                                         !
 ! ------------------------------------------------------------ !
-! Set fluid properties.
+! Set the fluid's intrinsic properties.
 ! Notes:
-!   *) This property-setting routine sets essentially the same values as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
-!   *) This function is only called from within 'initial_state_LNS' above.
+!   *) This routine sets essentially the same values as the 'boundary_condition_DG' (in 'boundary_terms_DG.f90') routine does.
+!   *) Called exclusively by the 'initial_state_LNS' routine above.
 
 subroutine set_fluid_properties(i, j, ispec)
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM, FOUR_THIRDS
@@ -1154,21 +868,6 @@ subroutine set_fluid_properties(i, j, ispec)
 end subroutine set_fluid_properties
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ! ------------------------------------------------------------ !
 ! LNS_compute_viscous_stress_tensor                            !
 ! ------------------------------------------------------------ !
@@ -1178,8 +877,7 @@ end subroutine set_fluid_properties
 ! OUT:
 !   \Sigma_v(v), as a size 3 vector since the stress tensor is symmetric: 1<->(1, 1), 2<->(1, 2)&(2, 1), and 3<->(2, 2).
 
-subroutine LNS_compute_viscous_stress_tensor(nabla_v,&
-                                             sigma_v)
+subroutine LNS_compute_viscous_stress_tensor(nabla_v, sigma_v)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: nglob_DG
   use specfem_par_LNS, only: LNS_eta, LNS_mu
@@ -1860,11 +1558,12 @@ end subroutine compute_gradient_TFSF
 
 
 #if 0
-! UNUSED
+! This routine is unused.
 ! ------------------------------------------------------------ !
 ! compute_p                                                    !
 ! ------------------------------------------------------------ !
 ! Computes pressure from constitutive variables.
+
 subroutine compute_p(in_rho, in_v, in_E, out_p)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG, nglob_DG
@@ -1883,11 +1582,14 @@ subroutine compute_p(in_rho, in_v, in_E, out_p)
           * (in_E - HALFcr*in_rho*norm2(in_v))
 end subroutine compute_p
 #endif
+
+
 ! ------------------------------------------------------------ !
 ! compute_dp                                                   !
 ! ------------------------------------------------------------ !
 ! Computes pressure perturbation from constitutive variables.
 ! Note: this could have been done nearly inline by using the subroutine compute_p, but defining this function enables one to use less RAM.
+
 subroutine compute_dp(in_rho, in_v, in_E, out_dp)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG, nglob_DG
@@ -1906,10 +1608,13 @@ subroutine compute_dp(in_rho, in_v, in_E, out_dp)
            * (in_E - HALFcr*in_rho*norm2(in_v)) &
            - LNS_p0
 end subroutine compute_dp
+
+
 ! ------------------------------------------------------------ !
 ! compute_dp_i                                                 !
 ! ------------------------------------------------------------ !
 ! Same as compute_dp, but point by point (unvectorised).
+
 subroutine compute_dp_i(in_rho, in_v, in_E, out_p, iglob)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG
@@ -1929,10 +1634,13 @@ subroutine compute_dp_i(in_rho, in_v, in_E, out_p, iglob)
           * (in_E - HALFcr*in_rho*norm2r1(in_v)) & ! Performance seems comparable to explicit formulation above.
           - LNS_p0(iglob)
 end subroutine compute_dp_i
+
+
 ! ------------------------------------------------------------ !
 ! compute_T                                                    !
 ! ------------------------------------------------------------ !
 ! Computes temperature from constitutive variables.
+
 subroutine compute_T(in_rho, in_v, in_E, out_T)
   use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   use specfem_par, only: c_V, nglob_DG
@@ -1945,41 +1653,40 @@ subroutine compute_T(in_rho, in_v, in_E, out_T)
   out_T = 0._CUSTOM_REAL
   where(in_rho>TINYVAL) out_T = (in_E/in_rho - 0.5_CUSTOM_REAL*norm2(in_v))/c_V
 end subroutine compute_T
-!subroutine compute_T(in_rho, in_p, out_T)
-!  use constants, only: CUSTOM_REAL, NDIM
-!  use specfem_par, only: nglob_DG
-!  use specfem_par_LNS, only: R_ADIAB
-!  implicit none
-!  ! Input/Output.
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_T
-!  out_T = in_p / (R_ADIAB * in_rho)
-!end subroutine compute_T
+
+
+#if 0
+! This routine is unused.
 ! ------------------------------------------------------------ !
 ! compute_T_i                                                  !
 ! ------------------------------------------------------------ !
 ! Same as compute_T, but point by point (unvectorised).
 ! Unused as of 190124.
-!subroutine compute_T_i(in_rho, in_v, in_E, out_T)
-!  use constants, only: CUSTOM_REAL, NDIM
-!  use specfem_par, only: c_V
-!  use specfem_par_LNS, only: norm2r1
-!  implicit none
-!  ! Input/Output.
-!  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
-!  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
-!  real(kind=CUSTOM_REAL), intent(out) :: out_T
-!  ! Local.
-!  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-!  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
-!  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
-!  out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V ! Performance seems comparable to explicit formulation above.
-!end subroutine compute_T_i
+
+subroutine compute_T_i(in_rho, in_v, in_E, out_T)
+  use constants, only: CUSTOM_REAL, NDIM
+  use specfem_par, only: c_V
+  use specfem_par_LNS, only: norm2r1
+  implicit none
+  ! Input/Output.
+  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_E
+  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: in_v
+  real(kind=CUSTOM_REAL), intent(out) :: out_T
+  ! Local.
+  real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
+  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
+  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
+  out_T=(in_E/in_rho - HALFcr*norm2r1(in_v))/c_V ! Performance seems comparable to explicit formulation above.
+end subroutine compute_T_i
+#endif
+
+
 ! ------------------------------------------------------------ !
 ! compute_dT                                                   !
 ! ------------------------------------------------------------ !
 ! Computes temperature perturbation from constitutive variables.
 ! Note: this could have been done nearly inline by using the subroutine compute_T, but defining this function enables one to use less RAM.
+
 subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   use specfem_par, only: c_V, nglob_DG
@@ -1993,17 +1700,13 @@ subroutine compute_dT(in_rho, in_v, in_E, out_dT)
   where(in_rho>TINYVAL) out_dT =   (in_E/in_rho - 0.5_CUSTOM_REAL*norm2(in_v))/c_V &
                                  - LNS_T0
 end subroutine compute_dT
-!subroutine compute_dT(in_rho, in_p, out_dT)
-!  use constants, only: CUSTOM_REAL, NDIM
-!  use specfem_par, only: nglob_DG!,c_V
-!  use specfem_par_LNS, only: LNS_T0,R_ADIAB
-!  implicit none
-!  ! Input/Output.
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: in_rho, in_p
-!  real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: out_dT
-!  out_dT = in_p / (R_ADIAB * in_rho) - LNS_T0
-!end subroutine compute_dT
+
+
+! ------------------------------------------------------------ !
+! compute_dT_i                                                 !
+! ------------------------------------------------------------ !
 ! Same as compute_dT, but point by point (unvectorised).
+
 subroutine compute_dT_i(in_rho, in_v, in_E, out_T, iglob)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: c_V
@@ -2016,26 +1719,16 @@ subroutine compute_dT_i(in_rho, in_v, in_E, out_T, iglob)
   integer, intent(in) :: iglob
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
-  !out_T=(in_E/in_rho - HALFcr*(in_v(1)**2+in_v(NDIM)**2))/c_V
-  !out_T=(in_E/in_rho - HALFcr*minval(norm2(reshape(in_v,(/2,1/)))))/c_V ! Could not make our "norm2" function work both with rank 1 arrays and rank 2 arrays, so used a trick: reshape the 2-sized vector (rank 1) to a (2,1) matrix (rank 2), send it to norm2, retrieve a 1-sized vector (rank 1), use minval to send it back to a scalar value (rank 0) as needed. It proved very unefficient in terms of computation time, so we defined another dedicated "norm2" function.
   out_T =   (in_E/in_rho - HALFcr*norm2r1(in_v))/c_V &
           - LNS_T0(iglob)
 end subroutine compute_dT_i
-!subroutine compute_dT_i(in_rho, in_p, out_dTi, iglob)
-!  use constants, only: CUSTOM_REAL, NDIM
-!  !use specfem_par, only: c_V
-!  use specfem_par_LNS, only: LNS_T0, R_ADIAB
-!  implicit none
-!  ! Input/Output.
-!  real(kind=CUSTOM_REAL), intent(in) :: in_rho, in_p
-!  real(kind=CUSTOM_REAL), intent(out) :: out_dTi
-!  integer, intent(in) :: iglob
-!  out_dTi = in_p / (R_ADIAB * in_rho) - LNS_T0(iglob)
-!end subroutine compute_dT_i
+
+
 ! ------------------------------------------------------------ !
 ! compute_E                                                    !
 ! ------------------------------------------------------------ !
 ! Computes energy from constitutive variables.
+
 subroutine compute_E(in_rho, in_v, in_p, out_E)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG, nglob_DG
@@ -2049,13 +1742,15 @@ subroutine compute_E(in_rho, in_v, in_p, out_E)
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_E =   in_p/(gammaext_DG - ONEcr) &
-          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(NDIM,:)**2 )
           + in_rho*HALFcr*norm2(in_v)
 end subroutine compute_E
+
+
 ! ------------------------------------------------------------ !
 ! compute_E_i                                                  !
 ! ------------------------------------------------------------ !
 ! Same as compute_E, but point by point (unvectorised).
+
 subroutine compute_E_i(in_rho, in_v, in_p, out_E, iglob)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG
@@ -2070,13 +1765,15 @@ subroutine compute_E_i(in_rho, in_v, in_p, out_E, iglob)
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_E =   in_p/(gammaext_DG(iglob) - ONEcr) &
-          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(NDIM,:)**2 )
           + in_rho*HALFcr*norm2r1(in_v)
 end subroutine compute_E_i
+
+
 ! ------------------------------------------------------------ !
 ! compute_dE_i                                                 !
 ! ------------------------------------------------------------ !
-! Same as compute_dE, but point by point (unvectorised).
+! Computes energy perturbation from constitutive variables, but point by point (unvectorised).
+
 subroutine compute_dE_i(in_rho, in_v, in_p, out_E, iglob)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: gammaext_DG
@@ -2091,40 +1788,16 @@ subroutine compute_dE_i(in_rho, in_v, in_p, out_E, iglob)
   real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFcr = 0.5_CUSTOM_REAL
   out_E =   in_p/(gammaext_DG(iglob) - ONEcr) &
-          !+ in_rho*HALFcr*( in_v(1,:)**2 + in_v(NDIM,:)**2 )
           + in_rho*HALFcr*norm2r1(in_v) &
           - LNS_E0(iglob)
 end subroutine compute_dE_i
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ! ------------------------------------------------------------ !
 ! stressBuilder_addInviscidFluid                               !
 ! ------------------------------------------------------------ !
-! Routine building on top of a stress tensor, adding the inviscid part of the fluid stress.
+! Routine which builds on top of an already-existing stress tensor, adding the inviscid part of the fluid stress.
+
 subroutine stressBuilder_addInviscidFluid(rho, v1, v2, pressure, out_sigma)
   use constants, only: CUSTOM_REAL, NDIM
   
@@ -2138,10 +1811,6 @@ subroutine stressBuilder_addInviscidFluid(rho, v1, v2, pressure, out_sigma)
   ! Local.
   integer :: i, j
   
-  !out_sigma(1, 1) = out_sigma(1, 1) + rho*v1(1)*v2(1) + pressure
-  !out_sigma(1, 2) = out_sigma(1, 2) + rho*v1(1)*v2(2)
-  !out_sigma(2, 1) = out_sigma(2, 1) + rho*v1(2)*v2(1)
-  !out_sigma(2, 2) = out_sigma(2, 2) + rho*v1(2)*v2(2) + pressure
   do i=1, NDIM
     do j=1, NDIM
       out_sigma(i, j) = out_sigma(i, j) + rho*v1(i)*v2(j)
@@ -2151,10 +1820,13 @@ subroutine stressBuilder_addInviscidFluid(rho, v1, v2, pressure, out_sigma)
     enddo
   enddo
 end subroutine stressBuilder_addInviscidFluid
+
+
 ! ------------------------------------------------------------ !
 ! stressBuilder_addViscousFluid                                !
 ! ------------------------------------------------------------ !
-! Routine building on top of a stress tensor, adding the viscous part of the fluid stress.
+! Routine which builds on top of an already-existing stress tensor, adding the viscous part of the fluid stress.
+
 subroutine stressBuilder_addViscousFluid(viscous_tensor_local, out_sigma)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par_lns, only: NVALSIGMA
@@ -2175,34 +1847,11 @@ subroutine stressBuilder_addViscousFluid(viscous_tensor_local, out_sigma)
 end subroutine stressBuilder_addViscousFluid
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ! ------------------------------------------------------------ !
 ! LNS_prevent_nonsense                                         !
 ! ------------------------------------------------------------ !
 ! Attempts to detect nonsense in LNS variables, and stop program if they are found.
+
 subroutine LNS_prevent_nonsense()
   ! TODO: select variables to use.
   use constants
@@ -2241,15 +1890,16 @@ subroutine LNS_prevent_nonsense()
   endif
 end subroutine LNS_prevent_nonsense
 
+
 ! ------------------------------------------------------------ !
 ! LNS_warn_nonsense                                            !
 ! ------------------------------------------------------------ !
 ! Attempts to detect nonsense in LNS variables, and warn user if they are found.
+
 subroutine LNS_warn_nonsense()
-  ! TODO: select variables to use.
-  use constants
-  use specfem_par
-  use specfem_par_LNS
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
+  use specfem_par, only: nspec, coord, myrank, ispec_is_acoustic_DG, ibool_DG, ibool_before_perio
+  use specfem_par_LNS, only: LNS_drho, LNS_dv, LNS_dE, LNS_rho0, LNS_v0, LNS_E0
   implicit none
   ! Input/Output.
   ! N./A.
@@ -2286,8 +1936,6 @@ subroutine LNS_warn_nonsense()
     endif
   enddo outer
   
-  !write(*,*) i,j,ispec,ispec_is_acoustic_DG(ispec) ! DEBUG
-  
   if(broken/=0) then
     write(*,*) "********************************"
     write(*,*) "*           WARNING            *"
@@ -2322,18 +1970,19 @@ subroutine LNS_warn_nonsense()
 end subroutine LNS_warn_nonsense
 
 
-
-
-
-
-
-! NOTE: acceptable values of neighbour_type.
+! ------------------------------------------------------------ !
+! check_neighbour_type                                         !
+! ------------------------------------------------------------ !
+! Checks the value taken by the variable neighbour_type, used in the 'compute_forces_acoustic_LNS' routine
+! ('compute_forces_acoustic_LNS.f90').
+! Note: the acceptable values for neighbour_type are:
 !   neighbour_type = 1  <=> A neighbouring LNS DG element was found in the same partition.
 !   neighbour_type = 10 <=> Temporary value waiting for precision.
 !   neighbour_type = 11 <=> A neighbouring LNS DG element was found in another partition.
 !   neighbour_type = 21 <=> Other material: viscoelastic.
 !   neighbour_type = 22 <=> Other material: potential acoustic (not implemented).
 !   neighbour_type = 99 <=> Outside boundary.
+
 subroutine check_neighbour_type(neighbour_type)
   use specfem_par, only: myrank
   integer, intent(in) :: neighbour_type
@@ -2347,10 +1996,10 @@ subroutine check_neighbour_type(neighbour_type)
 end subroutine check_neighbour_type
 
 
-
-
-
-
+! ------------------------------------------------------------ !
+! initialise_VALIDATION_MMS                                    !
+! ------------------------------------------------------------ !
+! Initialises the constants used for the validation of the fluid equations using the method of manufactured solutions.
 
 subroutine initialise_VALIDATION_MMS()
   use constants, only: CUSTOM_REAL
@@ -2360,6 +2009,15 @@ subroutine initialise_VALIDATION_MMS()
                              MMS_dRHO_x, MMS_dRHO_z, &
                              MMS_dVX_x, MMS_dVX_z, MMS_dVZ_x, MMS_dVZ_z, &
                              MMS_dE_x, MMS_dE_z
+  
+  implicit none
+  
+  ! Input/Output.
+  ! N.A.
+  
+  ! Local.
+  ! N.A.
+  
   if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
   if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
   if(VALIDATION_MMS_IV) then
@@ -2397,6 +2055,12 @@ subroutine initialise_VALIDATION_MMS()
   MMS_dE_z    = 4._CUSTOM_REAL
 end subroutine initialise_VALIDATION_MMS
 
+
+! ------------------------------------------------------------ !
+! VALIDATION_MMS_source_terms                                  !
+! ------------------------------------------------------------ !
+! Produces the source terms for the validation of the fluid equations using the method of manufactured solutions.
+
 subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL, PI
   use specfem_par, only: jacobian, wxgll, wzgll, &
@@ -2413,10 +2077,13 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
                              !MMS_dVZ_x, MMS_dVZ_z, &
                              MMS_dE_x, MMS_dE_z, &
                              LNS_verbose, LNS_modprint
+  
   implicit none
+  
   ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(out) :: outrhs_drho, outrhs_dE
   real(kind=CUSTOM_REAL), dimension(NDIM, nglob_DG), intent(out) :: outrhs_rho0dv
+  
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: EIGHT_THIRDScr  = (8._CUSTOM_REAL/3._CUSTOM_REAL)
   real(kind=CUSTOM_REAL), parameter :: ONEcr  = 1._CUSTOM_REAL
@@ -2426,89 +2093,99 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
   real(kind=CUSTOM_REAL) :: GAM, w
   if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
   if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
-  do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX ! V1: get on all GLL points
-    iglob = ibool_DG(i, j, ispec)
-    X = coord(:, ibool_before_perio(i, j, ispec))
-    GAM = gammaext_DG(iglob)
-    w = LNS_v0(1, iglob)
-    ! mass conservation.
-    if(VALIDATION_MMS_IV) then
-        outrhs_drho(iglob) = MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w
-    endif
-    if(VALIDATION_MMS_KA) then
-        outrhs_drho(iglob) = MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w
-    endif
-    if(VALIDATION_MMS_MU) then
-        outrhs_drho(iglob) = LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))
-    endif
-    outrhs_drho(iglob) = outrhs_drho(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
-    ! x-momentum.
-    if(VALIDATION_MMS_IV) then
-      outrhs_rho0dv(1, iglob) = (GAM-ONEcr)*PI &
-                                     *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
-    endif
-    if(VALIDATION_MMS_KA) then
-      outrhs_rho0dv(1, iglob) = (GAM-ONEcr)*PI &
-                                     *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
-    endif
-    if(VALIDATION_MMS_MU) then
-      outrhs_rho0dv(1, iglob) = ( &
-                                     LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1)) &
-                                     *(w-(GAM-ONEcr)*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1)))) &
-                                   + &
-                                     PI**2*MMS_dVX_cst*MMS_dVX_x**2*EIGHT_THIRDScr*LNS_mu(iglob)*sin(MMS_dVX_x*PI*X(1)) &
-                                   )
-    endif
-    outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
-    ! z-momentum.
-    if(VALIDATION_MMS_IV) then
-      outrhs_rho0dv(2, iglob) = (GAM-ONEcr)*PI &
-                                     *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
-                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
-    endif
-    if(VALIDATION_MMS_KA) then
-      outrhs_rho0dv(2, iglob) = (GAM-ONEcr)*PI &
-                                     *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
-                                       - HALFcr*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
-    endif
-    if(VALIDATION_MMS_MU) then
-      outrhs_rho0dv(2, iglob) = 0._CUSTOM_REAL
-    endif
-    outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
-    ! Energy.
-    if(VALIDATION_MMS_IV) then
-      outrhs_dE(iglob) = w*PI &
-                              *(  GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                                - HALFcr*(GAM-ONEcr)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2)
-    endif
-    if(VALIDATION_MMS_KA) then
-      outrhs_dE(iglob) = (   w*PI*GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
-                              + ((MMS_dE_cst*LNS_kappa(iglob)*PI**2)/(LNS_rho0(iglob)*c_V)) &
-                                *(sin(MMS_dE_x*PI*X(1))*MMS_dE_x**2 + sin(MMS_dE_z*PI*X(2))*MMS_dE_z**2) )
-    endif
-    if(VALIDATION_MMS_MU) then
-      outrhs_dE(iglob) = ( &
-                              (LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))/(GAM-ONEcr)) &
-                              *(   HALFcr*(GAM-ONEcr)*w**2 &
-                                 + sound_velocity**2 &
-                                 - (GAM-ONEcr)**2*w*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1))) &
-                               ) &
-                            + &
-                              PI**2*MMS_dVX_cst*MMS_dVX_x**2 &
-                              *(   EIGHT_THIRDScr*LNS_mu(iglob)*w*sin(MMS_dVX_x*PI*X(1)) &
-                                 + (LNS_kappa(iglob)/c_V) &
-                                   *( &
-                                        MMS_dVX_cst*sin(2._CUSTOM_REAL*MMS_dVX_x*PI*X(1)) &
-                                      + w*sin(MMS_dVX_x*PI*X(1)) &
-                                    ) &
-                              ) &
-                            )
-    endif
-    outrhs_dE(iglob) = outrhs_dE(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
-  enddo; enddo; enddo
+  do ispec = 1, nspec
+    do j = 1, NGLLZ
+      do i = 1, NGLLX
+        iglob = ibool_DG(i, j, ispec)
+        X = coord(:, ibool_before_perio(i, j, ispec))
+        GAM = gammaext_DG(iglob)
+        w = LNS_v0(1, iglob)
+        ! Mass conservation.
+        if(VALIDATION_MMS_IV) then
+            outrhs_drho(iglob) = MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w
+        endif
+        if(VALIDATION_MMS_KA) then
+            outrhs_drho(iglob) = MMS_dRHO_cst*MMS_dRHO_x*PI*cos(MMS_dRHO_x*PI*X(1))*w
+        endif
+        if(VALIDATION_MMS_MU) then
+            outrhs_drho(iglob) = LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))
+        endif
+        outrhs_drho(iglob) = outrhs_drho(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+        ! x-momentum.
+        if(VALIDATION_MMS_IV) then
+          outrhs_rho0dv(1, iglob) = (GAM-ONEcr)*PI &
+                                         *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                           - HALFcr*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
+        endif
+        if(VALIDATION_MMS_KA) then
+          outrhs_rho0dv(1, iglob) = (GAM-ONEcr)*PI &
+                                         *(  MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                           - HALFcr*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2 )
+        endif
+        if(VALIDATION_MMS_MU) then
+          outrhs_rho0dv(1, iglob) = ( &
+                                         LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1)) &
+                                         *(w-(GAM-ONEcr)*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1)))) &
+                                       + &
+                                         PI**2*MMS_dVX_cst*MMS_dVX_x**2*EIGHT_THIRDScr*LNS_mu(iglob)*sin(MMS_dVX_x*PI*X(1)) &
+                                       )
+        endif
+        outrhs_rho0dv(1, iglob) = outrhs_rho0dv(1, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+        ! z-momentum.
+        if(VALIDATION_MMS_IV) then
+          outrhs_rho0dv(2, iglob) = (GAM-ONEcr)*PI &
+                                         *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
+                                           - HALFcr*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
+        endif
+        if(VALIDATION_MMS_KA) then
+          outrhs_rho0dv(2, iglob) = (GAM-ONEcr)*PI &
+                                         *(  MMS_dE_cst*MMS_dE_z*cos(MMS_dE_z*PI*X(2)) &
+                                           - HALFcr*MMS_dRHO_cst*MMS_dRHO_z*cos(MMS_dRHO_z*PI*X(2))*w**2 )
+        endif
+        if(VALIDATION_MMS_MU) then
+          outrhs_rho0dv(2, iglob) = 0._CUSTOM_REAL
+        endif
+        outrhs_rho0dv(2, iglob) = outrhs_rho0dv(2, iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+        ! Energy.
+        if(VALIDATION_MMS_IV) then
+          outrhs_dE(iglob) = w*PI &
+                                  *(  GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                    - HALFcr*(GAM-ONEcr)*MMS_dRHO_cst*MMS_dRHO_x*cos(MMS_dRHO_x*PI*X(1))*w**2)
+        endif
+        if(VALIDATION_MMS_KA) then
+          outrhs_dE(iglob) = (   w*PI*GAM*MMS_dE_cst*MMS_dE_x*cos(MMS_dE_x*PI*X(1)) &
+                                  + ((MMS_dE_cst*LNS_kappa(iglob)*PI**2)/(LNS_rho0(iglob)*c_V)) &
+                                    *(sin(MMS_dE_x*PI*X(1))*MMS_dE_x**2 + sin(MMS_dE_z*PI*X(2))*MMS_dE_z**2) )
+        endif
+        if(VALIDATION_MMS_MU) then
+          outrhs_dE(iglob) = ( &
+                                  (LNS_rho0(iglob)*MMS_dVX_cst*MMS_dVX_x*PI*cos(MMS_dVX_x*PI*X(1))/(GAM-ONEcr)) &
+                                  *(   HALFcr*(GAM-ONEcr)*w**2 &
+                                     + sound_velocity**2 &
+                                     - (GAM-ONEcr)**2*w*(w+MMS_dVX_cst*sin(MMS_dVX_x*PI*X(1))) &
+                                   ) &
+                                + &
+                                  PI**2*MMS_dVX_cst*MMS_dVX_x**2 &
+                                  *(   EIGHT_THIRDScr*LNS_mu(iglob)*w*sin(MMS_dVX_x*PI*X(1)) &
+                                     + (LNS_kappa(iglob)/c_V) &
+                                       *( &
+                                            MMS_dVX_cst*sin(2._CUSTOM_REAL*MMS_dVX_x*PI*X(1)) &
+                                          + w*sin(MMS_dVX_x*PI*X(1)) &
+                                        ) &
+                                  ) &
+                                )
+        endif
+        outrhs_dE(iglob) = outrhs_dE(iglob) * wxgll(i)*wzgll(j)*jacobian(i,j,ispec)
+      enddo
+    enddo
+  enddo
 end subroutine VALIDATION_MMS_source_terms
+
+
+! ------------------------------------------------------------ !
+! VALIDATION_MMS_boundary_terms                                !
+! ------------------------------------------------------------ !
+! Produces the boundary terms for the validation of the fluid equations using the method of manufactured solutions.
 
 subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
                                          exact_interface_flux, out_drho_P, out_dv_P, out_dE_P, &
@@ -2516,7 +2193,7 @@ subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
                                          swCompVisc, out_nabla_dT_P, out_sigma_dv_P, &
                                          swCompdT, out_dT_P)
   use constants, only: CUSTOM_REAL, NDIM, PI
-  use specfem_par, only: coord ! For MMS validation.
+  use specfem_par, only: coord
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, &
                              LNS_rho0, LNS_v0, LNS_E0, nabla_dT, sigma_dv, &
                              VALIDATION_MMS, &
@@ -2524,7 +2201,9 @@ subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
                              MMS_dRHO_x, MMS_dRHO_z, &
                              MMS_dVX_x, MMS_dVX_z, MMS_dVZ_x, MMS_dVZ_z, &
                              MMS_dE_x, MMS_dE_z
+  
   implicit none
+  
   ! Input/Output.
   integer, intent(in) :: iglob, iglobM
   logical, intent(in) :: swCompVisc, swCompdT!, swCompv ! Do not unnecessarily compute some quantities.
@@ -2535,6 +2214,7 @@ subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
   real(kind=CUSTOM_REAL), intent(out) :: out_dp_P ! Output other variables.
   real(kind=CUSTOM_REAL), dimension(NVALSIGMA), intent(out) :: out_sigma_dv_P ! Output other variables.
   real(kind=CUSTOM_REAL), intent(out) :: out_dT_P ! In compute_gradient_TFSF (desintegration method), we need temperature on the other side of the boundary in order to compute the flux.
+  
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
   if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
@@ -2551,23 +2231,16 @@ subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
   call compute_dp_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:,iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dp_P, iglobM)
   out_rho0dv_P = LNS_rho0(iglobM)*out_dv_P
   if(swCompVisc) then
-    out_nabla_dT_P = nabla_dT(:,iglobM) ! Set out_nabla_dT_P: same as other side, that is a Neumann condition.
-    out_sigma_dv_P = sigma_dv(:,iglobM) ! Set out_sigma_dv_P: same as other side, that is a Neumann condition.
+    out_nabla_dT_P = nabla_dT(:,iglobM)
+    out_sigma_dv_P = sigma_dv(:,iglobM)
   else
    out_nabla_dT_P = ZEROcr
    out_sigma_dv_P = ZEROcr
   endif
   if(swCompdT) then
     call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_v0(:, iglobM)+out_dv_P, LNS_E0(iglobM)+out_dE_P, out_dT_P, iglobM)
-    !call compute_dT_i(LNS_rho0(iglobM)+out_drho_P, LNS_p0(iglobM)+out_dp_P, out_dT_P, iglobM)
   else
     out_dT_P = ZEROcr
   endif
 end subroutine VALIDATION_MMS_boundary_terms
-
-
-
-
-
-
 
