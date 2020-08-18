@@ -6,9 +6,10 @@ function [R, T] = ReflexionTransmissionCoefsZhang(fts0_stf1, vp_1, Z_1, vp_2, vs
   % Conversion from fluid P to solid S is strangely low...
   
   normalise = 0; % add the sqrt() factor to transmissions
+  
   if(fts0_stf1)
-    R = 0;
-    T = 0;
+    R = [0.4, 0.3];
+    T = 0.2;
     disp(['[',mfilename,', WARNING] Not implemented!']);
   else
     % FLUID-TO-SOLID

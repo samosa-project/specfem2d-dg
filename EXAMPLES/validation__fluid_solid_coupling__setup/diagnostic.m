@@ -12,8 +12,9 @@ setup;
 % station_ids = 1:6;
 station_ids = [2, 5];
 
-% for i = 1:numel(cases)
-for i = 1:2
+for i = 1:numel(cases)
+% for i = 1:2
+% for i = 3:4
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Get working folders and
   % load synthetics.
@@ -34,6 +35,13 @@ for i = 1:2
   TIT = '';
   if(cases{i}.fts0_stf1)
     TIT = [TIT, 'STF'];
+    if(cases{i}.ortho0_slant1)
+      ylim_pre = [-0.1, 0.6];
+      ylim_vel = [-0.8, 0.7]*1e-3;
+    else
+      ylim_pre = [-0.25, 1];
+      ylim_vel = [-0.5, 1]*1e-3;
+    end
   else
     TIT = [TIT, 'FTS'];
     ylim_pre = [-0.25, 3];
@@ -65,24 +73,28 @@ for i = 1:2
   [i1_i2_j2t_j2r] = get_predicted_angles_deg(ic, c, vp, vs)* pi/180; % cast to [rad]
   if(cases{i}.fts0_stf1)
     % STF
+    [R, T] = ReflexionTransmissionCoefsZhang(cases{i}.fts0_stf1, c, c*rhof, vp, vs, vp*rhos, vs*rhos, theta_i);
+    [~, incident_P] = findFirstPeak(time, vz); % get incident P seismic wave
+    expected_reflected_amplitude = R * incident_P;
+    expected_transmitted_amplitude = (c*rhof*T) * incident_P;
     if(cases{i}.ortho0_slant1)
-      selangles = [pi/2-theta_i, theta_i-pi/2, i1_i2_j2t_j2r(4)]; % incident P @(pi/2-ic), reflected P @(ic-pi/2), reflected S @()
+      selangles = [pi/2-theta_i, theta_i+pi/2, i1_i2_j2t_j2r(4)]; % incident P @(pi/2-ic), reflected P @(ic-pi/2), reflected S @()
       angdnam = {'incident P', 'reflected P', 'reflected S'};
     else
-      selangles = [pi/2-theta_i]; % incident P and reflected P @(pi/2-ic=0)
+      selangles = [pi/2-theta_i] * [1, 1]; % incident P seismic wave and reflected P seimic wave
       angdnam = {'incident \& reflected P'};
     end
   else
     % FTS
-    [R, T] = ReflexionTransmissionCoefsZhang(cases{i}.fts0_stf1, c, c*rhof, vp, vs, vp*rhos, vs*rhos, theta_i)
-    [~, incident_P] = findFirstPeak(time, dp); % get incident P pressure wave
-    expected_reflected_amplitude = R * incident_P; % expected P- and S-wave amplitude
-    expected_transmitted_amplitude = (T/(c*rhof)) * incident_P; % expected P- and S-wave amplitude
+    [R, T] = ReflexionTransmissionCoefsZhang(cases{i}.fts0_stf1, c, c*rhof, vp, vs, vp*rhos, vs*rhos, theta_i);
+    [~, incident_P] = findFirstPeak(time, dp); % incident P airwave
+    expected_reflected_amplitude = R * incident_P; % expected reflected P airwave
+    expected_transmitted_amplitude = (T/(c*rhof)) * incident_P; % expected P and S seismic waves
     if(cases{i}.ortho0_slant1)
-      selangles = [i1_i2_j2t_j2r(2)-pi/2, i1_i2_j2t_j2r(3)]; % transmitted P-wave, transmitted S-wave
+      selangles = [i1_i2_j2t_j2r(2)-pi/2, i1_i2_j2t_j2r(3)]; % transmitted P seismic wave, transmitted S seismic wave
       angdnam = {'transmitted P', 'transmitted S'};
     else
-      selangles = [theta_i - pi/2];
+      selangles = [theta_i - pi/2]; % transmitted P seismic wave
       %[~, transmitted_P] = findFirstPeak(time, abs(vz)); % get transmitted P seismic wave
       angdnam = {'transmitted P'};
     end
@@ -92,7 +104,7 @@ for i = 1:2
   % Do the plot.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   figure('units','normalized','outerposition',[(i-1)*0.15, 0, 0.5, 1]);
-  tightAxes = tight_subplot(3, 1, [0.16, 0.], [0.1, 0.06], [0.1, 0.09]); % gap, marg_h, marg_w
+  tightAxes = tight_subplot(3, 1, [0.16, 0.], [0.1, 0.06], [0.11, 0.09]); % gap, marg_h, marg_w
   
   % air time series
   axes(tightAxes(1));
@@ -100,9 +112,13 @@ for i = 1:2
   h=[];
   h=[h, plot(time, factor*dp, 'displayname', '$p''$')]; hold on;
 %   scatter(time(istatloc, :), time(istatloc, :)*0+min(ylim), 100, time(istatloc, :), 'filled'); hold on;
-  if(cases{i}.fts0_stf1==0)
-    ttt = [min(time), max(time)];
-    h=[h, plot(ttt, expected_reflected_amplitude*[1,1], 'displayname', 'reflected P', 'linewidth', LWangles, 'linestyle', LSangles)]; hold on;
+  ttt = [min(time), max(time)];
+  if(cases{i}.fts0_stf1)
+    % STF
+    h = [h, plot(ttt, expected_transmitted_amplitude*[1,1], 'displayname', 'transmitted P', 'linewidth', LWangles, 'linestyle', LSangles)]; hold on;
+  else
+    % FTS
+    h = [h, plot(ttt, expected_reflected_amplitude(1)*[1,1], 'displayname', 'reflected P', 'linewidth', LWangles, 'linestyle', LSangles)]; hold on;
   end
   ylabel(['$p''$ [',prefix,'Pa]']);
   xticklabels({});
@@ -116,8 +132,14 @@ for i = 1:2
   h=[];
   h=[h, plot(time, factor*vx, 'displayname', '$v_x$')]; hold on;
   h=[h, plot(time, factor*vz, 'displayname', '$v_z$')]; hold on;
+%   if(cases{i}.fts0_stf1==1)
+%     ttt = [min(time), max(time)];
+%     if(cases{i}.ortho0_slant1==0)
+%       h=[h, plot(ttt, factor*expected_reflected_amplitude(1)*[1,1], 'displayname', ['reflected P'], 'linewidth', LWangles, 'linestyle', LSangles)]; hold on;
+%     end
+%   end
   scatter(time, time*0+factor*min(ylim_vel), 80, time, 'filled'); hold on;
-  legend(h);
+  legend(h, 'location', 'south', 'NumColumns', 4);
   xlabel(TLAB);
   ylabel(['$v_{x,z}$ [',prefix,'m/s]']);
   ylim(factor*ylim_vel);
@@ -130,8 +152,14 @@ for i = 1:2
     angl = selangles(ia);
     [x, y] = pol2cart(angl*[1,1], factor*1.5*max(amp(:))*[-1,1]);
     h = [h, plot(x, y, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles, 'displayname', angdnam{ia})]; hold on;
-    if(expected_transmitted_amplitude(ia)~=0)
-      ha = draw_ampl_circle(factor*expected_transmitted_amplitude(ia), angl); set(ha, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles);
+    if(cases{i}.fts0_stf1==0)
+      if(expected_transmitted_amplitude(ia)~=0)
+        ha = draw_ampl_circle(factor*expected_transmitted_amplitude(ia), angl, 1); set(ha, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles);
+      end
+    else
+      if(ia>1 & expected_reflected_amplitude(ia-1)~=0)
+        ha = draw_ampl_circle(factor*expected_reflected_amplitude(ia-1), angl, 0.1); set(ha, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles);
+      end
     end
   end
   % plot time series
