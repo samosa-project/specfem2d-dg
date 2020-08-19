@@ -1,6 +1,8 @@
 ic = 30*pi/180; % incidence angle for slanted case [rad]
 f0 = 100; % [Hz]
 
+addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'));
+
 SPCFMEXLOC = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES',filesep];
 basename = 'validation__fluid_solid_coupling__';
 tagfts = 'fts';
@@ -10,10 +12,10 @@ tagslant = 'slant';
 
 cases = {};
 i = 1;
-cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.1, 0.2]; i = i+1;
-cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.1, 0.2]; i = i+1;
-cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.04, 0.14]; i = i+1;
 cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.04, 0.14]; i = i+1;
+cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.04, 0.14]; i = i+1;
+cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.1, 0.2]; i = i+1;
+cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.1, 0.2]; i = i+1;
 
 folderz = {};
 for i = 1:numel(cases)
