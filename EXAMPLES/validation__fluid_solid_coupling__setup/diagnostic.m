@@ -26,7 +26,7 @@ station_ids = [2, 5]; % middle one
 
 for i = 1:numel(cases)
 % for i = 1:2
-% for i = 4
+% for i = 1:2
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Get working folders and
   % load synthetics.
@@ -120,7 +120,7 @@ for i = 1:numel(cases)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Do the plot.
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  figure('units','normalized','outerposition',[(i-1)*0.15, 0, 0.5, 1]);
+  THEFIGURE = figure('units','normalized','outerposition',[(i-1)*0.15, 0, 0.5, 1]);
   tightAxes = tight_subplot(3, 1, [0.16, 0.], [0.1, 0.06], [0.11, 0.09]); % gap, marg_h, marg_w
   
   % air time series
@@ -150,7 +150,7 @@ for i = 1:numel(cases)
   h=[h, plot(time, factor*vx, 'displayname', 'synthetic $v_x$')]; hold on;
   h=[h, plot(time, factor*vz, 'displayname', 'synthetic $v_z$')]; hold on;
   scatter(time, time*0+factor*min(ylim_vel), 80, time, 'filled'); hold on;
-  legend(h, 'location', 'south');
+  legend(h, 'location', 'south', 'numcolumns', 2);
   xlabel(TLAB); ylabel(['$v_{x,z}$ [',prefix,'m/s]']);
   ylim(factor*ylim_vel);
 
@@ -189,4 +189,7 @@ for i = 1:numel(cases)
   moveup = (tightAxes(1).Position([2])-tightAxes(1).Position([4])-vshift) - tightAxes(2).Position(2);
   tightAxes(2).Position = tightAxes(2).Position + [0, moveup, 0, 0];
   tightAxes(3).Position = tightAxes(3).Position + [0, 0, 0, moveup+2*vshift];
+  
+  % save
+  customSaveFig(THEFIGURE, [plotFolder,filesep,cases{i}.code], extToSave, 9999);
 end

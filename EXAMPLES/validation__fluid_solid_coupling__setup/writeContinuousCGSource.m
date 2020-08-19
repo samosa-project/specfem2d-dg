@@ -1,7 +1,7 @@
 
-function [] = writeContinuousCGSource(source_out, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z)
+function [N] = writeContinuousCGSource(source_out, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z)
   N = ceil(max(xmax-xmin, zmax-zmin)/0.5);
-  disp(['[',mfilename,'] ',num2str(N),' sources generated. Set parfile accordingly.']);
+%   disp(['[',mfilename,'] ',num2str(N),' sources generated. Set parfile accordingly.']);
   
   xsarr = linspace(endpoints_x(1), endpoints_x(end), N);
   zsarr = linspace(endpoints_z(1), endpoints_z(end), N);

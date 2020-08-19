@@ -15,6 +15,14 @@ function [R, T] = RTCoefs(fts0_stf1, alpha__1, rho__1, alpha__2, beta__2, rho__2
     T = -4*alpha__2*rho__2*(p^2*beta__2^2-1/2)/(alpha__1*D); % transmission
     R(1) = (4*beta__2^2*p^2*rho__2+rho__1-rho__2)/D; % reflection to P-wave
     R(2) = -8*p^2*alpha__2*beta__2*rho__2*(p^2*beta__2^2-1/2)/D; % reflection to S-wave
+    
+    if(normalise)
+      % normalise by sqrt( (outgoing_impedance*cos(outgoing)) / (incoming_impedance*cos(incoming)) )
+      T = T * sqrt((rho__1*alpha__1*alpha__1)/(rho__2*alpha__2*alpha__2));
+      R(1); % unchanged
+      R(2) = R(2) * sqrt((beta__2*beta__2)/(alpha__2*alpha__2));
+    end
+    
   else
     % FTS
 %     i__1 = i_inc; % i_inc is i1 in this case
@@ -26,5 +34,10 @@ function [R, T] = RTCoefs(fts0_stf1, alpha__1, rho__1, alpha__2, beta__2, rho__2
     T(1) = -4*rho__1*alpha__1*(p^2*beta__2^2-1/2)/(alpha__2*D); % transmission to P-wave
     T(2) = -4*beta__2*p^2*rho__1*alpha__1/D; % transmission to S-wave
     R = (8*beta__2^4*p^4*rho__2-4*beta__2^2*p^2*rho__2-rho__1+rho__2)/D; % reflection
+    
+    if(normalise)
+      error(['[',mfilename,', ERROR] Not implemented.']);
+    end
+    
   end
 end

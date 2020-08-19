@@ -1,7 +1,11 @@
-ic = 30*pi/180; % incidence angle for slanted case [rad]
+ic_rad = 20*pi/180; % incidence angle for slanted case [rad]
 f0 = 100; % [Hz]
 
 addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'));
+
+thisFolder = [regexprep(mfilename('fullpath'),[filesep,mfilename],filesep)];
+plotFolder = [thisFolder,filesep,'plots'];
+extToSave = {'jpg', 'eps'};
 
 SPCFMEXLOC = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES',filesep];
 basename = 'validation__fluid_solid_coupling__';
@@ -12,10 +16,10 @@ tagslant = 'slant';
 
 cases = {};
 i = 1;
-cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.04, 0.14]; i = i+1;
-cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.04, 0.14]; i = i+1;
-cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.1, 0.2]; i = i+1;
-cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.1, 0.2]; i = i+1;
+cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.04, 0.14]; cases{i}.code='SF_slant'; i = i+1;
+cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.04, 0.14]; cases{i}.code='SF_ortho'; i = i+1;
+cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.1, 0.2]; cases{i}.code='FS_slant'; i = i+1;
+cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.1, 0.2]; cases{i}.code='FS_ortho'; i = i+1;
 
 folderz = {};
 for i = 1:numel(cases)
@@ -38,4 +42,8 @@ for i = 1:numel(cases)
     mkdir(folder);
   end
   folderz{i} = folder;
+end
+
+if(not(exist(plotFolder,'dir')))
+  mkdir(plotFolder);
 end
