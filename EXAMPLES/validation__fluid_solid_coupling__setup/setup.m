@@ -23,6 +23,9 @@ cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.035, 0.09
 cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.08, 0.18]; cases{i}.code='FS_slant'; i = i+1;
 cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.08, 0.18]; cases{i}.code='FS_ortho'; i = i+1;
 
+stftag = 'S2F';
+ftstag = 'F2S';
+
 folderz = {};
 for i = 1:numel(cases)
   % Define working folders.

@@ -24,8 +24,15 @@ setup;
 station_ids = [2, 5]; % middle one
 % station_ids = [2, 5]+1; % right one
 
+effective_R = {};
+effective_T = {};
+saveR = {};
+saveT = {};
+err_R = {};
+err_T = {};
+
 for i = 1:numel(cases)
-% for i = 2
+% for i = 1:2
 % for i = 3
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Get working folders and
@@ -46,7 +53,7 @@ for i = 1:numel(cases)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   TIT = '';
   if(cases{i}.fts0_stf1)
-    TIT = [TIT, 'STF'];
+    TIT = [TIT, stftag];
     rad_lim = 0.3e-3;
     if(cases{i}.ortho0_slant1)
       ylim_pre = [-0.05, 0.5];
@@ -56,7 +63,7 @@ for i = 1:numel(cases)
       ylim_vel = [-0.2, 0.3]*1e-3;
     end
   else
-    TIT = [TIT, 'FTS'];
+    TIT = [TIT, ftstag];
     ylim_pre = [-0.25, 3];
     rad_lim = 1.5e-6;
     if(cases{i}.ortho0_slant1)
@@ -90,30 +97,46 @@ for i = 1:numel(cases)
   if(cases{i}.fts0_stf1)
     % STF
     [~, vmag] = cart2pol(vx, vz); % compute magnitude of displacement
-    [~, incident_P] = findFirstPeak(time, vmag); % get incident P seismic wave
-    expected_reflected_amplitude = R * incident_P;
-    expected_transmitted_amplitude = (alpha__1*rho__1*T) * incident_P; % in terms of pressure (pay attention to the multiplication by the fluid impedance)
+%     [~, incident_P] = findFirstPeak(time, vmag); % get incident P seismic wave
     if(cases{i}.ortho0_slant1)
       selangles = [pi/2-theta_i, theta_i-pi/2, i1_i2_j2t_j2r(4)]; % incident P @(pi/2-ic), reflected P @(ic-pi/2), reflected S @()
       angdnam = {['$',name_Pu,'$'], name_PuPd, name_PuSd};
+      [iP_rP_rS] = find_max_amplitude_along_direction(vx, vz, selangles); incident_P=iP_rP_rS(1); reflected_P=iP_rP_rS(2); reflected_S=iP_rP_rS(3);
     else
       selangles = [theta_i-pi/2] * [1, 1]; % incident P seismic wave and reflected P seimic wave
       angdnam = {['$',name_Pu,'$'], name_PuPd};
+      [iP_rP] = find_max_amplitude_along_direction(vx, vz, selangles); incident_P=iP_rP(1); reflected_P=iP_rP(2); reflected_S=0;
     end
+    [~, transmitted_P] = findFirstPeak(1:numel(dp), dp); transmitted_P=transmitted_P/(alpha__1*rho__1); % find transmitted P-wave in terms of velocity
+    expected_reflected_amplitude = R * incident_P;
+    expected_transmitted_amplitude = (alpha__1*rho__1*T) * incident_P; % in terms of pressure (pay attention to the multiplication by the fluid impedance)
+    effective_R{i} = [reflected_P, reflected_S]/incident_P;
+    effective_T{i} = transmitted_P/incident_P;
   else
     % FTS
     [~, incident_P] = findFirstPeak(time, dp); % incident P airwave
     expected_reflected_amplitude = R * incident_P; % expected reflected P airwave
     expected_transmitted_amplitude = (T/(alpha__1*rho__1)) * incident_P; % expected P and S seismic waves (pay attention to the conversion to velocity using the multiplication by the fluid impedance)
+    incident_P = incident_P/(alpha__1*rho__1); % convert incident to velocity for later treatments
     if(cases{i}.ortho0_slant1)
       selangles = [i1_i2_j2t_j2r(2)-pi/2, i1_i2_j2t_j2r(3)]; % transmitted P seismic wave, transmitted S seismic wave
       angdnam = {name_PdPd, name_PdSd};
+      [tP_tS] = find_max_amplitude_along_direction(vx, vz, selangles); transmitted_P=tP_tS(1); transmitted_S=tP_tS(2);
     else
       selangles = [theta_i - pi/2]; % transmitted P seismic wave
       %[~, transmitted_P] = findFirstPeak(time, abs(vz)); % get transmitted P seismic wave
       angdnam = {name_PdPd};
+      [transmitted_P] = find_max_amplitude_along_direction(vx, vz, selangles); transmitted_S=0;
     end
+    [~, reflected_P] = findFirstPeak(time, flip(dp)); reflected_P=reflected_P/(alpha__1*rho__1); % find reflected P-wave in terms of velocity
+    
+    effective_R{i} = reflected_P/incident_P;
+    effective_T{i} = [transmitted_P, transmitted_S]/incident_P;
   end
+  saveR{i} = abs(R);
+  saveT{i} = abs(T);
+  err_R{i} = abs(abs(effective_R{i}) - abs(R))./abs(R);
+  err_T{i} = abs(abs(effective_T{i}) - abs(T))./abs(T);
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Do the plot.
@@ -180,7 +203,7 @@ for i = 1:numel(cases)
   xlim([-1,1]*factor*rad_lim); ylim([-1,1]*factor*rad_lim);
   xlabel(['$v_{x}$ [',prefix,'m/s]']); ylabel(['$v_{z}$ [',prefix,'m/s]']);
   daspect([1,1,1]);
-
+  
   % adjust
   set(tightAxes, 'colormap', CMAP, 'clim', cases{i}.tlim);
   set(tightAxes([1,2]), 'xlim', cases{i}.tlim);
@@ -192,3 +215,5 @@ for i = 1:numel(cases)
   % save
   customSaveFig(THEFIGURE, [plotFolder,filesep,cases{i}.code], extToSave, 9999);
 end
+
+printTexTable(ic_deg, cases, saveR, saveT, effective_R, effective_T, err_R, err_T, stftag, ftstag);
