@@ -25,7 +25,7 @@ station_ids = [2, 5]; % middle one
 % station_ids = [2, 5]+1; % right one
 
 for i = 1:numel(cases)
-% for i = 1:2
+% for i = 2
 % for i = 3
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Get working folders and
