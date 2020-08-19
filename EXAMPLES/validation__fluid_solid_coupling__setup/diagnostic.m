@@ -26,7 +26,7 @@ station_ids = [2, 5]; % middle one
 
 for i = 1:numel(cases)
 % for i = 1:2
-% for i = 1:2
+% for i = 3
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Get working folders and
   % load synthetics.
@@ -47,30 +47,28 @@ for i = 1:numel(cases)
   TIT = '';
   if(cases{i}.fts0_stf1)
     TIT = [TIT, 'STF'];
+    rad_lim = 0.3e-3;
     if(cases{i}.ortho0_slant1)
-      ylim_pre = [-0.1, 0.6];
-      ylim_vel = [-0.8, 0.7]*1e-3;
-      rad_lim = 0.6e-3;
+      ylim_pre = [-0.05, 0.5];
+      ylim_vel = [-0.3, 0.3]*1e-3;
     else
-      ylim_pre = [-0.25, 1];
-      ylim_vel = [-0.5, 1]*1e-3;
-      rad_lim = 1e-3;
+      ylim_pre = [-0.05, 0.5];
+      ylim_vel = [-0.2, 0.3]*1e-3;
     end
   else
     TIT = [TIT, 'FTS'];
     ylim_pre = [-0.25, 3];
+    rad_lim = 1.5e-6;
     if(cases{i}.ortho0_slant1)
-      ylim_vel = [-3, 4]*1e-6;
-      rad_lim = 5e-6;
+      ylim_vel = [-2.5, 2]*1e-6;
     else
-      ylim_vel = [-5, 1]*1e-6;
-      rad_lim = 4.5e-6;
+      ylim_vel = [-2.5, 0.5]*1e-6;
     end
   end
   TIT = [TIT, ', '];
   if(cases{i}.ortho0_slant1)
     TIT = [TIT, '$\theta_i\neq0$'];
-    theta_i = ic;
+    theta_i = ic_rad;
   else
     TIT = [TIT, '$\theta_i=0$'];
     theta_i = 0;
@@ -86,7 +84,7 @@ for i = 1:numel(cases)
   vz = squeeze(amp(2, 2, :));
   
   [rho__1, alpha__1, rho__2, alpha__2, beta__2] = get_models(parfile);
-  [i1_i2_j2t_j2r] = get_predicted_angles_deg(ic, alpha__1, alpha__2, beta__2)* pi/180; % cast to [rad]
+  [i1_i2_j2t_j2r] = get_predicted_angles_deg(ic_rad, alpha__1, alpha__2, beta__2)* pi/180; % cast to [rad]
 %   [R, T] = ReflexionTransmissionCoefsZhang(cases{i}.fts0_stf1, alpha__1, rho__1, alpha__2, beta__2, rho__2, theta_i);
   [R, T] = RTCoefs(cases{i}.fts0_stf1, alpha__1, rho__1, alpha__2, beta__2, rho__2, theta_i);
   if(cases{i}.fts0_stf1)
@@ -160,17 +158,18 @@ for i = 1:numel(cases)
   h=[];
   for ia = 1:numel(selangles)
     angl = selangles(ia);
-    [x, y] = pol2cart(angl*[1,1], factor*1.5*max([max(vx), max(vz)])*[-1,1]);
-    h = [h, plot(x, y, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles, 'displayname', angdnam{ia})]; hold on;
+    [x, y] = pol2cart(angl*[1,1], factor*2*rad_lim*[-1,1]);
     if(cases{i}.fts0_stf1)
       % STF
+      h = [h, plot(x, y, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles, 'displayname', angdnam{ia})]; hold on;
       if(ia>1 & expected_reflected_amplitude(ia-1)~=0) % ia==1 reserved for incident P wave in this case
-        ha = draw_ampl_circle(factor*expected_reflected_amplitude(ia-1), angl, 0.1); set(ha, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles);
+        ha = draw_ampl_circle(factor*expected_reflected_amplitude(ia-1), angl, 0.05); set(ha, 'color', colangles(ia,:), 'linewidth', LWangles, 'linestyle', LSangles);
       end
     else
       % FTS
+      h = [h, plot(x, y, 'color', colangles(ia+1,:), 'linewidth', LWangles, 'linestyle', LSangles, 'displayname', angdnam{ia})]; hold on;
       if(expected_transmitted_amplitude(ia)~=0)
-        ha = draw_ampl_circle(factor*expected_transmitted_amplitude(ia), angl, 1); set(ha, 'color', colangles(ia+1,:), 'linewidth', LWangles, 'linestyle', LSangles);
+        ha = draw_ampl_circle(factor*expected_transmitted_amplitude(ia), angl, 0.25); set(ha, 'color', colangles(ia+1,:), 'linewidth', LWangles, 'linestyle', LSangles);
       end
     end
   end

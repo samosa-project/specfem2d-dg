@@ -50,6 +50,7 @@ for i = 1:numel(cases)
       endpoints_z = zmax*[1, 1]*0.5;
     end
   end
+%   endpoints_z
 %   range(endpoints_z)
   N = writeContinuousCGSource(soufile, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z);
   if(readExampleFiles_extractParam(parfile, 'NSOURCES', 'int')~=N)
@@ -57,21 +58,22 @@ for i = 1:numel(cases)
   end
 end
 
+disp(['[',mfilename,'] Chosen incidence angle is ',sprintf('%.2f', ic_deg),'°.']);
+
 % Check predicted angles.
 [rho__1, alpha__1, rho__2, alpha__2, beta__2] = get_models(parfile);
 [i1_i2_j2t_j2r] = get_predicted_angles_deg(ic_rad, alpha__1, alpha__2, beta__2);
-disp(['[',mfilename,'] Predicted angle i1 = ',sprintf('%.2f', i1_i2_j2t_j2r(1)),'° (STF P2P)']);
-disp(['[',mfilename,'] Predicted angle i2 = ',sprintf('%.2f', i1_i2_j2t_j2r(2)),'° (FTS P2P)']);
-disp(['[',mfilename,'] Predicted angle j2 = ',sprintf('%.2f', i1_i2_j2t_j2r(3)),'° (FTS P2S) or ',sprintf('%.2f', i1_i2_j2t_j2r(4)),'° (SRS P2S)']);
+disp(['[',mfilename,'] Predicted angle i1 = ',sprintf('%.2f', i1_i2_j2t_j2r(1)),'° (STF P2P).']);
+disp(['[',mfilename,'] Predicted angle i2 = ',sprintf('%.2f', i1_i2_j2t_j2r(2)),'° (FTS P2P).']);
+disp(['[',mfilename,'] Predicted angle j2 = ',sprintf('%.2f', i1_i2_j2t_j2r(3)),'° (FTS P2S) or ',sprintf('%.2f', i1_i2_j2t_j2r(4)),'° (STF reflected S).']);
  % [i1, i2, j2]
  
  % Get critical angles for FTS transmission.
  icPS_deg = asin(alpha__1./[alpha__2, beta__2])*180/pi;
- disp(['[',mfilename,'] Critical angle for P-waves = ',sprintf('%.2f', icPS_deg(1)),'°. In the ray limit, no P-wave may be created for incoming waves above this angle.']);
- disp(['[',mfilename,'] Critical angle for S-waves = ',sprintf('%.2f', icPS_deg(2)),'°. In the ray limit, no S-wave may be created for incoming waves above this angle.']);
+ disp(['[',mfilename,'] Critical angle for FTS-transmitted P-waves = ',sprintf('%.2f', icPS_deg(1)),'°. In the ray limit, no P-wave may be created for incoming waves above this angle.']);
+ disp(['[',mfilename,'] Critical angle for FTS-transmitted S-waves = ',sprintf('%.2f', icPS_deg(2)),'°. In the ray limit, no S-wave may be created for incoming waves above this angle.']);
  
 % Check predicted angles are below their critical angles for FTS transmission.
-ic_deg = ic_rad*180/pi;
 if(abs(ic_deg-icPS_deg(1))<1e-6)
   disp(['[',mfilename,', WARNING] Chosen incidence angle (',sprintf('%.2f', ic_deg),'°) is close or above critical angle for FTS-transmitted P-waves (',sprintf('%.2f', icPS_deg(1)),'°)!']);
   disp([' ',blanks(numel(mfilename)),'           Decrease v_p in solid, increase cs in fluid, or decrease incidence angle.']);

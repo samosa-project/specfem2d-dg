@@ -112,7 +112,7 @@ IONOSPHERIC_COUPLING            = .false.         # Activate ionospheric couplin
 USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobaric (.false.) model for the fluid part.
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
 surface_density                 = 1.0            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
-sound_velocity                  = 400.0          # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
+sound_velocity                  = 370.0          # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
 wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 10.0           # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
 dynamic_viscosity               = 0.d0           # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
@@ -176,7 +176,7 @@ FORCING_DG_FACTOR               = 1. # Factor by which multiply the forcing.
 #---------------------------------------------------------------------#
 
 # source parameters
-NSOURCES                        = 500              # number of sources (source information is then read from the DATA/SOURCE file)
+NSOURCES                        = 400              # number of sources (source information is then read from the DATA/SOURCE file)
 force_normal_to_surface         = .false.        # angleforce normal to surface (external mesh and curve file needed)
 
 # use an existing initial wave field as source or start from zero (medium initially at rest)
@@ -303,7 +303,7 @@ nbmodels                        = 2
 #   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
 # Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the 'Attenuation' section above as wanted.
 1 1 1.00 1.0d0 0.0d0 0 0   10.d0   10.d0 0 0 0 0 0 0
-2 1 2000 700.0 250.0 0 0 9999.d0 9999.d0 0 0 0 0 0 0
+2 1 5000 800.0 380.0 0 0 9999.d0 9999.d0 0 0 0 0 0 0
 
 # External tomography file.
 TOMOGRAPHY_FILE                 = ./DATA/tomo_file.xyz
@@ -347,7 +347,7 @@ interfacesfile                  = ../interfaces_input
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 xmin                            = -100.d0
 xmax                            =  100.d0
-nx                              =  80
+nx                              =  100
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .true.
@@ -365,8 +365,8 @@ absorbleft                      = .true. # Absorbing boundary conditions on the 
 nbregions                       = 2
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 80  1 50 2
-1 80 51 100 1
+1 100  1 50 2
+1 100 51 100 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
