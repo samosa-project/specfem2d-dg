@@ -4,21 +4,7 @@ function [] = printTexTable(ic_deg, cases, saveR, saveT, effective_R, effective_
   
   siunitxavailable = 0;
   
-  for i = 1:numel(cases)
-    if(cases{i}.fts0_stf1)
-      if(cases{i}.ortho0_slant1)
-        istfslant = i;
-      else
-        istfortho = i;
-      end
-    else
-      if(cases{i}.ortho0_slant1)
-        iftsslant = i;
-      else
-        iftsortho = i;
-      end
-    end
-  end
+  setup_find_all_cases; % produces istfortho, istfslant, iftsslant, iftsortho
   
   stfptp = '\stfptp';
   stfprp = '\stfprp';
