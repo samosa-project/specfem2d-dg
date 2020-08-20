@@ -77,7 +77,7 @@ function [] = plot_bg_model(MODEL)
   end
   
   if(ischar(MODEL))
-    customSaveFig(thefig,regexprep(MODEL,'.bin',''),{'png','eps'}, 9999);
+    customSaveFig(thefig,regexprep(MODEL,'.bin',''),{'eps'}, 9999);
   end
 end
 
