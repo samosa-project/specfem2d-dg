@@ -25,7 +25,7 @@ ngnod                           = 4
 
 # time step parameters
 # total number of time steps
-NSTEP                           = 60000
+NSTEP                           = 22000
 # duration of a time step (see section "How to choose the time step" of the manual for how to do this)
 DT                              = 0.005
 
@@ -212,30 +212,37 @@ SU_FORMAT                       = .false.        # Single precision binary in Se
 use_existing_STATIONS           = .false.
 
 # Number of receiver sets (i.e. number of receiver lines to create below).
-nreceiversets = 3
+nreceiversets = 4
 # Orientation
 anglerec              = 0.0d0   # Angle to rotate components at receivers.
 rec_normal_to_surface = .false. # Base anglerec normal to surface (external mesh and curve file needed).
 
-nrec = 21
-xdeb = -10.0e3
+nrec = 11
+xdeb = -50.0e3
 zdeb = 500.0
-xfin =  10.0e3
+xfin =  50.0e3
 zfin = 500.0
 record_at_surface_same_vertical = .false.
 
-nrec = 21
-xdeb = -10.0e3
+nrec = 11
+xdeb = -50.0e3
+zdeb =  10.0e3
+xfin =  50.0e3
+zfin =  10.0e3
+record_at_surface_same_vertical = .false.
+
+nrec = 11
+xdeb = -50.0e3
 zdeb =  20.0e3
-xfin =  10.0e3
+xfin =  50.0e3
 zfin =  20.0e3
 record_at_surface_same_vertical = .false.
 
-nrec = 21
-xdeb = -10.0e3
-zdeb =  40.0e3
-xfin =  10.0e3
-zfin =  40.0e3
+nrec = 11
+xdeb = -50.0e3
+zdeb =  30.0e3
+xfin =  50.0e3
+zfin =  30.0e3
 record_at_surface_same_vertical = .false.
 
 #-----------------------------------------------------------------------------
@@ -333,7 +340,7 @@ absorbleft                      = .false.
 
 # define the different regions of the model in the (nx,nz) spectral-element mesh
 nbregions                       = 1              # then set below the different regions and model number for each region
-1 100 1 500 1
+1 100 1 400 1
 
 #-----------------------------------------------------------------------------
 #

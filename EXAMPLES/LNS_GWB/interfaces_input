@@ -6,7 +6,7 @@
  1d10  0.0
 # Interface n°2 (top of the mesh):
 2
--1d10 50.0e+03
- 1d10 50.0e+03
+-1d10 40.0e+03
+ 1d10 40.0e+03
 # Number of elements per layer:
- 500 # dz = 100 m
+ 400 # dz = 100 m
