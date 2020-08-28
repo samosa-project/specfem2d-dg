@@ -34,7 +34,9 @@
 ! ------------------------------------------------------------ !
 ! SlopeLimit1                                                  !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! MUSCL slope limiter.
+! See details in (Brissaud et al., 2017, Section 3.4).
+! Brissaud, Q., Martin, R., Garcia, R. F., & Komatitsch, D. (2017). Hybrid Galerkin numerical modelling of elastodynamics and compressible Navier-Stokes couplings: Applications to seismo-gravito acoustic waves. Geophysical Journal International, 210(2), 1047–1069. https://doi.org/10.1093/gji/ggx185
 
   subroutine SlopeLimit1(Q, timelocal, type_var)
   
@@ -322,44 +324,37 @@
 
   Q(1:nglob_DG) = ulimit(1:nglob_DG)
    
-  end subroutine SlopeLimit1
+end subroutine SlopeLimit1
 
 ! ------------------------------------------------------------ !
 ! SlopeLimitLin                                                !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Linear slope limiter.
+! Called by SlopeLimit1.
 
-  subroutine SlopeLimitLin(ulimit, ispec, ul, v0, vkm1_x,vkp1_x,vkm1_z,vkp1_z,activate,type_unknown)
+subroutine SlopeLimitLin(ulimit, ispec, ul, v0, vkm1_x,vkp1_x,vkm1_z,vkp1_z,activate,type_unknown)
 
   use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-  use specfem_par, only: ibool_before_perio, coord, &
-      xix, xiz, gammax, gammaz, hprime_xx, hprime_zz
-  implicit none 
+  
+  use specfem_par, only: ibool_before_perio, coord, xix, xiz, gammax, gammaz, hprime_xx, hprime_zz
+  
+  implicit none
 
-  integer, parameter :: NGLL = NGLLX*NGLLZ
-  
-  real(kind=CUSTOM_REAL), dimension(1:NGLL) :: x0, ul, xl, ux, uz, ulimit
-  real(kind=CUSTOM_REAL), dimension(1:NGLL) :: z0, zl
-  real(kind=CUSTOM_REAL), dimension(1:3,1)  :: minmod
-  real(kind=CUSTOM_REAL) :: hx, hz, v0, vkm1_x,vkp1_x,vkm1_z,vkp1_z, &
-          xixl, xizl, gammaxl, gammazl, du_dxi, du_dgamma
-  real(kind=CUSTOM_REAL), dimension(1)  :: ulimit_temp
-  integer :: ispec, iglob, j, k, m, n, i, type_unknown
-  real(kind=CUSTOM_REAL), dimension(1:NGLLX,1:NGLLZ) :: ul_loc
-  
-  ! Parameters
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: HALFl = ONEl/TWOl
-  
-  real(kind=CUSTOM_REAL), parameter :: gradient_factor = ONEl!/TWOl
-
+  integer, parameter :: NGLL = NGLLX*NGLLZ
+  real(kind=CUSTOM_REAL), dimension(1:NGLL) :: x0, ul, xl, ux, uz, ulimit
+  real(kind=CUSTOM_REAL), dimension(1:NGLL) :: z0, zl
+  real(kind=CUSTOM_REAL), dimension(1:3,1)  :: minmod
+  real(kind=CUSTOM_REAL) :: hx, hz, v0, vkm1_x,vkp1_x,vkm1_z,vkp1_z, &
+                            xixl, xizl, gammaxl, gammazl, du_dxi, du_dgamma
+  real(kind=CUSTOM_REAL), dimension(1)  :: ulimit_temp
+  integer :: ispec, iglob, j, k, m, n, i, type_unknown
+  real(kind=CUSTOM_REAL), dimension(1:NGLLX,1:NGLLZ) :: ul_loc
+  real(kind=CUSTOM_REAL), parameter :: gradient_factor = ONEl
   logical :: activate_temp, activate
-
-  ! function ulimit = SlopeLimitLin(ul,xl,vm1,v0,vp1);
-  ! Purpose: Apply slopelimited on linear function ul(Np,1) on x(Np,1)
-  !          (vm1,v0,vp1) are cell averages left, center, and right
   k = 0
   do m=1,NGLLX
     do n=1,NGLLZ
@@ -372,7 +367,6 @@
   
   ! Assume that x, z > 0
   hx  = maxval(xl) - minval(xl)
-  !WRITE(*,*) "hx",hx
   hz  = maxval(zl) - minval(zl)
   
   ! Coordinates of the element centeroid
@@ -459,33 +453,52 @@
     enddo
   endif
         
-  end subroutine SlopeLimitLin
+end subroutine SlopeLimitLin
+
+
+! ------------------------------------------------------------ !
+! minmod_compute                                               !
+! ------------------------------------------------------------ !
+! Another minmod function.
+
+subroutine minmod_compute(R, v, n, m)
+  use constants, only: CUSTOM_REAL
+  implicit none
+  real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
+  integer :: n, m, k, j
+  real(kind=CUSTOM_REAL), dimension(1:n,1:m) :: v
+  real(kind=CUSTOM_REAL), dimension(1:m) :: R, s
+  R = ZEROl
+  s = ZEROl
+  do k=1,m
+    do j=1,n
+      s(k) = s(k) + sign(ONEl,v(j,k))/REAL(n, kind=CUSTOM_REAL)
+    enddo
+  enddo
+  do k=1,m
+    if(abs(s(k)) == ONEl) then
+      R(k) = s(k)*minval(abs(v(:,k)))
+    endif
+  enddo
+end subroutine minmod_compute
+
 
 ! ------------------------------------------------------------ !
 ! minmod_computeB                                              !
 ! ------------------------------------------------------------ !
-! TODO: Description.
-
-  subroutine minmod_computeB(R, v, n, m, h, activate)
-
+! Another minmod function.
+subroutine minmod_computeB(R, v, n, m, h, activate)
   use constants, only: CUSTOM_REAL
   use specfem_par, only: MINMOD_FACTOR
-  implicit none 
-
-  ! Usually 
-  ! m = NSPEC
-  ! n = 3
+  implicit none
   integer :: n, m
   real(kind=CUSTOM_REAL), dimension(1:n,1:m) :: v
   real(kind=CUSTOM_REAL), dimension(1:m) :: R
-  
   real(kind=CUSTOM_REAL) :: h, M_param
-  
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  
-  logical activate
-
+  logical :: activate
   M_param = MINMOD_FACTOR
   ! Find regions where limiter is needed
   if(abs(v(1,1)) > M_param*h**2) then
@@ -495,46 +508,5 @@
     R = v(1,1)
     activate = .false.
   endif
-  end subroutine minmod_computeB
-
-! ------------------------------------------------------------ !
-! minmod_compute                                               !
-! ------------------------------------------------------------ !
-! TODO: Description.
-
-  subroutine minmod_compute(R, v, n, m)
-
-  use constants, only: CUSTOM_REAL
-  implicit none 
-
-  ! Usually 
-  ! m = NSPEC
-  ! n = 3
-  integer :: n, m, k, j
-  real(kind=CUSTOM_REAL), dimension(1:n,1:m) :: v
-  real(kind=CUSTOM_REAL), dimension(1:m) :: R, s
-
-  real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-
-  R = ZEROl
-  !R = v(1,:)
-  ! Find regions where limiter is needed.
-  !if(abs(v(1,1)) > M_param*h_param**2) then
-  ! Sum of lines
-  s = ZEROl
-  ! Skip through columns
-  do k=1,m
-    ! Skip through lines
-    do j=1,n
-      s(k) = s(k) + sign(ONEl,v(j,k))/REAL(n, kind=CUSTOM_REAL)
-    enddo
-  enddo
-  do k=1,m
-    if(abs(s(k)) == ONEl) then
-      R(k) = s(k)*minval(abs(v(:,k)))
-    endif
-  enddo        
-  !endif
-  end subroutine minmod_compute
+end subroutine minmod_computeB
   
