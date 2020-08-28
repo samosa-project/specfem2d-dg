@@ -41,7 +41,7 @@ subroutine initial_condition_DG()
   use constants, only: CUSTOM_REAL,NGLLX,NGLLZ,PI
   use specfem_par, only: ibool_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, nspec
   implicit none
-  ! Input/output.
+  ! Input/Output.
   ! N. A.
   ! Local Variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
@@ -86,7 +86,7 @@ subroutine boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, r
 
   implicit none
   
-  ! Input/output.
+  ! Input/Output.
   real(kind=CUSTOM_REAL), intent(out) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
                                          veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
   
@@ -441,7 +441,7 @@ subroutine prepare_external_forcing()
 
   implicit none
 
-  ! Input/output.
+  ! Input/Output.
   ! N. A.
   
   ! Local Variables.
@@ -683,7 +683,7 @@ subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
                          
   implicit none
   
-  ! Input/output.
+  ! Input/Output.
   integer, intent(in) :: i, j, ispec, iface1, iface
   integer, dimension(3), intent(in) :: neighbor
   real(kind=CUSTOM_REAL), intent(out) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
