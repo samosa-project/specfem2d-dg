@@ -1481,6 +1481,7 @@ end subroutine check_neighbour_type
 
 subroutine initialise_VALIDATION_MMS()
   use constants, only: CUSTOM_REAL
+  use specfem_par, only: myrank
   use specfem_par_LNS, only: USE_LNS, LNS_viscous, &
                              VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU, &
                              MMS_dRHO_cst, MMS_dVX_cst, MMS_dVZ_cst, MMS_dE_cst, &
@@ -1496,16 +1497,16 @@ subroutine initialise_VALIDATION_MMS()
   ! Local.
   ! N.A.
   
-  if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
-  if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
+  if(.not. USE_LNS) call exit_MPI(myrank, "CANNOT TEST MMS WITHOUT LNS")
+  if(.not. VALIDATION_MMS) call exit_MPI(myrank, "THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS")
   if(VALIDATION_MMS_IV) then
-    if(LNS_viscous) stop 'CANNOT TEST MMS INVISCID IF VISCOSITY'
+    if(LNS_viscous) call exit_MPI(myrank, "CANNOT TEST MMS INVISCID IF VISCOSITY")
   endif
   if(VALIDATION_MMS_KA) then
-    if(.not. LNS_viscous) stop 'CANNOT TEST MMS KAPPA IF NO VISCOSITY'
+    if(.not. LNS_viscous) call exit_MPI(myrank, "CANNOT TEST MMS KAPPA IF NO VISCOSITY")
   endif
   if(VALIDATION_MMS_MU) then
-    if(.not. LNS_viscous) stop 'CANNOT TEST MMS MU IF NO VISCOSITY'
+    if(.not. LNS_viscous) call exit_MPI(myrank, "CANNOT TEST MMS MU IF NO VISCOSITY")
   endif
   if(VALIDATION_MMS_IV) then
     MMS_dRHO_cst = 0.001_CUSTOM_REAL
@@ -1543,7 +1544,7 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, NDIM, TINYVAL, PI
   use specfem_par, only: jacobian, wxgll, wzgll, &
                          nspec, nglob_DG, ibool_DG, ibool_before_perio, &
-                         gammaext_dg, &
+                         gammaext_dg, myrank, &
                          coord, ibool_before_perio, c_V, sound_velocity
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, &
                              LNS_rho0, LNS_v0, &
@@ -1569,8 +1570,8 @@ subroutine VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
   integer :: ispec, i, j, iglob
   real(kind=CUSTOM_REAL), dimension(NDIM) :: X
   real(kind=CUSTOM_REAL) :: GAM, w
-  if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
-  if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
+  if(.not. USE_LNS) call exit_MPI(myrank, "CANNOT TEST MMS WITHOUT LNS")
+  if(.not. VALIDATION_MMS) call exit_MPI(myrank, "THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS")
   do ispec = 1, nspec
     do j = 1, NGLLZ
       do i = 1, NGLLX
@@ -1671,7 +1672,7 @@ subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
                                          swCompVisc, out_nabla_dT_P, out_sigma_dv_P, &
                                          swCompdT, out_dT_P)
   use constants, only: CUSTOM_REAL, NDIM, PI
-  use specfem_par, only: coord
+  use specfem_par, only: coord, myrank
   use specfem_par_LNS, only: USE_LNS, NVALSIGMA, &
                              LNS_rho0, LNS_v0, LNS_E0, nabla_dT, sigma_dv, &
                              VALIDATION_MMS, &
@@ -1695,8 +1696,8 @@ subroutine VALIDATION_MMS_boundary_terms(iglob, iglobM, &
   
   ! Local.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-  if(.not. USE_LNS) stop 'CANNOT TEST MMS WITHOUT LNS'
-  if(.not. VALIDATION_MMS) stop 'THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS'
+  if(.not. USE_LNS) call exit_MPI(myrank, "CANNOT TEST MMS WITHOUT LNS")
+  if(.not. VALIDATION_MMS) call exit_MPI(myrank, "THIS ROUTINE SHOULD NOT BE CALLED IF NOT VALIDATION_MMS")
   exact_interface_flux = .false. ! Do not force jump to zero.     
   out_drho_P     = MMS_dRHO_cst*(  sin(MMS_dRHO_x*PI*coord(1, iglob)) &
                                  + sin(MMS_dRHO_z*PI*coord(2, iglob)))
