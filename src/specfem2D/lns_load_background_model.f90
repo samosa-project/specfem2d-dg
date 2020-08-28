@@ -67,7 +67,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
     write(*,*) "* 'LNS_generalised' model if   *"
     write(*,*) "* not using the DG method.     *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   if(.not. USE_LNS) then
     write(*,*) "********************************"
@@ -78,7 +78,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
     write(*,*) "* not using the LNS            *"
     write(*,*) "* implementation.              *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   if(any_elastic) then
     write(*,*) "********************************"
@@ -88,7 +88,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
     write(*,*) "* 'LNS_generalised' model if   *"
     write(*,*) "* using elastic elements.      *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   
   ! Read and store values of model.
@@ -139,12 +139,6 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   call compute_E(LNS_rho0, LNS_v0, LNS_p0, LNS_E0)
   where(LNS_rho0 < TINYVAL) LNS_rho0 = ONEcr ! LNS_rho0 is uninitialised in solids (remains 0). Crashes compute_T. Hack it.
   call compute_T(LNS_rho0, LNS_v0, LNS_E0, LNS_T0)
-  
-  !! Debug.
-  !do ispec = 1, nspec; do j = 1, NGLLZ; do i = 1, NGLLX
-  !  if(LNS_E0(ibool_DG(i, j, ispec))<TINYVAL) write(*,*) 'E0<=0 at [',coord(1:NDIM, ibool(i, j, ispec)),']: ', &
-  !                                                       LNS_E0(ibool_DG(i, j, ispec)), gammaext_DG(ibool_DG(i, j, ispec))
-  !enddo; enddo; enddo
   
   ! Safeguards.
   call LNS_prevent_nonsense()
@@ -214,8 +208,6 @@ subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
   enddo
   ! Meshes agree if all points (in this slice) were found in the model.
   meshes_agree = all(FOUND)
-  !write(*,*) FOUND
-  !stop 'kek'
 end subroutine do_meshes_agree
 
 ! ------------------------------------------------------------ !
@@ -274,9 +266,10 @@ subroutine apply_model_to_mesh(nlines_model, X_m, &
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"
+      write(*,*) "* See                          *"
       write(*,*) "* lns_load_background_model.f90"
       write(*,*) "********************************"
-      stop
+      call exit_MPI(myrank, " ")
     endif ! Endif on ispec_is_acoustic_DG.
   enddo
 end subroutine apply_model_to_mesh
@@ -363,7 +356,7 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
         write(*,*) "* Number of columns in model   *"
         write(*,*) "* file is wrong.               *"
         write(*,*) "********************************"
-        stop
+        call exit_MPI(myrank, " ")
       endif
       if(io/=0) exit
     enddo
@@ -422,9 +415,10 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"
+      write(*,*) "* See                          *"
       write(*,*) "* lns_load_background_model.f90"
       write(*,*) "********************************"
-      stop
+      call exit_MPI(myrank, " ")
     endif ! Endif on ispec_is_acoustic_DG.
   enddo
 end subroutine delaunay_interp_all_points
@@ -564,7 +558,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
                    coord(1,iglobDG),coord(2,iglobDG),&
                    LNS_rho0(iglobDG)
         write(*,*) "********************************"
-        stop
+        call exit_MPI(myrank, " ")
       endif
       
       ! For the subroutines in 'invert_mass_matrix.f90', one needs to initialise the following:
@@ -605,7 +599,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
     write(*,*) "* it can map a rectangular or  *"
     write(*,*) "* triangular grid).            *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   
 end subroutine delaunay_interpolate_one_point
@@ -639,7 +633,7 @@ subroutine barycentric_coordinates_2d(vlist, P, inTri, barycor)
     write(*,*) "* Something's wrong I can feel *"
     write(*,*) "* it.                          *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   barycor(1) = ((vlist(2, 2)-vlist(3, 2))*(P(1)-vlist(3, 1))+(vlist(3, 1)-vlist(2, 1))*(P(2)-vlist(3, 2))) / det
   if(barycor(1)<-TINYVAL) return ! Point is outside triangle, stop and return.

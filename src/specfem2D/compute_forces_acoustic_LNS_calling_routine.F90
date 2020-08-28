@@ -522,7 +522,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
     write(*,*) "* background_physical_parameters"
     write(*,*) "* routine.                     *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   if(swComputeE .and. (.not. swComputeP)) then
     write(*,*) "********************************"
@@ -534,7 +534,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
     write(*,*) "* background_physical_parameters"
     write(*,*) "* routine.                     *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   
   iglob = ibool_DG(i, j, ispec)

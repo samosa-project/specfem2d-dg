@@ -71,7 +71,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
   integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
   
   if(.not. USE_LNS) then
-    stop "THIS ROUTINE SHOULD NOT BE CALLED IF USE_LNS=.false."
+    call exit_MPI(myrank, "THIS ROUTINE SHOULD NOT BE CALLED IF USE_LNS=.false.")
   endif
   
   ! Initialisation of the RHS.
@@ -91,7 +91,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
     case (3)
       call compute_add_sources_acoustic_DG_spread(outrhs_dE, it, i_stage)
     case default
-      stop "TYPE_SOURCE_DG not implemented."
+      call exit_MPI(myrank, "TYPE_SOURCE_DG not implemented.")
   end select
   
   IF(VALIDATION_MMS) call VALIDATION_MMS_source_terms(outrhs_drho, outrhs_rho0dv, outrhs_dE)
@@ -1144,7 +1144,7 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
         write(*,*) "* USE_SPREAD_SSF=.false.. See  *"
         write(*,*) "* compute_forces_acoustic_LNS.f90."
         write(*,*) "********************************"
-        stop
+        call exit_MPI(myrank, " ")
       endif
     endif ! Endif on SIGMA_SSF.
   enddo ! Enddo on i_source.
