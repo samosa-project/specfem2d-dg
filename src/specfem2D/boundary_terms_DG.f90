@@ -257,19 +257,17 @@ subroutine forcing_DG(i, j, ispec, current_time, forced_SF)
         forced_SF = -   (2.*(PI/main_time_period)**2) &
                       * (current_time-t0-forcing_initial_time) &
                       * exp(-((current_time-t0-forcing_initial_time)*PI/main_time_period)**2)
-        ! Matlab one-liner: TT=???; T0=???; GGG = -(2.*(pi/TT)^2) * (t-T0) .* exp(-((t-T0)*pi/TT).^2)
       
       case (2)
         ! Time and space Gaussian derivative (gravity wave forcing).
-        ! Old code. TODO: recenter peak by taking starting delay ("negative times") into account.
         forced_SF = 0.001 &
                     * ( &
                         - (2./(main_time_period/4.)) &
-                          *((current_time-(forcing_initial_time-main_time_period/4.))/(main_time_period/4.)) &
-                          *(exp(-((current_time-(forcing_initial_time-main_time_period/4.))/(main_time_period/4.))**2)) &
+                          *((current_time-t0-(forcing_initial_time-main_time_period/4.))/(main_time_period/4.)) &
+                          *(exp(-((current_time-t0-(forcing_initial_time-main_time_period/4.))/(main_time_period/4.))**2)) &
                         + (2./(main_time_period/4.)) &
-                          *((current_time-(forcing_initial_time+main_time_period/4.))/(main_time_period/4.)) &
-                          *(exp(-((current_time-(forcing_initial_time+main_time_period/4.))/(main_time_period/4.))**2)) &
+                          *((current_time-t0-(forcing_initial_time+main_time_period/4.))/(main_time_period/4.)) &
+                          *(exp(-((current_time-t0-(forcing_initial_time+main_time_period/4.))/(main_time_period/4.))**2)) &
                       ) &
                     * (   exp(-((x(1)-(forcing_initial_loc-main_spatial_period/4))/(main_spatial_period/4))**2) &
                         - exp(-((x(1)-(forcing_initial_loc+main_spatial_period/4))/(main_spatial_period/4))**2) )
@@ -878,7 +876,6 @@ subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
       ! ipoin == -1                 !
       !   (+) elastic coupling      !
       ! --------------------------- !
-      ! TODO: Clean up all this part.
       
       exact_interface_flux = .false.
 
@@ -960,20 +957,16 @@ subroutine compute_interface_unknowns(i, j, ispec, rho_DG_P, rhovx_DG_P, &
       trans_boundary(2, 2) =  nx
       trans_boundary = trans_boundary/(nx * tz - tx * nz)
       
-      ! Deactivate air/ground coupling in the buffer regions.
-      ! This method gradually deactivates the coupling in the horizontal fluid ABC buffers.
-      ! This is somewhat of a hack, but which works to an appreciable level.
-      ! A mathematically sounder method would be preferred. For instance, write out the system of equations at the boundary, and apply the real stretching method (see Martire GJI 2020) to the whole set.
+      ! Deactivate solid-to-fluid coupling in the buffer regions.
+      ! This method gradually deactivates the coupling in the horizontal fluid ABC buffers. This is somewhat of a hack, but which works to an appreciable level. A mathematically sounder method would be preferred. For instance, write out the system of equations at the boundary, and apply the real stretching method (see Martire GJI 2020) to the whole set.
+      ! A mirror implementation exists for the fluid-to-solid coupling (compute_coupling_viscoelastic_ac.f90).
       x = coord(1, ibool_before_perio(i, j, ispec))
       if(ABC_STRETCH .and. &
-         (     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
-          .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
-         ) &
-        ) then
-        
+         (     (ABC_STRETCH_LEFT  .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
+          .or. (ABC_STRETCH_RIGHT .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
+         )) then
         if(ABC_STRETCH_LEFT) x = (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
         if(ABC_STRETCH_RIGHT) x = (mesh_xmax - x)/ABC_STRETCH_RIGHT_LBUF ! x is a local buffer coordinate now (1 at beginning, 0 at end).
-        
         ! Convert (back) the velocity components from normal/tangential coordinates to mesh coordinates.
         veloc_x_DG_P = x*(trans_boundary(1, 1)*normal_v + trans_boundary(1, 2)*tangential_v)&
                        +(1.-x)*veloc_x_DG_P
