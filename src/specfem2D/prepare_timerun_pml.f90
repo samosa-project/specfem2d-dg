@@ -357,6 +357,9 @@
       rmemory_acoustic_dux_dx_LDDRK = ZERO
       rmemory_acoustic_dux_dz_LDDRK = ZERO
       
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
       !write(*,*) "we are acoustic and we need pml." ! DEBUG
       if(USE_DISCONTINUOUS_METHOD .and. USE_LNS) then
         !write(*,*) "we are acoustic LNS and we need pml." ! DEBUG
@@ -431,6 +434,9 @@
         deallocate(rmemory_potential_acoustic,rmemory_acoustic_dux_dx,rmemory_acoustic_dux_dz, &
                    rmemory_potential_acoustic_LDDRK,rmemory_acoustic_dux_dx_LDDRK,rmemory_acoustic_dux_dz_LDDRK) 
       endif
+! ************************* !
+! TODO: MARKED FOR DELETION !
+! ************************* !
       
     else
       allocate(rmemory_potential_acoustic(1,1,1,1))
