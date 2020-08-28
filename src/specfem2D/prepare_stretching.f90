@@ -1,61 +1,31 @@
-!========================================================================
-!
-!                   S P E C F E M 2 D  Version 7 . 0
-!                   --------------------------------
-!
-!     Main historical authors: Dimitri Komatitsch and Jeroen Tromp
-!                        Princeton University, USA
-!                and CNRS / University of Marseille, France
-!                 (there are currently many more authors!)
-! (c) Princeton University and CNRS / University of Marseille, April 2014
-!
-! This software is a computer program whose purpose is to solve
-! the two-dimensional viscoelastic anisotropic or poroelastic wave equation
-! using a spectral-element method (SEM).
-!
-! This program is free software; you can redistribute it and/or modify
-! it under the terms of the GNU General Public License as published by
-! the Free Software Foundation; either version 2 of the License, or
-! (at your option) any later version.
-!
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-! GNU General Public License for more details.
-!
-! You should have received a copy of the GNU General Public License along
-! with this program; if not, write to the Free Software Foundation, Inc.,
-! 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-!
-! The full text of the license is available in file "LICENSE".
-!
-!========================================================================
-
 ! ------------------------------------------------------------ !
 ! prepare_stretching                                           !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Prepares the stretching factors (in stretching_ya) for the buffer-based real stretching absorbing boundary conditions.
+! In particular:
+! - Initialises the flag variable encoding where buffers are (stretching_buffer).
+! - Sets the values of the stretching in all directions (via the 'stretching_function' routine).
 
 subroutine prepare_stretching()
-  use specfem_par, only: coord, ibool_before_perio,&
-                         myrank, nglob,nspec,&
-                         ispec_is_acoustic_DG,&
-                         !ADD_PERIODIC_CONDITIONS, &
+  use specfem_par, only: coord, ibool_before_perio, &
+                         myrank, nglob,nspec, &
+                         ispec_is_acoustic_DG, &
                          ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM, &
                          ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF, &
-                         stretching_ya,any_elastic,&
-                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax,stretching_buffer
+                         stretching_ya, any_elastic,&
+                         mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax, stretching_buffer
   
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
+  use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ
 
   implicit none
   
-  ! Local
-  integer iglob_unique,ispec,i,j!,iglob
+  ! Input/Output.
+  ! N. A.
+  
+  ! Local Variables.
   real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL) :: mesh_xmin_local, mesh_xmax_local, mesh_zmin_local, mesh_zmax_local, &
-  !                          mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
+  integer iglob_unique, ispec, i, j
   real(kind=CUSTOM_REAL) :: x,z
   real(kind=CUSTOM_REAL) :: r_l ! Relative buffer coordinate (which is equal to 0 at beginning of buffer, and to 1 at the end).
   
@@ -120,7 +90,7 @@ subroutine prepare_stretching()
     call flush_IMAIN()
   endif
   
-  allocate(stretching_ya(2,nglob)) ! Two-dimensionnal stretching. Change it to 3 for 3D.
+  allocate(stretching_ya(NDIM, nglob)) ! Two-dimensionnal stretching. Change it to 3 for 3D.
   allocate(stretching_buffer(nglob)) ! Stretching buffers code: see specfem2D_par.
   stretching_ya(:, :) = ONE ! By default, mesh is not stretched.
   stretching_buffer(:) = 0 ! By default, mesh is not stretched.
@@ -166,8 +136,6 @@ subroutine prepare_stretching()
                 stretching_buffer(iglob_unique) = ibset(stretching_buffer(iglob_unique), 3) ! Set 4th LSB to 1.
               endif
             endif
-            !write(*,*) x, z, ibits(stretching_buffer(iglob), 0, 1), ibits(stretching_buffer(iglob), 1, 1), &
-            !           ibits(stretching_buffer(iglob), 1, 1), ibits(stretching_buffer(iglob), 3, 1) !DBEUG
           endif ! Endif.
         enddo ! Enddo on i.
       enddo ! Enddo on j.
@@ -186,15 +154,15 @@ end subroutine prepare_stretching
 ! ya contains the computed value.
 
 subroutine stretching_function(r_l, ya)
-  use constants,only: CUSTOM_REAL
+  use constants, only: CUSTOM_REAL
   
   implicit none
   
-  ! Input/output.
+  ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in) :: r_l
   real(kind=CUSTOM_REAL), intent(out) :: ya
   
-  ! Local variables.
+  ! Local Variables.
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
   real(kind=CUSTOM_REAL) :: eps_l, p, q ! Arina's stretching.
   
@@ -210,18 +178,19 @@ subroutine stretching_function(r_l, ya)
   
   ! Arina's stretching. See 10.3390/aerospace3010007.
   ya = ONE - (ONE - eps_l) * (ONE - (ONE - r_l)**p)**q ! Stretching function.
-  !ya=ONE
 end subroutine stretching_function
+
 
 ! ------------------------------------------------------------ !
 ! damp_function                                                !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Damping function that can be used for priori and posteriori dampings (see Chapter 2 Appendices in Martire's thesis).
+! For an example on poseriori damping, see the commented-out portion at the end of the 'compute_forces_acoustic_LNS_main' routine in 'compute_forces_acoustic_LNS_calling_routine.F90'.
 
 subroutine damp_function(r_l, sigma)
   use constants,only: CUSTOM_REAL
   implicit none  
-  ! Input/output.
+  ! Input/Output.
   real(kind=CUSTOM_REAL), intent(in):: r_l
   real(kind=CUSTOM_REAL), intent(out):: sigma
   ! Local
@@ -243,32 +212,25 @@ subroutine damp_function(r_l, sigma)
   !sigma = 1.0d0 + sigma_max * r_l ** beta
 end subroutine damp_function
 
+
 ! ------------------------------------------------------------ !
 ! change_visco                                                 !
 ! ------------------------------------------------------------ !
-! TODO: Description.
+! Another tentative function for damping waves in absorbing boundary condition buffers.
+! Increase viscosity to "physically" damp waves.
+! This routine remains unfinished.
 
 subroutine change_visco(i, j, ispec, x, z)
-  use constants,only: CUSTOM_REAL
-  
-  use specfem_par, only: etaext, muext,&
-                         !ABC_STRETCH,&
-                         !ABC_STRETCH_TOP, ABC_STRETCH_TOP_LBUF,&
-                         ABC_STRETCH_LEFT, ABC_STRETCH_LEFT_LBUF,&
-                         !mesh_zmax, mesh_xmax, mesh_zmin,&
-                         mesh_xmin
-
+  use constants, only: CUSTOM_REAL
+  use specfem_par, only: etaext, muext, mesh_xmin, ABC_STRETCH_LEFT, ABC_STRETCH_LEFT_LBUF
   implicit none
-  
-  ! Input/output.
+  ! Input/Output.
   integer, intent(in) :: i, j, ispec
   real(kind=CUSTOM_REAL), intent(in) :: x, z
-  
-  ! Local variables.
+  ! Local Variables.
   real(kind=CUSTOM_REAL) :: r_l
   real(kind=CUSTOM_REAL), parameter :: ZERO  = 0._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
-  
   if(ABC_STRETCH_LEFT) then
     r_l = -(x-mesh_xmin)/ABC_STRETCH_LEFT_LBUF + ONE ! 0 at beginning of buffer, 1 at end.
     if(r_l>ZERO .and. r_l<=ONE)then
@@ -276,92 +238,8 @@ subroutine change_visco(i, j, ispec, x, z)
       etaext(i, j, ispec) = (4./3.)*muext(i, j, ispec)
     endif
   endif
+  ! TODO: implement for other sides.
+  if(.false.) write(*, *) x, z ! Horrible hack, I'm so sorry.
   
-  if(.false.) write(*, *) x, z ! HORRIBLE HACK, I'M SO SORRY.
 end subroutine change_visco
 
-! ------------------------------------------------------------ !
-! damp_solution_DG                                             !
-! ------------------------------------------------------------ !
-! TODO: Description.
-
-subroutine damp_solution_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
-
-  use specfem_par, only: nspec, coord, ibool_DG, nglob_DG, &
-        ibool_before_perio,&
-        ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF,&
-        !ABC_STRETCH_LEFT, ABC_STRETCH_RIGHT, ABC_STRETCH_TOP, ABC_STRETCH_BOTTOM,&
-        ispec_is_acoustic_DG,stretching_buffer,&
-        mesh_xmin, mesh_xmax, mesh_zmin, mesh_zmax
-  
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ
-
-  implicit none
-  
-  ! Input/output.
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
-  
-  ! Local
-  integer :: iglob
-  real(kind=CUSTOM_REAL) :: sigma
-  real(kind=CUSTOM_REAL) :: timelocal
-  real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-      veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P
-  integer iglob_unique,ispec,i,j
-  real(kind=CUSTOM_REAL), parameter :: ZERO = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONE  = 1._CUSTOM_REAL
-  real(kind=CUSTOM_REAL) :: x,z
-  real(kind=CUSTOM_REAL) :: r_l
-  
-  ! Determine mesh's min/max coordinates and collect them.
-  do ispec = 1, nspec
-    if(ispec_is_acoustic_DG(ispec)) then
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          iglob_unique = ibool_before_perio(i, j, ispec)
-          iglob = ibool_DG(i, j, ispec)
-          x=coord(1, iglob_unique)
-          z=coord(2, iglob_unique)
-          ! TTODO: use instead the newly-implemented stretching_buffer variable (see specfem2D_par).
-          !if(     (ABC_STRETCH_LEFT   .and. x < mesh_xmin + ABC_STRETCH_LEFT_LBUF) & ! left stretching and in left buffer zone
-          !   .or. (ABC_STRETCH_RIGHT  .and. x > mesh_xmax - ABC_STRETCH_RIGHT_LBUF) & ! right stretching and in right buffer zone
-          !   .or. (ABC_STRETCH_BOTTOM .and. z < mesh_zmin + ABC_STRETCH_BOTTOM_LBUF) & ! bottom stretching and in bottom buffer zone
-          !   .or. (ABC_STRETCH_TOP    .and. z > mesh_zmax - ABC_STRETCH_TOP_LBUF)) then ! top stretching and in top buffer zone
-          if(stretching_buffer(ibool_before_perio(i,j,ispec))>0) then
-            
-            sigma = ONE ! In case something bad happens.
-            ! Load damping value.
-            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),0,1)==1) then
-            !if(ABC_STRETCH_TOP) then
-              r_l = (z - mesh_zmax)/ABC_STRETCH_TOP_LBUF + ONE
-              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-            endif
-            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),1,1)==1) then
-            !if(ABC_STRETCH_LEFT) then
-              r_l = ONE - (x - mesh_xmin)/ABC_STRETCH_LEFT_LBUF
-              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-            endif
-            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),2,1)==1) then
-            !if(ABC_STRETCH_BOTTOM) then
-              r_l = ONE - (z - mesh_zmin)/ABC_STRETCH_BOTTOM_LBUF
-              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-            endif
-            if(ibits(stretching_buffer(ibool_before_perio(i,j,ispec)),3,1)==1) then
-            !if(ABC_STRETCH_RIGHT) then
-              r_l = (x - mesh_xmax)/ABC_STRETCH_RIGHT_LBUF + ONE
-              if(r_l>ZERO .and. r_l<=ONE) call damp_function(r_l, sigma)
-            endif
-            ! Load quiet state.
-            call boundary_condition_DG(i, j, ispec, timelocal, rho_DG_P, rhovx_DG_P, rhovz_DG_P, E_DG_P, &
-                    veloc_x_DG_P, veloc_z_DG_P, p_DG_P, e1_DG_P)
-            ! Damp perturbation.
-            rho_DG(iglob)   = rho_DG_P + sigma*( rho_DG(iglob) - rho_DG_P)
-            rhovx_DG(iglob) = rhovx_DG_P + sigma*( rhovx_DG(iglob) - rhovx_DG_P)
-            rhovz_DG(iglob) = rhovz_DG_P + sigma*( rhovz_DG(iglob) - rhovz_DG_P)
-            E_DG(iglob)     = E_DG_P + sigma*( E_DG(iglob) - E_DG_P)
-          endif
-        enddo
-      enddo
-    endif
-  enddo
-end subroutine damp_solution_DG
