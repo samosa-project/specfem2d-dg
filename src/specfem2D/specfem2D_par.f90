@@ -80,17 +80,15 @@ module specfem_par
   !---------------------------------------------------------------------
   ! DG related quantities.
   !---------------------------------------------------------------------
-  character(len=100), parameter :: EXTERNAL_DG_ONLY_MODEL_FILENAME = './atmospheric_model.dat'
-  character(len=100), parameter :: EXTERNAL_FORCING_FILENAME = './external_bottom_forcing.dat'
+  ! General.
+  real(kind=CUSTOM_REAL) :: coord_interface ! Coordinate of the zero-altitude reference. Useful for bottom forcing and external model loading.
+  integer :: id_region_DG ! ID of the material (NOT region) which should be converted to DG model.
   
-  ! Stretching absorbing boundary conditions.
+  ! Real stretching absorbing boundary conditions.
   logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH ! Self-explanatory.
   real(kind=CUSTOM_REAL) :: ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF ! Length of the stretching buffers.
   integer :: iy_image_color_bottom_buffer, iy_image_color_top_buffer, ix_image_color_left_buffer, ix_image_color_right_buffer ! Location of lines marking the beginnings of the buffers.
-  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
-    stretching_ya ! Array of stretching values (2 or 3 dimensions).
-  
-  ! Code for buffers, to be implemented later.
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: stretching_ya ! Array of stretching values (2 or 3 dimensions).
   integer(4), dimension (:), allocatable :: stretching_buffer ! Stretching buffers codes, binary.
   ! Least significant bit (LSB, ---*) is for top buffer, 2nd LSB (--*-) for left buffer, 3rd LSB (-*--) for bottom buffer, 4th LSB (*---) for right buffer. Examples:
   !  0:=0000 for non-stretched.
@@ -129,17 +127,21 @@ module specfem_par
   ! Constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_DG, rhovx_DG, rhovz_DG, E_DG, e1_DG, &
         veloc_x_DG, veloc_z_DG, p_DG, potential_dphi_dx_DG, potential_dphi_dz_DG, &
-        p_DG_init, T_init, &
-        Ni_DG
+        p_DG_init, T_init, Ni_DG
+  
   ! Total electron density perturbation
   real(kind=CUSTOM_REAL) :: VTECZ, VTECZ_tot
+  
   ! Initial values of the constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho_init, rhovx_init, rhovz_init, E_init
+  
   ! Gradients of temperature and velocities.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: T_DG
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: V_DG
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: drho_DG
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dEp_DG
+  
+  ! Variables related to time integration.
   ! "Time derivatives" of the constitutive variables.
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dot_rho, dot_rhovx, dot_rhovz, dot_E, dot_e1, dot_Ni
   ! Variables to store numerical time scheme temporary results.
@@ -148,107 +150,105 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: b_rho_DG, b_rhovx_DG, b_rhovz_DG, b_E_DG, &
                                                        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E, &
                                                        resu_b_rho, resu_b_rhovx, resu_b_rhovz, resu_b_E
-  
   ! Inverse mass matrices (forward and backward simulations)
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, &
-                                                       rmass_inverse_acoustic_DG_b
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_inverse_acoustic_DG, rmass_inverse_acoustic_DG_b
   
   ! Source type (more precisely, this encodes on which Navier-Stokes equation(s) the source(s) is (are) to be used).
   integer :: TYPE_SOURCE_DG
+  
   ! Source time functions.
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: &
         source_time_function_rho_DG, source_time_function_rhovx_DG, source_time_function_rhovz_DG, &
         source_time_function_E_DG
+  
   ! Self-explanatory switch from parameter file.
   logical :: REMOVE_STF_INITIAL_DISCONTINUITY
+  
   ! Sources spatially distributed over more than one element.
   logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_CUSTOM
   real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
-  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: &
-    source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
   
-  ! Microbarom forcing: memory variables for phase random walk.
-  !real(kind=CUSTOM_REAL) :: XPHASE_RANDOMWALK, TPHASE_RANDOMWALK, PHASE_RANDOMWALK_LASTTIME
-  ! External forcing.
-  ! First, one should check if:
-  !   EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec))
-  ! and check it is not equal to HUGE(0). Then, in order to access forcing at time timelocal and at point (i,j,ispec), access:
-  !   EXTERNAL_FORCING(floor(timelocal/dt+1),EXTFORC_MAP_ibbp_TO_LOCAL(ibool_before_perio(i, j, ispec)))
-  real(kind=CUSTOM_REAL) :: EXTERNAL_FORCING_MAXTIME, EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: EXTERNAL_FORCING ! Array of bottom forcing values. Dimensions: NSTEP (eventually, *stage_time_scheme), NX (number of points on bottom boundary).
-  integer, dimension(:), allocatable :: EXTFORC_MAP_ibbp_TO_LOCAL ! Mapper from ibool_before_perio to local indexing.
-  
-  ! MPI: Transfers' buffers.
+  ! MPI-related.
+  logical, dimension(:), allocatable  :: is_MPI_interface_DG
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_DG
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_DG
+  integer, dimension(:), allocatable  :: tab_requests_send_recv_DG
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_rho_P, buffer_DG_rhovx_P, buffer_DG_rhovz_P, buffer_DG_E_P
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_DG_Tx_P, buffer_DG_Tz_P, buffer_DG_Vxx_P, buffer_DG_Vzz_P, &
                                                           buffer_DG_Vzx_P, buffer_DG_Vxz_P, buffer_DG_drho_P, buffer_DG_dEp_P, &
-                                                          ! TEST
                                                           buffer_DG_gamma_P, buffer_DG_e1_P, buffer_DG_Ni_P
   
-  ! Fluid parameters from external file.
+  ! Fluid parameters from external model file.
+  character(len=100), parameter :: EXTERNAL_DG_ONLY_MODEL_FILENAME = './atmospheric_model.dat'
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: windxext, windzext, muext, etaext, pext_DG, N0ext
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: gammaext_DG, Htabext_DG, Bxext, Bzext
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: QKappa_attenuationext, Qmu_attenuationext
+  
   ! Fluid parameters from parameter file.
+  real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: kappa_DG, tau_sigma, tau_epsilon
   real(kind=CUSTOM_REAL) :: SCALE_HEIGHT, gravity_cte_DG, &
                             dynamic_viscosity_cte_DG, thermal_conductivity_cte_DG, tau_sig_cte_DG, tau_eps_cte_DG
+  
   ! Isobaric and isochoric specific heat capacities from parameter file.
   real(kind=CUSTOM_REAL) :: cp, c_V
   
   ! Slope limiter paramater from parameter file.
   real(kind=CUSTOM_REAL) :: MINMOD_FACTOR
+  
   ! Vandermonde matrices.
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: Vandermonde, invVandermonde, Drx, Drz
   
-  ! TODO: Explain those variables.
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: QKappa_attenuationext,Qmu_attenuationext
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: error
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: save_pressure
-  real(kind=CUSTOM_REAL) :: coord_interface
-  !logical, dimension(:), allocatable :: this_iglob_is_acous
-  integer :: TYPE_FORCING, id_region_DG
+  ! Bottom forcing.
+  integer :: TYPE_FORCING
   real(kind=CUSTOM_REAL) :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time, FORCING_DG_FACTOR
-  integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG
-  logical, dimension(:), allocatable  :: is_MPI_interface_DG    
-  integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_send_faces_vector_DG
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable  :: buffer_recv_faces_vector_DG
-  integer, dimension(:), allocatable  :: tab_requests_send_recv_DG
-  real(kind=CUSTOM_REAL) :: surface_density, sound_velocity, wind  
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  character(len=100), parameter :: EXTERNAL_FORCING_FILENAME = './external_bottom_forcing.dat'
+  real(kind=CUSTOM_REAL) :: EXTERNAL_FORCING_MAXTIME, EXTFORC_MINX, EXTFORC_MAXX,EXTFORC_FILEDT
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: EXTERNAL_FORCING ! Array of bottom forcing values. Dimensions: NSTEP (eventually, *stage_time_scheme), NX (number of points on bottom boundary).
+  integer, dimension(:), allocatable :: EXTFORC_MAP_ibbp_TO_LOCAL ! Mapper from ibool_before_perio to local indexing.
   
+  ! Variables related to the DG mesh.
   ! Number of DG points (spatial duplicates included).
   integer :: nglob_DG
   ! Indices' mappings. Usually from (i, j, ispec) to iglob.
   integer, dimension(:,:,:), allocatable :: ibool_DG ! Same as ibool (see below, "for SEM discretization of the model"), but takes into account duplicate points (ibool gives them with the same number)
   integer, dimension(:,:,:), allocatable :: ibool_before_perio ! Same as ibool (see below, "for SEM discretization of the model"), but with points on the periodic boundaries not merged.
-  ! Characterise whether the element and/or point is something or not. TODO: Explain each better.
+  ! Characterise whether the element and/or point is something or not.
   logical, dimension(:,:,:), allocatable :: ispec_is_acoustic_forcing, ispec_is_acoustic_surface, &
                                             ispec_is_acoustic_surface_corner
   logical, dimension(:), allocatable :: ispec_is_acoustic_DG!, ispec_is_acoustic_coupling
   integer, dimension(:,:,:,:), allocatable :: ispec_is_acoustic_coupling_el, iface_is_acoustic_coupling_el
   integer, dimension(:), allocatable :: ispec_is_acoustic_coupling_ac
   logical, dimension(:,:), allocatable :: is_corner
-
+  integer, dimension(:, :, :, :), allocatable ::  link_iface_ijispec, neighbor_DG_iface 
+  real(kind=CUSTOM_REAL), dimension(:, :), allocatable ::  nx_iface, nz_iface
+  real(kind=CUSTOM_REAL), dimension(:, :, :), allocatable ::  weight_iface
+  integer, dimension(:, :, :, :, :), allocatable :: link_ijispec_iface
   ! Constants for normals.
   integer, parameter :: DIR_UP    = 1
   integer, parameter :: DIR_DOWN  = -1
   integer, parameter :: DIR_RIGHT = 2
   integer, parameter :: DIR_LEFT  = -2
-
-  ! TODO: Unused, decide what to do with this.
+  
+  ! Other miscallenous variables.
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: error
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: save_pressure
+  integer, dimension(:,:), allocatable  :: ibool_interfaces_acoustic_DG
+  integer, dimension(:), allocatable  :: nibool_interfaces_acoustic_DG
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
+  
+!********************************!
+! TODO: Marked for deletion.
+!********************************!
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: dt_rhoveloc_acoustic, rhoveloc_acoustic
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dt_density, dt_rhoenergy, rhoenergy, density_p
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: pext
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rhoveloc_x, resu_rhoveloc_z, resu_density, resu_rhoenergy
-  
-  integer, dimension(:, :, :, :), allocatable ::  link_iface_ijispec, neighbor_DG_iface 
-  real(kind=CUSTOM_REAL), dimension(:, :), allocatable ::  nx_iface, nz_iface
-  real(kind=CUSTOM_REAL), dimension(:, :, :), allocatable ::  weight_iface
-  integer, dimension(:, :, :, :, :), allocatable :: link_ijispec_iface
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rhoveloc_x, resu_rhoveloc_z, resu_density, resu_rhoenergy  
+!********************************!
+! TODO: Marked for deletion.
+!********************************!
   
   !---------------------------------------------------------------------
   ! for material information
