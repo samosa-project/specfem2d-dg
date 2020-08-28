@@ -1267,7 +1267,7 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
                          ibool_DG,gammaext_DG,&
                          jacobian, wxgll, wzgll, ibool_before_perio, &
                          USE_SPREAD_SSF, nspec, source_spatial_function_DG
-  use specfem_par_LNS ! TODO: select variables to use.
+  use specfem_par_LNS, only: norm2r1, LNS_rho0, LNS_v0, LNS_p0, LNS_drho, LNS_dv, LNS_dp
   implicit none
 
   ! Input/output.
