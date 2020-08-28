@@ -235,6 +235,7 @@
   else if (trim(MODEL)=='external_DG') then
     call external_dg_check_and_get_nblines(EXTERNAL_DG_ONLY_MODEL_FILENAME, nlines_header, nblines_model)
     call define_external_model_DG_only(nlines_header, nblines_model)
+    
     ! DEBUG PRINT MODEL
     if(.false. .and. myrank==1) then ! DEBUG
       open(unit=504,file='OUTPUT_FILES/TESTMODEL',status='unknown',action='write', position="append")
@@ -247,7 +248,7 @@
         enddo
       enddo
       close(504)
-      stop
+      call exit_MPI(myrank, " ")
       ! Matlab one-liner plot:
       !a=importdata("/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_lns_load_external/OUTPUT_FILES/TESTMODEL");X=a(:,1);Y=a(:,2);V=a(:,3);scatter(X,Y,20,V,'filled'); colorbar
     endif
@@ -259,7 +260,6 @@
       call external_dg_check_and_get_nblines(BCKGRD_MDL_LNS_FILENAME, nlines_header, nblines_model)
     endif
     call lns_load_background_model(nlines_header, nblines_model)
-!    stop 'kek'
 
   else if (trim(MODEL)=='tomo') then
     call define_external_model_from_tomo_file()
@@ -272,7 +272,7 @@
     write(*,*) "* unknown value:               *"
     write(*,*) "* ", trim(MODEL)
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif ! Endif on trim(MODEL).
 
   if (trim(MODEL)=='external' .or. trim(MODEL)=='tomo' .or. trim(MODEL)=='external_DG') then
@@ -427,7 +427,7 @@
 
 
 subroutine external_dg_check_and_get_nblines(FILENAME, nlines_header, nblines_model)
-  !use specfem_par, only: EXTERNAL_DG_ONLY_MODEL_FILENAME
+  use specfem_par, only: myrank
   implicit none
   ! Input/output.
   character(len=100), intent(in) :: FILENAME
@@ -450,12 +450,13 @@ subroutine external_dg_check_and_get_nblines(FILENAME, nlines_header, nblines_mo
     write(*,*) "* MODEL to a different value   *"
     write(*,*) "* in the parameter file.       *"
     write(*,*) "********************************"
-    stop
+    call exit_MPI(myrank, " ")
   endif
   call external_model_DG_only_find_nblines(FILENAME, nlines_header, nblines_model)
 end subroutine external_dg_check_and_get_nblines
 
 subroutine LNS_generalised_binary_grab_nlines(nblines_model)
+  use specfem_par, only: myrank
   use specfem_par_lns, only: BCKGRD_MDL_LNS_FILENAME, BCKGRD_MDL_LNS_FILENAME_HEADER
   implicit none
   ! Input/output.
@@ -463,9 +464,7 @@ subroutine LNS_generalised_binary_grab_nlines(nblines_model)
   ! Local variables.
   integer io
   OPEN(100, file=BCKGRD_MDL_LNS_FILENAME_HEADER, iostat=io)
-  if (io/=0) stop "Error opening background model header file."
+  if (io/=0) call exit_MPI(myrank, "Error opening background model header file.")
   read(100, *, iostat=io) nblines_model
-!  write(*,*) nblines_model
   close(100)
-!  stop 'kek'
 end subroutine LNS_generalised_binary_grab_nlines

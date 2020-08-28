@@ -73,7 +73,7 @@ subroutine prepare_stretching()
       write(*,*) "*  right buffer length : ", ABC_STRETCH_RIGHT_LBUF
       write(*,*) "*  horizontal size:      ", mesh_xmax-mesh_xmin
       write(*,*) "********************************"
-      stop
+      call exit_MPI(myrank, " ")
     endif
     if(ABC_STRETCH_TOP_LBUF+ABC_STRETCH_BOTTOM_LBUF>=mesh_zmax-mesh_zmin) then
       write(*,*) "********************************"
@@ -87,7 +87,7 @@ subroutine prepare_stretching()
       write(*,*) "*  bottom buffer length : ", ABC_STRETCH_BOTTOM_LBUF
       write(*,*) "*  vertical size:         ", mesh_zmax-mesh_zmin
       write(*,*) "********************************"
-      stop
+      call exit_MPI(myrank, " ")
     endif
     ! TODO: Check that the user did not ask for a bottom buffer if they have an elastic medium under the acoustic medium.
     ! Quick hack, assuming the elastic media is always under the acoustic media.
@@ -99,7 +99,7 @@ subroutine prepare_stretching()
       write(*,*) "* bottom boundary if there is  *"
       write(*,*) "* an elastic media.            *"
       write(*,*) "********************************"
-      stop
+      call exit_MPI(myrank, " ")
     endif
   endif
   
@@ -174,26 +174,8 @@ subroutine prepare_stretching()
     endif ! Endif on ispec_is_acoustic_DG(ispec).
   enddo ! Enddo on ispec.
   call synchronize_all()
-  
-  if(.false.) then ! DEBUG
-    write(*,*) "TOPKEK"
-    do ispec = 1, nspec
-      do j = 1, NGLLZ
-        do i = 1, NGLLX
-          iglob_unique = ibool_before_perio(i, j, ispec)
-          x=coord(1, iglob_unique)
-          z=coord(2, iglob_unique)
-          !write(*,*) x, z
-          if(abs(x)< 0.1 .and. z > 8.) then ! DEBUG
-            write(*,*) x, z, &
-                       stretching_buffer(iglob_unique), stretching_ya(:, iglob_unique)
-          endif
-        enddo
-      enddo
-    enddo
-    stop "kekkekekkekekekkekekkekekekkekekkekekekkekekkekekekkekekkeke"
-  endif
 end subroutine prepare_stretching
+
 
 ! ------------------------------------------------------------ !
 ! stretching_function                                          !

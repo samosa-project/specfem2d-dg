@@ -345,8 +345,6 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
         read(100, *, iostat=io) X_m(1, i), X_m(NDIM, i), &
                                 rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
                                 g_model(i), gam_model(i), mu_model(i), kappa_model(i)
-!        if(i<10) write(*,*) i, X_m(1, i), X_m(NDIM, i), p_model(i)
-!        if(i>10) stop
       else
         write(*,*) "********************************"
         write(*,*) "*            ERROR             *"

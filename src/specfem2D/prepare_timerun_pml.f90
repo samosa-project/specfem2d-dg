@@ -415,8 +415,6 @@
     allocate(rmemory_sfb_potential_ddot_acoustic_LDDRK(1,NGLLX,NGLLZ,1))
   endif
   
-  !stop "kek" ! DEBUG
-  
   end subroutine prepare_timerun_PML
 
 
