@@ -921,13 +921,12 @@ subroutine LNS_get_interfaces_unknowns(i, j, ispec, iface1, iface, neighbor, nei
 end subroutine LNS_get_interfaces_unknowns
 
 
-
 ! ------------------------------------------------------------ !
 ! build_trans_boundary                                         !
 ! ------------------------------------------------------------ !
 ! From an input normal vector, compute the tangential vector and the matrix for passin from one reference frame to the other.
 ! The matrix transf_matrix converts a vector from the normal reference frame (n, t) to the canonic reference frame (x, z).
-! 
+
 subroutine build_trans_boundary(normal, tangential, transf_matrix)
   use constants, only: CUSTOM_REAL, NDIM
   
@@ -960,21 +959,17 @@ subroutine build_trans_boundary(normal, tangential, transf_matrix)
 end subroutine
 
 
-
-
-
-
 ! ------------------------------------------------------------ !
 ! S2F_Terrana_coupling                                         !
 ! ------------------------------------------------------------ !
 ! Implements [Terrana et al., 2018]'s (56).
 ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+
 subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed, iglob_DG, &
                                 v_solid, sigma_el_local, i_el, j_el, ispec_el, &
                                 v_hat, dp_hat)
   use constants, only: CUSTOM_REAL, NDIM
-  use specfem_par_lns, only: inverse_2x2, LNS_rho0, LNS_v0, LNS_dv!, LNS_viscous, sigma_dv
-  !use specfem_par_lns, only: inverse_2x2, LNS_v0, LNS_dv!, LNS_p0!, LNS_viscous, sigma_dv
+  use specfem_par_lns, only: inverse_2x2, LNS_rho0, LNS_v0, LNS_dv
   
   implicit none
   
@@ -992,40 +987,19 @@ subroutine S2F_Terrana_coupling(normal, rho_fluid, v_fluid, dp_fluid, soundspeed
   ! Build tensors \tau.
   call build_tau_s(normal, i_el, j_el, ispec_el, TAU_S) ! TAU_S could be pre-computed and stored, since it doesn't change with time. ! TODO, maybe: an optimisation.
   call build_tau_f(normal, rho_fluid, soundspeed, TAU_F) ! TAU_F couldn't be pre-computed, since some values change with time.
-  ! Build inverse.
-!  INV_SUMTAU = inverse_2x2(TAU_S + TAU_F)
   
   ! Prepare fluid stress tensor.
   sigma_fluid = 0. ! Initialise stress.
-  call stressBuilder_addInviscidFluid(LNS_rho0(iglob_DG), LNS_v0(:,iglob_DG), & ! ORIGINAL LINE
-  !call stressBuilder_addInviscidFluid(0., LNS_v0(:,iglob_DG), & ! Typically, this builds simply the pressure.
-                                      LNS_dv(:,iglob_DG), dp_fluid, sigma_fluid) ! ORIGINAL LINE
-  !                                    LNS_dv(:,iglob_DG), LNS_p0(iglob_DG) + dp_fluid, sigma_fluid) ! Take full pressure.
-  !sigma_fluid(1,2) = 0.; sigma_fluid(2,1) = 0.; ! Force tangent stress to zero.
-  !sigma_fluid = 0. ! Force whole stress to zero (test purposes).
-  !sigma_fluid(1,1) = 
-  !if(LNS_viscous) then ! Check if viscosity exists whatsoever.
-  !  call stressBuilder_addViscousFluid(-sigma_dv(:,iglob_DG), sigma_fluid) ! Send viscous tensor.
-  !endif
-  ! Build actual velocity from [Terrana et al., 2018]'s (56).
-  !v_hat = matmul(TAU_F,v_fluid) + matmul(TAU_S,v_solid) + matmul(sigma_el_local,normal) - dp_fluid*normal
-  !v_hat = matmul(TAU_F, v_fluid) + matmul(TAU_S, v_solid) + matmul(sigma_el_local - sigma_fluid, normal)
-  !v_hat = matmul(inverse_2x2(TAU_S+TAU_F), v_hat)
-  ! Do everything inline. Four 2x2 little matrix-vector products won't crash the stack.
+  call stressBuilder_addInviscidFluid(LNS_rho0(iglob_DG), LNS_v0(:,iglob_DG), &
+                                      LNS_dv(:,iglob_DG), dp_fluid, sigma_fluid)
+  ! Do everything inline. Four small 2x2 matrix-vector products surely won't crash the stack.
   v_hat = matmul(inverse_2x2(TAU_S+TAU_F), &
                  matmul(TAU_F, v_fluid) + matmul(TAU_S, v_solid) + matmul(sigma_el_local - sigma_fluid, normal))
-#if 0
-  write(*,*) 'v_solid', v_solid, 'v_fluid', v_fluid ! DEBUG
-  write(*,*) 'TAU_F', TAU_F
-  write(*,*) 'matmul(TAU_F, v_fluid)', matmul(TAU_F, v_fluid), 'matmul(TAU_S, v_solid)', matmul(TAU_S, v_solid)
-  write(*,*) 'sigma_el_local - sigma_fluid', (sigma_el_local - sigma_fluid)
-  write(*,*) 'v_hat', v_hat
-#endif
   
   ! Build actual pressure perturbation from [Terrana et al., 2018]'s (51).
   dp_hat = dp_fluid + DOT_PRODUCT(matmul(TAU_F, v_fluid - v_solid), normal)
-  !dp_hat = dp_fluid + DOT_PRODUCT(matmul(TAU_F, v_fluid - v_hat), normal)
 end subroutine S2F_Terrana_coupling
+
 
 ! ------------------------------------------------------------ !
 ! build_tau                                                    !
@@ -1033,6 +1007,7 @@ end subroutine S2F_Terrana_coupling
 ! Generic tensor \tau, from [Terrana et al., 2018]'s (37).
 ! Tau is a symmetric matrix. It is a bit heavy to store all components, maybe consider storing only the upper coefficients.
 ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+
 subroutine build_tau_s(normal, i_el, j_el, ispec_el, TAU_S)
   use constants, only: CUSTOM_REAL, NDIM
   use specfem_par, only: assign_external_model, density, kmato, poroelastcoef, &
@@ -1065,12 +1040,15 @@ subroutine build_tau_s(normal, i_el, j_el, ispec_el, TAU_S)
   TAU_S(2,2) = vs*normal(1)**2 + vp*normal(NDIM)**2
   TAU_S = rho*TAU_S
 end subroutine build_tau_s
+
+
 ! ------------------------------------------------------------ !
 ! build_tau_f                                                  !
 ! ------------------------------------------------------------ !
 ! Acoustic tensor \tau_{ac}, from [Terrana et al., 2018]'s (52).
 ! Tau is a symmetric matrix. It is a bit heavy to store all components, maybe consider storing only the upper coefficients.
 ! Terrana, S., Vilotte, J. P., & Guillot, L. (2017). A spectral hybridizable discontinuous Galerkin method for elastic–acoustic wave propagation. Geophysical Journal International, 213(1), 574-602.
+
 subroutine build_tau_f(normal, rho, c, TAU_F)
   use constants, only: CUSTOM_REAL, NDIM
   
@@ -1091,9 +1069,6 @@ subroutine build_tau_f(normal, rho, c, TAU_F)
   TAU_F(2,2) = normal(NDIM)**2
   TAU_F = rho*c*TAU_F
 end subroutine build_tau_f
-
-
-
 
 
 ! ------------------------------------------------------------ !
@@ -1148,17 +1123,8 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
                 d_rho0dv(SPCDM, iglob) = d_rho0dv(SPCDM, iglob) + LNS_dv(SPCDM, iglob) * temp_sourcewxlwzljacobianl
               enddo
               
-              ! Approx. c^2=c_0^2 & v=v_0. Lowest CPU use, 18% error at Mach .3, 7% error at Mach .3.
-              !d_dE(iglob) =   d_dE(iglob) &
-              !             + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1._CUSTOM_REAL) &
-              !                 + 0.5_CUSTOM_REAL*norm2r1(LNS_v0(:, iglob)) &
-              !               ) * temp_sourcewxlwzljacobianl
-              ! Approx. c^2=c_0^2. TBTested.
-              !d_dE(iglob) =   d_dE(iglob) &
-              !             + (   LNS_c0(iglob)**2/(gammaext_DG(iglob)-1.) &
-              !                 + 0.5*norm2r1(LNS_v0(:, iglob)+LNS_dv(:, iglob)) &
-              !               ) * temp_sourcewxlwzljacobianl
-              ! Full. Highest CPU use, but technically exactly what the equations are, same results as "Approx. c^2=c_0^2 & v=v_0".
+              ! Full re-computation. Highest CPU use, but technically exactly what the equations are.
+              ! Approximations such as "c^2=c_0^2" and/or "v=v_0" might be faster.
               d_dE(iglob) =   d_dE(iglob) &
                            + (   gammaext_DG(iglob) * (LNS_p0(iglob)+LNS_dp(iglob)) &
                                  / ((LNS_rho0(iglob)+LNS_drho(iglob))*(gammaext_DG(iglob)-1._CUSTOM_REAL)) &
@@ -1183,13 +1149,4 @@ subroutine LNS_mass_source(d_drho, d_rho0dv, d_dE, it, i_stage)
     endif ! Endif on SIGMA_SSF.
   enddo ! Enddo on i_source.
 end subroutine LNS_mass_source
-
-
-
-
-
-
-
-
-
 
