@@ -171,8 +171,6 @@
   call read_value_logical_p(CONSTRAIN_HYDROSTATIC, 'solver.CONSTRAIN_HYDROSTATIC')
   if (err_occurred() /= 0) stop 'error reading parameter CONSTRAIN_HYDROSTATIC in Par_file'
   
-  !call read_value_logical_p(IONOSPHERIC_COUPLING, 'solver.IONOSPHERIC_COUPLING')
-  !if (err_occurred() /= 0) stop 'error reading parameter IONOSPHERIC_COUPLING in Par_file'
   IONOSPHERIC_COUPLING = .false. ! Default value.
   if(USE_DISCONTINUOUS_METHOD) then
     call read_value_logical_p(IONOSPHERIC_COUPLING, 'solver.IONOSPHERIC_COUPLING')
@@ -180,7 +178,7 @@
                                         'Setting to .false., do not worry.'
   endif
   
-  ! MMS VALIDATION SWITCHES
+  ! MMS validation switches.
   VALIDATION_MMS = .false.
   VALIDATION_MMS_IV = .false.
   VALIDATION_MMS_KA = .false.
@@ -277,7 +275,7 @@
     if (err_occurred() /= 0) write(*,*) 'Error reading parameter FORCING_DG_FACTOR in Par_file. Setting to 1., do not worry.'
   endif
   
-  ! Default values, used if the parameters are not found in parfile.
+  ! Real stretching absorbing boundary conditions.
   ABC_STRETCH_TOP         = .false.
   ABC_STRETCH_LEFT        = .false.
   ABC_STRETCH_BOTTOM      = .false.
@@ -286,10 +284,14 @@
   ABC_STRETCH_LEFT_LBUF   = 0.
   ABC_STRETCH_BOTTOM_LBUF = 0.
   ABC_STRETCH_RIGHT_LBUF  = 0.
+  
+  ! Spread source spatial function.
   USE_SPREAD_SSF          = .false.
   SPREAD_SSF_SAVE         = .false.
   SPREAD_SSF_SIGMA        = 1.
   SPREAD_SSF_CUSTOM       = .false.
+  
+  ! Tweak.
   REMOVE_STF_INITIAL_DISCONTINUITY=.false.
   
   if(USE_DISCONTINUOUS_METHOD) then
