@@ -75,7 +75,7 @@ subroutine compute_forces_acoustic_LNS_main()
     ! Allocate acoustic coupling array.
     allocate(ispec_is_acoustic_coupling_ac(nglob_DG), stat=ier)
     if (ier /= 0) then
-      stop "Error allocating 'ispec_is_acoustic_coupling_ac' arrays (see 'compute_forces_acoustic_LNS_calling_routine.F90')."
+      call exit_MPI(myrank, "Error allocating 'ispec_is_acoustic_coupling_ac' arrays.")
     endif
     ispec_is_acoustic_coupling_ac = -1
     if(.not. only_DG_acoustic) then
@@ -1333,6 +1333,7 @@ end subroutine stressBuilder_addViscousFluid
 
 subroutine LNS_prevent_nonsense()
   use constants, only: TINYVAL
+  use specfem_par, only: myrank
   use specfem_par_LNS, only: LNS_rho0, LNS_E0, LNS_p0, LNS_mu, LNS_eta, LNS_kappa, LNS_viscous
   implicit none
   ! Input/Output.
@@ -1342,27 +1343,27 @@ subroutine LNS_prevent_nonsense()
   
   ! Initial state.
   if(minval(LNS_rho0)<TINYVAL) then
-    stop "LNS_rho0 is non-positive (<= 0) somewhere."
+    call exit_MPI(myrank, "LNS_rho0 is non-positive (<= 0) somewhere.")
   endif
   if(minval(LNS_E0)<TINYVAL) then
-    stop "LNS_E0 is non-positive (<= 0) somewhere."
+    call exit_MPI(myrank, "LNS_E0 is non-positive (<= 0) somewhere.")
   endif
   
   ! Auxiliary initial variables.
   if(minval(LNS_p0)<TINYVAL) then
-    stop "LNS_p0 is non-positive (<= 0) somewhere."
+    call exit_MPI(myrank, "LNS_p0 is non-positive (<= 0) somewhere.")
   endif
   
   ! Physical parameters.
   if(LNS_viscous) then ! Check if viscosity exists whatsoever.
     if(minval(LNS_mu)<-TINYVAL) then
-      stop "LNS_mu is negative (< 0) somewhere."
+      call exit_MPI(myrank, "LNS_mu is negative (< 0) somewhere.")
     endif
     if(minval(LNS_eta)<-TINYVAL) then
-      stop "LNS_eta is negative (< 0) somewhere."
+      call exit_MPI(myrank, "LNS_eta is negative (< 0) somewhere.")
     endif
     if(minval(LNS_kappa)<-TINYVAL) then
-      stop "LNS_kappa is negative (< 0) somewhere."
+      call exit_MPI(myrank, "LNS_kappa is negative (< 0) somewhere.")
     endif
   endif
 end subroutine LNS_prevent_nonsense
