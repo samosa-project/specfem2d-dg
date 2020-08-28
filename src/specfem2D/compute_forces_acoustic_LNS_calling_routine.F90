@@ -493,7 +493,7 @@ subroutine background_physical_parameters(i, j, ispec, timelocal, out_rho, swCom
   use constants, only: CUSTOM_REAL, TINYVAL, NDIM
   use specfem_par, only: MODEL, assign_external_model, coord, coord_interface, gammaext_DG, ibool_DG, ibool_before_perio, &
                          pext_dg, rhoext, SCALE_HEIGHT, sound_velocity, surface_density, TYPE_FORCING, USE_ISOTHERMAL_MODEL, &
-                         wind, windxext
+                         wind, windxext, myrank
   use specfem_par_LNS, only: LNS_g, LNS_rho0, LNS_v0, LNS_p0
 
   implicit none

@@ -221,7 +221,7 @@ subroutine apply_model_to_mesh(nlines_model, X_m, &
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, FOUR_THIRDS, TINYVAL
   use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, &
                              LNS_g, LNS_mu, LNS_kappa, LNS_c0
-  use specfem_par, only: nspec, ispec_is_elastic, rhoext, vpext, &
+  use specfem_par, only: nspec, ispec_is_elastic, rhoext, vpext, myrank, &
                          ispec_is_acoustic_DG, ibool_DG, ibool_before_perio, gammaext_DG, nglob
   
   implicit none
@@ -288,10 +288,8 @@ end subroutine apply_model_to_mesh
 ! --- file end
 
 subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
-                                     rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
-                                    )
+                                     rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model)
   use constants, only: CUSTOM_REAL, NDIM
-  !use specfem_par,only: nspec, tau_sigma, tau_epsilon
   use specfem_par, only: myrank
   use specfem_par_lns, only: BCKGRD_MDL_LNS_is_binary, BCKGRD_MDL_LNS_FILENAME, BCKGRD_MDL_LNS_NCOL
   
@@ -323,7 +321,7 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
   if(BCKGRD_MDL_LNS_is_binary) then
     ! If binary, loop until whole file is read.
     open(100, file=BCKGRD_MDL_LNS_FILENAME, access='stream', form='unformatted', STATUS="old", action='read', iostat=io)
-    if (io/=0) stop "Error opening background model file."
+    if (io/=0) call exit_MPI(myrank, "Error opening background model file.")
     
     ! Read as many n-uplets as needed from the serial binary file.
     do i=1, nlines_model
@@ -340,7 +338,7 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
     OPEN(100, file=BCKGRD_MDL_LNS_FILENAME)
     do i=1, nlines_header
       read(100, *, iostat=io)
-      IF (io/=0) stop "Error reading line in background model file."
+      if (io/=0) call exit_MPI(myrank, "Error reading line in background model file.")
     enddo
     do i=1, nlines_model
       if(ncolumns_detected==BCKGRD_MDL_LNS_NCOL) then
@@ -465,7 +463,7 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
                                          )
   use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa, LNS_c0
-  use specfem_par, only: ibool, ibool_DG, coord, coord_interface, gammaext_dg, rhoext, vpext
+  use specfem_par, only: ibool, ibool_DG, coord, coord_interface, gammaext_dg, rhoext, vpext, myrank
   
   implicit none
   
@@ -612,6 +610,7 @@ end subroutine delaunay_interpolate_one_point
 
 subroutine barycentric_coordinates_2d(vlist, P, inTri, barycor)
   use constants, only: CUSTOM_REAL, NDIM, TINYVAL
+  use specfem_par, only: myrank
   implicit none
   ! Input/output.
   real(kind=8), dimension(3, NDIM), intent(in) :: vlist
