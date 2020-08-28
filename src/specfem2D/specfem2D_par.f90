@@ -239,17 +239,6 @@ module specfem_par
   real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: gamma_ac_DG_kl, c_ac_DG_kl, v0_ac_DG_kl
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: veloc_vector_acoustic_DG_coupling
   
-!********************************!
-! TODO: Marked for deletion.
-!********************************!
-  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: dt_rhoveloc_acoustic, rhoveloc_acoustic
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dt_density, dt_rhoenergy, rhoenergy, density_p
-  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable :: pext
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: resu_rhoveloc_x, resu_rhoveloc_z, resu_density, resu_rhoenergy  
-!********************************!
-! TODO: Marked for deletion.
-!********************************!
-  
   !---------------------------------------------------------------------
   ! for material information
   !---------------------------------------------------------------------

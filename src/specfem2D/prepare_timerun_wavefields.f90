@@ -299,22 +299,11 @@
     ! dummy allocate unused arrays with fictitious size
     nglob_acoustic = 1
   endif
-
-  ! MODIF NS
-  ! TODO: Remove?
-  allocate(resu_rhoveloc_x(nglob_acoustic), resu_rhoveloc_z(nglob_acoustic), &
-        resu_density(nglob_acoustic), resu_rhoenergy(nglob_acoustic))
-  allocate(dt_rhoveloc_acoustic(NDIM,nglob_acoustic), &
-           rhoveloc_acoustic(NDIM,nglob_acoustic), &
-           density_p(nglob_acoustic), rhoenergy(nglob_acoustic), stat=ier)  
-  allocate(dt_density(nglob_acoustic), &
-           dt_rhoenergy(nglob_acoustic),stat=ier)      
-           
+  
   ! Modification for DG.
   if (USE_DISCONTINUOUS_METHOD) then
     nglob_DG_loc = nglob_DG
     ! For background parameters & inverse method (temporary).
-    ! TODO: Remove?
     allocate(rmass_inverse_acoustic_DG_b(nglob))
     allocate(potential_dphi_dx_DG(nglob), potential_dphi_dz_DG(nglob))
     if(.not. only_DG_acoustic .AND. any_acoustic_DG) then
@@ -324,7 +313,6 @@
     ! Dummy allocation.
     nglob_DG_loc = 1
   endif
-  ! TODO: why allocate when not even using DG?
   ! RHS.
   allocate(dot_rho(nglob_DG_loc), dot_rhovx(nglob_DG_loc), dot_rhovz(nglob_DG_loc), dot_E(nglob_DG_loc), dot_e1(nglob_DG_loc))
   if(IONOSPHERIC_COUPLING) allocate(dot_Ni(nglob_DG_loc))
@@ -498,17 +486,6 @@
     write(IMAIN,*) '  wavefield initialization'
     call flush_IMAIN()
   endif
-  
-  resu_rhoveloc_x      = 0._CUSTOM_REAL
-  resu_rhoveloc_z      = 0._CUSTOM_REAL
-  resu_density         = 0._CUSTOM_REAL
-  resu_rhoenergy       = 0._CUSTOM_REAL
-  dt_rhoveloc_acoustic = 0._CUSTOM_REAL
-  rhoveloc_acoustic    = 0._CUSTOM_REAL
-  dt_density           = 0._CUSTOM_REAL
-  dt_rhoenergy         = 0._CUSTOM_REAL
-  density_p            = 0._CUSTOM_REAL
-  rhoenergy            = 0._CUSTOM_REAL
 
   ! initialize arrays to zero
   displ_elastic = 0._CUSTOM_REAL

@@ -388,7 +388,7 @@
 
   use specfem_par, only: nspec,ispec_is_acoustic,ibool,ibool_DG,deltat, &
                          !assign_external_model,,&
-                         gammaext_DG, rhoext, pext, windxext, gravityext, vpext,&
+                         gammaext_DG, rhoext, pext_DG, windxext, gravityext, vpext,&
                          hprime_xx,hprime_zz,xix,xiz,gammax,gammaz,&
                          b_rhovx_DG, b_rhovz_DG, b_E_DG, b_rho_DG, &
                          rhovx_DG, dot_rho, rhovz_DG, E_DG, rho_DG, &
@@ -425,7 +425,7 @@
         
           gammal  = gammaext_DG(iglob_DG)
           rho0l   = rhoext(i,j,ispec)
-          p0l     = pext(i,j,ispec)
+          p0l     = pext_DG(i,j,ispec)
           v0l     = windxext(i,j,ispec)
           gravityl = gravityext(i,j,ispec) 
           c_adiab_l = vpext(i,j,ispec) 
