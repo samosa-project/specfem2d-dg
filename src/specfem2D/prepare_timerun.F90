@@ -142,14 +142,6 @@
   ! PML preparation
   call prepare_timerun_PML()
   
-#if 0
-  ! If LNS and PML, initialise PML coefficients.
-  ! Cannot group with above call to initial_state_LNS because prepare_timerun_PML needs initial_state_LNS to have been ran before, and LNS_PML_init_coefs needs prepare_timerun_PML to have ran before.
-  if(USE_DISCONTINUOUS_METHOD .and. USE_LNS .and. PML_BOUNDARY_CONDITIONS) then
-    call LNS_PML_init_coefs() ! This routine can be found in compute_forces_acoustic_LNS.F90.
-  endif
-#endif
-  
   ! Compute the stretching values and store them in corresponding variables.
   if(USE_DISCONTINUOUS_METHOD .and. ABC_STRETCH) then
     if(myrank==0) then
