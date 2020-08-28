@@ -18,81 +18,82 @@
 ! the Free Software Foundation; either version 2 of the License, or
 ! (at your option) any later version.
 !
-! This program is distributed in the hope that it will be useful,
+! This program is distributed in the hope that it will be useful, 
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ! GNU General Public License for more details.
 !
 ! You should have received a copy of the GNU General Public License along
-! with this program; if not, write to the Free Software Foundation, Inc.,
+! with this program; if not, write to the Free Software Foundation, Inc., 
 ! 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 !
 ! The full text of the license is available in file "LICENSE".
 !
 !=====================================================================
 
-  subroutine compute_add_sources_acoustic_DG_backward(it_tmp, &
-        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
+! ------------------------------------------------------------ !
+! compute_add_sources_acoustic_DG_backward                     !
+! ------------------------------------------------------------ !
+! Add sources in the backward method.
 
-  use constants,only: NGLLX,NGLLZ,CUSTOM_REAL
+subroutine compute_add_sources_acoustic_DG_backward(it_tmp, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
 
-  use specfem_par, only: myrank,ispec_is_acoustic,&
-                         nrec,which_proc_receiver,ispec_selected_rec,adj_sourcearrays,&
-                         ibool, nglob!ibool_DG
+  use constants, only: NGLLX, NGLLZ, CUSTOM_REAL
+
+  use specfem_par, only: myrank, ispec_is_acoustic, &
+                         nrec, which_proc_receiver, ispec_selected_rec, adj_sourcearrays, &
+                         ibool, nglob
+  
   implicit none
-
-  real(kind=CUSTOM_REAL), dimension(nglob) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
-
-  !local variables
-  integer :: irec_local,irec,i,j,iglob
+  
+  ! Input/Output.
   integer :: it_tmp
-
+  real(kind=CUSTOM_REAL), dimension(nglob) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
+  
+  ! Local Variables.
+  integer :: irec_local, irec, i, j, iglob
   character(len=100) file_name
   
-  write(file_name,"('source_',i3.3,'.txt')") myrank
+  write(file_name, "('source_', i3.3, '.txt')") myrank
   
-  open(11,file=file_name,form='formatted',position='append')
+  open(11, file=file_name, form='formatted', position='append')
   
-  ! time step index
-  !it_tmp = NSTEP - it + 1
-
   irec_local = 0
-  do irec = 1,nrec
+  do irec = 1, nrec
     ! add the source (only if this proc carries the source)
     if (myrank == which_proc_receiver(irec)) then
       irec_local = irec_local + 1
       if (ispec_is_acoustic(ispec_selected_rec(irec))) then
         ! add source array
-        do j = 1,NGLLZ
-          do i = 1,NGLLX
-            !iglob = ibool_DG(i, j, ispec_selected_rec(irec))
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
             iglob = ibool(i, j, ispec_selected_rec(irec))
             
             b_dot_rho(iglob)   = b_dot_rho(iglob) &
-                                + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
+                                + 0!adj_sourcearrays(irec_local, it_tmp, 1, i, j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
                                 !/ kappastore(i, j, ispec_selected_rec(irec))
             b_dot_rhovx(iglob) = b_dot_rhovx(iglob) &
-                                + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
+                                + 0!adj_sourcearrays(irec_local, it_tmp, 1, i, j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
                                 !/ kappastore(i, j, ispec_selected_rec(irec))
                                 
             if(i == 1 .AND. j == 1) &
-                WRITE(11,*)  adj_sourcearrays(irec_local,it_tmp,2,3,5)  
+                WRITE(11, *)  adj_sourcearrays(irec_local, it_tmp, 2, 3, 5)  
                                 
-            b_dot_rhovz(iglob) = b_dot_rhovz(iglob) + adj_sourcearrays(irec_local,it_tmp,2,i,j)!&
-                                !+ adj_sourcearrays(irec_local,it_tmp,2,i,j)! &
+            b_dot_rhovz(iglob) = b_dot_rhovz(iglob) + adj_sourcearrays(irec_local, it_tmp, 2, i, j)!&
+                                !+ adj_sourcearrays(irec_local, it_tmp, 2, i, j)! &
                                 !ZN becareful the following line is new added, thus when do comparison
                                 !ZN of the new code with the old code, you will have big difference if you
                                 !ZN do not tune the source
                                 !/ kappastore(i, j, ispec_selected_rec(irec))
             !if(i == 2 .AND. j == 2) &
             b_dot_E(iglob)     = b_dot_E(iglob) !&
-                                !adj_sourcearrays(irec_local,it_tmp,1,i,j) &
+                                !adj_sourcearrays(irec_local, it_tmp, 1, i, j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
@@ -100,83 +101,80 @@
 
           enddo
         enddo
-        !WRITE(*,*) i, j, ispec_selected_rec(irec),irec,myrank,"-- SOURCE -> ", &
-        !        minval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), maxval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), &
-        !        which_proc_receiver
       endif ! if element acoustic
     endif ! if this processor core carries the adjoint source
-  enddo ! irec = 1,nrec
+  enddo ! irec = 1, nrec
 
   close(11)
  
-  end subroutine compute_add_sources_acoustic_DG_backward
+end subroutine compute_add_sources_acoustic_DG_backward
   
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  subroutine compute_add_sources_acoustic_DG_backward_real(it_tmp, &
-        b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
+! ------------------------------------------------------------ !
+! compute_add_sources_acoustic_DG_backward_real                !
+! ------------------------------------------------------------ !
+! Add sources in the backward method.
+  
+subroutine compute_add_sources_acoustic_DG_backward_real(it_tmp, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
 
-  use constants,only: NGLLX,NGLLZ,CUSTOM_REAL
+  use constants, only: NGLLX, NGLLZ, CUSTOM_REAL
 
-  use specfem_par, only: myrank,ispec_is_acoustic,&
-                         nrec,which_proc_receiver,ispec_selected_rec,adj_sourcearrays,&
-                         ibool_DG, nglob_DG!ibool_DG
+  use specfem_par, only: myrank, ispec_is_acoustic, &
+                         nrec, which_proc_receiver, ispec_selected_rec, adj_sourcearrays, &
+                         ibool_DG, nglob_DG
+  
   implicit none
 
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
 
-  !local variables
-  integer :: irec_local,irec,i,j,iglob
+  ! Input/Output.
   integer :: it_tmp
-
+  real(kind=CUSTOM_REAL), dimension(nglob) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
+  
+  ! Local Variables.
+  integer :: irec_local, irec, i, j, iglob
   character(len=100) file_name
   
-  write(file_name,"('source_',i3.3,'.txt')") myrank
+  write(file_name, "('source_', i3.3, '.txt')") myrank
   
-  open(11,file=file_name,form='formatted',position='append')
-  
-  ! time step index
-  !it_tmp = NSTEP - it + 1
+  open(11, file=file_name, form='formatted', position='append')
 
   irec_local = 0
-  do irec = 1,nrec
+  do irec = 1, nrec
     ! add the source (only if this proc carries the source)
     if (myrank == which_proc_receiver(irec)) then
       irec_local = irec_local + 1
       if (ispec_is_acoustic(ispec_selected_rec(irec))) then
         ! add source array
-        do j = 1,NGLLZ
-          do i = 1,NGLLX
-            !iglob = ibool_DG(i, j, ispec_selected_rec(irec))
+        do j = 1, NGLLZ
+          do i = 1, NGLLX
             iglob = ibool_DG(i, j, ispec_selected_rec(irec))
             
             b_dot_rho(iglob)   = b_dot_rho(iglob) &
-                                + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
+                                + 0!adj_sourcearrays(irec_local, it_tmp, 1, i, j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
                                 !/ kappastore(i, j, ispec_selected_rec(irec))
             b_dot_rhovx(iglob) = b_dot_rhovx(iglob) &
-                                + 0!adj_sourcearrays(irec_local,it_tmp,1,i,j) &
+                                + 0!adj_sourcearrays(irec_local, it_tmp, 1, i, j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
                                 !/ kappastore(i, j, ispec_selected_rec(irec))
                                 
             if(i == 1 .AND. j == 1) &
-                WRITE(11,*)  adj_sourcearrays(irec_local,it_tmp,2,3,5)  
+                WRITE(11, *)  adj_sourcearrays(irec_local, it_tmp, 2, 3, 5)  
                                 
             b_dot_rhovz(iglob) = b_dot_rhovz(iglob) + &
                                 !exp(-((deltat*(it-1) - 5 )/4)**2)
-                                adj_sourcearrays(irec_local,it_tmp,2,i,j)!&
-                                !+ adj_sourcearrays(irec_local,it_tmp,2,i,j)! &
+                                adj_sourcearrays(irec_local, it_tmp, 2, i, j)!&
+                                !+ adj_sourcearrays(irec_local, it_tmp, 2, i, j)! &
                                 !ZN becareful the following line is new added, thus when do comparison
                                 !ZN of the new code with the old code, you will have big difference if you
                                 !ZN do not tune the source
                                 !/ kappastore(i, j, ispec_selected_rec(irec))
-            !if(i == 2 .AND. j == 2) &
             b_dot_E(iglob)     = b_dot_E(iglob) !&
-                                !adj_sourcearrays(irec_local,it_tmp,1,i,j) &
+                                !adj_sourcearrays(irec_local, it_tmp, 1, i, j) &
                                 !!ZN becareful the following line is new added, thus when do comparison
                                 !!ZN of the new code with the old code, you will have big difference if you
                                 !!ZN do not tune the source
@@ -184,17 +182,15 @@
 
           enddo
         enddo
-        !WRITE(*,*) i, j, ispec_selected_rec(irec),irec,myrank,"-- SOURCE -> ", &
-        !        minval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), maxval(adj_sourcearrays(irec_local,it_tmp,2,:,:)), &
-        !        which_proc_receiver
       endif ! if element acoustic
     endif ! if this processor core carries the adjoint source
-  enddo ! irec = 1,nrec
+  enddo ! irec = 1, nrec
 
   close(11)
  
-  end subroutine compute_add_sources_acoustic_DG_backward_real
-  
+end subroutine compute_add_sources_acoustic_DG_backward_real
+
+
 ! ------------------------------------------------------------ !
 ! compute_add_sources_acoustic_DG_spread                       !
 ! ------------------------------------------------------------ !
@@ -203,32 +199,30 @@
   
 subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
 
-  use constants,only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
 
-  use specfem_par, only: nglob_DG,ispec_is_acoustic_DG,&!ispec_is_acoustic
-                         NSOURCES,source_type,source_time_function,&
-                         is_proc_source,ispec_selected_source,&
+  use specfem_par, only: nglob_DG, ispec_is_acoustic_DG, &
+                         NSOURCES, source_type, source_time_function, &
+                         is_proc_source, ispec_selected_source, &
                          ibool_DG, &
-                         coord,  &
+                         coord, &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
                          USE_SPREAD_SSF, nspec, source_spatial_function_DG, &
                          ABC_STRETCH, stretching_ya
+  
   implicit none
 
-  ! Input/output.
+  ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: variable_DG
   integer, intent(in) :: it, i_stage
   
-  ! Local variables.
+  ! Local Variables.
   real(kind=CUSTOM_REAL) :: x, y, r, accuracy, sigma, dist_min, dist, temp_source
   real(kind=CUSTOM_REAL), dimension(2) :: X1, X2, X3, X4, X0
   real(kind=CUSTOM_REAL), dimension(4, 2) :: Xc
   real(kind=CUSTOM_REAL) :: jacobianl, wxl, wzl
   integer :: i, j, i_source, ispec, iglob, iglob_unique
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
-  
-  ! TODO: shouldn't the source term be added with a "-" sign since it should classically be on the RHS instead?
-  ! It is a matter of conventions, which should not be considered very important.
   
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
@@ -248,9 +242,8 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
               if(ABC_STRETCH) then
                 !call virtual_stretch(i, j, ispec, coef_stretch_x_ij, coef_stretch_z_ij)
                 ! Add jacobian of stretching into the integrand (artifically).
-                ! TODO: Do that more clearly.
-                jacobianl = stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*jacobianl
-                ! Though, this should NOT have any importance, since NOONE should have sources in or near the buffers.
+                jacobianl = stretching_ya(1, iglob_unique)*stretching_ya(2, iglob_unique)*jacobianl
+                ! Though, this should NOT have any importance, since NOONE should ever have sources in or near the buffers.
               endif
               
               wzl = real(wzgll(j), kind=CUSTOM_REAL)
@@ -288,7 +281,7 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
             accuracy = 7.
             dist_min = HUGEVAL
             do j = 1, 4
-              dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j,2) - X0(2))**2 )
+              dist = sqrt( (Xc(j, 1) - X0(1))**2 + (Xc(j, 2) - X0(2))**2 )
               if(dist < dist_min) then
                 dist_min = dist
               endif
@@ -310,7 +303,6 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
               enddo
             enddo
             
-          ! TODO: Implement the case source_type = 2.
           endif ! Endif on source_type.
         endif ! Endif on is_proc_source
       endif ! Endif on ispec_is_acoustic_DG.
@@ -318,24 +310,28 @@ subroutine compute_add_sources_acoustic_DG_spread(variable_DG, it, i_stage)
   enddo ! Enddo on i_source.
 end subroutine compute_add_sources_acoustic_DG_spread
 
+
 ! ------------------------------------------------------------ !
 ! compute_add_sources_acoustic_DG_spread                       !
 ! ------------------------------------------------------------ !
 ! Implements a source on the mass conservation equation:
 ! 1) Add said source on the mass equation.
-! 2) Ensure compatibility by adding it also to the other equations.
+! 2) Ensure compatibility by adding it also to the other equations (see Chapter 2 of Martire's thesis).
+
 subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, d_E, rho, vx, vz, E, it, i_stage)
 
-  use constants,only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
-  use specfem_par, only: nglob_DG,ispec_is_acoustic_DG,&
-                         NSOURCES,myrank,&
-                         source_time_function,&
-                         ibool_DG,gammaext_DG,&
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, PI, HUGEVAL
+  
+  use specfem_par, only: nglob_DG, ispec_is_acoustic_DG, &
+                         NSOURCES, myrank, &
+                         source_time_function, &
+                         ibool_DG, gammaext_DG, &
                          jacobian, wxgll, wzgll, ibool_before_perio, &
                          USE_SPREAD_SSF, nspec, source_spatial_function_DG
+  
   implicit none
 
-  ! Input/output.
+  ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_rho
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_rhovx
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(inout) :: d_rhovz
@@ -346,13 +342,13 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, d_E, rh
   real(kind=CUSTOM_REAL), dimension(nglob_DG), intent(in) :: E
   integer, intent(in) :: it, i_stage
   
-  ! Local variables.
+  ! Local Variables.
   real(kind=CUSTOM_REAL) :: temp_sourcewxlwzljacobianl
   integer :: i, j, i_source, ispec, iglob, iglob_unique
   real(kind=CUSTOM_REAL) :: stf ! In order to store the source time function at current timestep outside the many loops.
+  
   do i_source = 1, NSOURCES ! Loop on sources.
     stf = source_time_function(i_source, it, i_stage) ! Store the source time function outside the many loops.
-    
     if(USE_SPREAD_SSF) then
       ! Case in which a source spatially distributed over more than one element was initialised.
       do ispec = 1, nspec
@@ -381,18 +377,21 @@ subroutine compute_add_sources_acoustic_DG_mass(d_rho, d_rhovx, d_rhovz, d_E, rh
           enddo
         endif
       enddo
+      
     else
       if(myrank==0) then
-        write(*,*) "********************************"
-        write(*,*) "*            ERROR             *"
-        write(*,*) "********************************"
-        write(*,*) "* Mass source is not yet       *"
-        write(*,*) "* implemented with             *"
-        write(*,*) "* USE_SPREAD_SSF=.false.. See  *"
-        write(*,*) "* compute_add_sources_acoustic_DG.f90."
-        write(*,*) "********************************"
+        write(*, *) "********************************"
+        write(*, *) "*            ERROR             *"
+        write(*, *) "********************************"
+        write(*, *) "* Mass source is not yet       *"
+        write(*, *) "* implemented with             *"
+        write(*, *) "* USE_SPREAD_SSF=.false.. See  *"
+        write(*, *) "* compute_add_sources_acoustic_DG.f90."
+        write(*, *) "********************************"
         stop
       endif
+      
     endif ! Endif on SIGMA_SSF.
   enddo ! Enddo on i_source.
 end subroutine compute_add_sources_acoustic_DG_mass
+
