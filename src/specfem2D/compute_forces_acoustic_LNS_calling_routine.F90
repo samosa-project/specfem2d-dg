@@ -150,21 +150,6 @@ subroutine compute_forces_acoustic_LNS_main()
     aux_e1 = LNS_scheme_A(i_stage)*aux_e1 + deltat*RHS_e1
     LNS_e1 = LNS_e1 + LNS_scheme_B(i_stage)*aux_e1
   endif
-
-! ************************* !
-! TODO: MARKED FOR DELETION !
-! ************************* !
-#if 0
-  ! PML, iterate ADEs.
-  if(PML_BOUNDARY_CONDITIONS) then
-    LNS_PML_aux(:, :, :) = LNS_scheme_A(i_stage)*LNS_PML_aux(:, :, :) + deltat*LNS_PML_RHS(:, :, :)
-    LNS_PML(:, :, :)     = LNS_PML(:, :, :) + LNS_scheme_B(i_stage)*LNS_PML_aux(:, :, :)
-    LNS_PML(1,5:6,:)   = ZEROcr ! for q=rho', G=0, thus no convolution, thus no need for aux vars. This is something of a hack.
-  endif
-#endif
-! ************************* !
-! TODO: MARKED FOR DELETION !
-! ************************* !
   
   ! Check linear hypothesis.
   if(check_linear_hypothesis) call LNS_warn_nonsense()
@@ -319,61 +304,6 @@ subroutine damp_solution_LNS(drho, rho0dv, dE)
     endif
   enddo
 end subroutine damp_solution_LNS
-
-
-! ************************* !
-! TODO: MARKED FOR DELETION !
-! ************************* !
-#if 0
-subroutine LNS_PML_buildRHS(idQ, idR, iglobPML, beta, q)
-  ! TODO: select variables to use.
-  use constants
-  use specfem_par
-  use specfem_par_LNS
-  implicit none  
-  ! Input/Output.
-  integer, intent(in) :: idQ, idR, iglobPML
-  real(kind=CUSTOM_REAL), intent(in) :: beta
-  real(kind=CUSTOM_REAL), intent(in) :: q
-  ! Local.
-  ! N./A.
-  !dt(auxvar) = beta * auxvar - q
-  LNS_PML_RHS(idQ, idR, iglobPML) = beta*LNS_PML(idQ, idR, iglobPML) - q
-end subroutine LNS_PML_buildRHS
-
-subroutine LNS_PML_updateD0(d0cntrb, q, idQ, a1, a0, boa, b, Jac_L, iglobPML)
-  ! TODO: select variables to use.
-  use constants
-  use specfem_par
-  use specfem_par_LNS
-  implicit none  
-  ! Input/Output.
-  real(kind=CUSTOM_REAL), intent(inout) :: d0cntrb
-  real(kind=CUSTOM_REAL), intent(in) :: q, a1, a0, Jac_L
-  real(kind=CUSTOM_REAL), dimension(NDIM), intent(in) :: boa, b
-  integer, intent(in) :: idQ, iglobPML
-  ! Local.
-  ! N./A.
-  d0cntrb = a1 * d0cntrb
-  if(idQ==1) then
-    ! Nothing to add on G for rho' (idQ==1)
-    d0cntrb = d0cntrb - (   a0*q &
-                          + b(1)  *LNS_PML_RHS(1,1,iglobPML) & ! YU1
-                          + b(2)  *LNS_PML_RHS(1,2,iglobPML) & ! YU2
-                        )*Jac_L
-  else
-    d0cntrb = d0cntrb - (   a0*q &
-                          + boa(1)*LNS_PML_RHS(idQ,5,iglobPML) & ! G1
-                          + boa(2)*LNS_PML_RHS(idQ,6,iglobPML) & ! G2
-                          + b(1)  *LNS_PML_RHS(idQ,1,iglobPML) & ! YU1
-                          + b(2)  *LNS_PML_RHS(idQ,2,iglobPML) & ! YU2
-                        )*Jac_L
-  endif
-end subroutine LNS_PML_updateD0
-#endif
-! ************************* !
-! TODO: MARKED FOR DELETION !
-! ************************* !
 
 
 ! ------------------------------------------------------------ !
@@ -544,122 +474,6 @@ subroutine initial_state_LNS()
   IF(VALIDATION_MMS) call initialise_VALIDATION_MMS()
   
 end subroutine initial_state_LNS
-
-
-
-! ************************* !
-! TODO: MARKED FOR DELETION !
-! ************************* !
-#if 0
-! ------------------------------------------------------------ !
-! LNS_PML_init_coefs                                           !
-! ------------------------------------------------------------ !
-! Initialises coefficients needed for PML implementation.
-! Note: base coefficients ("K_*_store", "d_*_store", and "alpha_*_store" are initialised in pml_init.F90).
-
-subroutine LNS_PML_init_coefs()
-  ! TODO: select variables to use.
-  use constants
-  use specfem_par
-  use specfem_par_LNS
-  
-  implicit none
-  
-  ! Input/Output.
-  ! N/A.
-
-  ! Local.
-  real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEcr = 1._CUSTOM_REAL
-  integer :: i,j,ispec,ispec_PML
-  real(kind=CUSTOM_REAL), dimension(NDIM) :: pmlk, pmld, pmla
-  
-  ! Safeguards.
-  if(     (.not. allocated(LNS_PML_kapp)) &
-     .or. (.not. allocated(LNS_PML_alpha)) &
-     .or. (.not. allocated(LNS_PML_a0)) &
-     .or. (.not. allocated(LNS_PML_b)) &
-     .or. (.not. allocated(LNS_PML_d))) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* Some PML coefficients arrays *"
-    write(*,*) "* are not allocated but should *"
-    write(*,*) "* be. Warning occured in       *"
-    write(*,*) "* 'compute_forces_acoustic_LNS_calling_routine.F90',"
-    write(*,*) "* allocation should happen in  *"
-    write(*,*) "* 'prepare_timerun_pml.f90'.   *"
-    write(*,*) "********************************"
-    ! Should happen in 'prepare_timerun_pml.f90'.
-    stop
-  endif
-  if(.not. PML_BOUNDARY_CONDITIONS) then
-    write(*,*) "********************************"
-    write(*,*) "*            ERROR             *"
-    write(*,*) "********************************"
-    write(*,*) "* PML are not activated and    *"
-    write(*,*) "* you are trying to initialise *"
-    write(*,*) "* the parameters.              *"
-    write(*,*) "********************************"
-    stop
-  endif
-  
-  ! These arrays were allocated in prepare_timerun_pml.f90.
-  
-  ! Value.
-  do ispec=1,nspec
-    if(ispec_is_PML(ispec)) then
-      ispec_PML=spec_to_PML(ispec)
-      do j=1,NGLLZ
-        do i=1,NGLLX
-          ! Note: K_x_store, K_z_store, d_x_store, d_z_store, alpha_x_store, alpha_z_store are initialised in 'pml_init.F90'.
-          
-          LNS_PML_alpha(1,i,j,ispec_PML) = alpha_x_store(i,j,ispec_PML)
-          LNS_PML_alpha(2,i,j,ispec_PML) = alpha_z_store(i,j,ispec_PML)
-          !LNS_PML_alpha(1,i,j,ispec_PML) = LNS_PML_alpha(1,i,j,ispec_PML)
-          LNS_PML_alpha(2,i,j,ispec_PML) = LNS_PML_alpha(2,i,j,ispec_PML) + 0.001_CUSTOM_REAL ! TODO: check if this is necessary (must be in angles)
-          
-          LNS_PML_kapp(1,i,j,ispec_PML) = K_x_store(i,j,ispec_PML)
-          LNS_PML_kapp(2,i,j,ispec_PML) = K_z_store(i,j,ispec_PML)
-          
-          ! If 1<=LNS_PML_kapp<=2 linearly, we can transform it.
-          !write(*,*) 'minmax LNS_PML_kapp', minval(LNS_PML_kapp), maxval(LNS_PML_kapp) ! DEBUG
-          !LNS_PML_kapp(:,i,j,ispec_PML) = ONEcr - (ONEcr - 0.2_CUSTOM_REAL) &
-          !                     * (ONEcr - (ONEcr - (LNS_PML_kapp(:,i,j,ispec_PML)-ONEcr))**3.25_CUSTOM_REAL)**6._CUSTOM_REAL ! Arina's stretching
-          !LNS_PML_kapp(:,i,j,ispec_PML) = ONEcr/LNS_PML_kapp(:,i,j,ispec_PML)
-          
-          pmlk=LNS_PML_kapp(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
-          
-          LNS_PML_d(1,i,j,ispec_PML)=d_x_store(i,j,ispec_PML)
-          LNS_PML_d(2,i,j,ispec_PML)=d_z_store(i,j,ispec_PML)
-          pmld=LNS_PML_d(:,i,j,ispec_PML)
-          !pmld=0._CUSTOM_REAL ! test pure stretching
-          
-          pmla=LNS_PML_alpha(:,i,j,ispec_PML) ! Decrease performance, but increases readability.
-          
-          LNS_PML_a0(i,j,ispec_PML) = pmlk(1)*pmld(2) + pmlk(2)*pmld(1)
-          
-          if(abs(pmla(2)-pmla(1)) < TINYVAL) then
-            write(*,*) "|a2-a1| is very smol at ", coord(:, ibool_before_perio(i, j, ispec)), ": a1,a2=", pmla ! DEBUG
-          else
-            LNS_PML_b(1,i,j,ispec_PML) = - pmla(1)*pmld(1) * (   pmlk(2) &
-                                                               - pmld(2)/(pmla(1)-pmla(2)) )
-            LNS_PML_b(2,i,j,ispec_PML) = - pmla(2)*pmld(2) * (   pmlk(1) &
-                                                               + pmld(1)/(pmla(1)-pmla(2)) )
-          endif
-          
-          if(abs(coord(1, ibool_before_perio(i, j, ispec)))<TINYVAL) & ! Monitor slice at x==0. ! DEBUG
-            write(*,*) coord(2, ibool_before_perio(i, j, ispec)), ": kap=", pmlk, "d=", pmld, "alpha=", pmla, & ! DEBUG
-                       "a0=", LNS_PML_a0(i,j,ispec_PML), "b=",LNS_PML_b(:,i,j,ispec_PML) ! DEBUG
-        enddo
-      enddo
-    endif
-  enddo
-end subroutine LNS_PML_init_coefs
-#endif
-! ************************* !
-! TODO: MARKED FOR DELETION !
-! ************************* !
 
 
 ! ------------------------------------------------------------ !
