@@ -113,7 +113,7 @@ end subroutine compute_add_sources_acoustic_DG_backward
 ! ------------------------------------------------------------ !
 ! compute_add_sources_acoustic_DG_backward_real                !
 ! ------------------------------------------------------------ !
-! Add sources in the backward method.
+! Same as 'compute_add_sources_acoustic_DG_backward', but over the whole DG mesh (nglob_DG instead of nglob).
   
 subroutine compute_add_sources_acoustic_DG_backward_real(it_tmp, b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E)
 
@@ -128,7 +128,7 @@ subroutine compute_add_sources_acoustic_DG_backward_real(it_tmp, b_dot_rho, b_do
 
   ! Input/Output.
   integer :: it_tmp
-  real(kind=CUSTOM_REAL), dimension(nglob) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: b_dot_rho, b_dot_rhovx, b_dot_rhovz, b_dot_E
   
   ! Local Variables.
   integer :: irec_local, irec, i, j, iglob
