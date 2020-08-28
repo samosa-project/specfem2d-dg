@@ -21,8 +21,8 @@ SPCFM_EX_DIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-prefix = 'validation_lns_manufactured';
-savefigpath = [SPCFM_EX_DIR,prefix,'_info/'];
+prefix = 'validation__lns_manufactured';
+savefigpath = [SPCFM_EX_DIR,prefix,'_results/'];
 err_l2.name = '$L^2$ Error';
 err_l2.symbol = ['varepsilon'];
 err_rel.name = 'Relative Error';

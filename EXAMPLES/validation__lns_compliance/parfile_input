@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 4
+NPROC                           = 72
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -35,9 +35,10 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 100000
+# (40e3*sqrt(2)/200) / 2.5e-3 = 1.13e5
+NSTEP                           = 10000 #300000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 5e-6
+DT                              = 1.0d-3
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -63,7 +64,7 @@ GPU_MODE                        = .false.
 #   external:    define model using 'define_external_model' subroutine.
 #   legacy:      read model from 'model_velocity.dat_input'.
 #   external_DG: read DG model from 'atmospheric_model.dat' (generated with 'utils_new/Atmospheric_Models/Earth/wrapper/msisehwm'), and other models with "Velocity and Density Models" below.
-MODEL                           = default
+MODEL                           = external_DG
 
 # Output the model with the requested type, does not save if turn to default
 SAVE_MODEL                      = default
@@ -76,7 +77,7 @@ SAVE_MODEL                      = default
 #---------------------------------------------------------------------#
 
 # attenuation parameters
-ATTENUATION_VISCOELASTIC_SOLID  = .false.        # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
+ATTENUATION_VISCOELASTIC_SOLID  = .false.         # Turn on or off viscoelastic attenuation for non-poroelastic solid parts of the model.
 ATTENUATION_PORO_FLUID_PART     = .false.        # Poroelastic materials only. Turn on or off viscous attenuation for the fluid part of poroelastic parts of the model.
 Q0                              = 1              # Poroelastic materials only. Quality factor for the viscous attenuation.
 freq0                           = 0.05           # Poroelastic materials only. Frequency for the viscous attenuation.
@@ -110,7 +111,7 @@ USE_ISOTHERMAL_MODEL            = .false.        # Isothermal (.true.) or isobar
 SCALE_HEIGHT                    = 10000.         # Only used if USE_ISOTHERMAL_MODEL==.true.. Scale height for exponential decrease of density. Unit: m.
 surface_density                 = 1.4            # $\rho_0$. Unit: kg.m^{-3}. If USE_ISOTHERMAL_MODEL==.true., corresponds to $\rho_0$ in the formulation. If USE_ISOTHERMAL_MODEL==.false., $\rho(z)=\rho_0$ for all $z$.
 sound_velocity                  = 340.0          # $c$. Unit: m.s^{-1}. Only used if USE_ISOTHERMAL_MODEL==.false. (isobaric case) to compute p as c^2*\rho/\gamma. If USE_ISOTHERMAL_MODEL==.true., the speed of sound is not explicitely calculated, but can be obtained back using c^2=\gamma*p/\rho.
-wind                            = 10.0           # Horizontal wind. Unit: m.s^{-1}.
+wind                            = 0.0            # Horizontal wind. Unit: m.s^{-1}.
 gravity                         = 9.81           # Only used if USE_ISOTHERMAL_MODEL==.true.. If USE_ISOTHERMAL_MODEL==.false. (isobaric case), since one needs to stay hydrostatic, the gravity field needs to stay 0 and is thus forced to 0.
 dynamic_viscosity               = 0.0            # $\mu$, dynamic viscosity. Unit: kg.s^{-1}.m^{-1}. Choose 1.25d-5 for dry air at 20 °C.
 thermal_conductivity            = 0.0            # $\kappa$, thermal conductivity. Unit: kg.m.s^{-3}.K^{-1}. Choose 0.025 for dry air at 20 °C.
@@ -143,7 +144,7 @@ ABC_STRETCH_RIGHT_LBUF  = 10.                    # Length of the buffer used for
 # Source spatial function.
 USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
 SPREAD_SSF_SAVE  = .false.                       # Can generate many files when using many CPUs, and huge files when using many elements, use with caution. Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
-SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r (the distance to the center) and SPREAD_SSF_SIGMA are given in meters. A good rule of thumb is to take at least 1/3 of the mesh size at the source for this parameter.
+SPREAD_SSF_SIGMA = 30.                           # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r is the distance to the center, and SPREAD_SSF_SIGMA is given in meters.
 
 # Source time function.
 REMOVE_STF_INITIAL_DISCONTINUITY=.true.         # Only used if USE_TRICK_FOR_BETTER_PRESSURE==.false. and time_function_type==3 (see source_input). Analytically removes the discontinuity introduced at initial time (since Gaussians have non-compact support). Alternatively, leave this to .false. and set USER_T0 to a better value (see below).
@@ -202,7 +203,7 @@ subsamp_seismos                 = 1
 USE_TRICK_FOR_BETTER_PRESSURE   = .false.
 
 # Time steps between seismograms saving. The seismograms are automatically saved once at the end of the run anyway. A good rule of thumb would be NSTEP = (f0 * dt * Np)^{-1} in order to have Np points per period, where f0 is the fundamental frequency of the source time function.
-NSTEP_BETWEEN_OUTPUT_SEISMOS    = 1000000000
+NSTEP_BETWEEN_OUTPUT_SEISMOS    = 100
 
 # Compute the field int_0^t v^2 dt for a set of GLL points and write it to file. Use
 # the script utils/visualisation/plotIntegratedEnergyFile.py to watch. It is refreshed at the same time than the seismograms. Points in the stretching buffers (in DG elements) are not taken into account.
@@ -225,24 +226,32 @@ SU_FORMAT                       = .false.        # Single precision binary in Se
 use_existing_STATIONS           = .false.
 
 # Number of receiver sets (i.e. number of receiver lines to create below).
-nreceiversets                   = 1
+nreceiversets = 3
+# Orientation
+anglerec              = 0.0d0   # Angle to rotate components at receivers.
+rec_normal_to_surface = .false. # Base anglerec normal to surface (external mesh and curve file needed).
+# source
+nrec = 1
+xdeb =                 0
+zdeb =               150
+xfin =                 0
+zfin =               150
+record_at_surface_same_vertical = .false.
 
-# Orientation.
-anglerec                        = 0.0d0          # Angle to rotate components at receivers.
-rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
-
-# First receiver set: number of receivers, first receiver's x coordinate in meters, first receiver's z coordinate in meters, last receiver's x coordinate in meters (ignored if 1 receiver), and last receiver's z coordinate in meters (ignored if 1 receiver).
-nrec                            =   1
-xdeb                            =   0.33d0
-zdeb                            =   0.33d0
-xfin                            =   0.0d0
-zfin                            =   0.0d0
-record_at_surface_same_vertical = .false.        # Receivers inside the medium? If set to false, receivers at the surface. For DG, leave this to .false. or be sure of what you're doing.
-
-# N.B.: If stations are demanded too close to the fluid-solid interface in DG simulations, SPECFEM2D-DG will sometimes WRONGLY detect in which material the station actually is. This is true for stations on the solid side as well as for stations on the fluid side. See detailed ranting in source file 'locate_receivers.f90'. The easiest solution is to always make sure that:
-#  1) Stations in fluid are such that z > 0.5*0.1727*(DZ_{fluid}-DZ_{solid}), and
-#  2) Stations in solid are such that z < 0.5*0.1727*(DZ_{fluid}-DZ_{solid}),
-# where DZ_{fluid} is the vertical dimension of the first layer of fluid elements, and DZ_{solid} is the vertical dimension of the first layer of solid elements.
+# horizontal over ground
+nrec = 3
+xdeb =             -2000
+zdeb =                 5
+xfin =              2000
+zfin =                 5
+record_at_surface_same_vertical = .false.
+# horizontal under ground
+nrec = 3
+xdeb =             -2000
+zdeb =                -5
+xfin =              2000
+zfin =                -5
+record_at_surface_same_vertical = .false.
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -267,11 +276,11 @@ ROTATE_PML_ACTIVATE             = .false.
 ROTATE_PML_ANGLE                = 30.0d0
 
 # Stacey absorbing boundary conditions?
-STACEY_ABSORBING_CONDITIONS     = .false. # Stacey conditions are not supported for AXISYM.
+STACEY_ABSORBING_CONDITIONS     = .true. # Stacey conditions are not supported for AXISYM.
 
 # Periodic boundary conditions?
-ADD_PERIODIC_CONDITIONS         = .false. # Periodic conditions are not supported for AXISYM.
-PERIODIC_HORIZ_DIST             = 100.d0
+ADD_PERIODIC_CONDITIONS         = .true. # Periodic conditions are not supported for AXISYM.
+PERIODIC_HORIZ_DIST             = 4200
 
 
 #---------------------------------------------------------------------#
@@ -280,7 +289,7 @@ PERIODIC_HORIZ_DIST             = 100.d0
 #                                                                     #
 #---------------------------------------------------------------------#
 # Number of models.
-nbmodels                        = 1
+nbmodels                        = 2
 # Models' description.
 # Available material types (see user manual for more information):
 #   acoustic:    model_number 1  rho  Vp   0   0   0   QKappa Qmu 0   0   0   0    0    0
@@ -289,7 +298,10 @@ nbmodels                        = 1
 #   poroelastic: model_number 3  rhos rhof phi c   kxx kxz    kzz Ks  Kf  Kfr etaf mufr Qmu
 #   tomo:        model_number -1 0    0    A   0   0   0      0   0   0   0   0    0    0
 # Remark: for elastic media, Vp and Vs must be the unrelaxed velocities (following the viscoelastic behaviour at infinite frequency). Attenuation can be taken into account by setting the parameters from the 'Attenuation' section above as wanted.
-1 1 1.164 349.0d0 0.0d0 0 0 10.0d0 10.0d0 0 0 0 0 0 0
+1 1    1.63458958d-2 235.137573    0. 0 0  10.  10. 0 0 0 0 0 0
+#2 1 1710.  420.  270. 0 0  10.  10. 0 0 0 0 0 0 # th=100m, [10.1007/s11214-017-0339-7, Table 4] DWAKr @z=-10m
+#3 1 2300. 2700. 1500. 0 0 100. 100. 0 0 0 0 0 0 # th=900m
+2 1 3100. 5400. 3117. 0 0 300. 300. 0 0 0 0 0 0 # th=  4km
 
 # External tomography file.
 TOMOGRAPHY_FILE                 = ./DATA/tomo_file.xyz
@@ -331,15 +343,15 @@ interfacesfile                  = ../interfaces_input
 # Geometry of the model       #
 #-----------------------------#
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
-xmin                            =  0.0d0
-xmax                            =  1.0d0
-nx                              = 25
+xmin                            = -2100
+xmax                            =  2100
+nx                              =    42
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
-absorbbottom                    = .false.
-absorbright                     = .false.
+absorbbottom                    = .true.
+absorbright                     = .true. # Left/right ABC override periodic boundary conditions, be sure of what you do if you use both at the same time.
 absorbtop                       = .false.
-absorbleft                      = .false. # Absorbing boundary conditions on the left side are not supported for AXISYM, since the left boundary is the axis of symmetry.
+absorbleft                      = .true. # Left/right ABC override periodic boundary conditions, be sure of what you do if you use both at the same time. Left ABC is not supported for AXISYM, since the left boundary is defined as the axis of symmetry.
 
 #-----------------------------#
 # Definition of the different #
@@ -348,10 +360,12 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 # mesh.                       #
 #-----------------------------#
 # Number of regions.
-nbregions                       = 1
-# Set the different regions and model number for each region. Format:
-# startingXElement endingXElement startingZElement endingZElement modelNumber
-1 25 1 25 1
+nbregions = 5
+1 42  1   2 2 # Solid layer n° 1 (from z =  -5000 to z =      0, dz =     74.627). FOR STATIONS IN SOLID AND VERY CLOSE TO THE INTERFACE, MAKE SURE THEIR Z IS < -3.56570e+00
+1 42  3  17 1 # Air   layer n° 1 (from z =      0 to z =    500, dz =     33.333). FOR STATIONS IN FLUID AND VERY CLOSE TO THE INTERFACE, MAKE SURE THEIR Z IS > -3.56570e+00
+1 42 18  32 1 # Air   layer n° 2 (from z =    500 to z =   1000, dz =     33.333).
+1 42 33  47 1 # Air   layer n° 3 (from z =   1000 to z =   1500, dz =     33.333).
+1 42 48  62 1 # Air   layer n° 4 (from z =   1500 to z =   2000, dz =     33.333).
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -360,7 +374,7 @@ nbregions                       = 1
 #---------------------------------------------------------------------#
 
 # Time steps between display of information about the simulation (percentage done, estimated remaining time, etc.).
-NSTEP_BETWEEN_OUTPUT_INFO       = 5000
+NSTEP_BETWEEN_OUTPUT_INFO       = 200
 
 # Generate a GNUPLOT file containing the grid, and a script to plot it?
 output_grid_Gnuplot             = .false.
@@ -368,11 +382,6 @@ output_grid_Gnuplot             = .false.
 output_grid_ASCII               = .false.
 # Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .false.
-# For acoustic domains only (to generalise it to the other domains, edit 'compute_energy.f90'). Restrict energy integration to a box defined below. If all set to 0., does nothing and integrates over whole domain (as classically done). Nonsense cannot happen (ENERGYBOX_ZMIN>ENERGYBOX_ZMAX or whatever will stop program). If limit is set outside of domain (e.g. ENERGYBOX_ZMAX >= mesh_zmax), won't cut anything. See 'compute_energy.f90'.
-ENERGYBOX_XMIN = 0.
-ENERGYBOX_XMAX = 0.
-ENERGYBOX_ZMIN = 0.
-ENERGYBOX_ZMAX = 0.
 
 #---------------------------------------------------------------------#
 #                                                                     #
@@ -381,10 +390,10 @@ ENERGYBOX_ZMAX = 0.
 #---------------------------------------------------------------------#
 
 # Time steps between JPEG and/or PostScript snapshots.
-NSTEP_BETWEEN_OUTPUT_IMAGES     = 20000
+NSTEP_BETWEEN_OUTPUT_IMAGES     = 2000
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
-NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 1000
+NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 200
 
 # Minimum amplitude kept (in %) for the JPEG and PostScript snapshots: amplitudes below that are muted.
 cutsnaps                        = 1.
@@ -395,7 +404,7 @@ cutsnaps                        = 1.
 output_color_image              = .true.         # Draw JPEG color snapshot?
 imagetype_JPEG                  = 5              #    display: 1=displ_Ux 2=displ_Uz 3=displ_norm 4=veloc_Vx 5=veloc_Vz 6=veloc_norm 7=accel_Ax 8=accel_Az 9=accel_norm 10=pressure 11=? 12=? 13=? 14=? 15=? 16=?
                                                  # DG display: 1=veloc_Vx 2=veloc_Vz 3=veloc_norm 4=Energy 5=pressure/density 6=temperature 7=density 8=sqrt(density)*veloc_Ux 9=sqrt(density)*veloc_Uz
-factor_subsample_image          = 1.0d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
+factor_subsample_image          = 2d0          # (double precision) factor to subsample color images output by the code (useful for very large models)
 USE_CONSTANT_MAX_AMPLITUDE      = .false.        # false: code normalises each snapshot independently to its maximum. true: use CONSTANT_MAX_AMPLITUDE_TO_USE instead
 CONSTANT_MAX_AMPLITUDE_TO_USE   = 0.5d0          # Constant normalising maximum amplitude to use for all color images if USE_CONSTANT_MAX_AMPLITUDE==.true..
 POWER_DISPLAY_COLOR             = 0.30d0         # non linear display to enhance small amplitudes in JPEG color images
@@ -414,11 +423,11 @@ boundvect                       = .true.         # display boundary conditions o
 interpol                        = .true.         # interpolation of the PostScript display on a regular grid inside each spectral element, or use the non-evenly spaced GLL points
 pointsdisp                      = 6              # number of points in each direction for interpolation of PostScript snapshots (set to 1 for lower-left corner only)
 subsamp_postscript              = 1              # subsampling of background velocity model in PostScript snapshots
-sizemax_arrows                  = 1.0d0          # maximum size of arrows on PostScript plots in centimeters
+sizemax_arrows                  = 1.0d0           # maximum size of arrows on PostScript plots in centimeters
 US_LETTER                       = .false.        # use US letter or European A4 paper for PostScript plots
 
 #### for wavefield dumps ####
-output_wavefield_dumps          = .true.         # output wave field to a text file every NSTEP_BETWEEN_OUTPUT_TEXT_DUMPS time steps (creates very big files)
-imagetype_wavefield_dumps       = 4              # display 1=displ vector 2=veloc vector 3=accel vector 4=pressure
+output_wavefield_dumps          = .false.        # output wave field to a text file every NSTEP_BETWEEN_OUTPUT_TEXT_DUMPS time steps (creates very big files)
+imagetype_wavefield_dumps       = 1              # display 1=displ vector 2=veloc vector 3=accel vector 4=pressure
 use_binary_for_wavefield_dumps  = .false.        # use ASCII or single-precision binary format for the wave field dumps
 

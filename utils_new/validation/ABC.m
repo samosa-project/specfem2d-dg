@@ -64,15 +64,15 @@ colours_runs = {colour_LAR, colour_FAF, colour_BUF};
 
 % Build database of OUTPUT_FILES locations.
 OFDIRS_strct = {}; DSPLNM_strct = {};
-OFDIRS_strct.PW = {}; bsnm = 'LNSABC_PW';
+OFDIRS_strct.PW = {}; bsnm = 'validation__lns_abc_PW';
 OFDIRS_strct.PW.LAR = [SPCFMEXloc,bsnm,LAR_ext]; DSPLNM_strct.LAR = LarRNam; LS_strct.LAR = '-';
 OFDIRS_strct.PW.FAF = [SPCFMEXloc,bsnm,FAF_ext]; DSPLNM_strct.FAF = FafRNam; LS_strct.FAF = '--';
 OFDIRS_strct.PW.BUF = [SPCFMEXloc,bsnm,BUF_ext]; DSPLNM_strct.BUF = BufRNam; LS_strct.BUF = ':';
-OFDIRS_strct.PS = {}; bsnm = 'LNSABC_PS';
+OFDIRS_strct.PS = {}; bsnm = 'validation__lns_abc_PS';
 OFDIRS_strct.PS.LAR = [SPCFMEXloc,bsnm,LAR_ext];
 OFDIRS_strct.PS.FAF = [SPCFMEXloc,bsnm,FAF_ext];
 OFDIRS_strct.PS.BUF = [SPCFMEXloc,bsnm,BUF_ext];
-OFDIRS_strct.WPS = {}; bsnm = 'LNSABC_WPS';
+OFDIRS_strct.WPS = {}; bsnm = 'validation__lns_abc_WPS';
 OFDIRS_strct.WPS.LAR = [SPCFMEXloc,bsnm,LAR_ext];
 OFDIRS_strct.WPS.FAF = [SPCFMEXloc,bsnm,FAF_ext];
 OFDIRS_strct.WPS.BUF = [SPCFMEXloc,bsnm,BUF_ext];

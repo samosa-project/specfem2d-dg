@@ -27,7 +27,7 @@ clc;
 SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
 addpath(genpath([SPCFMloc,'utils_new']));
 % factor_err = 100; % factor by which multiply difference in plots.
-prefix = 'validation_lns_fk';
+prefix = 'validation__lns_fk';
 % fignames
 savefigname_base = ['compare2FKanalytic'];
 savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',prefix,'_info/'];
