@@ -1,40 +1,9 @@
-!========================================================================
-!
-!                   S P E C F E M 2 D  Version 7 . 0
-!                   --------------------------------
-!
-!     Main historical authors: Dimitri Komatitsch and Jeroen Tromp
-!                        Princeton University, USA
-!                and CNRS / University of Marseille, France
-!                 (there are currently many more authors!)
-! (c) Princeton University and CNRS / University of Marseille, April 2014
-!
-! This software is a computer program whose purpose is to solve
-! the two-dimensional viscoelastic anisotropic or poroelastic wave equation
-! using a spectral-element method (SEM).
-!
-! This program is free software; you can redistribute it and/or modify
-! it under the terms of the GNU General Public License as published by
-! the Free Software Foundation; either version 2 of the License, or
-! (at your option) any later version.
-!
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-! GNU General Public License for more details.
-!
-! You should have received a copy of the GNU General Public License along
-! with this program; if not, write to the Free Software Foundation, Inc.,
-! 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-!
-! The full text of the license is available in file "LICENSE".
-!
-!========================================================================
-
 ! ------------------------------------------------------------ !
 ! lns_load_background_model                                    !
 ! ------------------------------------------------------------ !
-! Read values of model and interpolate on current grid.
+! Read values of a 2D model and match them on the current mesh.
+! Interpolate using a Delaunay triangulation if needed (though quite unstable with ugly meshes).
+! Simply match if the model's mesh and the current mesh exactly match.
 
 subroutine lns_load_background_model(nlines_header, nlines_model)
 
@@ -56,7 +25,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   real(kind=CUSTOM_REAL), parameter :: TWOcr = 2._CUSTOM_REAL
   real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model) :: X_m, v_model
   real(kind=CUSTOM_REAL), dimension(nlines_model) :: rho_model, p_model, g_model, gam_model, mu_model, kappa_model
-  integer, dimension(nglob) :: id_line_model ! Maps (i, j, ispec) to corresponding line of model, if the model agrees with the current mesh.
+  integer, dimension(nglob) :: idL_m ! Maps (i, j, ispec) to corresponding line of model, if the model agrees with the current mesh.
   
   ! Safeguard.
   if(.not. USE_DISCONTINUOUS_METHOD) then
@@ -93,8 +62,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   
   ! Read and store values of model.
   call lns_read_background_model(nlines_header, nlines_model, X_m, &
-                                 rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
-                                )
+                                 rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model)
   
   ! Initialise initial state registers.
   LNS_rho0   = ZEROcr
@@ -113,7 +81,7 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   
   ! Check whether current mesh agrees with model mesh (in which case, no interpolation is needed).
   meshes_agree = .false.
-  call do_meshes_agree(nlines_model, X_m, meshes_agree, id_line_model)
+  call do_meshes_agree(nlines_model, X_m, meshes_agree, idL_m)
   
   if(meshes_agree) then
     if(myrank==0) then
@@ -121,15 +89,14 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
     endif
     call apply_model_to_mesh(nlines_model, X_m, &
                              rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model, &
-                             id_line_model)
+                             idL_m)
   else
     ! If mesh does not agree with model, perform linear interpolation.
     if(myrank==0) then
       write(*,*) "> Performing a 2D linear interpolation on the Delaunay triangulation of the provided model points."
     endif
     call delaunay_interp_all_points(nlines_model, X_m, &
-                                    rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model &
-                                   )
+                                    rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model)
   endif
   
   ! Deduce remaining quantities.    
@@ -149,8 +116,8 @@ subroutine lns_load_background_model(nlines_header, nlines_model)
   endif
   
   ! Eventually save interpolated model.
-  !call output_lns_interpolated_model()
-  call output_lns_interpolated_model_binary()
+  !call output_lns_interpolated_model() ! To ASCII (human-readable but very heavy).
+  call output_lns_interpolated_model_binary() ! To binary.
   
 end subroutine lns_load_background_model
 
@@ -158,9 +125,12 @@ end subroutine lns_load_background_model
 ! ------------------------------------------------------------ !
 ! do_meshes_agree                                              !
 ! ------------------------------------------------------------ !
-! TODO: description
+! Checks if the given model mesh (xmodel) matches with the current SPECFEM mesh.
+! Runs through the current mesh, and for each point of interest loop on all points of the model to find a possible match.
+! This is very sub-optimal, but works alright.
+! Produces a mapping table along the way, mapping (i, j, ispec) to the corresponding line of model.
 
-subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
+subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, idL_m)
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: nspec, nglob, coord, ispec_is_elastic, ispec_is_acoustic_DG, ibool_before_perio, coord_interface
   use specfem_par_lns, only: norm2r1
@@ -171,7 +141,7 @@ subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
   integer, intent(in) :: nlines_model
   real(kind=CUSTOM_REAL), dimension(NDIM, nlines_model), intent(in) :: xmodel
   logical, intent(out) :: meshes_agree
-  integer, dimension(nglob), intent(out) :: id_line_model ! Maps (i, j, ispec) to corresponding line of model.
+  integer, dimension(nglob), intent(out) :: idL_m ! Maps (i, j, ispec) to corresponding line of model.
   
   ! Local variables.
   real(kind=CUSTOM_REAL), parameter :: ZEROcr = 0._CUSTOM_REAL
@@ -179,7 +149,7 @@ subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
   logical, dimension(nglob) :: FOUND
   
   FOUND = .false.
-  id_line_model = 0
+  idL_m = 0
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
@@ -193,27 +163,22 @@ subroutine do_meshes_agree(nlines_model, xmodel, meshes_agree, id_line_model)
           cur_ibool = ibool_before_perio(i, j, ispec)
           if(norm2r1(xmodel(:, k)-(coord(:, cur_ibool)-(/ZEROcr, coord_interface/)))<=TINYVAL) then
             FOUND(cur_ibool) = .true.
-            id_line_model(cur_ibool) = k
-          !else
-          !  write(*,*) 'pt', ispec, i, j, '(',(coord(:, ibool(i, j, ispec))-(/0._CUSTOM_REAL, coord_interface/)),')', &
-          !             k, '(', xmodel(:, k) ,'):', &
-          !             norm2r1(xmodel(:, k)-(coord(:, ibool(i, j, ispec))-(/0._CUSTOM_REAL, coord_interface/)))
+            idL_m(cur_ibool) = k
           endif
         enddo
-        !if(.not.(FOUND(cur_ibool))) then
-        !  write(*,*) 'did not find pt', ispec, i, j, '(',(coord(:, cur_ibool)-(/0._CUSTOM_REAL, coord_interface/)),')'
-        !endif
       enddo; enddo
     endif
   enddo
-  ! Meshes agree if all points (in this slice) were found in the model.
+  ! Meshes agree if all points (in this CPU) were found in the model.
   meshes_agree = all(FOUND)
 end subroutine do_meshes_agree
+
 
 ! ------------------------------------------------------------ !
 ! apply_model_to_mesh                                          !
 ! ------------------------------------------------------------ !
-
+! Used if the meshes agreed.
+! Simply maps the loaded model to the current SPECFEM mesh, using the previously computed mapping.
 
 subroutine apply_model_to_mesh(nlines_model, X_m, &
                                rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m, &
@@ -241,7 +206,7 @@ subroutine apply_model_to_mesh(nlines_model, X_m, &
   
   do ispec = 1, nspec
     if(ispec_is_elastic(ispec)) then
-      cycle ! Elastic regions are treated separately (see call to 'external_DG_update_elastic_from_parfile' below).
+      cycle ! Elastic regions are treated separately (see call to 'external_DG_update_elastic_from_parfile' in the 'lns_load_background_model' routine).
     elseif(ispec_is_acoustic_DG(ispec)) then
       ! For DG elements, go through GLL points one by one.
       do j = 1, NGLLZ; do i = 1, NGLLX
@@ -278,14 +243,16 @@ end subroutine apply_model_to_mesh
 ! ------------------------------------------------------------ !
 ! lns_read_background_model                                    !
 ! ------------------------------------------------------------ !
-! Read and store values of model.
-! The model file, if ASCII, should have the following format:
+! Read and store values of model from the expected file name (BCKGRD_MDL_LNS_FILENAME from specfem_par_lns).
+! If the model file is ASCII (BCKGRD_MDL_LNS_is_binary==.false.), it should have the following format:
 ! --- file begin
 !   //header whatever//
 !   //header whatever//
 !   //header whatever//
 !   x[m] z[m] rho0[kg.m^{-3}] v0x[m.s^{-1}] v0z[m.s^{-1}] p0[Pa] g[m.s^{-2}] gamma[1] mu[kg.m^{-1}.s^{-1}] kappa[m.kg.s^{-3}.K{-1}]
 ! --- file end
+! If the model file is binary (BCKGRD_MDL_LNS_is_binary==.true.), the number of lines should have been read before (see nlines_model variable which is an input), and this routine will simply read from the binary stream.
+! The Matlab script './utils_new/lns_background_models/write_bg_model.m' allows the printing of models matching the aforementionned requirements.
 
 subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
                                      rho_model, v_model, p_model, g_model, gam_model, mu_model, kappa_model)
@@ -328,9 +295,6 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
       read(100, iostat=io) X_m(1, i), X_m(NDIM, i), &
                            rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
                            g_model(i), gam_model(i), mu_model(i), kappa_model(i)
-!      write(*,*) X_m(1, i), X_m(NDIM, i), &
-!                 rho_model(i), v_model(1, i), v_model(NDIM, i), p_model(i), &
-!                 g_model(i), gam_model(i), mu_model(i), kappa_model(i), io
     enddo
 
   else
@@ -362,14 +326,14 @@ subroutine lns_read_background_model(nlines_header, nlines_model, X_m, &
   close(100)
 end subroutine lns_read_background_model
 
+
 ! ------------------------------------------------------------ !
 ! delaunay_interp_all_points                                   !
 ! ------------------------------------------------------------ !
-
+! Interpolate the model on the SPECFEM mesh using a Delaunay triangulation.
 
 subroutine delaunay_interp_all_points(nlines_model, X_m, &
-                                      rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
-                                     )
+                                      rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m)
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
   !use specfem_par_lns, only: USE_LNS
   use specfem_par, only: myrank, nspec, ispec_is_elastic, ispec_is_acoustic_DG
@@ -403,8 +367,7 @@ subroutine delaunay_interp_all_points(nlines_model, X_m, &
       ! For DG elements, go through GLL points one by one.
       do j = 1, NGLLZ; do i = 1, NGLLX
           call delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
-                                              rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
-                                             )
+                                              rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m)
       enddo; enddo
     else
       ! Neither elastic nor acoustic_dg.
@@ -423,7 +386,8 @@ end subroutine delaunay_interp_all_points
 ! ------------------------------------------------------------ !
 ! delaunay_background_model_2d                                 !
 ! ------------------------------------------------------------ !
-
+! Compute the Delaunay triangulation of a given model.
+! This uses the external module 'dtris2' in the 'table_delaunay.f90' file.
 
 subroutine delaunay_background_model_2d(nlines_model, X_m, tri_num, tri_vert, tri_nabe)
   use constants, only: CUSTOM_REAL, NDIM
@@ -455,10 +419,19 @@ end subroutine delaunay_background_model_2d
 ! ------------------------------------------------------------ !
 ! delaunay_interpolate_one_point                               !
 ! ------------------------------------------------------------ !
+! Given a Delaunay triangulation, interpolate one value.
+! Algorithm:
+!   for each triangles in the triangulation,
+!     if the queried point is in the triangle,
+!       perform a barycentric interpolation using the three vertices of the triangle;
+!     else, skip to next triangle.
+! This type of interpolation is dodgy, because it is only C^1 per triangle, and only C^0 across triangles.
+! In other words, derivative discontinuities might (and surely will) occur across the triangle edges.
+! It is best to avoid doing this, and generate a model exactly matching the SPECFEM mesh.
+! TODO, alternatively: a nicer interpolation algorithm making use of the triangulation and of the neighbouring triangles.
 
 subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, ispec, i, j, &
-                                          rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m &
-                                         )
+                                          rho_m, v_m, p_m, g_m, gam_m, mu_m, kappa_m)
   use constants, only: CUSTOM_REAL, NDIM, TINYVAL
   use specfem_par_lns, only: LNS_rho0, LNS_v0, LNS_p0, LNS_g, LNS_mu, LNS_kappa, LNS_c0
   use specfem_par, only: ibool, ibool_DG, coord, coord_interface, gammaext_dg, rhoext, vpext, myrank
@@ -496,34 +469,15 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
   iglobDG = ibool_DG(i, j, ispec)
   
   do t = 1, tri_num
-!    write(*,*) "Triangle ", t, " vertices (IDs [", tri_vert(1:3, t),"]): "
     do v = 1, 3
       local_vertice_list(v, 1:NDIM) = X_m(1:NDIM, tri_vert(v, t))
-!      write(*,*) "                           ", local_vertice_list(v, 1:NDIM)
     enddo
-    
-!    if(point_is_in_triangle(local_vertice_list, point_to_test)) then
-!      found = .true.
-!      write(*,*) "Point (",point_to_test,") is in triangle n°", t,". Performing barycentric interpolation."
-!      container_triangle = t
-!      call barycentric_coordinates_2d(local_vertice_list, point_to_test, barycor)
-!      ! https://codeplea.com/triangular-interpolation
-!      return
-!    endif
     
     call barycentric_coordinates_2d(local_vertice_list, point_to_test, inTri, barycor)
     
     if(inTri) then
       ! Point is inside triangle.
       loctri_vertices_ids = tri_vert(1:3, t)
-!      write(*,*) "Point (",coord(1:NDIM, ibool(i, j, ispec)),") is     in tri. n°", t," (barcoor. = [", barycor,"])."
-!      write(*,*) "Performing barycentric interpolation." ! https://codeplea.com/triangular-interpolation
-!      write(*,*) "Vertices of this triangle are model points n°[", loctri_vertices_ids, "]."
-!      write(*,*) "Positions of those vertices are: [", local_vertice_list(1, 1:NDIM), "],"
-!      write(*,*) "                                 [", local_vertice_list(2, 1:NDIM), "],"
-!      write(*,*) "                                 [", local_vertice_list(3, 1:NDIM), "]."
-!      write(*,*) "Values of p_model at those points are: [", p_m(loctri_vertices_ids), "]."
-!      write(*,*) "Weighted value is (p_model[v1 v2 v3].[barycor(1) barycor(2) barycor(3)]) = ", DOT_PRODUCT(p_m(loctri_vertices_ids), barycor), "."
       LNS_rho0(iglobDG)    = DOT_PRODUCT(barycor, rho_m(loctri_vertices_ids))
       do v = 1, NDIM
         LNS_v0(v, iglobDG) = DOT_PRODUCT(barycor, v_m(v, loctri_vertices_ids))
@@ -533,14 +487,6 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
       gammaext_DG(iglobDG) = DOT_PRODUCT(barycor, gam_m(loctri_vertices_ids))
       LNS_mu(iglobDG)      = DOT_PRODUCT(barycor, mu_m(loctri_vertices_ids))
       LNS_kappa(iglobDG)   = DOT_PRODUCT(barycor, kappa_m(loctri_vertices_ids))
-      !vpext(i, j, ispec) = vp_model(1)
-      !Nsqext(i, j, ispec) = Nsq_model(1)
-      !vsext(i, j, ispec) = ZERO
-      !Qmu_attenuationext(i, j, ispec) = HUGEVAL
-      !QKappa_attenuationext(i, j, ispec) = HUGEVAL
-      !Htabext_DG(indglob_DG) = Htab_model(1)
-      !tau_sigma(i, j, ispec) = tau_sigma_model(i)
-      !tau_epsilon(i, j, ispec) = tau_epsilon_model(i)
       
       ! Sanity checks.
       if(LNS_rho0(iglobDG) <= TINYVAL) then
@@ -565,7 +511,6 @@ subroutine delaunay_interpolate_one_point(nlines_model, X_m, tri_num, tri_vert, 
       return
     else
       ! Point is outside triangle, go to next triangle.
-!      write(*,*) "Point (",point_to_test,") is not in tri. n°", t," (barcoor. = [", barycor,"])."
       cycle
     endif
   enddo
@@ -639,14 +584,13 @@ subroutine barycentric_coordinates_2d(vlist, P, inTri, barycor)
   barycor(3) = 1. - sum(barycor(1:2))
   if(barycor(3)<-TINYVAL) return ! Point is outside triangle, stop and return.
   inTri = .true. ! No return command was hit before, hence point can be considered in triangle.
-  !write(*,*) "Barycentric coordinates = (", l1, l2, l3, ")."
 end subroutine barycentric_coordinates_2d
 
 
 ! ------------------------------------------------------------ !
 ! output_lns_interpolated_model                                !
 ! ------------------------------------------------------------ !
-! Outputs the loaded model in full to a file, for checking/plotting purposes.
+! Outputs the loaded model in full to an ASCII file, for checking/plotting purposes.
 
 subroutine output_lns_interpolated_model()
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ
@@ -676,6 +620,13 @@ subroutine output_lns_interpolated_model()
                "view([0,0,1]);shading flat;colorbar;title(lab{i});end;"
   endif
 end subroutine output_lns_interpolated_model
+
+
+! ------------------------------------------------------------ !
+! output_lns_interpolated_model_binary                         !
+! ------------------------------------------------------------ !
+! Same as 'output_lns_interpolated_model', but to a binary file.
+! Use the Matlab script './utils_new/lns_background_models/load_bg_model.m' to read the output file.
 
 subroutine output_lns_interpolated_model_binary()
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, SIZE_DOUBLE
@@ -709,13 +660,6 @@ subroutine output_lns_interpolated_model_binary()
     enddo
   enddo
   close(THEUNIT)
-  if(myrank==0) then
-    write(*,*) "> > Dumped interpolated model (on proc 0) to './OUTPUT_FILES/LNS_GENERAL_MODEL_*'. ", &
-               "Use the following Matlab one-liner to plot:"
-  endif
-  write(*,*) "    plot_bg_model(load_bg_model('OUTPUT_FILES/LNS_GENERAL_MODEL_000.bin', ",&
-             int(sum(merge(1.d0, 0.d0, mask_ibool))),"))"
 end subroutine output_lns_interpolated_model_binary
-
 
 
