@@ -278,23 +278,25 @@
   endif
   
   ! Default values, used if the parameters are not found in parfile.
-  ABC_STRETCH_TOP    = .false.
-  ABC_STRETCH_LEFT   = .false.
-  ABC_STRETCH_BOTTOM = .false.
-  ABC_STRETCH_RIGHT  = .false.
+  ABC_STRETCH_TOP         = .false.
+  ABC_STRETCH_LEFT        = .false.
+  ABC_STRETCH_BOTTOM      = .false.
+  ABC_STRETCH_RIGHT       = .false.
   ABC_STRETCH_TOP_LBUF    = 0.
   ABC_STRETCH_LEFT_LBUF   = 0.
   ABC_STRETCH_BOTTOM_LBUF = 0.
   ABC_STRETCH_RIGHT_LBUF  = 0.
-  USE_SPREAD_SSF   = .false.
-  SPREAD_SSF_SAVE  = .false.
-  SPREAD_SSF_SIGMA = 1.
-  SPREAD_SSF_CUSTOM = .false.
+  USE_SPREAD_SSF          = .false.
+  SPREAD_SSF_SAVE         = .false.
+  SPREAD_SSF_SIGMA        = 1.
+  SPREAD_SSF_CUSTOM       = .false.
   REMOVE_STF_INITIAL_DISCONTINUITY=.false.
   
   if(USE_DISCONTINUOUS_METHOD) then
-    ! If DG is used, try to read parameters in parfile.
-    ! If not, leave at default values (i.e. deactivated).
+    ! If DG is used, try to read relevant parameters in parfile.
+    ! Deliberately not stopping the program to allow it to run with default values.
+    ! This also helps running old EXAMPLES with new versions without expecting to have to modify the old parfiles.
+    
     call read_value_logical_p(ABC_STRETCH_TOP, 'solver.ABC_STRETCH_TOP')
     !if (err_occurred() /= 0) stop 'error reading parameter ABC_STRETCH_TOP in Par_file'
     call read_value_logical_p(ABC_STRETCH_LEFT, 'solver.ABC_STRETCH_LEFT')
@@ -319,14 +321,6 @@
     !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_CUSTOM in Par_file'
     call read_value_logical_p(REMOVE_STF_INITIAL_DISCONTINUITY, 'solver.REMOVE_STF_INITIAL_DISCONTINUITY')
     !if (err_occurred() /= 0) stop 'error reading parameter REMOVE_STF_INITIAL_DISCONTINUITY in Par_file'
-
-    !TEST READING NEW PARAMETERS
-#if 0
-    write(*,*) ABC_STRETCH, '(', ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ')'
-    write(*,*) ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
-    write(*,*) USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_SIGMA, SPREAD_SSF_CUSTOM
-    write(*,*) REMOVE_STF_INITIAL_DISCONTINUITY
-#endif
   endif
   
   !--------------------------------------------------------------------
