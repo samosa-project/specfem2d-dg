@@ -239,7 +239,7 @@ JPEGLIB_OBJECTS = \
 specfem2D_OBJECTS += $(JPEGLIB_OBJECTS)
 
 ###
-### Linear Navier-Stokes modification
+### Linear Navier-Stokes
 ###
 
 specfem2DLNS_OBJECTS= \
