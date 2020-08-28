@@ -1332,10 +1332,8 @@ end subroutine stressBuilder_addViscousFluid
 ! Attempts to detect nonsense in LNS variables, and stop program if they are found.
 
 subroutine LNS_prevent_nonsense()
-  ! TODO: select variables to use.
-  use constants
-  use specfem_par
-  use specfem_par_LNS
+  use constants, only: TINYVAL
+  use specfem_par_LNS, only: LNS_rho0, LNS_E0, LNS_p0, LNS_mu, LNS_eta, LNS_kappa, LNS_viscous
   implicit none
   ! Input/Output.
   ! N./A.
