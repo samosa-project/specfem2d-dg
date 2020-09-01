@@ -1,6 +1,6 @@
 % Author:        Léo Martire.
 % Description:   Loads SPECFEM2D OUTPUT_FILES synthetics, and does a bunch of thing with them.
-% Notes:         TODO.
+% Notes:         N. A.
 %
 % Usage:
 %  1) Specify script parameters in the 'Parameters' section.

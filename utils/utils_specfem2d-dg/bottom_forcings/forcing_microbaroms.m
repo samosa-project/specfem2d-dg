@@ -7,7 +7,7 @@
 clear all;
 close all;
 clc;
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % lglnodes
+[SPCFMEXloc] = setup_overall();
 
 rng(0123456789); % Set seed to produce same forcing everytime.
 
@@ -80,7 +80,7 @@ napotend=napot0; % Number of periods for time apodisation at t=MAXTIME.
 loadgmsh=1; % Load a GMSH external mesh?
 dt = 5e-3; % Set DT as in parfile.
 if(loadgmsh)
-  path_to_Nodes_file='/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/EXTMSH/Nodes_extMesh';
+  path_to_Nodes_file = [SPCFMEXloc,filesep,'mb_gmsh/EXTMSH/Nodes_extMesh'];
 else
   % nx = 1060; % Set nx as in parfile.
   % xmin = -45e3; xmax = 45e3; % Set as in parfile.
@@ -93,11 +93,11 @@ periodise = 0; % Set this if microbaroms do not touch lateral edges of mesh.
 % periodise = 1; % Set this if microbaroms do touch lateral edges of mesh.
 
 % Path to file for export (do not forget the "/" at the end).
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/';
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_periodic/';
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/microbaroms_patch/';
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_huge/';
-EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mb_gmsh/';
+% EXPORTFILEDIR = [SPCFMEXloc,filesep,'ON_EOS_STRATO_SAVE/stratobaro_66_june_1200/'];
+% EXPORTFILEDIR = [SPCFMEXloc,filesep,'microbaroms_periodic/'];
+% EXPORTFILEDIR = [SPCFMEXloc,filesep,'microbaroms_patch/'];
+% EXPORTFILEDIR = [SPCFMEXloc,filesep,'mb_huge/'];
+EXPORTFILEDIR = [SPCFMEXloc,filesep,'mb_gmsh/'];
 
 disp(['[',mfilename,'] Preparing meshgrids.']);
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -496,8 +496,8 @@ disp(['[',mfilename,'] Exporting to file.']);
 %%%%%%%%%%%%%%%%%%%%%%%
 % Test data.          %
 %%%%%%%%%%%%%%%%%%%%%%%
-% % EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_external_forcing/';
-% EXPORTFILEDIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test_EBF/';
+% % EXPORTFILEDIR = [SPCFMEXloc,filesep,'test_external_forcing/';
+% EXPORTFILEDIR = [SPCFMEXloc,filesep,'test_EBF/';
 % t=0:4e-4:1;
 % x_specfem=linspace(-50,50,51);
 % GLL=[0, 0.345346329292028/2, 0.5, 1.654653670707976/2]; % UGLY METHOD, I'M SORRY
