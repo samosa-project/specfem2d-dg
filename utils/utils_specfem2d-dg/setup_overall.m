@@ -9,7 +9,7 @@
 % yields:
 %   SPCFMEXloc the full path to the EXAMPLES folder.
 
-function [SPCFMEXloc] = setup_overall()
+function [SPCFMEXloc, rootFolder] = setup_overall()
   % Identify the folder containing this script.
   thisFolder = [regexprep(mfilename('fullpath'),mfilename,'')];
   
