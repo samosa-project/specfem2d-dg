@@ -1,11 +1,21 @@
+% Author:        Léo Martire.
+% Description:   Forces a LNS 2D atmospheric model to be projected onto the current SPECFEM2D mesh.
+%                This allows to avoid to have to perform a costly Delaunay interpolation, at the simple cost of a larger file.
+% Notes:         N. A.
+%
+% Usage:
+%   [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
+% with:
+%   EXAMPLE_DIR  an EXAMPLE folder containing a LNS 2D atmospheric model,
+% yields:
+%   newmodel     the path to the new model file which mesh is that of the current EXAMPLE folder,
+%   oldmodel     the path to the old model file.
+
 function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
-
-  % EXAMPLE_DIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/test__LNS_generalised__using_custom_fields';
-
   if(not(EXAMPLE_DIR(end)==filesep))
     EXAMPLE_DIR = [EXAMPLE_DIR, filesep];
   end
-  oldmodel = [EXAMPLE_DIR,filesep,'background_model.bin'];
+  oldmodel = [EXAMPLE_DIR, filesep, 'background_model.bin'];
 
   % Load it.
   bgm = load_bg_model(oldmodel);
@@ -16,14 +26,14 @@ function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
   intfile = [EXAMPLE_DIR, 'interfaces_input'];
   read_external_mesh = readExampleFiles_extractParam(parfile, 'read_external_mesh', 'bool');
   if(read_external_mesh)
-    error('not implemented');
+    error(['[',mfilename,'] Not implemented.']);
   else
     xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
     xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
     NX = readExampleFiles_extractParam(parfile, 'nx', 'int') + 1;
     [layers, ~, zmin, zmax] = readExampleFiles_meshfem_mesh(intfile);
     if(numel(layers)>1)
-      error('not implemented');
+      error(['[',mfilename,'] Not implemented.']);
     end
     NZ = layers{1}.nz + 1;
     x = gllify(linspace(xmin, xmax, NX)); z = gllify(linspace(zmin, zmax, NZ));
@@ -50,11 +60,12 @@ function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
       end
       
     else
-      error('not implemented');
+      error(['[',mfilename,'] Not implemented.']);
+      
     end
   end
   
-  % Ask for confirmation before writing.
+  % Ask for confirmation before writing a very large file.
   estimate_size = numel(ROWS)*8/1048576;
   if(estimate_size>50)
     userIsSure = -1;
@@ -68,6 +79,6 @@ function [newmodel, oldmodel] = force_bg_model_to_specfem_mesh(EXAMPLE_DIR)
     copyfile(oldmodel, [regexprep(oldmodel, '\.bin', '_ORIGINAL.bin')]); % save original
     newmodel = write_bg_model(ROWS, 'outputFolder', EXAMPLE_DIR);
   else
-    error('aborted');
+    error(['[',mfilename,'] Aborted.']);
   end
 end

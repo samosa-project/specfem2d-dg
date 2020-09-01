@@ -13,15 +13,8 @@ clc;
 clear('Zamp','Ztime'); disp(['[',mfilename,', INFO] Cleared Zamp and Ztime variables.']);
 % close all;
 format compact;
-% set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 8);
-% set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 12);
-% set(0, 'DefaultTextInterpreter', 'latex');
-% set(0, 'DefaultLegendInterpreter', 'latex');
 
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/'));
-% addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools'); % truncToShortest, readAndSubsampleSynth
-% addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/standalone');
-SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.                  %
@@ -33,10 +26,6 @@ convert_to_relative_coords = 0; pos_interface = 0; % Convert to relative coordin
 plot_amplitude = 0; % Plot amplitude (0 for no, 1 for yes sorted by x, 2 for yes sorted by z, 3 for yes sorted by d)?
 subsample = 0; wanted_dt = 1; % Sub-sample? Useful for lengthy seismograms. If set to 1, sub-sample so that final time sampling is as parametrised by wanted_dt.
 type_display = 2; % Quantity to display (should be the same as the seismotype variable in parfile). 1 = {displacement for non-DG, velocity for DG}. 2 = {velocity for non-DG, pressure perturbation [Pa] for DG}.
-% Unknown (for direct plots only). Note that for type_display == 2 and stations in DG zones, pressure perturbation [Pa] is saved both in BXX and BXZ files.
-% channel = 'BXX'; % _x.
-% channel = 'BXZ'; % _z.
-% DETERMINED BELOW, NOW
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT_FILES location.       %

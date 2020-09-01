@@ -1,7 +1,5 @@
 % Author:        Léo Martire.
-% Description:   Loads dumps from SPECFEM and converts them to a LNS
-%                generalised background model array. Shape is dictated by
-%                the script 'order_bg_model.m'.
+% Description:   Loads dumps from SPECFEM2D-DG and converts them to a LNS 2D atmospheric model array.
 % Notes:         Needs scripts:
 %                  utils_new/lns_background_models/order_bg_model.m
 %                  utils_new/readDumpsUnique.m
@@ -10,7 +8,12 @@
 % Usage:
 %   [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
 % with:
-%   TODO.
+%   OFD     a path to an OUTPUT_FILES folder,
+%   IT      an iteration number,
+%   uniform a structure encoding the uniform mesh onto which project the dump (with fields 'do', 'nx', and 'nz').
+% yields:
+%   ROWS    a LNS 2D atmospheric model array,
+%   info    a cell array containing the informative messages about the process.
 
 function [ROWS, info] = dumps_to_bgmodel(OFD, IT, uniform)
   if(not(exist('uniform', 'var')))
