@@ -1,29 +1,22 @@
 % Author:        Léo Martire.
-% Description:   TODO.
+% Description:   Converts a 1D model from the SPECFEM2D-DG standard to the GeoAc standard.
 % Notes:         TODO.
 %
 % Usage:
 %   modelconv_specfem2geoac(spcfm_file, geoac_file)
 % with:
-%   TODO.
+%   spcfm_file path to an input atmospheric model in the SPECFEM2D-DG format,
+%   geoac_file path for the output atmospheric model to be formatted under the GeoAc format,
+%   maxz       [m] (optional) a maximum altitude at which truncate the input model (defaults to Inf),
 % yields:
-%   TODO.
+%   N. A.
 
 function [] = modelconv_specfem2geoac(spcfm_file, geoac_file, maxz)
-
   if(nargin<2)
     error(['[',mfilename,', ERROR] Not enough input arguments. Needs ''spcfm_file, geoac_file''.']);
   end
   
-  if(not(exist('maxz')))
-    maxz=Inf;
-  end
-  
-%   format compact;
-%   set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
-%   set(0, 'defaultTextFontSize', 14); set(0, 'defaultAxesFontSize', 14);
-%   set(0, 'DefaultTextInterpreter', 'latex');
-%   set(0, 'DefaultLegendInterpreter', 'latex');
+  if(not(exist('maxz', 'var'))); maxz=Inf; end
   
   [Z, RHO, T, ~, P, ~, ~, ~, ~, ~, ~, WN, WE, ~, ~, ~, ~] = extract_atmos_model(spcfm_file, 3, 0, 0);
   
@@ -33,7 +26,6 @@ function [] = modelconv_specfem2geoac(spcfm_file, geoac_file, maxz)
   RHO = RHO*1e-3; % convert kg/m^3 to g/cm^3
   P   = P * 1e-2; % convert Pa to mbar
   
-%   geoac_file
   f_new = fopen(geoac_file, 'w');
   if(f_new==-1)
     error(strcat("[",mfilename,", ERROR] Cannot open new data file ", geoac_file,').'))

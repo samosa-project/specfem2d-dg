@@ -114,7 +114,7 @@ function [] = rewrite_atmos_model(output_file, HF, Z, RHO, T, C, P, H, G, NBVSQ,
       % else, ask
       decision=-1;
       while(not(ismember(decision,[0,1])))
-        decision=input([char(strcat("[", mfilename, "] File (", output_file,') exists.\n[',mfilename,'] Overwrite? (0 for no, 1 for yes) >')),' ']);
+        decision=input([char(strcat('[', mfilename, '] File (', output_file,') exists.\n[',mfilename,'] Overwrite? (0 for no, 1 for yes) >')),' ']);
       end
     end
     
@@ -127,10 +127,10 @@ function [] = rewrite_atmos_model(output_file, HF, Z, RHO, T, C, P, H, G, NBVSQ,
     case 0
       % do nothing (will be prepared later)
     case 1
-      % Open "old" model to read its header.
+      % Open 'old' model to read its header.
       f_old = fopen(HF, 'r');
       if(f_old==-1)
-        disp(strcat("[",mfilename,", ERROR] Cannot open old data file ", HF,').'))
+        disp(strcat('[',mfilename,', ERROR] Cannot open old data file ', HF,').'))
       end
     case 2
       % extract from array
@@ -183,13 +183,13 @@ function [] = rewrite_atmos_model(output_file, HF, Z, RHO, T, C, P, H, G, NBVSQ,
         headerline{3} = defaultColumnHead;
       end
     otherwise
-      error('error, and script should not be able to go down this far');
+      error(['[',mfilename,', ERROR] Unexpected value for header type: ',num2str(HF_empty0_file1_array2),'.']);
   end
   
-  % Open "new" model to write in it.
+  % Open 'new' model to write in it.
   f_new = fopen(output_file, 'w');
   if(f_new==-1)
-    error(strcat("[",mfilename,", ERROR] Cannot open new data file ", output_file,').'))
+    error(['[',mfilename,', ERROR] Cannot open new data file ''', output_file,'''.']);
   end
   
   % Write header.
@@ -213,29 +213,22 @@ function [] = rewrite_atmos_model(output_file, HF, Z, RHO, T, C, P, H, G, NBVSQ,
         % print header from array
         fprintf(f_new, headerline{count});
       otherwise
-        error('error, and script should not be able to go down this far');
+        error(['[',mfilename,', ERROR] Unexpected value for header type: ',num2str(HF_empty0_file1_array2),'.']);
     end
-    fprintf(f_new, "\n");
-    count=count+1;
+    fprintf(f_new, '\n');
+    count = count+1;
   end
   
-%z[m] rho[kg/(m^3)] T[K] c[m/s] p[Pa] H[m] g[m/(s^2)] N^2[1/s] kappa[J/(s.m.K)] mu[kg(s.m)] mu_vol[kg/(s.m)] w_M[m/s] w_Z[m/s] w_P[m/s] c_p[J/(mol.K)] c_v[J/(mol.K)] gamma[1] fr[Hz] Svib[1]
   for i=1:numel(Z)
-    line_numbers=[Z(i), RHO(i), T(i), C(i), P(i), H(i), G(i), NBVSQ(i), KAP(i), MU(i), MUVOL(i), Wnorth(i), Weast(i), W(i), Cp(i), Cv(i), GAM(i)];
+    line_numbers = order_model_1d(Z(i), RHO(i), T(i), C(i), P(i), H(i), G(i), NBVSQ(i), KAP(i), MU(i), MUVOL(i), Wnorth(i), Weast(i), W(i), Cp(i), Cv(i), GAM(i));
     fprintf(f_new,'%15.8e ',line_numbers);
     if(frsvibgiven)
       frsvib_line_numbers=[FR(i),SVIB(i)];
       fprintf(f_new,'%15.8e ',frsvib_line_numbers);
     end
-    fprintf(f_new, "\n");
+    fprintf(f_new, '\n');
   end
   
   fclose('all');
-  disp(strcat("[",mfilename,"] Model output to file: '", output_file, "'."));
-end
-
-function checknonsense(output_file, header_file, Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUVOL, Wnorth, Weast, W, Cp, Cv, GAM, FR, SVIB)
-  if(any(RHO<=0))
-    error();
-  end
+  disp(['[',mfilename,'] Model output to file: ''', output_file, '''.']);
 end

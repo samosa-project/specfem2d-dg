@@ -16,8 +16,7 @@ clear all
 % close all
 clc
 
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/'); % for model_viscoelastic_getinterfaces.m
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/');
+addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/'));
 
 % Parameters.
 np=2;
