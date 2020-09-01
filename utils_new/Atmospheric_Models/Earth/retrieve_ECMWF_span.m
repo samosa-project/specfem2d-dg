@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Retrieves the area and time spanned by a previously retrieved ERA5 netcdf file.
 % Last modified: See file metadata.
 % Usage:         1) Retrieve the ERA5 file's points (using the script 'retrieve_ECMWF').

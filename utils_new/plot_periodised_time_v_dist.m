@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Simpler and more lax version of plot_time_v_dist. With an
 %                accent on usability with periodised computation domains.
 %                Cannot be really used 'in production' as is.

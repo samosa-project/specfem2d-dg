@@ -1,5 +1,4 @@
 % Author:        Léo Martire, Guerman Poler.
-% Mail:          leo.martire@outlook.com
 % Description:   Retrieves and computes useful quantities from an ERA5 file, previously downloaded from ECMWF's servers.
 % Last modified: See file metadata.
 % Usage:         1) Make sure an ERA5 file was previously downloaded.

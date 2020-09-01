@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Filter synthetics.
 % Last modified: See file metadata.
 % Usage:         N/A.

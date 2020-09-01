@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Loads an atmospheric model. Analyses hydrostatic balance
 %                and other stability coefficients. Tries regularisations.
 % Last modified: See file metadata.
