@@ -1,0 +1,16 @@
+The scripts for writing compatible atmospheric models should accomodate for the format definitions described below.
+
+The format of 1D atmospheric models ("MODEL = external_DG" in parfiles) is defined by the reading done in the source code.
+This is done by the routine 'define_external_model_DG_only' in 'src/specfem2D/define_external_model.F90'.
+
+The format of 2D atmospheric models ("MODEL = LNS_generalised" in parfiles) is also defined by the reading done in the source code.
+This is done by the routine 'lns_read_background_model' in 'src/specfem2D/lns_load_background_model.F90'.
+
+For 1D models, some quantities are not used anymore by the solver.
+They have not been removed yet, but should be in the future for performance. In the meantime, they can remain here and are informative anyhow.
+They are:
+- H (scale height),
+- N^2 (Brunt-Vaisala frequency),
+- mu_vol (artificial viscosity to account for rotational attenuation),
+- w_M (meridional wind),
+- w_Z (zonal wind).
