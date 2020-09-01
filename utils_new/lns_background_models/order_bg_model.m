@@ -1,3 +1,9 @@
+% Defines how quantities are ordered in the background model files used by the LNS module.
+% Works both for writing files (to be read by SPECFEM2D-DG) and reading files (written by SPECFEM2D-DG).
+% This order should always agree with the relevant routines in 'lns_load_background_model.F90':
+% - 'lns_read_background_model' for the reading, and
+% - 'output_lns_interpolated_model' and 'output_lns_interpolated_model_binary' for the outputting.
+
 function [order, lab, tex, unit] = order_bg_model()
   i = 1;
   order(i,:) = 'xx'; unit{i}='m'; lab{i} = 'x[m]'; tex{i}='x'; i=i+1;
