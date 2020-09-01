@@ -1,59 +1,40 @@
-% Author:        Quentin Brissaud, Léo Martire.
+% Author:        Léo Martire, Quentin Brissaud.
 % Description:   TODO.
 % Notes:         [Fritts and Alexander, 2003, Brissaud et al., 2016].
 %
 % Usage:
-%   Use this file to plot on seismograms traces exiting from specfem2D in 
-%   ASCII filesand a synthetic signal waited at the station in case of 
-%   simpler homogeneous medium with a variable density and a constant 
-%   velocity.
-%   You will choose the directory in which the ASCII files are.
-%   Then choose the number of receivers with the velocity of the signal and 
-%   finally run this m-file.
+%   1) Set up the "Parameters" section according to the case to be tested.
+%   2) Run this script.
 % with:
-%   TODO.
+%   N. A.
 % yields:
-%   TODO.
+%   N. A.
 
-% [Brissaud et al., 2016] Brissaud, Q., Martin, R., Garcia, R. F., & Komatitsch, D. (2016). Finite-difference numerical modelling of gravitoacoustic wave propagation in a windy and attenuating atmosphere. Geophysical Journal International, 206(1), 308–327. https://doi.org/10.1093/gji/ggw121
+% Fritts, D. C., & Alexander, M. J. (2003). Gravity wave dynamics and effects in the middle atmosphere. Reviews of Geophysics, 41(1), 1003. https://doi.org/10.1029/2001RG000106
+% Brissaud, Q., Martin, R., Garcia, R. F., & Komatitsch, D. (2016). Finite-difference numerical modelling of gravitoacoustic wave propagation in a windy and attenuating atmosphere. Geophysical Journal International, 206(1), 308–327. https://doi.org/10.1093/gji/ggw121
 
 clear all;
 % close all;
 clc;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Setup.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-SPCFMloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/';
-addpath(genpath([SPCFMloc,'utils_new']));
-% factor_err = 100; % factor by which multiply difference in plots.
-prefix = 'validation__lns_fk';
-% fignames
-savefigname_base = ['compare2FKanalytic'];
-savefigpath = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/',prefix,'_info/'];
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_1.00dt/']; % EXAMPLE path
-% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_1.00dx_0.50dt/']; % EXAMPLE path
-% rootd=[SPCFMloc,'EXAMPLES/',prefix,'_0.50dx_0.50dt/']; % EXAMPLE path
-% OFd = [rootd,'OUTPUT_FILES/'];
-% OFd = [rootd,'OUTPUT_FILES_isobaric_LNS_st1']; % ISOBARIC CASE
-% OFd = [rootd,'OUTPUT_FILES_isothermal_LNS_st1'];
+prefix = 'validation__lns_fk';
+savefigname_base = ['compare2FKanalytic'];
+savefigpath = [SPCFMEXloc,filesep,prefix,'_info/'];
 
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isobaric/']; % EXAMPLE path
-rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal/']; % EXAMPLE path
+rootd=[SPCFMEXloc,filesep,prefix,'_isothermal/']; % EXAMPLE path
 % rootd=[SPCFMloc,'EXAMPLES/',prefix,'_isothermal_shorter/']; % EXAMPLE path
-OFd = [rootd, 'OUTPUT_FILES'];
-% OFd = [rootd, 'OUTPUT_FILES_LNS'];
-% OFd = [rootd, 'OUTPUT_FILES_FNS'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Beging program.
+% Begin program.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+OFd = [rootd, 'OUTPUT_FILES'];
 subsample = 0; % Subsample synthetics? See sumsamble_dt below, near T_0.
 % Pretreatment.
 simuType = 1; % 1 for forcing and 2 for attenuation
@@ -64,8 +45,8 @@ parfile = [OFd, 'input_parfile'];
 int_file = [OFd, 'input_interfaces'];
 
 % Automatically load parameters from simulation's OUTPUT_FILES directory.
-disp([' ']); disp(['[',mfilename,', INFO] Loading simulation parameters.']);
-% [zmin, zmax] = readExampleFiles_zMinMaxInterfacesFile(int_file);
+disp([' ']);
+disp(['[',mfilename,', INFO] Loading simulation parameters.']);
 [~, ~, zmin, zmax] = readExampleFiles_meshfem_mesh(int_file);
 dt = readExampleFiles_extractParam(parfile, 'DT', 'float');
 TYPE_FORCING = readExampleFiles_extractParam(parfile, 'TYPE_FORCING', 'int');
@@ -108,7 +89,6 @@ FK_atmModel;
 
 % Loading Results.
 disp([' ']); disp(['[',mfilename,', INFO] Loading synthetics.']);
-% data = readAndSubsampleSynth(OFd, 2, 'BXZ', 'semv', 1, 1, 0); sig_t = data(:,1)'; sig_v = data(:,2)'; figure(); plot(sig_t, sig_v); % test
 [~, signal_type, vname_long, vunit] = seismotypeNames(seismotype, readExampleFiles_extractParam(parfile, 'USE_DISCONTINUOUS_METHOD', 'bool'));
 [x_stat, z_stat, y_stat, ~] = loadStations(OFd);
 pos_stat = [y_stat, z_stat, x_stat]; % try to do something to stick with rest of code

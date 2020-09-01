@@ -15,7 +15,8 @@
 %   TODO.
 
 function [fh] = plot_model_alpha(freq, Z, RHO, C, MUvol, FR, SVIB, zminmax, Nsel)
-  addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/tools');
+  [SPCFMEXloc] = setup_overall();
+  
   zminmax = sort(zminmax);
   [TAU_SIG, TAU_EPS] = frsvib2tausigtaueps(FR, SVIB);
   ALPHAVIB = relax_alphavib(freq, C, TAU_EPS, TAU_SIG);

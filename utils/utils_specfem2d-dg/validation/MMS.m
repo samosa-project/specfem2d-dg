@@ -6,23 +6,22 @@
 % Usage:
 %   TODO.
 % with:
-%   TODO.
+%   N. A.
 % yields:
-%   TODO.
+%   N. A.
 
 clear all;
 % close all;
 clc;
 
-verbose = 0;
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'));
-SPCFM_EX_DIR = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+verbose = 0;
 prefix = 'validation__lns_manufactured';
-savefigpath = [SPCFM_EX_DIR,prefix,'_results/'];
+savefigpath = [SPCFMEXloc,prefix,'_results/'];
 err_l2.name = '$L^2$ Error';
 err_l2.symbol = ['varepsilon'];
 err_rel.name = 'Relative Error';
@@ -35,8 +34,8 @@ err_rel.symbol = ['epsilon'];
 % % IDs of dumps to plot.
 % IDz = 100;
 % % OUTPUT_FILES directory to analyse.
-% % OFDs = {[SPCFM_EX_DIR,prefix,'/OUTPUT_FILES_dxN=00250_mu_dp__1p25em5']}; IDzs={[2]*10000}; plotFields_do = 0;
-% OFDs = {[SPCFM_EX_DIR,prefix,'_N=0025_iv/OUTPUT_FILES']}; IDzs={[100e3]}; plotFields_do = 1;
+% % OFDs = {[SPCFMEXloc,prefix,'/OUTPUT_FILES_dxN=00250_mu_dp__1p25em5']}; IDzs={[2]*10000}; plotFields_do = 0;
+% OFDs = {[SPCFMEXloc,prefix,'_N=0025_iv/OUTPUT_FILES']}; IDzs={[100e3]}; plotFields_do = 1;
 % % Test case to plot/compute.
 % testCase = 'inviscid';
 % % testCase = 'kappa';
@@ -48,39 +47,39 @@ generateCase = 4;
 switch(generateCase)
   case 5
     % test case
-    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0100_iv/OUTPUT_FILES']}; testCase = 'inviscid';
+    OFDs = {[SPCFMEXloc,prefix,'_N=0100_iv/OUTPUT_FILES']}; testCase = 'inviscid';
     iterationsToPlot_forEachOFD = {[commonID2*100]};
     plotFields_do = 1; % activate plotting of fields
   case 1
-    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_iv/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0005_iv/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0025_iv/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0050_iv/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0100_iv/OUTPUT_FILES']}; testCase = 'inviscid';
+    OFDs = {[SPCFMEXloc,prefix,'_N=0001_iv/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0005_iv/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0025_iv/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0050_iv/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0100_iv/OUTPUT_FILES']}; testCase = 'inviscid';
     iterationsToPlot_forEachOFD = {[commonID2], [commonID2*5], [commonID2*25], [commonID2*50], [commonID2*100]};
     plotFields_do = 0; % deactivate plotting of fields
   case 2
-    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_ka/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0005_ka/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0025_ka/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0050_ka/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0100_ka/OUTPUT_FILES']}; testCase = 'kappa';
+    OFDs = {[SPCFMEXloc,prefix,'_N=0001_ka/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0005_ka/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0025_ka/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0050_ka/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0100_ka/OUTPUT_FILES']}; testCase = 'kappa';
     iterationsToPlot_forEachOFD = {[commonID2], [commonID2*5], [commonID2*25], [commonID2*50], [commonID2*100]};
     plotFields_do = 0; % deactivate plotting of fields
   case 3
-    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0001_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0002_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0003_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0004_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0005_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0025_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0050_mu/OUTPUT_FILES'], ...
-            [SPCFM_EX_DIR,prefix,'_N=0100_mu/OUTPUT_FILES']}; testCase = 'mu';
+    OFDs = {[SPCFMEXloc,prefix,'_N=0001_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0002_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0003_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0004_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0005_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0025_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0050_mu/OUTPUT_FILES'], ...
+            [SPCFMEXloc,prefix,'_N=0100_mu/OUTPUT_FILES']}; testCase = 'mu';
     iterationsToPlot_forEachOFD = {[commonID2], [commonID2*2], [commonID2*3], [commonID2*4], [commonID2*5], [commonID2*25], [commonID2*50], [commonID2*100]};
     plotFields_do = 0; % deactivate plotting of fields
   case 4
     % illustrative plotfield
-    OFDs = {[SPCFM_EX_DIR,prefix,'_N=0025_iv/OUTPUT_FILES']}; testCase = 'inviscid';
+    OFDs = {[SPCFMEXloc,prefix,'_N=0025_iv/OUTPUT_FILES']}; testCase = 'inviscid';
     iterationsToPlot_forEachOFD = {[commonID2*25]};
     plotFields_do = 1; % activate plotting of fields
 end

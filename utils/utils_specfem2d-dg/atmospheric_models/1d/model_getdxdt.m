@@ -12,11 +12,11 @@
 % Usage:
 %   model_getdxdt
 
-clear all
-% close all
-clc
+clear all;
+% close all;
+clc;
 
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/'));
+[SPCFMEXloc] = setup_overall();
 
 % Parameters.
 np=2;

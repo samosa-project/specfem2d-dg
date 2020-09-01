@@ -3,7 +3,7 @@
 % Last modified: See file metadata.
 % Usage:         Fill section "Parameters" according to the calculation to
 %                be performed.
-%                Use the scripts in './utils_new/extract_run_information'
+%                Use the scripts in the 'extract_run_information' folder
 %                to fill data used for estimation (function 'load' below).
 % Notes:         The method (N-D nearest point search) is approximate and
 %                does not take into account the fact that some parameters
@@ -15,7 +15,8 @@
 clc
 format longG;
 
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools/');
+[~] = setup_overall();
+
 [data, t, info, ~]=load_data(); % Load data (see function below).
 
 plot_rate = 0;

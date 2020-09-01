@@ -12,12 +12,8 @@
 clear all;
 close all;
 clc;
-set(0, 'DefaultLineLineWidth', 2); set(0, 'DefaultLineMarkerSize', 12);
-set(0, 'defaultTextFontSize', 24); set(0, 'defaultAxesFontSize', 24);
-set(0, 'DefaultTextInterpreter', 'latex');
-set(0, 'DefaultLegendInterpreter', 'latex');
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/prepare_stations_subcases'); % subcases IMPORTANT
+
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run-specific.               %

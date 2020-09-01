@@ -1,19 +1,13 @@
 % Author:        Léo Martire.
 % Description:   Computes ASDs and NASDs of synthetics.
-% Last modified: See file metadata.
-% Usage:         N/A.
-% Notes:         /utils_new/synth_load.m should have been ran before.
+% Usage:         N. A.
+% Notes:         synth_load.m should have been ran before.
 
 % clear all;
 % close all;
 % clc;
-format compact;
-% set(0, 'DefaultLineLineWidth', 3); set(0, 'DefaultLineMarkerSize', 8);
-% set(0, 'defaultTextFontSize', 12); set(0, 'defaultAxesFontSize', 18);
-% set(0, 'DefaultTextInterpreter', 'latex');
-% set(0, 'DefaultLegendInterpreter', 'latex');
 
-addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new');
+[~] = setup_overall();
 
 % prepare window: Cb = polyfit([4e3, 124e3],[-0.4, 451.3],1); Ca = polyfit([0, 120e3],[20, 488],1);
 % window: dsorted(i)*[Cb(1), Ca(1)] + [Cb(2), Ca(2)]
@@ -297,25 +291,3 @@ end
 % Clear variables.             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear('select_time_l', 'select_time_u', 'signal_name', 'unit');
-
-
-% function prettyAxes(f)
-%   children=f.Children;
-%   for i=1:numel(children)
-%     child=children(i);
-%     if(strcmp(child.Type,'axes'))
-%       axes(child);
-%       set(gca, 'Color','k');
-%       set(gca, 'GridColor','white');
-%       set(gca, 'TickLabelInterpreter', 'latex');
-%       set(gca, 'TickDir','both');
-%       set(gca, 'TickLabelInterpreter', 'latex');
-%       grid on;
-%       box on;
-%     elseif(strcmp(children(i).Type,'legend'))
-%       set(child,'fontsize', 25);
-%       set(child, 'Color',[1,1,1]*0.25);
-%       set(child, 'textColor','w');
-%     end
-%   end
-% end

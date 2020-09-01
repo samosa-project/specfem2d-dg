@@ -3,7 +3,7 @@
 % Notes:         Useful only for writing files (to be read by SPECFEM2D-DG).
 %                This order should always agree with:
 %                - the relevant SPECFEM routine ('define_external_model_DG_only' in 'src/specfem2D/define_external_model.F90'), and
-%                - the MSISE-HWM wrapper (utils_new/Atmospheric_models/Earth/MSISE_HWM_wrapper).
+%                - the MSISE-HWM wrapper (MSISE_HWM_wrapper).
 %
 % Usage:
 %   [orderedQuantities] = order_model_1d(Z, RHO, T, C, P, H, G, NBVSQ, KAP, MU, MUVOL, Wnorth, Weast, W, Cp, Cv, GAM, FR, SVIB)

@@ -15,9 +15,8 @@
 clear all;
 % close all;
 clc;
-format compact;
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new')); % plot_time_v_dist, plot_total_energy, truncToShortest, readAndSubsampleSynth
-SPCFMEXloc = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/';
+
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.
@@ -92,12 +91,6 @@ if(compareStations)
   ABC_plot_TS();
   customSaveFig(fh_TS, TS_outpath, {'fig', 'eps', 'tex'}, 9999);
 end
-
-% send to thesis folder
-disp(['sending to thesis folder']);
-fol = '/home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/images_verif_abc';
-system(['cp ',energy_outpath,'.* ',fol,filesep]);
-system(['cp ',TS_outpath,'.* ',fol,filesep]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % One-liners for debug.

@@ -10,7 +10,6 @@
 %   TODO.
 
 function [xminmax, zminmax, interface, Xsource, debfin, d, name] = AboveGroundSimple(simulationfolder)
-  addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/tools');
   parfile        = [simulationfolder, 'parfile_input'];
   sourcefile     = [simulationfolder, 'source_input'];
   interfacesfile = [simulationfolder, 'interfaces_input'];

@@ -1,9 +1,6 @@
 % Author:        Léo Martire.
 % Description:   Loads dumps from SPECFEM2D-DG and converts them to a LNS 2D atmospheric model array.
-% Notes:         Needs scripts:
-%                  utils_new/lns_background_models/order_bg_model.m
-%                  utils_new/readDumpsUnique.m
-%                  utils_new/interpDumps.m
+% Notes:         N. A.
 %
 % Usage:
 %   [ROWS] = dumps_to_bgmodel(OFD, IT, uniform)
@@ -21,7 +18,7 @@ function [ROWS, info] = dumps_to_bgmodel(OFD, IT, uniform)
     uniform.do = 0;
   end
   
-  addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'));
+  [SPCFMEXloc] = setup_overall();
   
   % Safety.
   if(not(OFD(end) == filesep))

@@ -14,7 +14,7 @@
 %   TODO.
 
 function [fh] = plot_model_frsvib(modelfile, zmax_interest)
-  addpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/Atmospheric_Models/tools');
+  [SPCFMEXloc] = setup_overall();
   
   [Z, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~, FR, SVIB] = extract_atmos_model(modelfile, 3, 0, 0);
   

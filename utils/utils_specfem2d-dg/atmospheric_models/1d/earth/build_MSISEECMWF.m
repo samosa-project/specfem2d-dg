@@ -24,7 +24,7 @@ clear all;
 % close all;
 clc;
 
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new/'));
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parametrisation.            %

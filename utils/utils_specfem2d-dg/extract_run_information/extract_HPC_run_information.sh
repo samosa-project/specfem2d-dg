@@ -127,5 +127,5 @@ echo "  Run duration:      $elapsed seconds."
 cflrounded=$(printf %.3f $cfl)
 slurmid=$(echo $slurm | grep -Po $slurmregexp | tail -1)
 foldername=$(echo $folder | grep -o "/[^/]*$" | grep -o "[^/]*")
-echo "  One-liner to copy-paste in Matlab script './utils_new/estimate_run_time.m':"
+echo "  One-liner for the Matlab script 'estimate_run_time.m':"
 echo "  RUN_RAWDATA(i,:)=[$nelemtot $nelemacous $cflrounded $lasttimestep $NPROC $snapfreq $nbstations $synthfreq $elapsed]; RUNINFO{i}={$slurmid,'$foldername'}; i=i+1;"

@@ -1,7 +1,6 @@
 % Author:        Léo Martire.
 % Description:   TODO.
-% Notes:         /utils_new/synth_load.m has to have been ran
-%                before.
+% Notes:         synth_load.m should have been ran before.
 %
 % Usage:
 %   TODO.
@@ -13,7 +12,8 @@
 % clear all;
 % close all;
 % clc;
-format compact;
+
+[SPCFMEXloc] = setup_overall();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Artificial data for testing.
@@ -43,7 +43,7 @@ format compact;
 % ID_r=2:2:4;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if (not(exist('synth_load_was_ran') && synth_load_was_ran == 1))
+if (not(exist('synth_load_was_ran', 'var') && synth_load_was_ran == 1))
   error(['[', mfilename, ', ERROR] synth_load was not ran before.']);
 end
 
