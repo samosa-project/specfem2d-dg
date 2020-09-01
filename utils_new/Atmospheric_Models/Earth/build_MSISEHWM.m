@@ -1,66 +1,60 @@
 % Author:        Léo Martire.
-% Description:   Builds an atmospheric model file (directly compatible with SPECFEM) using MSISE and HWM models.
-% Last modified: See file metadata.
-% Usage:         1) Make sure the wrapper was compiled.
-%                2) Make sure the path to the wrapper's executable is correctly set (hardcoded below).
-%                3) Call the function with the wanted parameters.
-% Notes:         N/A.
+% Description:   Builds a 1D atmospheric model file using MSISE and HWM models, and prints it in a format compatible with SPECFEM2D-DG.
+% Notes:         Make sure the wrapper was compiled (see variable 'executable_fullpath' below).
 %
-% altMin  minimum altitude (should be >=0)
-% altMax  maximum altitude
-% nLayers number of layers
-% lat      latitude
-% lon      longitude
-% yyears   number of years since 2000
-% ddays    number of days since beginning of year
-% ssecs    number of seconds since beginning of day
-% outFile  output file path
-% outFold  output folder (to which the output file will be moved, somewhat
-%          redundant with previous parameter for single calls but useful for multiple calls)
-% wind_projection_azimuth projection azimuth for wind in [deg] (optional, useful for SPECFEM2D simulations)
-% F107A    TODO (optional)
-% F107     TODO (optional)
-% AP       TODO (optional)
+% Usage:
+%   [output_file] = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, yyears, ddays, ssecs, outFile, outFold, wind_projection_azimuth, F107A, F107, AP)
+% with:
+%   altMin      [m] minimum altitude (should be >=0),
+%   altMax      [m] maximum altitude,
+%   nLayers     [1] number of layers,
+%   lat         [deg] latitude,
+%   lon         [deg] longitude,
+%   yyears      [years] number of years since 2000,
+%   ddays       [days] number of days since beginning of year,
+%   ssecs       [s] number of seconds since beginning of day,
+%   outFile     output file name,
+%   outFold     output folder to which the output file will be moved,
+%   projAz      [deg] projection azimuth for wind,
+%   F107A       MSISE parameter (optional, defaults to 106.7160),
+%   F107        MSISE parameter (optional, defaults to 131),
+%   AP          MSISE parameter (optional, defaults to 37),
+% yields:
+%   output_file the path to the produced output file.
 
-function output_file_stored = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, yyears, ddays, ssecs, outFile, outFold, wind_projection_azimuth, F107A, F107, AP)
-  % Default paths.
-  default_executable_path="MSISE_HWM_wrapper/msisehwm";
-  
-  % Find necessary components.
-  % Get this function's folder.
-  this_func_path_splitted=split(mfilename('fullpath'),'/'); this_func_path_splitted{end}=''; this_func_dir=join(this_func_path_splitted,'/'); clear('this_func_path_splitted');
-  % Normally, this function is alongside this function, thus the full path is the following:
-  executable_fullpath = strcat(this_func_dir,default_executable_path);
+function [output_file] = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, yyears, ddays, ssecs, outFile, outFold, projAz, F107A, F107, AP)
+  % Path to executable.
+  thisFolder = [regexprep(mfilename('fullpath'), mfilename, '')];
+  executable_fullpath = [thisFolder, filesep, 'MSISE_HWM_wrapper/msisehwm'];
   
   % Input check.
   if(nargin<10)
-    error(['  [',mfilename,'ERROR] Not enough arguments.']);
+    error(['  [', mfilename, 'ERROR] Not enough arguments.']);
   end
   % Set default values for optional arguments.
-  if(~exist('F107A','var'))
+  if(~exist('F107A', 'var'))
     F107A=106.7160;
   end
-  if(~exist('F107','var'))
+  if(~exist('F107', 'var'))
     F107=131;
   end
-  if(~exist('AP','var'))
+  if(~exist('AP', 'var'))
     AP=37;
   end
-  if(~exist('wind_projection_azimuth','var'))
-    wind_projection_azimuth = 0;
-  end  
-%   [F107A,F107,AP,wind_project_angle]
+  if(~exist('wind_projection_azimuth', 'var'))
+    projAz = 0;
+  end
   
   % Check existence of executable.
-  if(~exist(executable_fullpath,'file'))
-    error(strcat(['  [',mfilename,' ERROR] Wrapper executable ''msisehwm'' not found. If not compiled, compile it beforehand. If compiled, make sure it is in ''./wrapper/msisehwm'' relative to this function.']));
+  if(~exist(executable_fullpath, 'file'))
+    error(['[', mfilename, ' ERROR] Wrapper executable ''msisehwm'' not found. If not compiled, compile it beforehand. If compiled, make sure it is in ''./wrapper/msisehwm'' relative to this function.']);
   end
   
   % Build call.
-  command = strcat(executable_fullpath,    " ", num2str(altMin),        " ", num2str(altMax),       " ", num2str(nLayers), " ", ...
-                   sprintf("%.5f", lat),   " ", sprintf("%.5f", lon),   " ", num2str(yyears),       " ", num2str(ddays), " ", ...
-                   sprintf("%.5f", ssecs), " ", sprintf("%.5f", F107A), " ", sprintf("%.5f", F107), " ", ...
-                   sprintf("%.5f", AP),    " ", outFile,                " ", sprintf("%.5f", wind_projection_azimuth));
+  command = [executable_fullpath, ' ', num2str(altMin),    ' ', num2str(altMax),   ' ', num2str(nLayers), ' ', ...
+             sprintf('%.5f', lat), ' ', sprintf('%.5f', lon), ' ', num2str(yyears),   ' ', num2str(ddays), ' ', ...
+             sprintf('%.5f', ssecs), ' ', sprintf('%.5f', F107A), ' ', sprintf('%.5f', F107), ' ', ...
+             sprintf('%.5f', AP), ' ', outFile,            ' ', sprintf('%.5f', projAz)];
   
   % Call.
   system(command);
@@ -70,13 +64,13 @@ function output_file_stored = build_MSISEHWM(altMin, altMax, nLayers, lat, lon, 
     outFold = [outFold, '/'];
   end
   if (exist(outFold, 'dir') ~= 7)
-    system(strcat("mkdir ", outFold));
+    mkdir(outFold);
   end
   
   % Build stored filename.
-  output_file_stored = strcat(outFold, outFile);
+  output_file = [outFold, filesep, outFile];
   
   % Move created file to output directory.
-  system(strcat("mv ", outFile, " ", output_file_stored));
+  system(['mv ', outFile, ' ', output_file]);
 end
 

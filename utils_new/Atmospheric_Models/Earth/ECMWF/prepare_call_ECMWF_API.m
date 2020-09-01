@@ -1,22 +1,22 @@
 % Author:        Léo Martire.
 % Description:   Calls ECMWF API with requested parameters.
-% Last modified: See file metadata.
+% Notes:         Dates should be under format 2016-05-27.
+%                Times should be under format HH:MM:SS[/HH:MM:SS[/HH:MM:SS[/...]]]
+%                An API key is necessary to run the Python script calling the API. To obtain one, a demand must be forwarded to the ECMWF website.
+%
 % Usage:         1) Make sure the Python script is alongside this Matlab script.
 %                2) Call this function with wanted parameters.
 %                3) Execute provided command in a dedicated terminal.
-% dates under format 2016-05-27
-% time under Format HH:MM:SS[/HH:MM:SS[/HH:MM:SS[/...]]]
-% Notes:         N/A.
 
 function prepare_call_ECMWF_API(start_date, end_date, times, minmax_lon, minmax_lat, outputFileName)
-  python_script='era5.py';
-  apikeyfilename='.ecmwfapirc';
+  python_script = 'era5.py';
+  apikeyfilename = '.ecmwfapirc';
   
   % API key data.
   % TODO: at some point, use a dedicated one instead of Guerman's.
   apiurl='https://api.ecmwf.int/v1';
-  apikey='fafd7c9e9526b52ce1c3f18a35a1b270';
-  apimail='guerman.poler@gmail.com';
+  apikey=[];
+  apimail=[];
   
   % Input treatment.
   times=char(times);

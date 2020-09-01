@@ -2,16 +2,13 @@
 # -*- coding: utf-8 -*-
 # Author:        Guerman Poler, Léo Martire.
 # Description:   Calls ECMWF API with requested parameters.
-# Last modified: See file metadata.
-# Usage:         Call this script with 5 arguments (startDate, endDate, times, areaStr, outputFileName).
 # Notes:         More information on parameters at https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation.
 #                Building the request can also be done using catalog at http://apps.ecmwf.int/data-catalogues/era5/?class=ea.
 #                In order to compute geopotential and pressure at all levels, one needs to request temperature, specific humidity, logarithm of surface pressure, and ground geopotential (IDs 130, 133, 152, and 129 as defined in Table 12 at https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation).
+# Usage:         Call this script with 5 arguments (startDate, endDate, times, areaStr, outputFileName).
 
 from ecmwfapi import ECMWFDataServer
 import sys
-
-#print 'Argument list:', str(sys.argv) # DEBUG
 
 script_name=((sys.argv[0].split('/'))[1].split('.'))[0]
 
