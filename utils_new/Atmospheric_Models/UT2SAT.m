@@ -1,5 +1,4 @@
 % Author:        Léo Martire.
-% Mail:          leo.martire@outlook.com
 % Description:   Computes local solar apparent time (SAT, SAT) from UT, or vice versa.
 %                Outputs a date string by default.
 %                Can output years since 2000, days since beginning of year, and seconds since beginning of day. Useful for calls to MSISE and HWM.
