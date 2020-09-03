@@ -28,7 +28,7 @@ function [SPCFMEXloc, rootFolder] = setup_overall()
   end
   rootFolder = curFolder;
   
-  addpath(genpath([rootFolder,'utils']));
+  addpath(genpath([rootFolder,filesep,'utils']));
   
   SPCFMEXloc = [rootFolder,filesep,'EXAMPLES',filesep];
 end
