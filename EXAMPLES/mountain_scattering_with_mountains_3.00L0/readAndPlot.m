@@ -6,7 +6,7 @@ end
 close all;
 clc;
 
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils_new'));
+addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils'));
 
 rtdwprfx = '/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_';
 thisFolder = [regexprep(mfilename('fullpath'),mfilename,'')];
@@ -30,8 +30,8 @@ interp_forceDGMesh = 0;
 interp_dx = 20;
 interp_dz = interp_dx; % dx=10 ok, dx<10 chugs hard
 
-do_pfield = 1;
-do_fft = 0;
+do_pfield = 0;
+do_fft = 1;
 do_comparefft = 0;
 do_mosaic = 0;
 
@@ -42,10 +42,14 @@ fft_wavenumber0_wavelength1 = 1; % plot in terms of wavenumber (0) or wavelength
 fft_pcolor1_contour0 = 0; % contour prettier, but slower
 
 pfield_clim = [-1, 1]*175; thrsh_pfield = 0.15; blk_pfield=0.95;
-fft_clim = [-1.5, 0];
-% fftcomp_clim = [-1, 1]*5.5; maxneg_fftcomp = abs(min(fftcomp_clim)); maxpos_fftcomp = abs(max(fftcomp_clim)); thresh_fftcomp = max([maxneg_fftcomp, maxpos_fftcomp])-0.5;
-fftcomp_clim = [-1, 1]*1; %maxneg_fftcomp = abs(min(fftcomp_clim)); maxpos_fftcomp = abs(max(fftcomp_clim)); thresh_fftcomp = max([maxneg_fftcomp, maxpos_fftcomp])-0.5;
-fft_xtick = [0.1,1,10]; fft_ytick = fft_xtick;
+fft_clim = [-2, 0];
+fft_colourISBand=[0,1,0]*0.85;
+fftcomp_clim = [-1, 1]*1;
+fft_xlim = [0.1, 10]; fft_xtick = [0.1,1,10]; fft_xticklabel = {'0.1', '1', '10'};
+fft_ylim = fft_xlim; fft_ytick = fft_xtick;
+fft_xlim_ang = [0, 90]; fft_xtick_ang = 0:15:90;
+fft_ylim_fre = [1e-1, 3]; fft_ytick_fre = logspace(-2,0,3);
+fft_selFreBand = [0.5, 2]; fft_selFreBandN = 10;
 extToSave = {'eps'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,10 +171,15 @@ end
 
 % Compute FFT.
 PRE_fft1s = {};
+LaunchAngles = {}; Frequencies = {};
+V_probed_ang = {}; V_probed_fre = {}; V_probed_band = {};
 if(any([do_fft, do_comparefft]))
   for i=IDs_to_process
     x = unique(Xi{i}); z = unique(Yi{i});
     [kx, kz, PRE_fft1s{i}, ~, ~, ~] = fft2_wrap(x, z, Vi{i}.pre);
+    [KX, KZ] = meshgrid(kx(kx>0), kz(kz>0)); 
+    [LaunchAngles{i}, Frequencies{i}] = KxKz2LaFr(1./KX, 1./KZ, soundspeed{i});
+    [V_probed_ang{i}, V_probed_fre{i}, ~, V_probed_band{i}] = LaFr2RadPattern(LaunchAngles{i}, Frequencies{i}, abs(PRE_fft1s{i}(kz>0, kx>0)), min(fft_selFreBand), max(fft_selFreBand), fft_selFreBandN);
     if(i==1)
       baseline_fft = PRE_fft1s{i};
       save([baseline_fft_path], 'baseline_fft');
@@ -180,30 +189,24 @@ if(any([do_fft, do_comparefft]))
   
   % Plot parameters.
   if(fft_wavenumber0_wavelength1)
-    fac = 1e-3; XLAB = 'horizontal wavelength $(2\pi/k_x)$ [km]'; YLAB = 'vertical wavelength $(2\pi/k_z)$ [km]';
     pow = -1;
-    minx = 50*fac; minz = minx;
-    maxx = round(max(kx(kx>0).^pow)*fac, -1);
-  else
-    XLAB = '$k_x$ [1/m]';
-    YLAB = '$k_z$ [1/m]'; pow=1;
+    fac = 1e-3;
+    XLAB1 = 'horizontal wavelength $(2\pi/k_x)$ [km]';
+    YLAB1 = {'vertical wavelength','$(2\pi/k_z)$ [km]'};
+    XLAB2 = 'launch angle [deg]';
+    YLAB2 = 'frequency [Hz]';
+    YLAB3 = {'radiated','infrasound'};
   end
-  margz = [0.16, 0.04]; margh = [0.06, 0.085]; gap=[0, 0.015];
-  hshift_cb = 0.04;
+  margz = [0.09, 0.025]; margh = [0.075, 0.09]; gap = [0.13, 0.016];
+  hshift_cb = 0.01;
   absfftname = ['\left|\widehat{P}\left(k_x,k_z\right)\right|'];
   CBYLAB_PRESPEC = ['$\log_{10}\left(',absfftname,'\right)$'];
-%   CBYLAB_diff = ['signed difference of ',CBYLAB_PRESPEC];
   CBYLAB_diff = ['$',absfftname,'$ difference'];
   
   % Build theoretical curves.
   LW_thkxkz = 3;
-  c = 342;
-  vp = 6078.06;
-  vs = 3537.23;
-  rho = 2730.14;
-  f0 = 2;
-  [E_nu] = conversion('r', rho, 'p', vp, 's', vs, 'E', 'n');
-  nu = E_nu(2);
+  c = soundspeed{1}; vp = 6078.06; vs = 3537.23; rho = 2730.14; f0 = 2;
+  [E_nu] = conversion('r', rho, 'p', vp, 's', vs, 'E', 'n'); nu = E_nu(2);
   vrayleigh = vs / ((1+nu)/(0.862+1.14*nu));
   thcurvs = {}; i=1;
   thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c/f0; thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '-'; i=i+1;
@@ -212,45 +215,67 @@ end
 
 % Plot FFT.
 if(do_fft)
-  fig_spect = figure('units', 'normalized', 'outerposition', [0,0,1,0.7]);
-  tightAxes_spec = tight_subplot(1, 4, gap, margz, margh);
+  fig_spect = figure('units', 'normalized', 'outerposition', [0,0,1,1]);
+  tightAxes_spec = tight_subplot(2, 4, gap, margz, margh);
+  tightAxes_radPat = tight_subplot(1, 4, gap, [margz(1), 0.78], margh);
   for i=IDs_to_process
+    % start with wavenumbers
     axes(tightAxes_spec(i));
     toPlot = log10(abs(PRE_fft1s{i}));
-    toPlot = toPlot(kz>0, kx>0);
     if(fft_pcolor1_contour0)
-      pcolor(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot); hold on;
+      pcolor(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot(kz>0, kx>0)); hold on;
     else
-      contourf(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot, [min(fft_clim):0.25:max(fft_clim)], 'edgecolor', 'none'); hold on;
+      contourf(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot(kz>0, kx>0), [min(fft_clim):0.25:max(fft_clim)], 'edgecolor', 'none'); hold on;
     end
     for j=1:numel(thcurvs)
 %       h_kxkzth = plot(fac*[min(kx(kx>0)), [1,1]*th_kxkz{i}].^pow, fac*[[1,1]*th_kxkz{i}, min(kz(kz>0))].^pow, 'color', COL_thkxkz, 'linewidth', LW_thkxkz, 'displayname', dnam_thkxkz);
       plot(thcurvs{j}.Lx, thcurvs{j}.Lz, 'color', thcurvs{j}.col, 'linewidth', LW_thkxkz, 'linestyle', thcurvs{j}.ls);
     end
-    if(i==2)
-      xlabel(XLAB);
+    if(i==2); xlabel(XLAB1); end
+    if(i==1); ylabel(YLAB1); end
+    
+    % now plot launch angles and frequencies
+    axes(tightAxes_spec(i + 4));
+    if(fft_pcolor1_contour0)
+      pcolor(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0)); hold on;
+    else
+      contourf(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0), [min(fft_clim):0.25:max(fft_clim)], 'edgecolor', 'none'); hold on;
     end
-    if(i==1)
-      ylabel(YLAB);
+    for j=1:numel(fft_selFreBand)
+      plot(fft_xlim_ang, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand);
     end
+    if(i==1); ylabel(YLAB2); end
+    if(i==4); pos=get(gca,'Position'); hcb1 = colorbar(); ylabel(hcb1, CBYLAB_PRESPEC, 'interpreter', 'latex'); set(gca,'Position',pos); end
+    
+    % now plot radiation pattern in infrasound band
+    axes(tightAxes_radPat(i))
+    semilogy(V_probed_ang{i}*180/pi, V_probed_band{i}, 'color', fft_colourISBand);
+    if(i==1); ylabel(YLAB3); end
+    if(i==2); xlabel(XLAB2); end
   end
-  hcb1 = colorbar(); ylabel(hcb1, CBYLAB_PRESPEC, 'interpreter', 'latex');
+  
   CMAP = colormaps_fromPython('bone', 0);
   CMAP = flipud(CMAP);
-  set(tightAxes_spec, 'xscale', 'log', 'yscale', 'log', 'xlim', [minx, maxx], 'ylim', [minz, max(ylim)], 'xtick', fft_xtick, 'ytick', fft_xtick, 'colormap', CMAP, 'clim', fft_clim);
-  set(tightAxes_spec(2:end), 'YTickLabel', {});
-  if(fft_wavenumber0_wavelength1)
-    xtl = split(sprintf('%.3g|',xticks),'|');
-    ytl = split(sprintf('%.3g|',yticks),'|');
-    set(tightAxes_spec(1), 'yticklabels', ytl(1:end-1));
-    set(tightAxes_spec, 'xticklabels', xtl(1:end-1));
-  else
-    legend(h_kxkzth, 'location', 'northeast');
-    error('kek');
+  set(tightAxes_spec, 'colormap', CMAP, 'clim', fft_clim);
+  set(tightAxes_spec(1:4), 'xscale', 'log', 'yscale', 'log', 'xlim', fft_xlim, 'ylim', fft_ylim, 'ytick', fft_xtick, 'xtick', fft_xtick, 'yticklabel', fft_xticklabel);
+  set(tightAxes_spec(1:3), 'xticklabel', [fft_xticklabel(1:end-1), ' ']); set(tightAxes_spec(4), 'xticklabel', fft_xticklabel);
+  set(tightAxes_spec(5:8), 'xscale', 'lin', 'yscale', 'log', 'xlim', fft_xlim_ang, 'ylim', fft_ylim_fre);
+  set(tightAxes_spec(5:8), 'xtick', fft_xtick_ang, 'ytick', fft_ytick_fre);
+  set(tightAxes_radPat, 'xtick', fft_xtick_ang, 'xlim', fft_xlim_ang, 'ylim', 10.^fft_clim);
+  set(tightAxes_radPat([2:4]), 'YTickLabel', {});
+  set(tightAxes_spec([2:4, 6:8]), 'YTickLabel', {});
+  set(tightAxes_spec([5:8]), 'XTickLabel', {});
+  hcb1.Position(1) = sum(tightAxes_spec(8).Position([1,3]))+hshift_cb;
+  hcb1.Position(2) = tightAxes_spec(8).Position(2);
+  hcb1.Position(4) = sum(tightAxes_spec(4).Position([2,4])) - tightAxes_spec(8).Position(2);
+  for i=5:8; tightAxes_spec(i).Position([2,4]) = tightAxes_spec(i).Position([2,4]) + [1,-1]*(0.03 + sum(tightAxes_radPat(1).Position([2,4]))-tightAxes_spec(i).Position(2)); end
+  for i=1:4
+    vshift = 0.075;
+    tightAxes_spec(i).Position([2,4]) = tightAxes_spec(i).Position([2,4]) + [1,-1]*vshift;
+    tightAxes_spec(i+4).Position([4]) = tightAxes_spec(i+4).Position([4]) + vshift;
   end
-  hcb1.Position([2,4]) = tightAxes_spec(end).Position([2,4]);
-  hcb1.Position([1]) = sum(tightAxes_spec(end).Position([1,3]))+hshift_cb;
-  ll = add_labels_subplots_local(fig_spect, tightAxes_spec, 1);
+  ll1 = add_labels_subplots_local(fig_spect, tightAxes_spec(1:4), 1);
+%   ll2 = add_labels_subplots_local(fig_spect, tightAxes_spec(5:8), 1);
   customSaveFig(fig_spect, [figspectpath], extToSave, 9999);
 end
 
@@ -266,8 +291,6 @@ if(do_comparefft)
     for i=IDs_to_process(2:end)
       axes(tightAxes_diff(i-1));
       toPlot = abs(PRE_fft1s{i})-abs(PRE_fft1s_BASE); % signed difference
-%       sgn = sign(toPlot);
-%       toPlot = log10(toPlot./sgn).*sgn;
       toPlot = toPlot(kz>0, kx>0);
       if(fft_pcolor1_contour0)
         pcolor(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot); hold on;
@@ -276,10 +299,10 @@ if(do_comparefft)
         contourf(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot, [min(fftcomp_clim-step):step:max(fftcomp_clim+step)], 'edgecolor', 'none');
       end
       if(i==3)
-        xlabel(XLAB);
+        xlabel(XLAB1);
       end
       if(i==2)
-        ylabel(YLAB);
+        ylabel(YLAB1);
       end
     end
     hcb = colorbar(); ylabel(hcb, CBYLAB_diff, 'interpreter', 'latex');
@@ -314,19 +337,19 @@ if(do_mosaic)
   customSaveFig(fmosaic, figpath_mosaic, {'fig', 'eps'}, 9999);
 end
 
-% move produced figures to thesis
-disp(['[] Starting to move Figures to thesis folder.']);
-system(['cp ', figfieldpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
-system(['cp ', figspectpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
-system(['cp ', figspectdiffpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
-if(do_mosaic)
-  system(['cp ', figpath_mosaic, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/']);
-else
-  for i=1:numel(OFDs)
-    system(['cp ', OFDs{i},filesep,'image0000005.jpg /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/snap_',TAGS{i},'.jpg']);
-  end
-end
-
+% % move produced figures to thesis
+% disp(['[] Starting to move Figures to thesis folder.']);
+% system(['cp ', figfieldpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
+% system(['cp ', figspectpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
+% system(['cp ', figspectdiffpath, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo']);
+% if(do_mosaic)
+%   system(['cp ', figpath_mosaic, '.* /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/']);
+% else
+%   for i=1:numel(OFDs)
+%     system(['cp ', OFDs{i},filesep,'image0000005.jpg /home/l.martire/Documents/work/THESE/PHD_THESIS/images/chap2/im_7_topo/snap_',TAGS{i},'.jpg']);
+%   end
+% end
+% 
 
 
 
