@@ -30,10 +30,9 @@ interp_forceDGMesh = 0;
 interp_dx = 20;
 interp_dz = interp_dx; % dx=10 ok, dx<10 chugs hard
 
-do_pfield = 0;
-do_fft = 1;
+do_pfield = 1;
+do_fft = 0;
 do_comparefft = 0;
-do_mosaic = 0;
 
 pfield_zoombox_x = [-1,1]*14e3;
 pfield_zoombox_z = [7,11.5]*1e3;
@@ -62,6 +61,9 @@ OFDs = {[rtdwprfx, 'without_mountains', filesep, 'OUTPUT_FILES_', tg_bsln], ...
         [rtdwprfx, 'with_mountains_3.00L0', filesep, 'OUTPUT_FILES_', tg_3]};
 TAGS = {'0p000', '0p33h', '0p33l', '3p00h'};
 IDs_to_process = 1:4;
+
+[S] = zint(max(abs(pfield_zoombox_x)));
+fft_radPatAngles = [0, atan(pi*[S{2}.H, S{3}.H, S{4}.H]./[S{2}.L, S{3}.L, S{4}.L])]*180/pi;
 
 % Load.
 if(do_load)
@@ -143,29 +145,38 @@ if(do_pfield)
   if(max(abs(diff(dt.*IT))) > 1e-9)
     error('dt*IT varies from one simulation to the other');
   end
-  CBYLAB_PRESPEC = ['field of pressure perturbations $p''$ at $t=',num2str(IT(1)*dt(1)),'$~s [Pa]'];
-  fig_field = figure('units','normalized','outerposition',[0,0,1,1]);
-  tightAxes = tight_subplot(4, 1, [0.03,0.], [0.11,0.05], [0.06, 0.06]);
+  CBYLAB_PRESPEC = ['field of pressure perturbations $p''$ [Pa], at $t=',num2str(IT(1)*dt(1)),'$~s'];
+  fig_field = figure('units','normalized','outerposition',[0,0,0.8,1]);
+  tightAxes = tight_subplot(8, 1, [0.03,0.], [0.09,0.01], [0.06, 0.12]);
   for i=IDs_to_process
-    axes(tightAxes(i));
+    axes(tightAxes(i*2-1));
     selx = (Xi{i}(1,:)>=min(pfield_zoombox_x)*1.1) & (Xi{i}(1,:)<=max(pfield_zoombox_x)*1.1);
     selz = (Yi{i}(:,1)>=min(pfield_zoombox_z)*0.9) & (Yi{i}(:,1)<=max(pfield_zoombox_z)*1.1);
     pcolor(Xi{i}(selz,selx)/1e3, Yi{i}(selz,selx)/1e3, Vi{i}.pre(selz,selx)); hold on;
-    ylabel(['$z$ [km]']);
+    if(i==3); ylabel(['altitude $z$ [km]']); end
+    if(i==4); hcb = colorbar(); ylabel(hcb, CBYLAB_PRESPEC, 'interpreter', 'latex'); end
+    
+    axes(tightAxes(i*2));
+    plot(S{i}.x/1e3, S{i}.z/1e3);
+%     ylabel(['$z$ [km]']);
   end
   xlabel(['$x$ [km]']);
-  hcb = colorbar(); ylabel(hcb, CBYLAB_PRESPEC, 'interpreter', 'latex');
   XTCK_pfield = (min(pfield_zoombox_x):2e3:max(pfield_zoombox_x))/1e3;
   ZTCK_pfield = (min(pfield_zoombox_z):2e3:max(pfield_zoombox_z))/1e3;
+  linkaxes(tightAxes, 'x');
   CMAP = colormaps_custom([-1,-blk_pfield, -(1+thrsh_pfield)/2, -thrsh_pfield, 0, thrsh_pfield, (1+thrsh_pfield)/2, blk_pfield,1], [[0,0,1].*[0.25,0.75,1]';[0.9,0.9,1];[1,1,1];[1,0.9,0.9];[1,0,0].*[1,0.75,0.25]'], 0);
-  set(tightAxes, 'CLim', pfield_clim, 'Colormap', CMAP, 'XLim', pfield_zoombox_x/1e3, 'YLim', pfield_zoombox_z/1e3, 'XTick', XTCK_pfield, 'YTick', ZTCK_pfield);
-  for i=1:numel(tightAxes)
-    tightAxes(i).Position = [tightAxes(end).Position(1), tightAxes(i).Position(2), tightAxes(4).Position(3:4)];
-  end
+  set(tightAxes, 'tickdir', 'out');
+  set(tightAxes((1:4)*2-1), 'CLim', pfield_clim, 'Colormap', CMAP, 'XLim', pfield_zoombox_x/1e3, 'YLim', pfield_zoombox_z/1e3, 'XTick', XTCK_pfield, 'YTick', ZTCK_pfield);
+  set(tightAxes((1:4)*2), 'xlim', pfield_zoombox_x/1e3, 'ylim', [-100, 1700]/1e3, 'XTick', XTCK_pfield, 'YTick', [0,1500]/1e3);
+  for i=1:numel(tightAxes); tightAxes(i).Position = [tightAxes(end).Position(1), tightAxes(i).Position(2), tightAxes(4).Position(3:4)]; end
+  vreduce = 0.05;
+  for i=((1:4)*2); tightAxes(i).Position(4) = tightAxes(i).Position(4)-vreduce; end
+  for i=((1:4)*2-1); tightAxes(i).Position([2,4]) = tightAxes(i).Position([2,4]) + [-1,1]*(vreduce+0.01); end
   set(tightAxes(1:end-1), 'XTickLabel', {});
+  for i=1:numel(tightAxes); set(tightAxes(i).YAxis, 'TickLength', [0.001, 0.002]*4); set(tightAxes(i).XAxis, 'TickLength', [0.001, 0.002]*4); end
   height_spanning_all_axes = sum(tightAxes(1).Position([2,4]))-tightAxes(end).Position(2);
   set(hcb, 'Position', [hcb.Position(1) + 0.005, tightAxes(end).Position(2), hcb.Position(3), height_spanning_all_axes],'fontsize', 26);
-  ll = add_labels_subplots_local(fig_field,tightAxes,0.9);
+  ll = add_labels_subplots_local(fig_field, tightAxes((1:4)*2-1), 0.9);
   customSaveFig(fig_field, [figfieldpath], extToSave, 9999);
 end
 
@@ -200,7 +211,7 @@ if(any([do_fft, do_comparefft]))
   margz = [0.09, 0.025]; margh = [0.075, 0.09]; gap = [0.13, 0.016];
   hshift_cb = 0.01;
   absfftname = ['\left|\widehat{P}\left(k_x,k_z\right)\right|'];
-  CBYLAB_PRESPEC = ['$\log_{10}\left(',absfftname,'\right)$'];
+  CBYLAB_PRESPEC = ['radiated infrasound, $\log_{10}\left(',absfftname,'\right)$'];
   CBYLAB_diff = ['$',absfftname,'$ difference'];
   
   % Build theoretical curves.
@@ -249,7 +260,8 @@ if(do_fft)
     
     % now plot radiation pattern in infrasound band
     axes(tightAxes_radPat(i))
-    semilogy(V_probed_ang{i}*180/pi, V_probed_band{i}, 'color', fft_colourISBand);
+    plot(fft_radPatAngles(i)*[1,1], 10.^fft_clim, ':', 'color', 'k'); hold on;
+    semilogy(V_probed_ang{i}*180/pi, V_probed_band{i}, 'color', fft_colourISBand); hold on;
     if(i==1); ylabel(YLAB3); end
     if(i==2); xlabel(XLAB2); end
   end
@@ -261,7 +273,7 @@ if(do_fft)
   set(tightAxes_spec(1:3), 'xticklabel', [fft_xticklabel(1:end-1), ' ']); set(tightAxes_spec(4), 'xticklabel', fft_xticklabel);
   set(tightAxes_spec(5:8), 'xscale', 'lin', 'yscale', 'log', 'xlim', fft_xlim_ang, 'ylim', fft_ylim_fre);
   set(tightAxes_spec(5:8), 'xtick', fft_xtick_ang, 'ytick', fft_ytick_fre);
-  set(tightAxes_radPat, 'xtick', fft_xtick_ang, 'xlim', fft_xlim_ang, 'ylim', 10.^fft_clim);
+  set(tightAxes_radPat, 'xscale', 'lin', 'yscale', 'log', 'xtick', fft_xtick_ang, 'xlim', fft_xlim_ang, 'ylim', 10.^fft_clim);
   set(tightAxes_radPat([2:4]), 'YTickLabel', {});
   set(tightAxes_spec([2:4, 6:8]), 'YTickLabel', {});
   set(tightAxes_spec([5:8]), 'XTickLabel', {});
@@ -327,14 +339,6 @@ if(do_comparefft)
   else
     error('base file does not exist');
   end
-end
-
-if(do_mosaic)
-  error('do not do this anymore please this is ugly');
-  name_fig = ['snapshot_mosaic'];
-  topoMosaic;
-  figpath_mosaic = [thisFolder, name_fig];
-  customSaveFig(fmosaic, figpath_mosaic, {'fig', 'eps'}, 9999);
 end
 
 % % move produced figures to thesis
