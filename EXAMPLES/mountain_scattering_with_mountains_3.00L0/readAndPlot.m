@@ -1,8 +1,4 @@
-do_load = 0;
-if(do_load)
-  clear all;
-  do_load = 1;
-end
+do_load = 1; if(do_load); clear all; do_load = 1; end
 close all;
 clc;
 
@@ -30,7 +26,7 @@ interp_forceDGMesh = 0;
 interp_dx = 20;
 interp_dz = interp_dx; % dx=10 ok, dx<10 chugs hard
 
-do_pfield = 0;
+do_pfield = 1;
 do_fft = 1;
 do_comparefft = 0;
 
@@ -48,7 +44,7 @@ fft_xlim = [0.1, 10]; fft_xtick = [0.1,1,10]; fft_xticklabel = {'0.1', '1', '10'
 fft_ylim = fft_xlim; fft_ytick = fft_xtick;
 fft_xlim_ang = [0, 90]; fft_xtick_ang = 0:15:90;
 fft_ylim_fre = [1e-1, 3]; fft_ytick_fre = logspace(-2,0,3);
-fft_selFreBand = [0.5, 2]; fft_selFreBandN = 10;
+fft_selFreBand = [0.5, 2]; fft_selFreBandN = 25;
 extToSave = {'eps'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,11 +187,11 @@ if(any([do_fft, do_comparefft]))
     [KX, KZ] = meshgrid(kx(kx>0), kz(kz>0)); 
     [LaunchAngles{i}, Frequencies{i}] = KxKz2LaFr(1./KX, 1./KZ, soundspeed{i});
     [V_probed_ang{i}, V_probed_fre{i}, ~, V_probed_band{i}] = LaFr2RadPattern(LaunchAngles{i}, Frequencies{i}, abs(PRE_fft1s{i}(kz>0, kx>0)), min(fft_selFreBand), max(fft_selFreBand), fft_selFreBandN);
-    if(i==1)
-      baseline_fft = PRE_fft1s{i};
-      save([baseline_fft_path], 'baseline_fft');
-      disp(['saving baseline']);
-    end
+%     if(i==1)
+%       baseline_fft = PRE_fft1s{i};
+%       save([baseline_fft_path], 'baseline_fft');
+%       disp(['saving baseline']);
+%     end
   end
   
   % Plot parameters.
@@ -236,7 +232,7 @@ if(do_fft)
     if(fft_pcolor1_contour0)
       pcolor(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot(kz>0, kx>0)); hold on;
     else
-      contourf(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot(kz>0, kx>0), [min(fft_clim):0.25:max(fft_clim)], 'edgecolor', 'none'); hold on;
+      contourf(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot(kz>0, kx>0), [min(fft_clim):(range(fft_clim)/25):max(fft_clim)], 'edgecolor', 'none'); hold on;
     end
     for j=1:numel(thcurvs)
 %       h_kxkzth = plot(fac*[min(kx(kx>0)), [1,1]*th_kxkz{i}].^pow, fac*[[1,1]*th_kxkz{i}, min(kz(kz>0))].^pow, 'color', COL_thkxkz, 'linewidth', LW_thkxkz, 'displayname', dnam_thkxkz);
@@ -250,11 +246,9 @@ if(do_fft)
     if(fft_pcolor1_contour0)
       pcolor(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0)); hold on;
     else
-      contourf(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0), [min(fft_clim):range(fft_clim)/25:max(fft_clim)], 'edgecolor', 'none'); hold on;
+      contourf(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0), [min(fft_clim):(range(fft_clim)/25):max(fft_clim)], 'edgecolor', 'none'); hold on;
     end
-    for j=1:numel(fft_selFreBand)
-      plot(fft_xlim_ang, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand);
-    end
+    for j=1:numel(fft_selFreBand); plot(fft_xlim_ang, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand); end
     if(i==1); ylabel(YLAB2); end
     if(i==4); pos=get(gca,'Position'); hcb1 = colorbar(); ylabel(hcb1, CBYLAB_PRESPEC, 'interpreter', 'latex'); set(gca,'Position',pos); end
     
