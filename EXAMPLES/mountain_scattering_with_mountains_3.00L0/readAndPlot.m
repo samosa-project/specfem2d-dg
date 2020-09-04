@@ -30,8 +30,8 @@ interp_forceDGMesh = 0;
 interp_dx = 20;
 interp_dz = interp_dx; % dx=10 ok, dx<10 chugs hard
 
-do_pfield = 1;
-do_fft = 0;
+do_pfield = 0;
+do_fft = 1;
 do_comparefft = 0;
 
 pfield_zoombox_x = [-1,1]*14e3;
@@ -250,7 +250,7 @@ if(do_fft)
     if(fft_pcolor1_contour0)
       pcolor(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0)); hold on;
     else
-      contourf(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0), [min(fft_clim):0.25:max(fft_clim)], 'edgecolor', 'none'); hold on;
+      contourf(LaunchAngles{i}*180/pi, Frequencies{i}, toPlot(kz>0, kx>0), [min(fft_clim):range(fft_clim)/25:max(fft_clim)], 'edgecolor', 'none'); hold on;
     end
     for j=1:numel(fft_selFreBand)
       plot(fft_xlim_ang, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand);
