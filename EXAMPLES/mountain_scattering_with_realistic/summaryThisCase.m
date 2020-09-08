@@ -2,6 +2,8 @@ do_load = 0; if(do_load); clear all; do_load = 1; end
 close all;
 clc;
 
+addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils'));
+
 IT = 120000;
 OFD = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_realistic/OUTPUT_FILES_411107_lns'];
 
@@ -18,8 +20,6 @@ do_analytic_wavefront = 0;
 fft_colourISBand=[0,1,0]*0.85;
 thrsh_pfield = 0.15; blk_pfield=0.97;
 COL_h_wave = [0,1,0]*0.66;
-% CBYLAB_PRESPEC = ['field of pressure perturbations $p''$ at $t=',num2str(IT*dt),'$~s [Pa]'];
-CBYLAB_PRESPEC = ['$p''\left(t=',num2str(IT*dt),'\right)$ [Pa]'];
 pfield_clim = [-1,1]*400;
 XLIM = [-1,1]*sel_boxabsx;
 YLIM = [sel_boxy];
@@ -57,6 +57,9 @@ if(do_load)
   disp(['[',mfilename,'] Interpolating.']);
   [Xi, Yi, Vi] = interpDumps(X, Y, V, range(X)/interp_dx, range(Y)/interp_dz, 0);
 end
+
+% CBYLAB_PRESPEC = ['field of pressure perturbations $p''$ at $t=',num2str(IT*dt),'$~s [Pa]'];
+CBYLAB_PRESPEC = ['$p''\left(t=',num2str(IT*dt),'\right)$ [Pa]'];
 
 % Get speed of sound.
 cp = readExampleFiles_extractParam(parfile, 'constant_p', 'float'); cv = readExampleFiles_extractParam(parfile, 'constant_v', 'float'); gamma = cp/cv;
@@ -100,6 +103,7 @@ tightAxesRadPat = tight_subplot(2, 1, [gapzradpat, 0], [margbot, toppanel_z+gapz
 
 axes(tightAxesPField);
 pcolor(Xi/1e3, Yi/1e3, Vi.pre); hold on
+plot(polyshape(([CS.rq, max(CS.rq), min(CS.rq)]-mean(CS.rq))/1e3,[CS.elvq,0*[1,1]]/1e3), 'facealpha', 1, 'linestyle', 'none'); % add silhouette on top
 if(do_analytic_wavefront); plot(x_wavefront/1e3, (h_wavefront-offset)/1e3, 'color', COL_h_wave, 'linestyle', ':', 'linewidth', 4); end
 ylabel(['$z$ [km]']); xlabel(['$\leftarrow$ towards Spain $|$ $x$ [km] $|$ towards France $\rightarrow$']);
 hcb1 = colorbar(); ylabel(hcb1, CBYLAB_PRESPEC, 'interpreter', 'latex');
@@ -140,6 +144,9 @@ hcb.Position([1, 2, 4]) = [hcb1.Position(1), tightAxesRadPat(2).Position(2), tig
 for i=1:numel(tightAxesRadPat); tightAxesRadPat(i).Position(3) = hcb1.Position(1)-0.015-tightAxesRadPat(i).Position(1); end
 tightAxesRadPat(1).Position([2,4]) = tightAxesRadPat(1).Position([2,4])+[-1,1]*0.05;
 tightAxesRadPat(2).Position(4) = tightAxesRadPat(2).Position(4)-0.075;
+
+ll = add_labels_subplots(fig_summary, 0.9, 2);
+set(ll(1), 'position', get(ll(1), 'position')-[0,0.013,0,0]);
 
 % Save
 extToSave = {'eps'};
