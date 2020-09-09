@@ -113,27 +113,6 @@
   double precision :: PERIODIC_HORIZ_DIST
   double precision :: periodic_BC_search_bandwidth ! For acceleration method for periodic points finding (skip points too far from left/right boundaries). See 'repartition_coupling.f90'.
 
-  !---------------------------------------------------------------------
-  ! DG related quantities.
-  !---------------------------------------------------------------------
-  logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH
-  double precision :: ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
-  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_CUSTOM
-  double precision :: SPREAD_SSF_SIGMA
-  logical :: REMOVE_STF_INITIAL_DISCONTINUITY
-  
-  ! Discontinuous Galerkin method
-  logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
-        CONSTRAIN_HYDROSTATIC, IONOSPHERIC_COUPLING, USE_ISOTHERMAL_MODEL
-  double precision :: SCALE_HEIGHT, gravity, dynamic_viscosity, thermal_conductivity, &
-        tau_epsilon, tau_sigma, MINMOD_FACTOR, coord_interface, constant_p, constant_v, &
-        surface_density, sound_velocity, wind
-  ! Modification for LNS.
-  logical USE_LNS, VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU
-  
-  double precision :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time, FORCING_DG_FACTOR
-  integer :: id_region_DG, TYPE_SOURCE_DG, TYPE_FORCING
-
   ! variables used for source-receiver geometry
   integer :: NSOURCES
 
@@ -177,6 +156,23 @@
 
   double precision, dimension(:),allocatable :: rho_f,phi,tortuosity,permxx,permxz,&
        permzz,kappa_s,kappa_f,kappa_fr,eta_f,mu_fr
+  
+  !---------------------------------------------------------------------
+  ! variables used for the DG extension (SPECFEM2D-DG)
+  !---------------------------------------------------------------------
+  logical :: ABC_STRETCH_TOP, ABC_STRETCH_LEFT, ABC_STRETCH_BOTTOM, ABC_STRETCH_RIGHT, ABC_STRETCH
+  double precision :: ABC_STRETCH_TOP_LBUF, ABC_STRETCH_LEFT_LBUF, ABC_STRETCH_BOTTOM_LBUF, ABC_STRETCH_RIGHT_LBUF
+  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_CUSTOM
+  double precision :: SPREAD_SSF_SIGMA
+  logical :: REMOVE_STF_INITIAL_DISCONTINUITY
+  logical :: USE_DISCONTINUOUS_METHOD, REMOVE_DG_FLUID_TO_SOLID, USE_SLOPE_LIMITER, &
+             CONSTRAIN_HYDROSTATIC, IONOSPHERIC_COUPLING, USE_ISOTHERMAL_MODEL
+  double precision :: SCALE_HEIGHT, gravity, dynamic_viscosity, thermal_conductivity, &
+                      tau_epsilon, tau_sigma, MINMOD_FACTOR, coord_interface, constant_p, constant_v, &
+                      surface_density, sound_velocity, wind
+  logical USE_LNS, VALIDATION_MMS, VALIDATION_MMS_IV, VALIDATION_MMS_KA, VALIDATION_MMS_MU
+  double precision :: main_spatial_period, main_time_period, forcing_initial_loc, forcing_initial_time, FORCING_DG_FACTOR
+  integer :: id_region_DG, TYPE_SOURCE_DG, TYPE_FORCING
 
   !--------------------------------------------------------------
   ! variables used for output

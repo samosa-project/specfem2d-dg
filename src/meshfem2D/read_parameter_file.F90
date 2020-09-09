@@ -147,7 +147,7 @@
 
   !--------------------------------------------------------------------
   !
-  ! Discontinuous Galerkin method
+  ! inputs related to the DG extension (SPECFEM2D-DG)
   !
   !--------------------------------------------------------------------
   call read_value_logical_p(USE_DISCONTINUOUS_METHOD, 'solver.USE_DISCONTINUOUS_METHOD')
@@ -674,10 +674,10 @@
       case default
         ! If the user specified only a subset of the ENERGYBOX_* parameters, then his porch light ain’t on, and he should be punished.
         ENERGYBOXING = .false. ! Safeguard.
-        write(*,*) "Somehow only ",count_ENERGYBOX," ENERGYBOX parameters were found. ",& 
-                   "Wait. That's illegal. ",&
+        write(*,*) "Somehow only ", count_ENERGYBOX, " ENERGYBOX parameters were found. ", &
+                   "Wait. That's illegal. ", &
                    "https://i.kym-cdn.com/entries/icons/original/000/028/207/Screen_Shot_2019-01-17_at_4.22.43_PM.jpg ", &
-                   "You must specify ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX. All of them or none. ",&
+                   "You must specify ENERGYBOX_XMIN, ENERGYBOX_XMAX, ENERGYBOX_ZMIN, ENERGYBOX_ZMAX. All of them or none. ", &
                    "Do or do not, there is no try."
         stop
     end select
@@ -963,28 +963,14 @@
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"
-      write(*,*) "* id_region_DG badly set.      *"
+      write(*,*) "* id_region_DG set to a value  *"
+      write(*,*) "* either negative or above     *"
+      write(*,*) "* nbmodels. Please set         *"
+      write(*,*) "* id_region_DG as a value      *"
+      write(*,*) "* between 1 and nbmodels.      *"
       write(*,*) "********************************"
       stop
     endif
-    
-    !if(ABC_STRETCH .and. USE_LNS) then
-    !  write(*,*) "********************************"
-    !  write(*,*) "*            ERROR             *"
-    !  write(*,*) "********************************"
-    !  write(*,*) "* The stretching absorbing     *"
-    !  write(*,*) "* boundary conditions are not  *"
-    !  write(*,*) "* implemented for LNS          *"
-    !  write(*,*) "* simulations. However, they   *"
-    !  write(*,*) "* are for FNS simulations, but *"
-    !  write(*,*) "* only work without wind.      *"
-    !  write(*,*) "********************************"
-    !  write(*,*) "* Set all ABC_STRETCH_* inputs *"
-    !  write(*,*) "* to .false. in parfile, or    *"
-    !  write(*,*) "* set USE_LNS to .false..      *"
-    !  write(*,*) "********************************"
-    !  stop
-    !endif
     
     if(USE_LNS .and. PML_BOUNDARY_CONDITIONS) then
       stop "PML WITH LNS ARE NOT FULLY IMPLEMENTED YET."
