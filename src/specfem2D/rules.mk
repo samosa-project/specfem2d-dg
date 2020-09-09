@@ -364,12 +364,12 @@ $O/specfem2D.spec.o: $O/specfem2D_par.spec_module.o $O/specfem2D_par_LNS.spec_mo
 #### rule to build each .o file below
 ####
 
-$O/%.spec_module.o: $S/%.f90 ${SETUP}/constants.h
+$O/%.spec_module.o: $S/%.F90 ${SETUP}/constants.h
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
-#$O/%.spec.o: $S/%.f90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o
+#$O/%.spec.o: $S/%.F90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o
 # Brutal modification for LNS, there must be a more classy way to do it.
-$O/%.spec.o: $S/%.f90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o $O/specfem2D_par_LNS.spec_module.o
+$O/%.spec.o: $S/%.F90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o $O/specfem2D_par_LNS.spec_module.o
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
 #$O/%.spec.o: $S/%.F90 ${SETUP}/constants.h $O/specfem2D_par.spec_module.o

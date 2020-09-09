@@ -131,10 +131,10 @@ endif
 #### rule to build each .o file below
 ####
 
-$O/%.mesh_module.o: $S/%.f90 ${SETUP}/constants.h
+$O/%.mesh_module.o: $S/%.F90 ${SETUP}/constants.h
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
-$O/%.mesh.o: $S/%.f90 ${SETUP}/constants.h $O/meshfem2D_par.mesh_module.o
+$O/%.mesh.o: $S/%.F90 ${SETUP}/constants.h $O/meshfem2D_par.mesh_module.o
 	${F90} ${FCFLAGS_f90} -c -o $@ $<
 
 $O/%.mesh.o: $S/%.F90 ${SETUP}/constants.h $O/meshfem2D_par.mesh_module.o
