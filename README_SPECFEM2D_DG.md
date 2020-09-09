@@ -53,13 +53,6 @@
 1.3) Configure source parameters in the file "./EXAMPLES/my_simulation/SOURCEFILE"
 1.4) Note: the names of the files "PARFILE", "INTERFACESFILE", and "SOURCEFILE" may vary, depending of what's inside the "./EXAMPLES/my_simulation/run_this_example.sh" script.
 1.5) Run the simulation using the "./EXAMPLES/my_simulation/run_this_example.sh" script.
-
-2) [DEVELOPEMENT] How to configure DG FNS (full Navier-Stokes) boundary conditions.
-2.1) Modify the source file "./src/specfem2d/boundary_terms.f90" according to the wanted boundary conditions.
-2.2) Recompile SPECFEM-DG:
-       make
-     or:
-       make clean; make all
 ###############################
 
 # Runtime errors. #############
