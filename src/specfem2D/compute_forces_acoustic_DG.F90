@@ -34,8 +34,7 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_DG                                   !
 ! ------------------------------------------------------------ !
-! TODO: Description.
-! compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
+! Computes the right-hand side of the differential FNS (Full Navier-Stokes) system.
 
 ! Leave axisym implementation commented out for now.
 #define ACTIVATE_AXISYM_FOR_FNS 0
@@ -72,6 +71,9 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
   real(kind=CUSTOM_REAL), parameter :: THREEl  = 3._CUSTOM_REAL
   real(kind=CUSTOM_REAL), parameter :: TWOTHIRDS = TWOl/THREEl
   real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: doRemoveDxV0x = ZEROl
+  real(kind=CUSTOM_REAL), parameter :: testCoef_Ni = ONEl
+  
   integer :: ispec, i,j, k,iglob, iglob_unique
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: temp_rho_1, temp_rho_2, &
                                                      temp_rhovx_1, temp_rhovx_2, temp_rhovz_1, temp_rhovz_2, &
@@ -105,11 +107,6 @@ subroutine compute_forces_acoustic_DG(rho_DG, rhovx_DG, rhovz_DG, E_DG, &
   ! Axisymmetric implementation.
   real(kind=CUSTOM_REAL) :: xxi, temp_boundary
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLZ) :: r_xiplus1
-  ! Switches.
-  real(kind=CUSTOM_REAL) :: doRemoveDxV0x, testCoef_Ni
-  
-  doRemoveDxV0x = ZEROl
-  testCoef_Ni = ONEl
   
   ! Initialise auxiliary unknowns from constitutive variables.
   veloc_x_DG = rhovx_DG/rho_DG
@@ -814,105 +811,77 @@ end subroutine compute_forces_acoustic_DG
 ! compute_viscous_tensors                                      !
 ! ------------------------------------------------------------ !
 ! Computes the values of the auxiliary viscous tensors \mathcal{T} and \mathcal{V} at every GLL point of the mesh.
-! See doi:10.1016/j.jcp.2007.12.009, section 4.THREEl2.
+! See doi:10.1016/j.jcp.2007.12.009, section 4.3.2.
    
 subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_DG, rhovz_DG, E_DG, timelocal)
-
-! ?? compute forces in the acoustic elements in forward simulation and in adjoint simulation in adjoint inversion
-  
-  use constants,only: CUSTOM_REAL,NGLLX,NGLLZ!,gamma_euler
-
+  use constants, only: CUSTOM_REAL, NGLLX, NGLLZ
   use specfem_par, only: nglob_DG,nspec, ispec_is_acoustic_DG,&
                          xix,xiz,gammax,gammaz,jacobian, &
                          wxgll,wzgll, ibool_DG, &
                          hprimewgll_zz, hprimewgll_xx, &
                          hprime_xx, hprime_zz, rmass_inverse_acoustic_DG, &
-                         c_V, &
-                         ibool_before_perio,&
+                         c_V, ibool_before_perio,&
                          rhovx_init, rhovz_init, rho_init, T_init, E_init, CONSTRAIN_HYDROSTATIC, &
                          link_iface_ijispec, nx_iface, nz_iface, weight_iface, neighbor_DG_iface,&
                          ABC_STRETCH,stretching_ya,stretching_buffer, p_DG_init, gammaext_DG ! Stretching-based absorbing conditions.
                          
   implicit none
   
-  ! local parameters
-  integer :: ispec,i,j,k,iglob, iglobM, iglobP, iglob_unique
-  real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
-        E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
-        Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
-        flux_n, flux_x, flux_z, nx, nz, timelocal, weight, gamma_P, &
-        Vix_P, Viz_P, Ni_DG_P
-  logical :: exact_interface_flux
-  !integer, dimension(nglob_DG) :: MPI_iglob
-  integer, dimension(3) :: neighbor
-  integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
-
-  ! Jacobian matrix and determinant
-  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl
-
-  real(kind=CUSTOM_REAL) :: temp_Tx, temp_Tz, temp_Vxx, temp_Vzx, temp_Vxz, temp_Vzz, temp_rhox, temp_Epx
-  
-  ! Local variables.
+  ! Input/Output.
   real(kind=CUSTOM_REAL), dimension(2, 2, nglob_DG), intent(out) :: V_DG
   real(kind=CUSTOM_REAL), dimension(2, nglob_DG), intent(out) :: T_DG
-  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: &
-         rho_DG, rhovx_DG, rhovz_DG, E_DG, veloc_x_DG, veloc_z_DG, T, &
-         grad_Tx, grad_Tz, grad_Vxx, grad_Vzz, grad_Vxz, grad_Vzx, &
-         grad_rhox, grad_Epx, p_DG, dxrho_DG, dxE_DG
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: dxrho_DG, dxE_DG
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: rho_DG, rhovx_DG, rhovz_DG, E_DG
+  real(kind=CUSTOM_REAL) :: timelocal
   
-  ! Viscosity.
+  ! Local Variables.
+  real(kind=CUSTOM_REAL), parameter :: ZEROl = 0._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: doRemoveDxV0x = ZEROl
+  logical, parameter :: ADD_SURFACE_TERMS = .true. ! If set to .true., use Green's identity to compute the volume integral as another volume integral and surface terms. If set to .false., compute the volume integral as is.
+  
+  integer :: ispec,i,j,k,iglob, iglobM, iglobP, iglob_unique
+  real(kind=CUSTOM_REAL) :: rho_DG_P, rhovx_DG_P, rhovz_DG_P, &
+                            E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
+                            Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, &
+                            flux_n, flux_x, flux_z, nx, nz, weight, gamma_P, &
+                            Vix_P, Viz_P, Ni_DG_P
+  logical :: exact_interface_flux
+  integer, dimension(3) :: neighbor
+  integer :: iface1, iface, iface1_neighbor, iface_neighbor, ispec_neighbor
+  real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl ! Jacobian matrix and determinant.
+  real(kind=CUSTOM_REAL) :: temp_Tx, temp_Tz, temp_Vxx, temp_Vzx, temp_Vxz, temp_Vzz, temp_rhox, temp_Epx
+  real(kind=CUSTOM_REAL), dimension(nglob_DG) :: veloc_x_DG, veloc_z_DG, T, &
+                                                 grad_Tx, grad_Tz, grad_Vxx, grad_Vzz, grad_Vxz, grad_Vzx, &
+                                                 grad_rhox, grad_Epx, p_DG
   real(kind=CUSTOM_REAL) :: dux_dxi, dux_dgamma, duz_dxi, duz_dgamma, dT_dxi, dT_dgamma, &
-     drho_dxi, drho_dgamma, dEp_dxi, dEp_dgamma
+                            drho_dxi, drho_dgamma, dEp_dxi, dEp_dgamma
   real(kind=CUSTOM_REAL) :: dux_dx, dux_dz, duz_dx, duz_dz, dT_dx, dT_dz, drho_dx, dEp_dx
   real(kind=CUSTOM_REAL) :: wxl, wzl
-  
-  ! Parameters.
-  real(kind=CUSTOM_REAL), parameter :: ZEROll = 0._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: ONEl  = 1._CUSTOM_REAL
-  !real(kind=CUSTOM_REAL), parameter :: TWOl  = 2._CUSTOM_REAL
-  real(kind=CUSTOM_REAL), parameter :: HALFl = 0.5_CUSTOM_REAL
-  
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: temp_Tx_1, temp_Tx_2, &
-        temp_Tz_1, temp_Tz_2, temp_Vxx_1, temp_Vxx_2, &
-        temp_Vxz_1, temp_Vxz_2, temp_Vzx_1, temp_Vzx_2, temp_Vzz_1, temp_Vzz_2, &
-        temp_rhox_1, temp_rhox_2, temp_Epx_1, temp_Epx_2
-  
-  logical :: ADD_SURFACE_TERMS
+                                                    temp_Tz_1, temp_Tz_2, temp_Vxx_1, temp_Vxx_2, &
+                                                    temp_Vxz_1, temp_Vxz_2, temp_Vzx_1, temp_Vzx_2, temp_Vzz_1, temp_Vzz_2, &
+                                                    temp_rhox_1, temp_rhox_2, temp_Epx_1, temp_Epx_2
   real(kind=CUSTOM_REAL) :: vx_init, vz_init
   real(kind=CUSTOM_REAL) :: ya_x_l, ya_z_l
-
-  ! Ionospheric coupling
-  real(kind=CUSTOM_REAL) :: Vix_iP, Viz_iP, Ni_DG_iP, Vix_iM, Viz_iM, Ni_DG_iM
-  
-  real(kind=CUSTOM_REAL) :: doRemoveDxV0x
-
-!  integer :: coef_surface
-  
-  ADD_SURFACE_TERMS = .true. ! If set to .true., use Green's identity to compute the volume integral as another volume integral and surface terms. If set to .false., compute the volume integral as is.
-  
-  !T_init = (E_DG/rho_DG - 0.5*((rhovx_DG/rho_DG)**2 + (rhovz_DG/rho_DG)**2))/c_V
-  
-  doRemoveDxV0x = 0.
+  real(kind=CUSTOM_REAL) :: Vix_iP, Viz_iP, Ni_DG_iP, Vix_iM, Viz_iM, Ni_DG_iM ! Ionospheric coupling.
   
   veloc_x_DG = rhovx_DG/rho_DG
   veloc_z_DG = rhovz_DG/rho_DG
-  T = (E_DG/rho_DG - HALFl*(veloc_x_DG**2 + veloc_z_DG**2))/c_V
-  p_DG       = (gammaext_DG - ONEl)*( E_DG &
-               - (HALFl)*rho_DG*( veloc_x_DG**2 + veloc_z_DG**2 ) )
+  T          = (E_DG/rho_DG - HALFl*(veloc_x_DG**2+veloc_z_DG**2))/c_V
+  p_DG       = (gammaext_DG - ONEl)*( E_DG - HALFl*rho_DG*(veloc_x_DG**2+veloc_z_DG**2) )
   
-  grad_Tx  = ZEROll
-  grad_Tz  = ZEROll
-  grad_Vxx = ZEROll
-  grad_Vzz = ZEROll
-  grad_Vxz = ZEROll
-  grad_Vzx = ZEROll
-
-  grad_rhox = ZEROll
-  grad_Epx  = ZEROll
+  grad_Tx  = ZEROl
+  grad_Tz  = ZEROl
+  grad_Vxx = ZEROl
+  grad_Vzz = ZEROl
+  grad_Vxz = ZEROl
+  grad_Vzx = ZEROl
+  grad_rhox = ZEROl
+  grad_Epx  = ZEROl
 
   do ispec = 1, nspec ! Loop over elements.
-    ! acoustic spectral element
-    !if (ispec_is_acoustic(ispec)) then
     if (ispec_is_acoustic_DG(ispec)) then
       
       ! --------------------------- !
@@ -936,8 +905,6 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
             xizl = ya_z_l * xizl
             gammaxl = ya_x_l * gammaxl
             gammazl = ya_z_l * gammazl
-            ! TODO: Do that more clearly.
-            !jacobianl = ya_x_l*ya_z_l*jacobianl
           endif
           
           wzl = wzgll(j)
@@ -994,12 +961,12 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
               temp_Vzz_2(i,j) = wxl * jacobianl * (gammazl * (veloc_z_DG(iglob) - vz_init))
 
               temp_rhox_1(i,j) = wzl * jacobianl * (xixl * (rho_DG(iglob) - doRemoveDxV0x*rho_init(iglob)))
-              temp_Epx_1(i,j)  = wzl * jacobianl * (xixl * (E_DG(iglob) &
-                - doRemoveDxV0x*E_init(iglob) +p_DG(iglob)-p_DG_init(iglob)))
+              temp_Epx_1(i,j)  =   wzl * jacobianl &
+                                 * (xixl * (E_DG(iglob) - doRemoveDxV0x*E_init(iglob) +p_DG(iglob)-p_DG_init(iglob)))
 
               temp_rhox_2(i,j) = wxl * jacobianl * (gammaxl * (rho_DG(iglob) - doRemoveDxV0x*rho_init(iglob)))
-              temp_Epx_2(i,j)  = wxl * jacobianl * (gammaxl * (E_DG(iglob) &
-                - doRemoveDxV0x*E_init(iglob)+p_DG(iglob)-p_DG_init(iglob)))
+              temp_Epx_2(i,j)  =   wxl * jacobianl &
+                                 * (gammaxl * (E_DG(iglob) - doRemoveDxV0x*E_init(iglob)+p_DG(iglob)-p_DG_init(iglob)))
             endif
           else
             ! In that case, we want to compute \int_{\Omega^k} \mathcal{T}\Phi d\Omega^k = \int_{\Omega^k} (\nabla T)\Phi d\Omega^k directly as it.
@@ -1017,16 +984,16 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
             !   etc.
             ! which is immediate through the SEM formulation.
             
-            dux_dxi    = ZEROll
-            dux_dgamma = ZEROll
-            duz_dxi    = ZEROll
-            duz_dgamma = ZEROll
-            dT_dxi     = ZEROll
-            dT_dgamma  = ZEROll
-            drho_dxi    = ZEROll
-            drho_dgamma = ZEROll
-            dEp_dxi     = ZEROll
-            dEp_dgamma  = ZEROll
+            dux_dxi    = ZEROl
+            dux_dgamma = ZEROl
+            duz_dxi    = ZEROl
+            duz_dgamma = ZEROl
+            dT_dxi     = ZEROl
+            dT_dgamma  = ZEROl
+            drho_dxi    = ZEROl
+            drho_dgamma = ZEROl
+            dEp_dxi     = ZEROl
+            dEp_dgamma  = ZEROl
             ! Compute derivatives in unit element \Lambda.
             ! Note: we can merge the two loops because NGLLX=NGLLZ.
             do k = 1, NGLLX
@@ -1145,20 +1112,20 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
             ! Interior point
             iglobM = ibool_DG(i, j, ispec)
             
-            rho_DG_P     = ZEROll
-            rhovx_DG_P   = ZEROll
-            rhovz_DG_P   = ZEROll
-            E_DG_P       = ZEROll
-            veloc_x_DG_P = ZEROll
-            veloc_z_DG_P = ZEROll
-            p_DG_P       = ZEROll
-            T_P          = ZEROll
-            Vxx_DG_P     = ZEROll
-            Vzz_DG_P     = ZEROll
-            Vzx_DG_P     = ZEROll
-            Vxz_DG_P     = ZEROll
+            rho_DG_P     = ZEROl
+            rhovx_DG_P   = ZEROl
+            rhovz_DG_P   = ZEROl
+            E_DG_P       = ZEROl
+            veloc_x_DG_P = ZEROl
+            veloc_z_DG_P = ZEROl
+            p_DG_P       = ZEROl
+            T_P          = ZEROl
+            Vxx_DG_P     = ZEROl
+            Vzz_DG_P     = ZEROl
+            Vzx_DG_P     = ZEROl
+            Vxz_DG_P     = ZEROl
             
-            ! TEST WITH IFACE FORMULATION
+            ! Iface formulation.
             nx     = nx_iface(iface, ispec)
             nz     = nz_iface(iface, ispec)
             
@@ -1172,20 +1139,11 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
               neighbor(2) = link_iface_ijispec(iface1_neighbor, iface_neighbor, ispec_neighbor,2)
               neighbor(3) = ispec_neighbor
             endif
-          
-            ! 05 Apr 2019: Commented out this section, since counterpart above was doing nothing.
-            !              Ultimately, either we should keep both, or remove both.
-            !if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
-            !  ! Update flux with stretching components. See explanation in the surface terms part in the subroutine above.
-            !  ! TODO: Do that more clearly.
-            !  iglob_unique=ibool_before_perio(i, j, ispec)
-            !  weight=stretching_ya(1,iglob_unique)*stretching_ya(2,iglob_unique)*weight
-            !endif
-            ! 05 Jun 2019: made the thing agree with branch LNS
+            
             if(ABC_STRETCH .and. stretching_buffer(ibool_before_perio(i, j, ispec))>0) then
               iglob_unique = ibool_before_perio(i, j, ispec)
-              nx = nx * stretching_ya(1,iglob_unique)
-              nz = nz * stretching_ya(2,iglob_unique)
+              nx = nx * stretching_ya(1, iglob_unique)
+              nz = nz * stretching_ya(2, iglob_unique)
             endif
             
             iglobP = 1
@@ -1195,18 +1153,17 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
             
             exact_interface_flux = .false. ! Reset this variable to .false.: by default, the fluxes have to be computed (jump!=0). In some specific cases (assigned during the call to compute_interface_unknowns), the flux can be exact (jump==0).
             call compute_interface_unknowns(i,j,ispec, rho_DG_P, rhovx_DG_P, &
-                    rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
-                    Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
-                    Vix_P, Viz_P, Ni_DG_P, &
-                    neighbor,&
-                    exact_interface_flux, &
-                    rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
-                    V_DG(:,:,iglobM), T_DG(:,iglobM), &
-                    Vix_iM, Viz_iM,  Ni_DG_iM,  &
-                    rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
-                    V_DG(:,:,iglobP), T_DG(:,iglobP), &
-                    Vix_iP, Viz_iP, Ni_DG_iP, &
-                    nx, nz, weight, timelocal,iface1, iface)
+                                            rhovz_DG_P, E_DG_P, veloc_x_DG_P, veloc_z_DG_P, p_DG_P, T_P, &
+                                            Tx_DG_P, Tz_DG_P, Vxx_DG_P, Vzz_DG_P, Vzx_DG_P, Vxz_DG_P, gamma_P, &
+                                            Vix_P, Viz_P, Ni_DG_P, &
+                                            neighbor, exact_interface_flux, &
+                                            rho_DG(iglobM), E_DG(iglobM), rhovx_DG(iglobM), rhovz_DG(iglobM), &
+                                            V_DG(:,:,iglobM), T_DG(:,iglobM), &
+                                            Vix_iM, Viz_iM,  Ni_DG_iM,  &
+                                            rho_DG(iglobP), E_DG(iglobP), rhovx_DG(iglobP), rhovz_DG(iglobP), &
+                                            V_DG(:,:,iglobP), T_DG(:,iglobP), &
+                                            Vix_iP, Viz_iP, Ni_DG_iP, &
+                                            nx, nz, weight, timelocal, iface1, iface)
 
             vx_init = rhovx_init(iglobM)/rho_init(iglobM)
             vz_init = rhovz_init(iglobM)/rho_init(iglobM)
@@ -1246,8 +1203,8 @@ subroutine compute_viscous_tensors(T_DG, V_DG, dxrho_DG, dxE_DG, rho_DG, rhovx_D
             flux_n = flux_x*nx
             grad_rhox(iglobM) = grad_rhox(iglobM) + weight*flux_n*HALFl
 
-            flux_x = (E_DG(iglobM) + p_DG(iglobM) - p_DG_init(iglobM)) &
-                + (E_DG_P - 2*doRemoveDxV0x*E_init(iglobM) + p_DG_P - p_DG_init(iglobM))
+            flux_x =   (E_DG(iglobM) + p_DG(iglobM) - p_DG_init(iglobM)) &
+                     + (E_DG_P - 2*doRemoveDxV0x*E_init(iglobM) + p_DG_P - p_DG_init(iglobM))
             flux_n = flux_x*nx
             grad_Epx(iglobM) = grad_Epx(iglobM) + weight*flux_n*HALFl
 

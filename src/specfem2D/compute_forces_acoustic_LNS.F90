@@ -1,7 +1,7 @@
 ! ------------------------------------------------------------ !
 ! compute_forces_acoustic_LNS                                  !
 ! ------------------------------------------------------------ !
-! Computes the right-hand side of the differential LNS (Linear Navier-Stokes) system
+! Computes the right-hand side of the differential LNS (Linear Navier-Stokes) system.
 
 subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Constitutive variables.
                                        in_dm, in_dp, in_nabla_dT, in_nabla_dv, in_sigma_dv, & ! Precomputed quantities.
