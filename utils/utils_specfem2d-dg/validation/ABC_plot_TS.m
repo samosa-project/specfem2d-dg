@@ -81,8 +81,8 @@ end
 distanceee = repmat(distttt,[nRepetitions,1]);
 
 % figure
-fh_TS = figure('units','normalized','outerposition',[0,0,1,1]);
-tightAxes = tight_subplot(1, 2, [0.,0.06], [0.11,0.07], [0.08, 0.01]);
+fh_TS = figure('units','normalized','outerposition',[0,0,1,0.8]);
+tightAxes = tight_subplot(1, 2, [0.,0.06], [0.13,0.07], [0.08, 0.01]);
 
 ABC_plot_L2Norms(tightAxes(1), L2SqrdErr_FAF_grp, L2SqrdErr_BUF_grp, DSPLNM_strct, colours_runs, allCases);
 title(['All $L^2$ Errors']);
@@ -102,10 +102,10 @@ yticks(sort(distttt));
 xlim([0, max(time)]);
 ll = legend(hleg, 'units','normalized');
 ll.Position([1,2]) = [0.528,0.69];
-title([caseToPlot, ' Case']);
+title(['Time-Distance Plot for the ',  caseToPlot, ' Case']);
 
 hshift = 0.2;
 set(tightAxes(1), 'position', tightAxes(1).Position - [0,0,hshift, 0]);
 set(tightAxes(2), 'position', tightAxes(2).Position - [hshift,0,-hshift, 0]);
 
-
+ll = add_labels_subplots(gcf, 0.9, 6);

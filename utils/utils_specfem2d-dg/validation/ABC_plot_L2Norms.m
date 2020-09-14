@@ -1,9 +1,9 @@
 function ABC_plot_L2Norms(aimedAxe, L2SqrdErr_FAF_grp, L2SqrdErr_BUF_grp, DSPLNM_strct, colours_runs, allCases)
   
   DES_BARRES = 0;
-  MS = 300;
-  markfaf = 's';
-  markbuf = 'h';
+  MS = 200;
+  markfaf = 'o';
+  markbuf = 'o';
   
   MSdot = 70;
   LW = 4.5;

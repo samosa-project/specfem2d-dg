@@ -106,6 +106,8 @@ function feg = MMS_plotFields(err_l2, L2NormOfError, Xe, Ye, zth, zexp, zerr, IT
   ylabel(h_cb,YLAB_CB,'interpreter','latex', 'fontsize',26);
   
   set(h_cb,'tickdir','both');
+  
+  ll = add_labels_subplots(feg, 0.9, 0, [0, -0.0375]);
 
   % Link = linkprop(axxx,{'CameraUpVector', 'CameraPosition', 'CameraTarget', 'XLim', 'YLim', 'ZLim'});
 %   Link = linkprop(axxx,{'CameraPosition', 'XLim', 'YLim'});

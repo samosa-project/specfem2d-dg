@@ -1,7 +1,7 @@
 % custom function based off plot_total_energy, but for nicer ABC validation
 % visualisations
 
-function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct, LS_strct, colours_runs, outputfigpath)
+function [figureHandle, tight_axes] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct, LS_strct, colours_runs, outputfigpath)
   
   % OFDIRS should be a struct containing the test cases
   % OFD_LIST should be a length 9 cell: {[3 PW], [3 PS], [3 WPS]}.
@@ -14,8 +14,8 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
   cases_titles = {'PW', 'PS', 'WPS'};
   num_cases = 3;
   
-  YLAB_top = {['norm. potential'],['energy pert. [J/J]']};
-  YLAB_bot = {['norm. kinetic'],['energy pert. [J/J]']};
+  YLAB_top = {['normalised'], ['potential energy'], ['perturbation']};
+  YLAB_bot = {['normalised'], ['kinetic energy'], ['perturbation']};
   XLAB = ['time [s]'];
   
   % load all
@@ -43,11 +43,11 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
   figureHandle = figure('units','normalized','outerposition', [0 0 1 0.75]);
   gap_h = 0.01; gap_w = 0.01;
   marg_h_low = 0.14; marg_h_upp = 0.08;
-  marg_w_lef = 0.085; marg_w_rig = 0.01;
-  axxx = tight_subplot(2, 3, [gap_h, gap_w], [marg_h_low, marg_h_upp], [marg_w_lef, marg_w_rig]); % not mandatory, but prettier
+  marg_w_lef = 0.11; marg_w_rig = 0.01;
+  tight_axes = tight_subplot(2, 3, [gap_h, gap_w], [marg_h_low, marg_h_upp], [marg_w_lef, marg_w_rig]); % not mandatory, but prettier
   for i = 1:num_cases
     % Plot potential energy.
-    axes(axxx(i));
+    axes(tight_axes(i));
     cur_y = pe;
     for j = 1:3
       plot(t{i,j}, cur_y{i,j}, 'color', colours_runs{j}, 'displayname', DISPLAYNAMES_cell{j}, 'linestyle', LS_cell{j}); hold on;
@@ -65,7 +65,7 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
     title(cases_titles{i});
     
     % Plot kinetic energy.
-    axes(axxx(i+num_cases));
+    axes(tight_axes(i+num_cases));
     cur_y = ke;
     for j = 1:3
       plot(t{i,j}, cur_y{i,j}, 'color', colours_runs{j}, 'displayname', DISPLAYNAMES_cell{j}, 'linestyle', LS_cell{j}); hold on;
@@ -81,21 +81,25 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
     xlabel(XLAB);
   end
   
-  linkaxes(axxx, 'x'); linkprop(axxx, 'XTick');
+  linkaxes(tight_axes, 'x'); linkprop(tight_axes, 'XTick');
   custom_xticks = linspace(0,0.6,4); custom_xticks(end) = [];
-  set(axxx(1), 'xlim', [0, max(t{1,1})], 'xtick', custom_xticks);
+  set(tight_axes(1), 'xlim', [0, max(t{1,1})], 'xtick', custom_xticks);
   
-  maxabsval = 1.15;
-  ylimmm = [-1, 1]*maxabsval; yticksss = 'auto';
-  ylimmm = [-0.5, maxabsval]; yticksss = [-0.5, 0, 0.5, 1];
+%   maxabsval = 1.15;
+%   ylimmm = [-1, 1]*maxabsval; yticksss = 'auto';
+%   ylimmm = [-1.5, 1.15];
+  yticksss = [-2:0.5:2];
 %   % linked y, but separate top/bot
 %   linkaxes(axxx(1:num_cases), 'y'); linkprop(axxx(1:num_cases), 'YTick');
 %   set(axxx(1), 'ylim', [-1, 1]*maxabsval);
 %   linkaxes(axxx(num_cases + (1:num_cases)), 'y'); linkprop(axxx(num_cases + (1:num_cases)), 'YTick');
 %   set(axxx(num_cases+1), 'ylim', [-1, 1]*maxabsval);
   % linked y, all
-  linkaxes(axxx, 'y'); linkprop(axxx, 'YTick', 'Yscale');
-  set(axxx(1), 'ylim', ylimmm,'ytick',yticksss,'yscale',get(axxx(1),'yscale'));
+  linkaxes(tight_axes(1:3), 'y'); linkprop(tight_axes(1:3), 'YTick', 'Yscale');
+  linkaxes(tight_axes(4:6), 'y'); linkprop(tight_axes(4:6), 'YTick', 'Yscale');
+  set(tight_axes, 'xtick', 0:0.1:0.5);
+  set(tight_axes(1:3), 'ylim', [-1, 1]*1.15, 'ytick', yticksss, 'yscale', get(tight_axes(1), 'yscale'));
+  set(tight_axes(4:6), 'ylim', [-1.5, 1.15], 'ytick', yticksss, 'yscale', get(tight_axes(1), 'yscale'));
   
   ylab_top_h.Units = 'normalized';
   ylab_bot_h.Units = ylab_top_h.Units;
@@ -103,5 +107,8 @@ function [figureHandle, axxx] = ABC_plot_NRJs(OFDIRS_struct, DISPLAYNAMES_struct
   set(ylab_top_h, 'Position', [min_ylab_h_pos, ylab_top_h.Position(2:3)]);
   set(ylab_bot_h, 'Position', [min_ylab_h_pos, ylab_bot_h.Position(2:3)]);
   
-  customSaveFig(figureHandle,outputfigpath,{'fig', 'eps', 'tex'},9999);
+  ll = add_labels_subplots(figureHandle, 0.85);
+  for i=1:numel(ll);set(ll(i), 'Position', get(ll(i), 'Position')+[0,-0.3225,0,0]);end
+  
+  customSaveFig(figureHandle,outputfigpath,{'fig', 'eps'},9999);
 end

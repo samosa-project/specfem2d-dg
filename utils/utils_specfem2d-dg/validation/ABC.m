@@ -21,7 +21,7 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parameters.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-outputDir = [SPCFMEXloc, 'LNSABC_info/']; % don't forget ending '/'
+outputDir = [SPCFMEXloc, 'validation__lns_abc_setup',filesep]; % don't forget ending '/'
 energy_outpath = [outputDir,'energy_summary'];
 TS_outpath = [outputDir,'time_series_summary'];
 allCases = {'PW', 'PS', 'WPS'};
@@ -89,7 +89,7 @@ end
 % compare time series
 if(compareStations)
   ABC_plot_TS();
-  customSaveFig(fh_TS, TS_outpath, {'fig', 'eps', 'tex'}, 9999);
+  customSaveFig(fh_TS, TS_outpath, {'fig', 'eps'}, 9999);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

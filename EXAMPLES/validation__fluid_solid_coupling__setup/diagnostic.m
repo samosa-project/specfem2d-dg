@@ -210,7 +210,8 @@ for i = 1:numel(cases)
   vshift = 0.035;
   moveup = (tightAxes(1).Position([2])-tightAxes(1).Position([4])-vshift) - tightAxes(2).Position(2);
   tightAxes(2).Position = tightAxes(2).Position + [0, moveup, 0, 0];
-  tightAxes(3).Position = tightAxes(3).Position + [0, 0, 0, moveup+2*vshift];
+  tightAxes(3).Position = tightAxes(3).Position + [0, 0, 0, moveup+2*vshift-0.02];
+  ll = add_labels_subplots(gcf, 1.8, 0, [0,0], 'roman'); set(ll(3),'Position',get(ll(3),'Position')+[0.012,0,0,0]);
   
   % save
   customSaveFig(THEFIGURE, [plotFolder,filesep,cases{i}.code], extToSave, 9999);
