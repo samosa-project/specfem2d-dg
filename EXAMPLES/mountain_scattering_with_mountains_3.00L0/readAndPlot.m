@@ -26,7 +26,7 @@ interp_forceDGMesh = 0;
 interp_dx = 20;
 interp_dz = interp_dx; % dx=10 ok, dx<10 chugs hard
 
-do_pfield = 1;
+do_pfield = 0;
 do_fft = 1;
 do_comparefft = 0;
 
@@ -206,8 +206,8 @@ if(any([do_fft, do_comparefft]))
   end
   margz = [0.09, 0.025]; margh = [0.075, 0.09]; gap = [0.13, 0.016];
   hshift_cb = 0.01;
-  absfftname = ['\left|\widehat{P}\left(k_x,k_z\right)\right|'];
-  CBYLAB_PRESPEC = ['radiated infrasound, $\log_{10}\left(',absfftname,'\right)$'];
+  absfftname = ['\left|\widehat{p''}\right|'];
+  CBYLAB_PRESPEC = ['radiated infrasound, $\log_{10}\left(',absfftname,'\right)$ [Pa]'];
   CBYLAB_diff = ['$',absfftname,'$ difference'];
   
   % Build theoretical curves.
@@ -216,8 +216,9 @@ if(any([do_fft, do_comparefft]))
   [E_nu] = conversion('r', rho, 'p', vp, 's', vs, 'E', 'n'); nu = E_nu(2);
   vrayleigh = vs / ((1+nu)/(0.862+1.14*nu));
   thcurvs = {}; i=1;
-  thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c/f0; thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '-'; i=i+1;
-  thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c*vp/(f0*vrayleigh); thcurvs{i}.col = [1,0,0]*0.66; thcurvs{i}.ls = '--'; i=i+1;
+  thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c/f0; thcurvs{i}.ls = '-'; i=i+1;
+  thcurvs{i}.Lx = [0.1,10]; thcurvs{i}.Lz = fac*[1,1]*c*vp/(f0*vrayleigh); thcurvs{i}.ls = '--'; i=i+1;
+  thcurvscol = [1,0,0]*0.8;
 end
 
 % Plot FFT.
@@ -236,8 +237,10 @@ if(do_fft)
     end
     for j=1:numel(thcurvs)
 %       h_kxkzth = plot(fac*[min(kx(kx>0)), [1,1]*th_kxkz{i}].^pow, fac*[[1,1]*th_kxkz{i}, min(kz(kz>0))].^pow, 'color', COL_thkxkz, 'linewidth', LW_thkxkz, 'displayname', dnam_thkxkz);
-      plot(thcurvs{j}.Lx, thcurvs{j}.Lz, 'color', thcurvs{j}.col, 'linewidth', LW_thkxkz, 'linestyle', thcurvs{j}.ls);
+      plot(thcurvs{j}.Lx, thcurvs{j}.Lz, 'color', thcurvscol, 'linewidth', LW_thkxkz, 'linestyle', thcurvs{j}.ls);
     end
+    % plot horizontal period.
+    if(i>1); plot(fac*S{i}.L*[1,1], fft_ylim, ':', 'color', thcurvscol, 'linewidth', 1.5*LW_thkxkz); end;
     if(i==2); xlabel(XLAB1); end
     if(i==1); ylabel(YLAB1); end
     
@@ -280,8 +283,14 @@ if(do_fft)
     tightAxes_spec(i).Position([2,4]) = tightAxes_spec(i).Position([2,4]) + [1,-1]*vshift;
     tightAxes_spec(i+4).Position([4]) = tightAxes_spec(i+4).Position([4]) + vshift;
   end
-  ll1 = add_labels_subplots_local(fig_spect, tightAxes_spec(1:4), 1);
+%   ll1 = add_labels_subplots_local(fig_spect, tightAxes_spec(1:4), 1);
 %   ll2 = add_labels_subplots_local(fig_spect, tightAxes_spec(5:8), 1);
+  
+  ll = add_labels_subplots(fig_spect, 0.85, 0, [0, 0]);
+  for i=5:8; set(ll(i), 'Position', get(ll(i), 'Position')+[.17,-.24,0,0]); end
+  for i=9:12; set(ll(i), 'Position', get(ll(i), 'Position')+[.17,-.075,0,0]); end
+  
+  set(findall(fig_spect,'type','text'), 'fontsize', 24);
   customSaveFig(fig_spect, [figspectpath], extToSave, 9999);
 end
 
