@@ -1,5 +1,5 @@
 % Prepare ground model.
-[s, res] = system([path_to_LITHO,' -p ',sprintf('%.4f',lat),' ',sprintf('%.4f',lat),'']);
+[s, res] = system([path_to_LITHO,' -p ',sprintf('%.4f',lat),' ',sprintf('%.4f',lon),'']);
 res = split(res, newline);
 res(end) = [];
 model = zeros(1, 6);
