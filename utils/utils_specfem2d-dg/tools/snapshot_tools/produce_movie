@@ -1,0 +1,2 @@
+#!/bin/bash
+convert -delay 50 -loop 1 CROPPED_*.jpg movie.gif

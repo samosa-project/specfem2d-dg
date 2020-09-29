@@ -1,0 +1,5 @@
+#!/bin/bash
+for im in image*.jpg
+do
+  ./crop_image $im $1 $2 $3 $4
+done
