@@ -1,6 +1,8 @@
-do_load = 0; if(do_load); clear all; do_load = 1; end
+do_load = 1; if(do_load); clear all; do_load = 1; end
 close all;
 clc;
+
+dosave = 0;
 
 addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils'));
 
@@ -161,7 +163,7 @@ set(findall(gcf,'type','text'), 'fontsize', 24);
 % Save
 extToSave = {'eps'};
 fig_summary_path = [OFD, filesep, 'summary_realistic'];
-customSaveFig(fig_summary, [fig_summary_path], extToSave, 9999);
+if(dosave); customSaveFig(fig_summary, [fig_summary_path], extToSave, 9999);end;
 
 % % move produced figures to thesis
 % disp(['[] Starting to move Figures to thesis folder.']);
