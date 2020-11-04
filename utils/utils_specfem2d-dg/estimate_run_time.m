@@ -17,10 +17,10 @@ format longG;
 
 [~] = setup_overall();
 
-[data, t, info, ~] = load_data(); % Load data (see function below).
+[data, t, info, raw_data] = load_data(); % Load data (see function below).
 
-plot_rate = 0;
-plotrate_selfulldgonly = 1; % 1 = exclude simulations with elastic elements
+plot_rate = 1;
+plotrate_selfulldgonly = 0; % 1 = exclude simulations with elastic elements
 plotrate_percentdgthresh = 90; % select only simulations with more than plotrate_percentdgthresh % dg elements
 plotrate_snappercentthresh = 100; % in [%]
 plotrateversion = 'FNS';
