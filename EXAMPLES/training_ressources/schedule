@@ -1,0 +1,89 @@
+################################################################
+Install and fix compatibility issues.
+
+
+################################################################
+Case01: full DG run.
+
+Simply run this example, fix eventual issues.
+
+Explore stdout feed.
+
+Explore OUTPUT_FILES folder.
+
+Snapshots follow the "Movies, Images, and Snaphots Parameters" section in "parfile_input".
+
+Using gnuplot, look at one synthetic:
+  ./OUTPUT_FILES/showSynthetic.sh 2
+
+Using Matlab:
+  Locate SPECFEM2D-DG scripts:
+    addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils'));
+  Load many synthetics:
+    [TIME, AMPL, distancePack, xzd] = load_synthetics('/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/training_case01_full_dg/OUTPUT_FILES', 1:4, 'x', 1, 2, struct('do', 0, 'dt', -1))
+  Plot those synthetics:
+    for i=1:4; plot(TIME(i,:), AMPL(i,:)); hold on; end
+
+In "parfile_input", explore parameters in the "Discontinuous Galerkin" section.
+
+################################################################
+Case02: ground-atmosphere run.
+
+Still using internal mesher, we produce a layered domain.
+
+"interfaces_input" is only used with the internal mesher (if using external meshing, this file has no use).
+  - Defines the elements in the z direction.
+  - Encodes n interfaces, and therefore n-1 layers.
+  - Here, encodes 3 interfaces (bottom, boundary, and top).
+
+In "parfile_input", explore two sections:
+  "Velocity and Density Models":
+    - Sets the different models at play.
+    - Used both for internal and external meshing.
+    - The model with number corresponding to "id_region_DG" will be fully replaced by DG models.
+  "Parameters for Internal Meshing":
+    - Used only for internal meshing.
+    - Defines the elements in the x direction.
+    - Defines which elements correspond to which model.
+
+Run this example, explore OUTPUT_FILES.
+
+
+################################################################
+Case03: different sources.
+
+Explore source_input.
+
+Previous cases = isotropic source in atmosphere = source in the energy equation of the NSE.
+Test all provided source cases (copy-paste, rename to "source_input", run example).
+
+################################################################
+Available scripts.
+
+"atmospheric_models" folder: all scripts related to atmospheric models (exporting, importing, loading, plotting). Will come back to this later.
+
+"bottom_forcings" folder: custom bottom boundary conditions forcings. Disregard for now.
+
+"extract_run_information" folder and "estimate_run_time": scripts related to estimating the run time of each simulation (either loading data from a run, or producing an estimate using previously acquired data).
+
+"HPC_*" folders: bash scripts to run the software on HPC clusters. Will come back to this later.
+
+"prepare_stations.m" and "prepare_stations_subcases" folder: script to automatically produce sets of stations, to be pasted in parfiles. Disregard for now.
+
+"tools" folder: many useful one-trick scripts.
+  "air2ground_characterisation": draft scripts concerning air-to-ground energy transmissions (wave-wave & compliance). Disregard for now.
+  "readExampleFiles*.m": scripts to extract variables from the parameter files.
+  "interpDumps.m", "plotDumpsWrapper.m", "readDumps*.m", and "readDumps_subfunctions" folder: scripts used to load and plot wavefield dumps (prettier alternative to snapshots, but heavier to produce in the first place).
+
+"validation" folder: scripts related to the validation of the software. Disregard for now.
+
+
+################################################################
+Atmospheric models.
+
+
+################################################################
+Running software on HPC clusters.
+
+
+################################################################
