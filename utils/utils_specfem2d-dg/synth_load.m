@@ -1,5 +1,5 @@
 % Author:        Léo Martire.
-% Description:   Loads SPECFEM2D OUTPUT_FILES synthetics, and does a bunch of thing with them.
+% Description:   Loads SPECFEM2D OUTPUT_FILES synthetics, and does a bunch of things with them.
 % Notes:         N. A.
 %
 % Usage:

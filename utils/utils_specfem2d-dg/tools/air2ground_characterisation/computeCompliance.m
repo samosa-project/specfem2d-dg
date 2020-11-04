@@ -1,5 +1,5 @@
 % Author:        Léo Martire.
-% Description:   TODO.
+% Description:   Computes the air-to-ground compliance coefficients (vz/dp and vx/dp), given a ground model (from a parfile) and an atmospheric effective sound speed (from a 1d atmospheric model).
 % Notes:         TODO.
 %
 % Usage:
@@ -10,11 +10,11 @@
 %   TODO.
 
 function [CompZ, CompH, V] = computeCompliance(atmfile, parfile, speedType, groundModelNumber)
-  if(not(exist('speedType')))
+  if(not(exist('speedType', 'var')))
     speedType = '+w';
   end
   
-  if(not(exist('groundModelNumber')))
+  if(not(exist('groundModelNumber', 'var')))
     groundModelNumber='all';
   end
   
