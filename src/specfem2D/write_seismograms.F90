@@ -102,7 +102,7 @@
             else
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_acoustic,potential_gravitoacoustic, &
-                                              potential_gravito,displ_elastic,displs_poroelastic, &
+                                              potential_gravito,displ_elastic,displs_poroelastic, 1, &
                                               dummy_array_for_DG_args_when_not_DG,&
                                               ispec,vector_field_element)
             endif
@@ -128,7 +128,7 @@
             else
               ! Send a dummy value in the DG parameter slot (since sending as above will crash since rho_DG is by default 0 when not using the discontinuous method).
               call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                              potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                              potential_dot_gravito,veloc_elastic,velocs_poroelastic, 1, &
                                               dummy_array_for_DG_args_when_not_DG, &
                                               ispec,vector_field_element)
             endif
