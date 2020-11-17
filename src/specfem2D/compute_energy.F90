@@ -600,7 +600,7 @@ subroutine compute_energy_fields()
       ! Previous call prevents ifort compilation (but, strangely, does not bother gfortran compilation).
       ! Thus, we make the following call instead.
       call compute_vector_one_element(potential_dot_acoustic,potential_dot_gravitoacoustic, &
-                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, &
+                                      potential_dot_gravito,veloc_elastic,velocs_poroelastic, 1, &
                                       (rhovx_DG**2+rhovz_DG**2)**0.5/rho_DG, ispec,vector_field_element)
       ! IMPORTANT NOTICE -----------!
       ! We send ||v||_2 as 'field_acoustic_DG' variable to 'compute_vector_one_element'. Because of that,
