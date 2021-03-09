@@ -26,10 +26,12 @@
     Edit ./src/meshfem2D/scotch/src/libscotch/scotch.h
     Add the following line to it (preferably around line 270, where it would make sense):
       void SCOTCH_randomProc (int);
-    cd ./src/meshfem2D/scotch/src
+    Go into SCOTCH's src:
+      cd ./src/meshfem2D/scotch/src
     Re-make SCOTCH with this edit (do no re-run "./config_scotch.sh"):
-      make all
-    Go back to root and continue installation.
+      make
+    Go back to root and continue installation:
+      cd ../../../../
   Cause:
     For some reason, ./config_scotch.sh replaces the content of ./src/meshfem2D/scotch/src/libscotch/scotch.h at each run, but with a file that does not have the explicit declaration for SCOTCH_randomProc. I could not find the source file used for that. If the source is found, simply add the line above to it and everything should work well.
 
