@@ -5,7 +5,7 @@
 # First Installation. #########
 1) Select the right Makefile for SCOTCH:
   Check your architecture:
-    arch
+    uname -a
   Go into SCOTCH's src:
     cd ./src/meshfem2D/scotch/src
   Copy the appropriate Makefile from the Make.inc folder. E.g.:
@@ -61,6 +61,18 @@
     ./configure FC=gfortran CC=gcc MPIFC=mpif90 --with-mpi --enable-double-precision
   or with Intel compilers by running:
     ./configure FC=ifort CC=icc MPIFC=mpif90 --with-mpi --enable-double-precision
+  
+  Known error:
+    configure: error: MPI header not found; try setting MPI_INC.
+  Solution:
+    Make sure you have an mpi package installed and loaded. Make sure you load the module corresponding to the compile you're using.
+      load openmpi/intel
+  
+  Known error:
+    configure: error: Fortran compiler cannot create executables
+  Solution:
+    Make sure you have the right compilers installed (gcc, icc, gfortran, fort, etc.). On clusters, load the relevant package to have them available
+      load intel/compiler
 
 4) Compile SPECFEM-DG:
   Compile SPECFEM-DG:
