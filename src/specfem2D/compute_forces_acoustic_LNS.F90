@@ -137,7 +137,7 @@ subroutine compute_forces_acoustic_LNS(cv_drho, cv_rho0dv, cv_dE, cv_e1, & ! Con
             ! \partial_x becomes \ya_x\partial_x, and since \partial_x=(\partial_x\xi)\partial_\xi+(\partial_x\eta)\partial_\eta, only updating \partial_x\xi and \partial_x\eta is enough. Idem for \partial_z. Hence, only updating xix to \ya_x * xix, xiz to \ya_z * xiz, etc. is enough to update the operator.
             iglob_unique      = ibool_before_perio(i,j,ispec)
             DXiEta_L(:, 1)    = stretching_ya(1, iglob_unique)*DXiEta_L(:, 1)    ! Multiply x component by ya_x. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
-            DXiEta_L(:, NDIM) = stretching_ya(2, iglob_unique)*DXiEta_L(:, NDIM) ! Multiply x component by ya_z. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
+            DXiEta_L(:, NDIM) = stretching_ya(2, iglob_unique)*DXiEta_L(:, NDIM) ! Multiply z component by ya_z. ! If you change anything, remember to do it also in the 'compute_gradient_TFSF' subroutine.
           endif
           
           Jac_WzWx_L(1)    = wzgll(j)*Jac_L
