@@ -19,7 +19,7 @@ format longG;
 
 [data, t, info, raw_data] = load_data(); % Load data (see function below).
 
-plot_rate = 1;
+plot_rate = 0;
 plotrate_selfulldgonly = 0; % 1 = exclude simulations with elastic elements
 plotrate_percentdgthresh = 90; % select only simulations with more than plotrate_percentdgthresh % dg elements
 plotrate_snappercentthresh = 100; % in [%]
@@ -62,7 +62,11 @@ if(not(plot_rate))
   
   extmesh = readExampleFiles_extractParam(parfile, 'read_external_mesh', 'bool');
   if(not(extmesh))
-    command = ['cat ',parfile,' | grep -oP " *1 +[0-9]+ +[0-9]+ +[0-9]+ | tail -1"'];
+    command = ['cat ',parfile,' | grep -oP " *1 +[0-9]+ +[0-9]+ +[0-9]+" | tail -1'];
+    if(ismac)
+      command = regexprep(command,'-oP','-oe');
+      command = regexprep(command,'\+','\\+');
+    end
     [~, r]=system(command);
     r = str2num(r);
     neltot    = r(end,end-2)*r(end,end);

@@ -32,7 +32,13 @@ solid_model_type='"parfile" viscoelastic';
 % Ask user.
 fluidmodel = [];
 while (not(length(fluidmodel) == 1 && ismember(fluidmodel,[0,1])))
-  fluidmodel = input(['[',mfilename,'] Load an ', fluid_model_type, '    model (0 for no, 1 for yes)?                        > ']);
+  fluidmodel = input(['[',mfilename,'] Is there               a fluid model (0 for no, 1 for yes)?                        > ']);
+end
+if(fluidmodel)
+  extfluidmodel = [];
+  while (not(length(extfluidmodel) == 1 && ismember(extfluidmodel,[0,1])))
+    extfluidmodel = input(['[',mfilename,'] Is that an ', fluid_model_type, ' model (0 for no, 1 for yes)?                        > ']);
+  end
 end
 solidmodel = [];
 while (not(length(solidmodel) == 1 && ismember(solidmodel,[0,1])))
@@ -49,11 +55,26 @@ end
 paramtxt=['$f_0=',sprintf('%.3e',f0),'$, ',num2str(np),' elts./wavelength'];
 
 % Load
+if(solidmodel)
+  [interfaces_solid, nelts_solid, IDregionSolid, parfile] = model_viscoelastic_getinterfaces(f0, np);
+  Nlayerz_solid=numel(nelts_solid);
+end
 if(fluidmodel)
-  % Ask for file.
-  atmospheric_model_file=input(['[',mfilename,'] Path to the ',fluid_model_type,' model file (atmospheric_model.dat)? > '],'s');
-  % Extract atmospheric model.
-  [Z, ~, ~, C, ~, ~, ~, ~, ~, ~, ~, ~, ~, W, ~, ~, ~] = extract_atmos_model(atmospheric_model_file, 3, 0, 0);
+  if(extfluidmodel)
+    % Ask for file.
+    atmospheric_model_file=input(['[',mfilename,'] Path to the ',fluid_model_type,' model file (atmospheric_model.dat)? > '],'s');
+    % Extract atmospheric model.
+    [Z, ~, ~, C, ~, ~, ~, ~, ~, ~, ~, ~, ~, W, ~, ~, ~] = extract_atmos_model(atmospheric_model_file, 3, 0, 0);
+  else
+    zmax = input(['[',mfilename,'] Fluid maximum altitude? > ']);
+    if(readExampleFiles_extractParam(parfile, 'USE_ISOTHERMAL_MODEL', 'bool'))
+      Z = 0:10:zmax;
+      C = Z*0 + readExampleFiles_extractParam(parfile, 'sound_velocity', 'float');
+      W = Z*0 + readExampleFiles_extractParam(parfile, 'wind', 'float');
+    else
+      error('not impelemtend');
+    end
+  end
   % Compute atmospheric model Mach.
   Mach = W./C;
   % Deduce some atmospheric (DX, DT).
@@ -61,10 +82,6 @@ if(fluidmodel)
   dx_c_mach = C.*(1-Mach)/(f0*np);
   dt_c_cfl = CFL*dx_c_mach*percentGLL./C;
   dt_c_mach = (1-Mach)./(np*f0*(1+Mach));
-end
-if(solidmodel)
-  [interfaces_solid, nelts_solid, IDregionSolid] = model_viscoelastic_getinterfaces(f0, np);
-  Nlayerz_solid=numel(nelts_solid);
 end
 
 % Figures.
@@ -277,26 +294,5 @@ if(generatemeshfemparams)
   if(fluidmodel)
     disp(' ');
     disp(['[',mfilename,'] For fluid, dt_max = CFL * min(dx) * pGLL / max(c). Here, safest is to choose dt = ',sprintf('%.3e',0.49*min(bestdx_fluid)*percentGLL/max(C)),'.']);
-  end
-end
-
-function prettyAxes(f)
-  children=f.Children;
-  for i=1:numel(children)
-    child=children(i);
-    if(strcmp(child.Type,'axes'))
-      axes(child);
-      set(gca, 'Color','w');
-%       set(gca, 'GridColor','white');
-      set(gca, 'TickLabelInterpreter', 'latex');
-      set(gca, 'TickDir','both');
-      set(gca, 'TickLabelInterpreter', 'latex');
-      grid on;
-      box on;
-    elseif(strcmp(children(i).Type,'legend'))
-      set(child,'fontsize', 18);
-%       set(child, 'Color',[1,1,1]*0.25);
-%       set(child, 'textColor','w');
-    end
   end
 end

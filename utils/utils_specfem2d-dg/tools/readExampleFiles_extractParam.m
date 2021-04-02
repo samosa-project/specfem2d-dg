@@ -50,8 +50,16 @@ function [var] = readExampleFiles_extractParam(path2file, varName, varType, verb
       resl=res{l};
       if(not(isempty(resl)))
         command=['echo "',resl,'" | grep -oP "=.*"'];
+        if(ismac)
+          command = regexprep(command,'-oP','-oe');
+          command = regexprep(command,'\+','\\+');
+        end
         [~, resl] = system(command);
         command=['echo "',resl,'" | grep -oP "[^=]"'];
+        if(ismac)
+          command = regexprep(command,'-oP','-oe');
+          command = regexprep(command,'\+','\\+');
+        end
         [~, resl] = system(command);
 
         switch(varType)

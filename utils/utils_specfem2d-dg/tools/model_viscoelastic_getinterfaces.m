@@ -15,13 +15,13 @@
 %   nelts_s  the number of elements per layer,
 %   IDparf   the corresponding model IDs for each layer in the parfile.
 
-function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
+function [interf_s, nelts_s, IDparf, parfile] = model_viscoelastic_getinterfaces(f0, np)
   if(nargin~=2)
     help(mfilename)
     error(['[',mfilename,', ERROR] Not enough input arguments.']);
   end
 
-  parfile=input(['[',mfilename,'] Path to parfile > '],'s');
+  parfile = input(['[',mfilename,'] Path to parfile > '],'s');
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Parsing parfile to find     %
@@ -29,6 +29,8 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   addpath([regexprep(mfilename('fullpath'),mfilename,''),'tools']);
   models = readExampleFiles_extractParfileModels(parfile);
+%   [~,isrt] = sort(models(:,1));
+%   models = models(isrt,:);
 
   % Crop unnecessary quantities.
   interestingquantitiesIDs=[1,3,4,5,8,9];
@@ -102,6 +104,6 @@ function [interf_s, nelts_s, IDparf] = model_viscoelastic_getinterfaces(f0, np)
   IDparf=flip(IDparf);
   % Safeguard.
   if(not(all(sort(interf_s)==interf_s)))
-    error(['[',mfilename,', ERROR] Something is wrong with interfaces storing. Check ''',mfilename,'''.']);
+    disp(['[',mfilename,', WARNING] Something is wrong with interfaces storing. Check ''',mfilename,'''.']);
   end
 end
