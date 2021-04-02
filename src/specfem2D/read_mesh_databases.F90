@@ -349,6 +349,10 @@
   read(IIN,"(a80)") datlin
   read(IIN,*) SPREAD_SSF_CUSTOM
   read(IIN,"(a80)") datlin
+  read(IIN,*) CUSTOM_SSF_P00
+  read(IIN,"(a80)") datlin
+  read(IIN,*) CUSTOM_SSF_P01
+  read(IIN,"(a80)") datlin
   read(IIN,*) REMOVE_STF_INITIAL_DISCONTINUITY
   
   read(IIN,"(a80)") datlin

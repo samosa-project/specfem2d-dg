@@ -289,7 +289,10 @@
   USE_SPREAD_SSF          = .false.
   SPREAD_SSF_SAVE         = .false.
   SPREAD_SSF_SIGMA        = 1.
-  SPREAD_SSF_CUSTOM       = .false.
+  SPREAD_SSF_CUSTOM       = 0
+  ! Custom spread source spatial function parameters.
+  CUSTOM_SSF_P00          = 0.
+  CUSTOM_SSF_P01          = 0.
   
   ! Tweak.
   REMOVE_STF_INITIAL_DISCONTINUITY=.false.
@@ -319,8 +322,12 @@
     !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SAVE in Par_file'
     call read_value_double_precision_p(SPREAD_SSF_SIGMA, 'solver.SPREAD_SSF_SIGMA')
     !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_SIGMA in Par_file'
-    call read_value_logical_p(SPREAD_SSF_CUSTOM, 'solver.SPREAD_SSF_CUSTOM')
+    call read_value_integer_p(SPREAD_SSF_CUSTOM, 'solver.SPREAD_SSF_CUSTOM')
     !if (err_occurred() /= 0) stop 'error reading parameter SPREAD_SSF_CUSTOM in Par_file'
+    call read_value_double_precision_p(CUSTOM_SSF_P00, 'solver.CUSTOM_SSF_P00')
+    !if (err_occurred() /= 0) stop 'error reading parameter CUSTOM_SSF_P00 in Par_file'
+    call read_value_double_precision_p(CUSTOM_SSF_P01, 'solver.CUSTOM_SSF_P01')
+    !if (err_occurred() /= 0) stop 'error reading parameter CUSTOM_SSF_P01 in Par_file'
     call read_value_logical_p(REMOVE_STF_INITIAL_DISCONTINUITY, 'solver.REMOVE_STF_INITIAL_DISCONTINUITY')
     !if (err_occurred() /= 0) stop 'error reading parameter REMOVE_STF_INITIAL_DISCONTINUITY in Par_file'
   endif
@@ -1006,7 +1013,7 @@
       stop
     endif
     
-    if(USE_SPREAD_SSF .and. (.not. SPREAD_SSF_CUSTOM) .and. SPREAD_SSF_SIGMA<=0.) then
+    if(USE_SPREAD_SSF .and. (SPREAD_SSF_CUSTOM==0) .and. SPREAD_SSF_SIGMA<=0.) then
       write(*,*) "********************************"
       write(*,*) "*            ERROR             *"
       write(*,*) "********************************"

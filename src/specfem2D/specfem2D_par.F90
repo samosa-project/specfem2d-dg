@@ -165,8 +165,9 @@ module specfem_par
   logical :: REMOVE_STF_INITIAL_DISCONTINUITY
   
   ! Sources spatially distributed over more than one element.
-  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE, SPREAD_SSF_CUSTOM
-  real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA
+  logical :: USE_SPREAD_SSF, SPREAD_SSF_SAVE
+  integer :: SPREAD_SSF_CUSTOM
+  real(kind=CUSTOM_REAL) :: SPREAD_SSF_SIGMA, CUSTOM_SSF_P00, CUSTOM_SSF_P01
   real(kind=CUSTOM_REAL), dimension(:, :), allocatable :: source_spatial_function_DG ! Array of values of the SSF. Usual dimensions: (NSOURCES, nglob_DG).
   
   ! MPI-related.
