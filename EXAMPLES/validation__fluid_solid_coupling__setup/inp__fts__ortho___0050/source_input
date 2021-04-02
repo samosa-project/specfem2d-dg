@@ -1,0 +1,14 @@
+source_surf                     = .false.    # Source at the surface? If set to false, source is inside the medium.
+xs                              =  0.00d0    # Source x location (m).
+zs                              = 30.00d0    # Source y location (m).
+source_type                     = 1          # Elastic force or acoustic pressure = 1, moment tensor = 2. For the moment, only 1 is supported by DG.
+time_function_type              = 3          # Source time function type: Ricker = 1, Gaussian first derivative = 2, Gaussian = 3, Dirac = 4, Heaviside = 5, 6 = ??, 7 = ??, 8 = read from file, 9 = burst, 10 = Gaussian primitive.
+name_of_source_file             = "/path/to/file"
+burst_band_width                = 200.d0     # Only for time_function_type 9. Band width of the burst.
+f0                              = 100.d0
+tshift                          = 0.d0
+anglesource                     = 0.d0       # Only for a force. Angle of the source (degrees). 0 is upwards, 180 is downwards.
+Mxx                             = 1.d0       # Only for moment tensor source. Mxx component.
+Mzz                             = 1.d0       # Only for moment tensor source. Mzz component.
+Mxz                             = 0.d0       # Only for moment tensor source. Mxz component.
+factor                          = 1000.00d0  # Amplification factor.

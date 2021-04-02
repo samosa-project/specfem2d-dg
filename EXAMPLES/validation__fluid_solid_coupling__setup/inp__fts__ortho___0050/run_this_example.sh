@@ -6,7 +6,14 @@ source_input_name="source_input"
 interfacefileName="interfaces_input"
 
 # Read the number of processes to use from the value of the "NPROC" line in the parfile.
-NPROC=$(grep -oe "NPROC *= *[0-9]*" $parfile_input_name | grep -oe "[0-9]*")
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  NPROC=$(grep -oe "NPROC *= *[0-9]*" $parfile_input_name | grep -oe "[0-9]*")
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  NPROC=$(grep -oe "NPROC *= *[0-9]\+" $parfile_input_name | grep -oe "[0-9]\+")
+else
+  echo ">> OS unknown."
+  exit 1
+fi
 
 echo
 echo ">> Running example (`date`)."
@@ -87,7 +94,14 @@ cp DATA/*SOURCE* DATA/*STATIONS* OUTPUT_FILES
 # Runs simulation.
 echo
 echo ">> Starting solver."
-mpirun -np $NPROC ./xspecfem2D
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  mpirun -np $NPROC ./xspecfem2D
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  mpirun --oversubscribe -np $NPROC ./xspecfem2D
+else
+  echo ">> OS unknown."
+  exit 1
+fi
 
 # Check if solver ran well.
 exit_status=$?

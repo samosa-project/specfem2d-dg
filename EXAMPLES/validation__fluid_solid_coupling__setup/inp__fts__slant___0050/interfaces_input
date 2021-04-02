@@ -3,8 +3,8 @@
 
 # For each interface, give the number of points defining it, and coordinates (x, z) for each point.
 2
- -1.d10 -100.d0
-  1.d10 -100.d0
+ -1.d10 -60.d0
+  1.d10 -60.d0
 2
  -1.d10 0.d0
   1.d10 0.d0
@@ -12,5 +12,5 @@
  -1.d10 100.d0
   1.d10 100.d0
 
-50
-50
+15
+25

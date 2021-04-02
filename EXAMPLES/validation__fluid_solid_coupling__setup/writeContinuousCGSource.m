@@ -1,5 +1,5 @@
 
-function [N] = writeContinuousCGSource(source_out, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z)
+function [N] = writeContinuousCGSource(source_out, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z, apodise)
   N = ceil(max(xmax-xmin, zmax-zmin)/0.5);
 %   disp(['[',mfilename,'] ',num2str(N),' sources generated. Set parfile accordingly.']);
   
@@ -8,7 +8,11 @@ function [N] = writeContinuousCGSource(source_out, xmin, xmax, zmin, zmax, f0, e
   
 %   amp = 1;
 %   amp = exp(-(xsarr/((xmax-xmin)/6)).^2);
-  l=50; amp = 0.5*(cos(2*pi*(xsarr-xmin+l)/(2*l))+1).*(xsarr<=xmin+l) + (xsarr>=xmin+l).*(xsarr<=xmax-l) + 0.5*(cos(2*pi*(xsarr-xmax+l)/(2*l))+1).*(xsarr>=xmax-l);
+  if(apodise)
+    l=50; amp = 0.5*(cos(2*pi*(xsarr-xmin+l)/(2*l))+1).*(xsarr<=xmin+l) + (xsarr>=xmin+l).*(xsarr<=xmax-l) + 0.5*(cos(2*pi*(xsarr-xmax+l)/(2*l))+1).*(xsarr>=xmax-l);
+  else
+    amp = 0*xsarr + 1;
+  end
   
   amp = 1e3*amp;
   
