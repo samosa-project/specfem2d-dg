@@ -21,7 +21,7 @@ setup;
 
 % station_ids = 1:6;
 % station_ids = [2, 5]-1; % left one
-station_ids = [2, 5]; % middle one
+station_ids = [1, 2]; % middle one
 % station_ids = [2, 5]+1; % right one
 
 effective_R = {};

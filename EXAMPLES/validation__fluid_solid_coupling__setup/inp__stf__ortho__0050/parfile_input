@@ -35,7 +35,7 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 800
+NSTEP                           = 600
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 20d-5
 

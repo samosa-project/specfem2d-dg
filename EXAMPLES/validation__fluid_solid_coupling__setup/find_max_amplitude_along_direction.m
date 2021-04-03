@@ -1,5 +1,5 @@
 function [vals] = find_max_amplitude_along_direction(vx, vz, angs)
-  do_debug_fig = 0;
+  do_debug_fig = 1;
   
   vals = [];
   [th, r] = cart2pol(vx, vz);

@@ -241,13 +241,13 @@ anglerec                        = 0.0d0          # Angle to rotate components at
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 # First receiver set: number of receivers, first receiver's x coordinate in meters, first receiver's z coordinate in meters, last receiver's x coordinate in meters (ignored if 1 receiver), and last receiver's z coordinate in meters (ignored if 1 receiver).
-nrec                            =   3     # overground
+nrec                            =   1     # overground
 xdeb                            =   0.0d0
 zdeb                            =  10.0d0
 xfin                            =   0.0d0
 zfin                            =  10.0d0
 record_at_surface_same_vertical = .false.
-nrec                            =   3     # underground
+nrec                            =   1     # underground
 xdeb                            =   0.0d0
 zdeb                            = -10.0d0
 xfin                            =   0.0d0
