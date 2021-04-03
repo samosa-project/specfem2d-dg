@@ -35,7 +35,7 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 800
+NSTEP                           = 1000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 20d-5
 
@@ -176,7 +176,7 @@ FORCING_DG_FACTOR               = 1. # Factor by which multiply the forcing.
 #---------------------------------------------------------------------#
 
 # source parameters
-NSOURCES                        = 400              # number of sources (source information is then read from the DATA/SOURCE file)
+NSOURCES                        = 600              # number of sources (source information is then read from the DATA/SOURCE file)
 force_normal_to_surface         = .false.        # angleforce normal to surface (external mesh and curve file needed)
 
 # use an existing initial wave field as source or start from zero (medium initially at rest)
@@ -239,14 +239,14 @@ anglerec                        = 0.0d0          # Angle to rotate components at
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 # First receiver set: number of receivers, first receiver's x coordinate in meters, first receiver's z coordinate in meters, last receiver's x coordinate in meters (ignored if 1 receiver), and last receiver's z coordinate in meters (ignored if 1 receiver).
-nrec                            =   3     # overground
-xdeb                            = -30.0d0
+nrec                            =   1     # overground
+xdeb                            =  30.0d0
 zdeb                            =  10.0d0
 xfin                            =  30.0d0
 zfin                            =  10.0d0
 record_at_surface_same_vertical = .false.
-nrec                            =   3     # underground
-xdeb                            = -30.0d0
+nrec                            =   1     # underground
+xdeb                            =  30.0d0
 zdeb                            = -10.0d0
 xfin                            =  30.0d0
 zfin                            = -10.0d0
@@ -345,9 +345,9 @@ interfacesfile                  = ../interfaces_input
 # Geometry of the model       #
 #-----------------------------#
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
-xmin                            = -100.d0
-xmax                            =  100.d0
-nx                              =  50
+xmin                            = -150.d0
+xmax                            =  150.d0
+nx                              =  75
 
 # Absorbing boundary parameters (only used if PML_BOUNDARY_CONDITIONS==.true. or STACEY_ABSORBING_CONDITIONS==.true.).
 absorbbottom                    = .true.
@@ -365,8 +365,8 @@ absorbleft                      = .true. # Absorbing boundary conditions on the 
 nbregions                       = 2
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 50  1 25 2
-1 50 26 50 1
+1 75  1 25 2
+1 75 26 35 1
 
 #---------------------------------------------------------------------#
 #                                                                     #

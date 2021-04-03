@@ -239,16 +239,16 @@ anglerec                        = 0.0d0          # Angle to rotate components at
 rec_normal_to_surface           = .false.        # Base anglerec normal to surface (external mesh and curve file needed).
 
 # First receiver set: number of receivers, first receiver's x coordinate in meters, first receiver's z coordinate in meters, last receiver's x coordinate in meters (ignored if 1 receiver), and last receiver's z coordinate in meters (ignored if 1 receiver).
-nrec                            =   3     # overground
-xdeb                            = -30.0d0
+nrec                            =   1     # overground
+xdeb                            =   0.0d0
 zdeb                            =  10.0d0
-xfin                            =  30.0d0
+xfin                            =   0.0d0
 zfin                            =  10.0d0
 record_at_surface_same_vertical = .false.
-nrec                            =   3     # underground
-xdeb                            = -30.0d0
+nrec                            =   1     # underground
+xdeb                            =   0.0d0
 zdeb                            = -10.0d0
-xfin                            =  30.0d0
+xfin                            =   0.0d0
 zfin                            = -10.0d0
 record_at_surface_same_vertical = .false.
 
@@ -365,8 +365,8 @@ absorbleft                      = .true. # Absorbing boundary conditions on the 
 nbregions                       = 2
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 50  1 25 2
-1 50 26 50 1
+1 50  1 15 2
+1 50 16 23 1
 
 #---------------------------------------------------------------------#
 #                                                                     #

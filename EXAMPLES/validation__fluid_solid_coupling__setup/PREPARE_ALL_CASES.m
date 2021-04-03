@@ -24,51 +24,37 @@ for c = 1:numel(folderz)
     src = [src,'__ortho'];
   end
   src = [src,'__',sprintf('%04d',nel)];
-  
   system(['cp ', src, '/* ', folder]);
-  
-%   % Prepare source.
   parfile = [folder, 'parfile_input'];
-%   soufile = [folder, 'source_input'];
-%   intfile = [folder, 'interfaces_input'];
-%   xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
-%   xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
-%   [~, ~, zmin, zmax] = readExampleFiles_meshfem_mesh(intfile);
-%   
-%   endpoints_x = [xmin, xmax] + [1, -1]*0.25;
-%   if(cases{i}.fts0_stf1)
-%     % STF
-%     if(cases{i}.ortho0_slant1)
-%       endpoints_z = zmin*0.5 + [1, -1]*0.5*range(endpoints_x)*tan(ic_rad);
-%       if(range(endpoints_z)>abs(zmin))
-%         error(['[',mfilename,', ERROR] Cannot fit a slanted wavefront over a ',num2str(range(endpoints_z)),' m vertical span in this mesh.']);
-%       end
-%       if(range(endpoints_z)<abs(zmin)-30)
-%         disp(['[',mfilename,']   Source points span ',sprintf('%.0f', range(endpoints_z)),' m vertically, while mesh is set up to span ',sprintf('%.0f', abs(zmin)),' m. It is advised to reduce zmin to -',sprintf('%.0f', range(endpoints_z)+30),' m for performance.']);
-%       end
-%     else
-%       endpoints_z = zmin*[1, 1]*0.5;
-%     end
-%   else
-%     % FTS
-%     if(cases{i}.ortho0_slant1)
-%       endpoints_z = zmax*0.5 + [-1, 1]*0.5*range(endpoints_x)*tan(ic_rad);
-%       if(range(endpoints_z)>abs(zmax))
-%         error(['[',mfilename,', ERROR] Cannot fit a slanted wavefront over a ',num2str(range(endpoints_z)),' m vertical span in this mesh.']);
-%       end
-%       if(range(endpoints_z)<zmax-30)
-%         disp(['[',mfilename,']   Source points span ',sprintf('%.0f', range(endpoints_z)),' m vertically, while mesh is set up to span ',sprintf('%.0f', zmax),' m. It is advised to reduce zmax to  ',sprintf('%.0f', range(endpoints_z)+30),' m for performance.']);
-%       end
-%     else
-%       endpoints_z = zmax*[1, 1]*0.5;
-%     end
-%   end
-% %   endpoints_z
-% %   range(endpoints_z)
-%   N = writeContinuousCGSource(soufile, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z, cases{i}.ortho0_slant1);
-%   if(readExampleFiles_extractParam(parfile, 'NSOURCES', 'int')~=N)
-%     error(['[',mfilename,', ERROR] Number of sources in parfile does not match produced source file. Please set NSOURCES = ',num2str(N),' in the parfile.']);
-%   end
+  
+  if(cases{i}.fts0_stf1)
+    % Prepare source, only in STF case.
+    soufile = [folder, 'source_input'];
+    intfile = [folder, 'interfaces_input'];
+    xmin = readExampleFiles_extractParam(parfile, 'xmin', 'float');
+    xmax = readExampleFiles_extractParam(parfile, 'xmax', 'float');
+    [~, ~, zmin, zmax] = readExampleFiles_meshfem_mesh(intfile);
+
+    endpoints_x = [xmin, xmax] + [1, -1]*0.25;
+    % STF
+    if(cases{i}.ortho0_slant1)
+      endpoints_z = zmin*0.5 + [1, -1]*0.5*range(endpoints_x)*tan(ic_rad);
+      if(range(endpoints_z)>abs(zmin))
+        error(['[',mfilename,', ERROR] Cannot fit a slanted wavefront over a ',num2str(range(endpoints_z)),' m vertical span in this mesh.']);
+      end
+      if(range(endpoints_z)<abs(zmin)-30)
+        disp(['[',mfilename,']   Source points span ',sprintf('%.0f', range(endpoints_z)),' m vertically, while mesh is set up to span ',sprintf('%.0f', abs(zmin)),' m. It is advised to reduce zmin to -',sprintf('%.0f', range(endpoints_z)+30),' m for performance.']);
+      end
+    else
+      endpoints_z = zmin*[1, 1]*0.5;
+    end
+  %   endpoints_z
+  %   range(endpoints_z)
+    N = writeContinuousCGSource(soufile, xmin, xmax, zmin, zmax, f0, endpoints_x, endpoints_z, cases{i}.ortho0_slant1);
+    if(readExampleFiles_extractParam(parfile, 'NSOURCES', 'int')~=N)
+      error(['[',mfilename,', ERROR] Number of sources in parfile does not match produced source file. Please set NSOURCES = ',num2str(N),' in the parfile.']);
+    end
+  end
 end
 
 disp(' ');
