@@ -121,7 +121,7 @@ fts_slant_err = 100* abs(fts_slant_res-fts_slant_the)./fts_slant_the;
 fts_ortho_err = 100* abs(fts_ortho_res-fts_ortho_the)./fts_ortho_the;
 
 figure();
-x = 200/nvals;
+x = 200./nvals;
 marks = 'osd'; % 3 coefs
 col = get(0,'defaultAxesColorOrder');
 ls = {':', ':'}; % 2 incidences
@@ -146,7 +146,7 @@ set(gca,'yscale','log');
 xlabel('$\Delta x$ [m]');
 ylabel('relative error [\%]');
 ll = get(gca,'children');
-for i=1:numel(ll); set(ll(i), 'markerfacecolor', ll(i).Color); end
+for i=1:numel(ll); set(ll(i), 'markerfacecolor', ll(i).Color, 'markeredgecolor', 'none'); end
 legend('NumColumns',2);
 
 
