@@ -23,8 +23,10 @@ for c = 1:numel(folderz)
   else
     src = [src,'__ortho'];
   end
-  src = [src,'__',sprintf('%04d',nel)];
-  system(['cp ', src, '/* ', folder]);
+  src = [src,'__'];
+  system(['cp ', src, sprintf('%04d',nel), '/* ', folder]);
+  system(['cp ', src, 'source/* ', folder]);
+  system(['cp ', thisFolder,filesep, 'inp_run_this_example.sh ', folder, filesep, 'run_this_example.sh']);
   parfile = [folder, 'parfile_input'];
   
   if(cases{i}.fts0_stf1)
