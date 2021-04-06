@@ -3,6 +3,7 @@ close all;
 clc;
 
 system(['cp ../mountain_scattering_with_realistic/parfile_input ./']);
+system(['cp ../mountain_scattering_with_realistic/source_input ./']);
 if(ismac())
   system(['sed -i "" "s/MODEL                           = default/MODEL                           = external_DG/g" parfile_input']);
 else
@@ -24,7 +25,7 @@ if(testing)
   maxx = [0, 0];
   for i=1:numel(testM)
     for j=1:numel(testH)
-      mm = msishwm([mean(xq), mean(yq)], [0, 16e3], 16e3/25, datetime([2000, testM(i), 15, testH(j), 0, 0],'inputformat','yyyyMMdd@HHmmss'));
+      mm = msishwm([mean(xq), mean(yq)], [0, 16e3], 16e3/10, datetime([2000, testM(i), 15, testH(j), 0, 0],'inputformat','yyyyMMdd@HHmmss'));
       mm.wproj = cos(az)*mm.u+sin(az)*mm.v;
       DZW = gradient(mm.wproj, mm.z);
 % %       plot(model.wproj, model.z, 'displayname', [num2str(testM(i)), ' ', num2str(testH(j))]); hold on;
@@ -40,10 +41,11 @@ if(testing)
   
 else
   time = datetime([2000, 7, 15, 23, 0, 0],'inputformat','yyyyMMdd@HHmmss');
-  mm = msishwm([mean(xq), mean(yq)], [0, 16e3], 16e3/25, time);
+  mm = msishwm([mean(xq), mean(yq)], [0, 16e3], 16e3/10, time);
   
   mm.wproj = cos(az)*mm.u+sin(az)*mm.v;
-  apo = .5*(1+erf((mm.z/1e3)/.4 - 7));
+%   apo = .5*(1+erf((mm.z/1e3)/.4 - 7));
+  apo = .5*cos(pi*mm.z/2000 - pi)+.5; apo(mm.z>=2000)=1;
   mm.wproj = apo .* mm.wproj;
 
   fig = plotModel(mm, 15e3);

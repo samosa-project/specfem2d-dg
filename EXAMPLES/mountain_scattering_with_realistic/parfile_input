@@ -35,7 +35,7 @@ ngnod                           = 4
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 140000
+NSTEP                           = 120000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
 DT                              = 3d-4
 
@@ -408,7 +408,7 @@ ENERGYBOX_ZMAX = 0.
 NSTEP_BETWEEN_OUTPUT_IMAGES     = 10000
 
 # every how many time steps we dump results of the simulation as ASCII or binary files (costly, do not use a very small value)
-NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 10000
+NSTEP_BETWEEN_OUTPUT_WAVE_DUMPS = 40000
 
 # Minimum amplitude kept (in %) for the JPEG and PostScript snapshots: amplitudes below that are muted.
 cutsnaps                        = 1.
