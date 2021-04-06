@@ -2,7 +2,7 @@ clear all;
 % close all;
 clc;
 
-setup;
+setupLocal;
 
 for c = 1:numel(folderz)
   % Get working folders.
