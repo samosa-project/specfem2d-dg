@@ -2,7 +2,7 @@ ic_rad = 18*pi/180; % incidence angle for slanted case [rad]
 f0 = 100; % [Hz]
 
 thisFolder = [regexprep(mfilename('fullpath'),[filesep,mfilename],filesep)];
-plotFolder = [thisFolder,filesep,'plots'];
+plotFolder = [thisFolder,filesep,'diagnostics',filesep,'plots'];
 extToSave = {'jpg', 'eps'};
 
 SPCFMEXLOC = [thisFolder,filesep,'..',filesep];
@@ -16,10 +16,10 @@ ic_deg = ic_rad*180/pi;
 
 cases = {};
 i = 1;
-cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.035,0.095]; cases{i}.code='SF_slant'; i = i+1;
-cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.035, 0.095]; cases{i}.code='SF_ortho'; i = i+1;
-cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.08, 0.18]; cases{i}.code='FS_slant'; i = i+1;
-cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.08, 0.18]; cases{i}.code='FS_ortho'; i = i+1;
+cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.045, 0.11]; cases{i}.code='SF_slant'; i = i+1;
+cases{i}.fts0_stf1 = 1; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.01, 0.08]; cases{i}.code='SF_ortho'; i = i+1;
+cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 1; cases{i}.tlim = [0.10, 0.22]; cases{i}.code='FS_slant'; i = i+1;
+cases{i}.fts0_stf1 = 0; cases{i}.ortho0_slant1 = 0; cases{i}.tlim = [0.02, 0.14]; cases{i}.code='FS_ortho'; i = i+1;
 
 % nvals = [50];
 nvals = [50, 100, 500];
