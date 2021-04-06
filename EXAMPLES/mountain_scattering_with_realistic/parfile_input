@@ -149,7 +149,7 @@ ABC_STRETCH_RIGHT_LBUF  = 10.                    # Length of the buffer used for
 USE_SPREAD_SSF   = .false.                       # Use a source spatial function spread on many elements? If set to .false., the classical one-element source spatial function will be used. If many sources are used, the same source spatial function will be used for all of them.
 SPREAD_SSF_SAVE  = .false.                       # Can generate many files when using many CPUs, and huge files when using many elements, use with caution. Only used if USE_SPREAD_SSF==.true.. If set to .true., the source spatial function will be saved in ASCII files (one for each process). The Matlab script '/utils_new/show_SSF.m' can be used to plot those files.
 SPREAD_SSF_SIGMA = 1.0d0                         # Spread source spatial function is exp( -(r/SPREAD_SSF_SIGMA)^2 ) where r (the distance to the center) and SPREAD_SSF_SIGMA are given in meters. A good rule of thumb is to take at least 1/3 of the mesh size at the source for this parameter.
-SPREAD_SSF_CUSTOM = .false.                      # Use a custom, hardcoded, SSF? If so, set it up directly in the source code (in 'prepare_source_spatial_function.f90').
+SPREAD_SSF_CUSTOM = 0                            # Use a custom, hardcoded, SSF? If so, set it up directly in the source code (in 'prepare_source_spatial_function.f90').
 
 # Source time function.
 REMOVE_STF_INITIAL_DISCONTINUITY = .true.        # Only used if USE_TRICK_FOR_BETTER_PRESSURE==.false. and time_function_type==3 (see source_input). Analytically removes the discontinuity introduced at initial time (since Gaussians have non-compact support). Alternatively, leave this to .false. and set USER_T0 to a better value (see below).
