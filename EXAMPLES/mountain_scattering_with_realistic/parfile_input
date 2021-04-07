@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 288
+NPROC                           = 504
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -37,7 +37,7 @@ ngnod                           = 4
 # Total number of time steps.
 NSTEP                           = 120000
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 3d-4
+DT                              = 2.5d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).

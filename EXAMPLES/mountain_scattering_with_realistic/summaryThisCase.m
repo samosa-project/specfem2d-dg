@@ -2,12 +2,14 @@ do_load = 1; if(do_load); clear all; do_load = 1; end
 close all;
 clc;
 
-dosave = 0;
+dosave = 1;
 
-addpath(genpath('/home/l.martire/Documents/SPECFEM/specfem-dg-master/utils'));
+thisFolder=regexprep(mfilename('fullpath'),mfilename,'');
+addpath(genpath('../utils'));
 
 IT = 120000;
-OFD = ['/home/l.martire/Documents/SPECFEM/specfem-dg-master/EXAMPLES/mountain_scattering_with_realistic/OUTPUT_FILES_411107_lns'];
+% OFD = [thisFolder,filesep,'OUTPUT_FILES_411107_lns/'];
+OFD = [thisFolder,filesep,'../mountain_scattering_with_realistic_with_atm/OUTPUT_FILES_591830/'];
 
 sel_boxy = [0,12.5]*1e3;
 sel_boxabsx = 50e3;
@@ -162,7 +164,7 @@ set(findall(gcf,'type','text'), 'fontsize', 24);
 
 % Save
 extToSave = {'eps'};
-fig_summary_path = [OFD, filesep, 'summary_realistic'];
+spl = split(regexprep(OFD,'//','/'),filesep); fig_summary_path = [OFD, filesep, 'summary_', spl{end-2}];
 if(dosave); customSaveFig(fig_summary, [fig_summary_path], extToSave, 9999);end;
 
 % % move produced figures to thesis
