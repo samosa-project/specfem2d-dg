@@ -13,6 +13,10 @@ function [dateString, positionString, secondaryInfoString, info] = extract_atmos
     error(strcat("Cannot open file ", DATAFILE,').'))
   end
   
+  if(not(existFunction('UTC2SolarApparentTime')))
+    error('missing subfunction');
+  end
+  
   dateString='';
   positionString='';
   secondaryInfoString=[];
