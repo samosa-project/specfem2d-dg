@@ -45,7 +45,9 @@ else
   
   mm.wproj = cos(az)*mm.u+sin(az)*mm.v;
 %   apo = .5*(1+erf((mm.z/1e3)/.4 - 7));
-  apo = .5*cos(pi*mm.z/2000 - pi)+.5; apo(mm.z>=2000)=1;
+%   apo = .5*cos(pi*mm.z/2000 - pi)+.5; apo(mm.z>=2000)=1;
+  apo = .5*cos(pi*(mm.z-4000)/(4000-2600))+.5; apo(mm.z<=2600)=0; apo(mm.z>=4000)=1;
+%   pause
   mm.wproj = apo .* mm.wproj;
 
   fig = plotModel(mm, 15e3);
