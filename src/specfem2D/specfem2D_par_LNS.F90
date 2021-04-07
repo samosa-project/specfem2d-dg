@@ -6,6 +6,9 @@ module specfem_par_LNS
 
   implicit none
   
+  integer :: LNS_warn_nonsense_spamCount
+  logical :: LNS_warn_nonsense_spamOk
+  
   ! ---------------------------- !
   ! Generalised background model
   ! parameters.

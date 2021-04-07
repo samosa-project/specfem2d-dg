@@ -152,7 +152,11 @@ subroutine compute_forces_acoustic_LNS_main()
   endif
   
   ! Check linear hypothesis.
-  if(check_linear_hypothesis) call LNS_warn_nonsense()
+  if(it==1 .and. i_stage==1) then
+    LNS_warn_nonsense_spamCount = 0
+    LNS_warn_nonsense_spamOk = check_linear_hypothesis
+  endif
+  if(LNS_warn_nonsense_spamOk .and. check_linear_hypothesis .and. mod(it, 200)==0 .and. i_stage==1) call LNS_warn_nonsense()
   
 #if 0
   ! Test: posteriori damping in absorbing boundary condition buffers.
@@ -1377,7 +1381,8 @@ end subroutine LNS_prevent_nonsense
 subroutine LNS_warn_nonsense()
   use constants, only: CUSTOM_REAL, NDIM, NGLLX, NGLLZ, TINYVAL
   use specfem_par, only: nspec, coord, myrank, ispec_is_acoustic_DG, ibool_DG, ibool_before_perio
-  use specfem_par_LNS, only: LNS_drho, LNS_dv, LNS_dE, LNS_rho0, LNS_v0, LNS_E0
+  use specfem_par_LNS, only: LNS_drho, LNS_dv, LNS_dE, LNS_rho0, LNS_v0, LNS_E0, &
+                             LNS_warn_nonsense_spamCount, LNS_warn_nonsense_spamOk
   implicit none
   ! Input/Output.
   ! N./A.
@@ -1414,6 +1419,8 @@ subroutine LNS_warn_nonsense()
     endif
   enddo outer
   
+  broken = 1
+  
   if(broken/=0) then
     write(*,*) "********************************"
     write(*,*) "*           WARNING            *"
@@ -1443,7 +1450,22 @@ subroutine LNS_warn_nonsense()
     write(*,*) "********************************"
     write(*,*) "* If run crashes, we advise    *"
     write(*,*) "* the user to try using FNS.   *"
+    write(*,*) LNS_warn_nonsense_spamCount, LNS_warn_nonsense_spamOk
     write(*,*) "********************************"
+    LNS_warn_nonsense_spamCount = LNS_warn_nonsense_spamCount+1
+    if(LNS_warn_nonsense_spamCount>200) then
+      LNS_warn_nonsense_spamOk = .false.
+      write(*,*) "********************************"
+      write(*,*) "*           WARNING            *"
+      write(*,*) "********************************"
+      write(*,*) "* To prevent spamming of the   *"
+      write(*,*) "* standard output too much     *"
+      write(*,*) "* (therefore slowing down the  *"
+      write(*,*) "* run), we will now stop       *"
+      write(*,*) "* outputting this warning.     *"
+      write(*,*) "********************************"
+    endif
+    
   endif
 end subroutine LNS_warn_nonsense
 
