@@ -251,7 +251,7 @@ function [] = plot_model(atmospheric_model_file, marker, colour, atmalts, maxalt
   
   for i=1:numel(xlab)
     xlab(i).Units = 'normalized';
-    xlab(i).Position = xlab(i).Position + [0, 0.04, 0];
+    xlab(i).Position = xlab(i).Position + [0, 0.02, 0];
   end
   
   if(plot_nosave0_save1)
