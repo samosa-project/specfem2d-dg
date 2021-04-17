@@ -8,8 +8,10 @@ thisFolder=regexprep(mfilename('fullpath'),mfilename,'');
 addpath(genpath('../utils'));
 
 IT = 120000;
-% OFD = [thisFolder,filesep,'OUTPUT_FILES_411107_lns/'];
-OFD = [thisFolder,filesep,'../mountain_scattering_with_realistic_with_atm/OUTPUT_FILES_591830/'];
+OFD1 = [thisFolder,filesep,'OUTPUT_FILES_411107_lns/'];
+OFD2 = [thisFolder,filesep,'../mountain_scattering_with_realistic_with_atm/OUTPUT_FILES_592911/'];
+% OFD = OFD1; dnamvprobe='isothermal, no wind';
+OFD = OFD2; dnamvprobe='realistic (MSIS20-HWM14)';
 
 sel_boxy = [0,12.5]*1e3;
 sel_boxabsx = 50e3;
@@ -103,10 +105,17 @@ kz2s = kz2s(kz2s>0); % select only upward propagating
 
 % Plot.
 fig_summary = figure('units','normalized','outerposition',[0,0,1,1]);
-toppanel_z = 0.3; marg_left = 0.1; marg_right = 0.035; leftpanel_h=0.3; gaph = 0.12; gapz=0.13; gapzradpat = 0.01; margbot=0.1;
+toppanel_z = 0.3; marg_left = 0.1; marg_right = 0.045; leftpanel_h=0.3; gaph = 0.10; gapz=0.13; gapzradpat = 0.01; margbot=0.1;
 tightAxesPField = tight_subplot(1, 1, [0, 0], [1-toppanel_z, 0.018], [marg_left, marg_right]);
 tightAxesSpectraDefault = tight_subplot(2, 1, [gapzradpat, 0], [margbot, toppanel_z+gapz], [marg_left, 1-leftpanel_h]);
 tightAxesRadPat = tight_subplot(2, 1, [gapzradpat, 0], [margbot, toppanel_z+gapz], [leftpanel_h+gaph, marg_right]);
+
+spl = split(regexprep(OFD,'//','/'),filesep); fig_summary_path = [OFD, filesep, 'summary_', spl{end-2}];
+matfile_figpanel_c = [fig_summary_path,'_c.mat'];
+matfile_figpanel_d = [fig_summary_path,'_d.mat'];
+matfile_figpanel_e = [fig_summary_path,'_e.mat'];
+matfile_figpanel_f = [fig_summary_path,'_f.mat'];
+matfile_figpanel_g = [fig_summary_path,'_g.mat'];
 
 axes(tightAxesPField);
 pcolor(Xi/1e3, Yi/1e3, Vi.pre); hold on
@@ -117,6 +126,7 @@ hcb1 = colorbar(); ylabel(hcb1, CBYLAB_PRESPEC, 'interpreter', 'latex');
 CMAP_field = colormaps_custom([-1,-blk_pfield, -(1+thrsh_pfield)/2, -thrsh_pfield, 0, thrsh_pfield, (1+thrsh_pfield)/2, blk_pfield,1], [[0,0,1].*[0.1,0.75,1]';[0.9,0.9,1];[1,1,1];[1,0.9,0.9];[1,0,0].*[1,0.75,0.1]'], 0);
 set(tightAxesPField, 'CLim', pfield_clim, 'Colormap', CMAP_field, 'XLim', XLIM/1e3, 'YLim', YLIM/1e3, 'ytick',0:2:20, 'xtick', -60:5:60);
 set(tightAxesPField, 'dataaspectratio', [1,0.7,1]);
+save(matfile_figpanel_c, 'Xi', 'Yi', 'Vi');
 
 axes(tightAxesSpectraDefault(1));
 pow = -1; fac = 1e-3;
@@ -127,22 +137,28 @@ CBYLAB_fft = ['radiated infrasound, $\log_{10}\left(',absfftname,'\right)$ [Pa]'
 % contourf(fac*kx(kx>0).^pow, fac*kz(kz>0).^pow, toPlot, [min(fft_clim):(range(fft_clim)/25):max(fft_clim)], 'edgecolor', 'none'); hold on;
 contourf(fac*KXf.^pow, fac*KZf.^pow, log10(abs(PRE_fft2s_folded)), [min(fft_clim):(range(fft_clim)/25):max(fft_clim)], 'edgecolor', 'none'); hold on;
 ylabel(YLAB_fft);
+save(matfile_figpanel_d, 'KXf', 'KZf', 'PRE_fft2s_folded');
 axes(tightAxesSpectraDefault(2));
 loglog(fac*topof.^pow, abs(topos));
 set(tightAxesSpectraDefault, 'xscale', 'log', 'yscale', 'log', 'xlim', XLIMfft*fac, 'xtick', fft_xtick);
 set(tightAxesSpectraDefault(1), 'ylim', YLIMfft*fac, 'ytick', fft_ytick, 'yticklabel', fftytl, 'xticklabel', {});
 set(tightAxesSpectraDefault(2), 'xticklabel', fftxtl, 'ylim', [0.1, 1e3]*fac, 'ytick', logspace(-1,3,5)*fac, 'yticklabel', {'$10^{-4}$', '$10^{-3}$', '$10^{-2}$', '0.1', '1'});
 xlabel(XLAB_fft); ylabel({'topography', 'spectrum', '$\widehat{z_\mathrm{int}}$ [km]'});
+save(matfile_figpanel_d, 'topof', 'topos');
 
 axes(tightAxesRadPat(1));
 contourf(LaunchAngles*180/pi, Frequencies, log10(abs(PRE_fft2s)), [min(fft_clim):(range(fft_clim)/25):max(fft_clim)], 'edgecolor', 'none'); hold on;
 for j=1:numel(fft_selFreBand); plot(radpatxlim, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand); end
 ylabel(['frequency [Hz]']);
 hcb = colorbar(); ylabel(hcb, CBYLAB_fft, 'interpreter', 'latex');
+save(matfile_figpanel_e, 'LaunchAngles', 'Frequencies', 'PRE_fft2s');
 axes(tightAxesRadPat(2));
-semilogy(V_probed_ang*180/pi, V_probed_band, 'color', fft_colourISBand); hold on;
+if(strcmp(OFD,OFD2)); ls=':'; else; ls='-'; end
+semilogy(V_probed_ang*180/pi, V_probed_band, ls, 'color', fft_colourISBand, 'displayname', dnamvprobe); hold on;
 ylabel({['radiated'],'infrasound', ['$',absfftname,'$ [Pa]']});
 xlabel(['$\leftarrow$ towards South $|$ launch angle [deg] $|$ towards North $\rightarrow$']);
+legend('location','northeast');
+save(matfile_figpanel_g, 'V_probed_ang', 'V_probed_band');
 
 set(tightAxesRadPat, 'yscale', 'log', 'xlim', radpatxlim);
 set(tightAxesRadPat(1), 'xticklabel', {}, 'ylim', radpatylim);
@@ -164,7 +180,6 @@ set(findall(gcf,'type','text'), 'fontsize', 24);
 
 % Save
 extToSave = {'eps'};
-spl = split(regexprep(OFD,'//','/'),filesep); fig_summary_path = [OFD, filesep, 'summary_', spl{end-2}];
 if(dosave); customSaveFig(fig_summary, [fig_summary_path], extToSave, 9999);end;
 
 % % move produced figures to thesis
