@@ -1419,8 +1419,6 @@ subroutine LNS_warn_nonsense()
     endif
   enddo outer
   
-  broken = 1
-  
   if(broken/=0) then
     write(*,*) "********************************"
     write(*,*) "*           WARNING            *"
