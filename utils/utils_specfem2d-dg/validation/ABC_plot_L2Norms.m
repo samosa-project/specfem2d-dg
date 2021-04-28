@@ -46,7 +46,7 @@ function ABC_plot_L2Norms(aimedAxe, L2SqrdErr_FAF_grp, L2SqrdErr_BUF_grp, DSPLNM
   xticklabels(allCases);
   xlabel(['test case']);
   
-  ylim([1e-12,0.3e-7]);
+  ylim([1e-15,3e-8]);
   ylabel(['squared $L^2$ norm of error [Pa$\cdot$s]']);
   
 %   title({['L$^2$ Norms of Time Series'],['Errors for Each Test Case']});
