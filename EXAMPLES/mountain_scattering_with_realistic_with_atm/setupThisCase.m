@@ -51,7 +51,6 @@ else
   mm.wproj = apo .* mm.wproj;
 
   fig = plotModel(mm, 15e3);
-  
   customSaveFig(fig, ['.',filesep,'atmospheric_model'], {'jpg', 'eps'}, 9999);
   
   matrix = [mm.z, mm.d, mm.t, mm.c, mm.p, mm.h, mm.g, mm.nsqrd, mm.k, mm.mu, mm.muvol, mm.v, mm.u, mm.wproj, mm.cp, mm.cv, mm.gamma];
