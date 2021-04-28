@@ -4,9 +4,9 @@ function [INFO_all] = ABC_load_parameters(largeRunOF, farFieldRunOF, bufferRunOF
   if(numel(largeRunOF)>0); if(not(strcmp(largeRunOF(end),filesep))); largeRunOF=[largeRunOF,filesep]; end; end;
   if(numel(farFieldRunOF)>0); if(not(strcmp(farFieldRunOF(end),filesep))); farFieldRunOF=[farFieldRunOF,filesep]; end; end;
   % retrieve parameters
-  OF=largeRunOF; [xmM_La, zmM_La, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
-  OF=bufferRunOF; [xmM_Bu, zmM_Bu, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']); LBUF=readExampleFiles_extractParam([OF,'input_parfile'], 'ABC_STRETCH_TOP_LBUF', 'float');
-  OF=farFieldRunOF; [xmM_Fa, zmM_Fa, ~] = readExampleFiles([OF,'input_parfile'], [OF,'SOURCE'], [OF,'input_interfaces']);
+  OF=largeRunOF; [xmM_La, zmM_La, ~] = readExampleFiles([OF,'input_parfile'], [OF,'input_source'], [OF,'input_interfaces']);
+  OF=bufferRunOF; [xmM_Bu, zmM_Bu, ~] = readExampleFiles([OF,'input_parfile'], [OF,'input_source'], [OF,'input_interfaces']); LBUF=readExampleFiles_extractParam([OF,'input_parfile'], 'ABC_STRETCH_TOP_LBUF', 'float');
+  OF=farFieldRunOF; [xmM_Fa, zmM_Fa, ~] = readExampleFiles([OF,'input_parfile'], [OF,'input_source'], [OF,'input_interfaces']);
   % prepare information strings
   domain_LAR_tex = ['$[',num2str(min(xmM_La)),', ',num2str(max(xmM_La)),']\times[',num2str(min(zmM_La)),', ',num2str(max(zmM_La)),']$'];
   domain_BUF_tex = ['$[',num2str(min(xmM_Bu)),', ',num2str(max(xmM_Bu)),']\times[',num2str(min(zmM_Bu)),', ',num2str(max(zmM_Bu)),']$'];

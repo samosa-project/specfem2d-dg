@@ -46,7 +46,7 @@ for i_case = 1:numel(allCases)
   nbstats = numel(x_stat);
 
   % load actual time series, and compute and store errors
-  [time, Zamp, NMs, COLs, LSs, ord, L2SqrdErr_FAF_grp{i_case}, L2SqrdErr_BUF_grp{i_case}] = ABC_load_TS_and_compute_error({curCase_OF_LAR, curCase_OF_FAF, curCase_OF_BUF}, nbstats, subsample, subsample_dt, errorFactor, colours_runs, DSPLNM_strct);
+  [time, Zamp, NMs, COLs, LSs, LWs, ord, L2SqrdErr_FAF_grp{i_case}, L2SqrdErr_BUF_grp{i_case}] = ABC_load_TS_and_compute_error({curCase_OF_LAR, curCase_OF_FAF, curCase_OF_BUF}, nbstats, subsample, subsample_dt, errorFactor, colours_runs, DSPLNM_strct);
   
   if(strcmp(caseToPlot, curCase))
     x_stat_toplot = x_stat;
@@ -56,6 +56,7 @@ for i_case = 1:numel(allCases)
     NMs_toplot = NMs;
     COLs_toplot = COLs;
     LSs_toplot = LSs;
+    LWs_toplot = LWs;
     errorFactor_toplot = errorFactor;
     distType_x0z1d2_toplot = distType_x0z1d2;
   end
@@ -91,7 +92,7 @@ axes(tightAxes(2));
 distoverptp = 150;
 hleg = [];
 for i=1:size(Zamp_toplot, 1)
-  h = plot(time_toplot, distanceee(i) + distoverptp*Zamp_toplot(i,:), 'displayname', NMs_toplot{i}, 'color', COLs_toplot{i}, 'linestyle', LSs_toplot{i}); hold on
+  h = plot(time_toplot, distanceee(i) + distoverptp*Zamp_toplot(i,:), 'displayname', NMs_toplot{i}, 'color', COLs_toplot{i}, 'linewidth', LWs_toplot{i}, 'linestyle', LSs_toplot{i}); hold on
   if(ismember(i,[1:numel(distttt):size(Zamp_toplot, 1)]))
     hleg = [hleg, h];
   end

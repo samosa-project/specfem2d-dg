@@ -27,7 +27,7 @@ TS_outpath = [outputDir,'time_series_summary'];
 allCases = {'PW', 'PS', 'WPS'};
 LarRNam='large'; FafRNam='far-field'; BufRNam='buffers';
 
-compareEnergies = 1; % compare energies for all cases at once
+compareEnergies = 0; % compare energies for all cases at once
 % compareStations = 0;
 % compareStations = 1; caseToPlot = ''; % plot simply errors
 % compareStations = 1; caseToPlot = 'PW'; % compare time series for one case
@@ -43,7 +43,8 @@ FAF_ext = '_FF/OUTPUT_FILES_FF/';
 % BUF_ext   = ['_buffers/OUTPUT_FILES_p3p25_q6_e0p160_woE/']; BUF_varepsilon='$\varepsilon=0.16$';
 % BUF_ext   = ['_buffers/OUTPUT_FILES_p3p25_q6_e0p001/']; BUF_varepsilon='$\varepsilon=10^{-3}$';
 % BUF_ext   = ['_buffers/OUTPUT_FILES_p3p25_q6_e0p500/']; BUF_varepsilon='$\varepsilon=0.5$';
-BUF_ext   = ['_buffers/OUTPUT_FILES_p3p25q6e0p001/']; BUF_params=[1e-3,3.25,6];
+% BUF_ext   = ['_buffers/OUTPUT_FILES_173175_p3p25q6e0p001/']; BUF_params=[1e-3,3.25,6];
+BUF_ext   = ['_buffers/OUTPUT_FILES_buffers/']; BUF_params=[1e-3,3.25,6];
 
 subsample = 1; subsample_dt = 1e-4;
 

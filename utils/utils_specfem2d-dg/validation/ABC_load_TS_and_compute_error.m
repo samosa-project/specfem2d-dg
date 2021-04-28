@@ -1,12 +1,12 @@
-function [time, Zamp, NMs, COLs, LSs, ord, sqrd_L2_Norm_of_Err_FAF, sqrd_L2_Norm_of_Err_BUF] = ABC_load_TS_and_compute_error(OFs, nbstats, subsample, subsample_dt, errorFactor, colours_runs, DSPLNM_strct)
+function [time, Zamp, NMs, COLs, LSs, LWs, ord, sqrd_L2_Norm_of_Err_FAF, sqrd_L2_Norm_of_Err_BUF] = ABC_load_TS_and_compute_error(OFs, nbstats, subsample, subsample_dt, errorFactor, colours_runs, DSPLNM_strct)
   
   % extract OFs and colours
   largeRunOF = OFs{1};
   farFieldRunOF = OFs{2};
   bufferRunOF = OFs{3};
-  colour_LAR = colours_runs{1};
-  colour_FAF = colours_runs{2};
-  colour_BUF = colours_runs{3};
+  colour_LAR = colours_runs{1}; LW_LAR = 3;
+  colour_FAF = colours_runs{2}; LW_FAF = 2.999;
+  colour_BUF = colours_runs{3}; LW_BUF = 3;
   
   % colours and linestyles
   LS_truth = '-';
@@ -27,23 +27,23 @@ function [time, Zamp, NMs, COLs, LSs, ord, sqrd_L2_Norm_of_Err_FAF, sqrd_L2_Norm
     % load LARGE run (assumed to be truth)
     j=ord.La*nbstats+i; iLa=j;
     [data, ~] = readAndSubsampleSynth(largeRunOF, i, 'BXZ', 'semv', subsample, subsample_dt, 1); Zamp(j,:)=data(:,2)'; if(i==1); time=data(:,1)'; end;
-    NMs{j} = ['',DSPLNM_strct.LAR,'']; COLs{j} = colour_LAR; LSs{j} = LS_truth;
+    NMs{j} = ['',DSPLNM_strct.LAR,'']; COLs{j} = colour_LAR; LSs{j} = LS_truth; LWs{j} = LW_LAR;
     
     % load FARFIELD run (or any other test ABC method)
     j=ord.Ff*nbstats+i; iFAF=j;
     [data, ~] = readAndSubsampleSynth(farFieldRunOF, i, 'BXZ', 'semv', subsample, subsample_dt, 1); Zamp(j,:)=data(:,2)';
-    NMs{j} = ['',DSPLNM_strct.FAF,'']; COLs{j} = colour_FAF; LSs{j} = LS_tests;
+    NMs{j} = ['',DSPLNM_strct.FAF,'']; COLs{j} = colour_FAF; LSs{j} = LS_tests; LWs{j} = LW_FAF;
     j=ord.EFf*nbstats+i; % save error between the previous and LARGE
     Zamp(j,:) =  errorFactor* abs(Zamp(iLa,:) - Zamp(iFAF,:));
-    NMs{j} = ['$',num2str(errorFactor),'\times|$',DSPLNM_strct.LAR,'$-$',DSPLNM_strct.FAF,'$|$']; COLs{j} = colour_FAF; LSs{j} = LS_errors;
+    NMs{j} = ['$',num2str(errorFactor),'\times|$',DSPLNM_strct.LAR,'$-$',DSPLNM_strct.FAF,'$|$']; COLs{j} = colour_FAF; LSs{j} = LS_errors; LWs{j} = LW_FAF;
     
     % load BUFFER run (or any other test ABC method)
     j=ord.Bu*nbstats+i; iBUF=j;
     [data, ~] = readAndSubsampleSynth(bufferRunOF, i, 'BXZ', 'semv', subsample, subsample_dt, 1); Zamp(j,:)=data(:,2)';
-    NMs{j} = ['',DSPLNM_strct.BUF,'']; COLs{j} = colour_BUF; LSs{j} = LS_tests;
+    NMs{j} = ['',DSPLNM_strct.BUF,'']; COLs{j} = colour_BUF; LSs{j} = LS_tests; LWs{j} = LW_BUF;
     j=ord.EBu*nbstats+i; % save error between the previous and LARGE
     Zamp(j,:) =  errorFactor* abs(Zamp(iLa,:) - Zamp(iBUF,:));
-    NMs{j} = ['$',num2str(errorFactor),'\times|$',DSPLNM_strct.LAR,'$-$',DSPLNM_strct.BUF,'$|$']; COLs{j} = colour_BUF; LSs{j} = LS_errors;
+    NMs{j} = ['$',num2str(errorFactor),'\times|$',DSPLNM_strct.LAR,'$-$',DSPLNM_strct.BUF,'$|$']; COLs{j} = colour_BUF; LSs{j} = LS_errors; LWs{j} = LW_BUF;
   end
   
   sqrd_L2_Norm_of_Err_FAF = [];
