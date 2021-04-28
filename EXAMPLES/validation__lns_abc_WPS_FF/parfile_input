@@ -346,9 +346,9 @@ interfacesfile                  = ../interfaces_input
 #-----------------------------#
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 # for this windy case, we need to have dx < (c-v)/(f0*np) = (340-102)/(75*2.5) = 1.26
-xmin                            =  -54.0d0
+xmin                            =  -60.0d0
 xmax                            =  100.0d0
-nx                              =  125
+nx                              =  113
 
 # Absorbing boundary parameters (to be used with PML_BOUNDARY_CONDITIONS or STACEY_ABSORBING_CONDITIONS above).
 absorbbottom                    = .false.
@@ -366,9 +366,9 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 nbregions                       = 3
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 125  1 10 1
-1 125 11 70 1
-1 125 71 80 1
+1 113  1 10 1
+1 113 11 70 1
+1 113 71 80 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
