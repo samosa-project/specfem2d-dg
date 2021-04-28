@@ -5,7 +5,7 @@
 #---------------------------------------------------------------------#
 
 # Title of job.
-title                           = default_example_DG
+title                           = validation__lns_abc_PS_FF
 
 # Type of simulation.
 # 1: forward
@@ -23,7 +23,7 @@ NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .false.
 
 # Number of processes (message passing interface).
-NPROC                           = 16
+NPROC                           = 72
 # Partitioning
 # 1: ascending order (very bad idea)
 # 2: (??)
@@ -35,9 +35,9 @@ ngnod                           = 9
 
 # Time parameters.
 # Total number of time steps.
-NSTEP                           = 1250
+NSTEP                           = 2610
 # Duration of a time step (see section "How to choose the time step" of the manual for how to do this).
-DT                              = 4.8d-4
+DT                              = 2.3d-4
 
 # Time stepping scheme.
 # 1: Newmark (2nd order).
@@ -330,7 +330,7 @@ interfacesfile                  = ../interfaces_input
 # Abscissa of the left side of the model, abscissa of the right side of the model, and number of elements along the x-axis.
 xmin                            = -200.0d0
 xmax                            =  200.0d0
-nx                              =  200
+nx                              =  401
 
 # Absorbing boundary parameters (to be used with PML_BOUNDARY_CONDITIONS or STACEY_ABSORBING_CONDITIONS above).
 absorbbottom                    = .false.
@@ -345,11 +345,10 @@ absorbleft                      = .false. # Absorbing boundary conditions on the
 # mesh.                       #
 #-----------------------------#
 # Number of regions.
-nbregions                       = 2
+nbregions                       = 1
 # Set the different regions and model number for each region. Format:
 # startingXElement endingXElement startingZElement endingZElement modelNumber
-1 200   1 125 1
-1 200 126 130 1
+1 401   1 261 1
 
 #---------------------------------------------------------------------#
 #                                                                     #
