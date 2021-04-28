@@ -386,7 +386,7 @@ output_grid_ASCII               = .false.
 # Compute and output total acoustic and elastic energy curves (slows down the code significantly)? Points in the stretching buffers (in DG elements) are not taken into account.
 output_energy                   = .true.
 # For acoustic domains only (to generalise it to the other domains, edit 'compute_energy.f90'). Restrict energy integration to a box defined below. If all set to 0., does nothing and integrates over whole domain (as classically done). Nonsense cannot happen (ENERGYBOX_ZMIN>ENERGYBOX_ZMAX or whatever will stop program). If limit is set outside of domain (e.g. ENERGYBOX_ZMAX >= mesh_zmax), won't cut anything. See 'compute_energy.f90'.
-ENERGYBOX_XMIN = -44.# stop @ xmin+buffer (in buffer run, should have no effect)
+ENERGYBOX_XMIN = -50.# stop @ xmin+buffer (in buffer run, should have no effect)
 ENERGYBOX_XMAX = +90 # stop @ xmax-buffer (in buffer run, should have no effect)
 ENERGYBOX_ZMIN = -70.# stop @ zmin+buffer (in buffer run, should have no effect)
 ENERGYBOX_ZMAX = +70.# stop @ zmax-buffer (in buffer run, should have no effect)
