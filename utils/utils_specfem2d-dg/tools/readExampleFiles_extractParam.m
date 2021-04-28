@@ -52,13 +52,13 @@ function [var] = readExampleFiles_extractParam(path2file, varName, varType, verb
         command=['echo "',resl,'" | grep -oP "=.*"'];
         if(ismac)
           command = regexprep(command,'-oP','-oe');
-          command = regexprep(command,'\+','\\+');
+%           command = regexprep(command,'\+','\\+');
         end
         [~, resl] = system(command);
         command=['echo "',resl,'" | grep -oP "[^=]"'];
         if(ismac)
           command = regexprep(command,'-oP','-oe');
-          command = regexprep(command,'\+','\\+');
+%           command = regexprep(command,'\+','\\+');
         end
         [~, resl] = system(command);
 
