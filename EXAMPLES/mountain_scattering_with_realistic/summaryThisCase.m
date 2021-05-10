@@ -10,8 +10,10 @@ addpath(genpath('../utils'));
 IT = 120000;
 OFD1 = [thisFolder,filesep,'OUTPUT_FILES_411107_lns/'];
 OFD2 = [thisFolder,filesep,'../mountain_scattering_with_realistic_with_atm/OUTPUT_FILES_592911/'];
+OFD3 = [thisFolder,filesep,'../mountain_scattering_with_realistic_with_strong_atm/OUTPUT_FILES_605834/'];
 % OFD = OFD1; dnamvprobe='isothermal, no wind';
-OFD = OFD2; dnamvprobe='realistic (MSIS20-HWM14)';
+% OFD = OFD2; dnamvprobe='realistic (MSIS20-HWM14)';
+OFD = OFD3; dnamvprobe='artificial wind jet';
 
 sel_boxy = [0,12.5]*1e3;
 sel_boxabsx = 50e3;
@@ -34,6 +36,7 @@ YLIM = [sel_boxy];
 XLAB_fft = 'horizontal wavelength $(2\pi/k_x)$ [km]';
 YLAB_fft = {['vertical'], ['wavelength'],['$(2\pi/k_z)$ [km]']};
 fft_clim = [-1,0];
+fft_clim_radpat2 = [.1,.7];
 XLIMfft = [100, 100e3]; YLIMfft = [80, 1e3];
 fft_xtick = [0.1,1,10]; fft_ytick = [0.1, 1];
 fftxtl = {'0.1', '1', '10'}; fftytl = {'0.1', '1'};
@@ -49,7 +52,7 @@ if(do_load)
     disp(['[',mfilename,'] Matfile exists and is more recent than .txt file, loading it instead']);
     load(matfile, 'X', 'Y', 'V');
   else
-    disp(['[',mfilename,'] No matfile found, or is older than .txt file, loading .txt and saving to mat']);
+    disp(['[',mfilename,'] No matfile found, or is older than .txt file, loading .txt and saving to matfile.']);
     % Read dumps.
     disp(['[',mfilename,'] Reading dumps (may be long).']);
     [X, Y, V] = readDumpsUnique(OFD, IT, 0);
@@ -148,13 +151,14 @@ save(matfile_figpanel_d, 'topof', 'topos');
 
 axes(tightAxesRadPat(1));
 contourf(LaunchAngles*180/pi, Frequencies, log10(abs(PRE_fft2s)), [min(fft_clim):(range(fft_clim)/25):max(fft_clim)], 'edgecolor', 'none'); hold on;
-for j=1:numel(fft_selFreBand); plot(radpatxlim, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand); end
+% for j=1:numel(fft_selFreBand); plot(radpatxlim, [1,1]*fft_selFreBand(j), 'color', fft_colourISBand); end
+plot(polyshape([radpatxlim(1), radpatxlim, radpatxlim(2)], [flip(fft_selFreBand), fft_selFreBand]), 'linewidth', 3, 'edgecolor', fft_colourISBand, 'facecolor', fft_colourISBand, 'facealpha', 0.1)
 ylabel(['frequency [Hz]']);
 hcb = colorbar(); ylabel(hcb, CBYLAB_fft, 'interpreter', 'latex');
 save(matfile_figpanel_e, 'LaunchAngles', 'Frequencies', 'PRE_fft2s');
 axes(tightAxesRadPat(2));
-if(strcmp(OFD,OFD2)); ls=':'; else; ls='-'; end
-semilogy(V_probed_ang*180/pi, V_probed_band, ls, 'color', fft_colourISBand, 'displayname', dnamvprobe); hold on;
+switch(OFD);case{OFD1};ls='-';case{OFD2};ls='--';case{OFD3};ls=':';end;switch(OFD);case{OFD1,OFD2};lw=1.5;case{OFD3};lw=2;end;
+semilogy(V_probed_ang*180/pi, V_probed_band, ls, 'linewidth', lw, 'color', 'k', 'displayname', dnamvprobe); hold on;
 ylabel({['radiated'],'infrasound', ['$',absfftname,'$ [Pa]']});
 xlabel(['$\leftarrow$ towards South $|$ launch angle [deg] $|$ towards North $\rightarrow$']);
 legend('location','northeast');
@@ -162,7 +166,7 @@ save(matfile_figpanel_g, 'V_probed_ang', 'V_probed_band');
 
 set(tightAxesRadPat, 'yscale', 'log', 'xlim', radpatxlim);
 set(tightAxesRadPat(1), 'xticklabel', {}, 'ylim', radpatylim);
-set(tightAxesRadPat(2), 'ylim', 10.^fft_clim);
+set(tightAxesRadPat(2), 'ylim', fft_clim_radpat2);
 linkaxes(tightAxesRadPat, 'x');
 set([tightAxesSpectraDefault(1); tightAxesRadPat(1)], 'colormap', CMAP_fft, 'clim', fft_clim);
 
