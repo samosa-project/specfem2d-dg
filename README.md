@@ -4,7 +4,7 @@ SPECFEM2D-DG allows users to perform 2D simulations of wave propagation in the m
 The solid module resolves the equations of visco-elastodynamics; it is a direct import from the well-known [SPECFEM2D](https://github.com/geodynamics/specfem2d) software.
 The atmospheric modules resolve the Navier-Stokes equations, either the classical non-linear ones or linearised ones.
 
-Users interested in modelling wave propagation in linear acoustic media (incompressible windless non-viscous air or water) or poroelastic media are referred to [SPECFEM2D](https://github.com/geodynamics/specfem2d) and [SPECFEM2D](https://github.com/geodynamics/specfem3d).
+Users interested in modelling wave propagation in linear acoustic media (incompressible windless non-viscous air or water) or poroelastic media are referred to [SPECFEM2D](https://github.com/geodynamics/specfem2d) and [SPECFEM3D](https://github.com/geodynamics/specfem3d).
 
 The main "historical" developers of SPECFEM are Dimitri Komatitsch and Jeroen Tromp, though there are currently many more.
 The main "historical" developers of the DG extension are Quentin Brissaud and Léo Martire.
