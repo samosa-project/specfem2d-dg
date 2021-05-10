@@ -27,12 +27,12 @@ TS_outpath = [outputDir,'time_series_summary'];
 allCases = {'PW', 'PS', 'WPS'};
 LarRNam='large'; FafRNam='far-field'; BufRNam='buffers';
 
-compareEnergies = 0; % compare energies for all cases at once
+compareEnergies = 1; % compare energies for all cases at once
 % compareStations = 0;
 % compareStations = 1; caseToPlot = ''; % plot simply errors
 % compareStations = 1; caseToPlot = 'PW'; % compare time series for one case
 % compareStations = 1; caseToPlot = 'PS'; % compare time series for one case
-compareStations = 1; caseToPlot = 'WPS'; % compare time series for one case
+compareStations = 0; caseToPlot = 'WPS'; % compare time series for one case
 
 % Relative locations of OUTPUT_FILES directories. This should be the same across all test cases.
 LAR_ext = '_large/OUTPUT_FILES_baseline/';

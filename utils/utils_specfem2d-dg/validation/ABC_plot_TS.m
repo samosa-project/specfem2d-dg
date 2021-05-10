@@ -66,7 +66,7 @@ end
 
 % plot the one we care to plot
 % Time series plot
-nRepetitions = size(Zamp_toplot, 1)/nbstats;
+nRepetitions = size(Zamp_toplot, 1)/numel(x_stat_toplot);
 switch(distType_x0z1d2_toplot)
   case 0
     distttt = x_stat_toplot; distSymbol='$x$';
@@ -101,8 +101,8 @@ xlabel(['time [s]']);
 ylabel([distSymbol,' [m]']);
 yticks(sort(distttt));
 xlim([0, max(time)]);
-ll = legend(hleg, 'units','normalized');
-ll.Position([1,2]) = [0.528,0.69];
+ll = legend(hleg([3,4,5,1,2]), 'units','normalized');
+ll.Position([1,2]) = [0.56,0.69];
 title(['Time-Distance Plot for the ',  caseToPlot, ' Case']);
 
 hshift = 0.2;
