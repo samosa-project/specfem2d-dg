@@ -8,7 +8,7 @@ zs                              = 1.d0       # Source y location (m).
 source_type                     = 1          # Elastic force or acoustic pressure = 1, moment tensor = 2. For the moment, only 1 is supported by DG.
 
 time_function_type              = 3          # Source time function type: Ricker = 1, Gaussian first derivative = 2, Gaussian = 3, Dirac = 4, Heaviside = 5, 6 = ??, 7 = ??, 8 = read from file, 9 = burst, 10 = Gaussian primitive.
-name_of_source_file             = "/path/to/file" # Only for time_function_type 8. File containing the source wavelet: two columns file with time and amplitude, dt must be equal (for the moment) to the dt of the simulation. File name can't exceed 150 characters.
+name_of_source_file             = /path/to/file # Only for time_function_type 8. File containing the source wavelet: two columns file with time and amplitude, dt must be equal (for the moment) to the dt of the simulation. File name can't exceed 150 characters. The amplitude must contain any desired factor.
 burst_band_width                = 200.d0     # Only for time_function_type 9. Band width of the burst.
 
 f0                              = 30.d0      # Dominant source frequency (Hz). Only for time_function_type!=4 and !=5 (for time_function_type==4 or ==5, f0 is hardcoded as 1/(10*dt) in set_source_parameters.f90).
@@ -17,7 +17,7 @@ anglesource                     = 0.d0       # Only for a force. Angle of the so
 Mxx                             = 0.d0       # Only for moment tensor source. Mxx component.
 Mzz                             = 0.d0       # Only for moment tensor source. Mzz component.
 Mxz                             = 0.d0       # Only for moment tensor source. Mxz component.
-factor                          = 1.d0       # Amplification factor. Input negative values at own risk (with force source, it simply flips the angle by 180°).
+factor                          = 1.d0       # Amplification factor. Input negative values at own risk (with force source, it simply flips the angle by 180°). If time_function_type==8, this parameter is unused.
 
 # Remark for quake simulations: one should give M_0 and not M_w (either in Mxx, Mzz, and Mxz or in factor).
 # M_0 = 10^(3*M_w/2 + 9.05) [N.m].
