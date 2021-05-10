@@ -1,39 +1,48 @@
-# SPECFEM2D
+# SPECFEM2D-DG
 
-SPECFEM2D allows users to perform 2D and 2.5D (i.e., axisymmetric) simulations
-of acoustic, elastic, viscoelastic, and poroelastic seismic wave propagation.
-The package can also be used for full waveform imaging (FWI) or adjoint tomography.
+SPECFEM2D-DG allows users to perform 2D simulations of wave propagation in the mechanically-coupled solid-atmosphere system.
+The solid module resolves the equations of visco-elastodynamics; it is a direct import from the well-known [SPECFEM2D](https://github.com/geodynamics/specfem2d) software.
+The atmospheric modules resolve the Navier-Stokes equations, either the classical non-linear ones or linearised ones.
 
+Users interested in modelling wave propagation in linear acoustic media (incompressible windless non-viscous air or water) or poroelastic media are referred to [SPECFEM2D](https://github.com/geodynamics/specfem2d) and [SPECFEM2D](https://github.com/geodynamics/specfem3d).
 
-Main "historical" developers: Dimitri Komatitsch and Jeroen Tromp
-  (there are currently many more!)
-
-## Installation
-
-Instructions on how to install and use SPECFEM2D are
-available in the PDF manual located in directory doc/USER_MANUAL.
+The main "historical" developers of SPECFEM are Dimitri Komatitsch and Jeroen Tromp, though there are currently many more.
+The main "historical" developers of the DG extension are Quentin Brissaud and Léo Martire.
 
 
-For a quick test, run the default example with these commands:
+## Configuration and Installation
 
-  ./configure FC=gfortran
-  make all
-  ./bin/xmeshfem2D
-  ./bin/xspecfem2D
-
-and check the output files in ./OUTPUT_FILES/
+Refer to the `README_SPECFEM2D_DG.md` file.
 
 
 ## Development
 
-Development is hosted on GitHub in the
-[geodynamics/specfem2d repository](https://github.com/geodynamics/specfem2d).
-
-To contribute, please follow the guidelines in the SPECFEM3D github wiki:
-[specfem3d wiki](https://github.com/geodynamics/specfem3d/wiki)
+Development is hosted on GitHub in [project SAMoSA's specfem2d-dg repository](https://github.com/samosa-project/specfem2d-dg).
 
 
-## Computational Infrastructure for Geodynamics (CIG)
+## Citation
 
-Seismology software repository: [SPECFEM2D](https://geodynamics.org/cig/software/specfem2d/)
-
+- Full Navier-Stokes module:
+_Q. Brissaud, R. Martin, R. F. Garcia, and D. Komatitsch, “Hybrid Galerkin numerical modelling of elastodynamics and compressible Navier-Stokes couplings: Applications to seismo-gravito acoustic waves,” Geophys. J. Int., vol. 210, no. 2, pp. 1047–1069, 2017, doi: 10.1093/gji/ggx185._
+- Linear Navier-Stokes module:
+_L. Martire, R. Martin, Q. Brissaud, and R. F. Garcia, “SPECFEM2D-DG, an Open Source Software Modeling Mechanical Waves in Coupled Solid-Fluid Systems: the Linearised Navier-Stokes Approach,” Geophys. J. Int., 2021, doi: TBD._
+```
+@article{Brissaud2017_SPECFEM2D_DG_FNS,
+author = {Brissaud, Quentin and Martin, Roland and Garcia, Rapha{\"{e}}l F. and Komatitsch, Dimitri},
+doi = {10.1093/gji/ggx185},
+journal = {Geophysical Journal International},
+number = {2},
+pages = {1047--1069},
+title = {{Hybrid Galerkin numerical modelling of elastodynamics and compressible Navier-Stokes couplings: Applications to seismo-gravito acoustic waves}},
+volume = {210},
+year = {2017}
+}
+@article{Martire2021_SPECFEM2D_DG_LNS,
+abstract = {abstract},
+author = {Martire, L{\'{e}}o and Martin, Roland and Brissaud, Quentin and Garcia, Rapha{\"{e}}l F.},
+doi = {TBD},
+journal = {Geophysical Journal International},
+title = {{SPECFEM2D-DG, an Open Source Software Modeling Mechanical Waves in Coupled Solid-Fluid Systems: the Linearised Navier-Stokes Approach}},
+year = {2021}
+}
+```
