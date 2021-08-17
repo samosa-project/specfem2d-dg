@@ -23,9 +23,9 @@ Development is hosted on GitHub in [project SAMoSA's specfem2d-dg repository](ht
 ## Citation
 
 - Full Navier-Stokes module:
-_Q. Brissaud, R. Martin, R. F. Garcia, and D. Komatitsch, “Hybrid Galerkin numerical modelling of elastodynamics and compressible Navier-Stokes couplings: Applications to seismo-gravito acoustic waves,” Geophys. J. Int., vol. 210, no. 2, pp. 1047–1069, 2017, doi: 10.1093/gji/ggx185._
+_Q. Brissaud, R. Martin, R. F. Garcia, and D. Komatitsch, “[Hybrid Galerkin numerical modelling of elastodynamics and compressible Navier-Stokes couplings: Applications to seismo-gravito acoustic waves](https://academic.oup.com/gji/article/210/2/1047/3798201)”, Geophys. J. Int., vol. 210, no. 2, pp. 1047–1069, 2017, doi: 10.1093/gji/ggx185._
 - Linear Navier-Stokes module:
-_L. Martire, R. Martin, Q. Brissaud, and R. F. Garcia, “SPECFEM2D-DG, an Open Source Software Modeling Mechanical Waves in Coupled Solid-Fluid Systems: the Linearised Navier-Stokes Approach,” Geophys. J. Int., 2021, doi: TBD._
+_L. Martire, R. Martin, Q. Brissaud, and R. F. Garcia, “[SPECFEM2D-DG, an Open Source Software Modeling Mechanical Waves in Coupled Solid-Fluid Systems: the Linearised Navier-Stokes Approach](https://academic.oup.com/gji/advance-article/doi/10.1093/gji/ggab308/6342174?guestAccessKey=3c876f08-2039-4adc-8c7d-9173b208d1c8)”, Geophys. J. Int., 2021, doi: 10.1093/gji/ggab308._
 ```
 @article{Brissaud2017_SPECFEM2D_DG_FNS,
 author = {Brissaud, Quentin and Martin, Roland and Garcia, Rapha{\"{e}}l F. and Komatitsch, Dimitri},
@@ -38,9 +38,8 @@ volume = {210},
 year = {2017}
 }
 @article{Martire2021_SPECFEM2D_DG_LNS,
-abstract = {abstract},
 author = {Martire, L{\'{e}}o and Martin, Roland and Brissaud, Quentin and Garcia, Rapha{\"{e}}l F.},
-doi = {TBD},
+doi = {10.1093/gji/ggab308},
 journal = {Geophysical Journal International},
 title = {{SPECFEM2D-DG, an Open Source Software Modeling Mechanical Waves in Coupled Solid-Fluid Systems: the Linearised Navier-Stokes Approach}},
 year = {2021}
