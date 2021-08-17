@@ -5,6 +5,9 @@
 *.log
 *.status
 
+# EXAMPLE OUTPUT_FILES stuff.
+EXAMPLES/*/*/
+
 # Files re-created on installation.
 setup/constants.h
 src/meshfem2D/scotch_6.0.4/include/scotch.h
