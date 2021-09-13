@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/364278274.svg)](https://zenodo.org/badge/latestdoi/364278274)
+
 # SPECFEM2D-DG
 
 SPECFEM2D-DG allows users to perform 2D simulations of wave propagation in the mechanically-coupled solid-atmosphere system.
