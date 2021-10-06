@@ -321,11 +321,11 @@ subroutine initial_state_LNS()
   use constants, only: CUSTOM_REAL, NGLLX, NGLLZ, TINYVAL, HUGEVAL
   use specfem_par, only: MODEL, ibool_DG, nspec, coord, myrank, ibool_before_perio, deltat, &
                          gravityext, muext, kappa_DG, tau_epsilon, tau_sigma, &
-                         NPROC, gammaext_DG, ispec_is_acoustic_DG
+                         NPROC, gammaext_DG, ispec_is_acoustic_DG, assign_external_model
   use specfem_par_LNS, only: LNS_E0, LNS_p0, LNS_rho0, LNS_v0, LNS_T0, LNS_mu, &
                              buffer_LNS_sigma_dv, buffer_LNS_nabla_dT, sigma_dv, &
                              LNS_eta, LNS_kappa, LNS_g,LNS_c0, LNS_dummy_1d, LNS_dummy_2d, &
-                             VALIDATION_MMS, &
+                             VALIDATION_MMS, isClose, &
                              LNS_e1, RHS_e1, aux_e1, LNS_avib, LNS_avib_taueps, LNS_avib_tausig, &
                              LNS_viscous, sigma_v_0, nabla_v0, LNS_switch_gradient
 
@@ -372,6 +372,18 @@ subroutine initial_state_LNS()
         enddo
       endif
     enddo
+    
+    if(assign_external_model) then
+      ! For external models, we need to check tau_sigma and tau_epsilon over the whole array to determine LNS_avib, which is why it's done here instead of within set_fluid_properties.
+      if(      isClose(minval(LNS_avib_taueps), maxval(LNS_avib_tausig), 1.0e-3_CUSTOM_REAL) &
+         .and. isClose(minval(LNS_avib_tausig), maxval(LNS_avib_tausig), 1.0e-3_CUSTOM_REAL) &
+         .and. isClose(minval(LNS_avib_taueps), maxval(LNS_avib_tausig), 1.0e-3_CUSTOM_REAL)   ) then
+        ! If LNS_avib_taueps and LNS_avib_tausig are constant (isClose) and equal, then there is not vibrational attenuation.
+        LNS_avib = .false.
+      else
+        LNS_avib = .true.
+      endif
+    endif
 
     ! Recompute and save globally c0.
     LNS_c0 = ZEROcr
@@ -634,7 +646,7 @@ subroutine set_fluid_properties(i, j, ispec)
   use specfem_par, only: assign_external_model, cp, c_v, dynamic_viscosity_cte_DG, etaext, &
                          gammaext_DG, gravityext, gravity_cte_DG, ibool_DG, kappa_DG, muext, &
                          thermal_conductivity_cte_DG, USE_ISOTHERMAL_MODEL, &
-                         tau_eps_cte_DG, tau_sig_cte_DG
+                         tau_eps_cte_DG, tau_sig_cte_DG, tau_sigma, tau_epsilon
   use specfem_par_LNS, only: isClose, LNS_eta, LNS_kappa, LNS_g, LNS_mu, LNS_avib, LNS_avib_taueps, LNS_avib_tausig
 
   implicit none
@@ -657,6 +669,12 @@ subroutine set_fluid_properties(i, j, ispec)
     LNS_mu(iglob) = muext(i, j, ispec)
     LNS_eta(iglob) = etaext(i, j, ispec)
     LNS_kappa(iglob) = kappa_DG(i, j, ispec)
+    
+    ! Vibrational attenuation.
+    LNS_avib_taueps(iglob) = tau_sigma(i, j, ispec)
+    LNS_avib_tausig(iglob) = tau_epsilon(i, j, ispec)
+    ! Check for LNS_avib must be done out of the loop, and is therefore done in initial_state_LNS.
+    
   else ! Else on assign_external_model.
     ! If no external model data file is given (no initial conditions were specified), build model.
     if(USE_ISOTHERMAL_MODEL) then
