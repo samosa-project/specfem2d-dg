@@ -127,6 +127,14 @@ if(generatemeshfemparams)
   if(fluidmodel)
     % Compute fluid layers.
     dz=dx_c_mach; % choice for atmospheric model
+    disp(['[',mfilename,'] dz ranges from ',sprintf('%.3f', min(dz)),' (at z=',sprintf('%.3f', Z(dz==min(dz))),') to ',sprintf('%.3f', max(dz)),' (at z=',sprintf('%.3f', Z(dz==max(dz))),').']);
+    dzfactor = [];
+    while (not(length(dzfactor) == 1))
+      dzfactor = input(['[',mfilename,'] Multiplying factor to adjust dz (1 to change nothing)? > ']);
+    end
+    dz = dz*dzfactor;
+    disp(['[',mfilename,'] dz ranges from ',sprintf('%.3f', min(dz)),' (at z=',sprintf('%.3f', Z(dz==min(dz))),') to ',sprintf('%.3f', max(dz)),' (at z=',sprintf('%.3f', Z(dz==max(dz))),').']);
+    
     zmax = [];
     while (not(length(zmax) == 1 && zmax<=max(Z) && zmax>min(Z)))
       zmax = input(['[',mfilename,'] Maximum atmospheric altitude of interest (',num2str(min(Z)),' < zmax < ',num2str(max(Z)),') [m]? > ']);
