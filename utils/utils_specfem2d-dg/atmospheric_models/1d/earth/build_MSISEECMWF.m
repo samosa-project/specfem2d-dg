@@ -36,10 +36,8 @@ if(not(exist(ECMWF_DATAFILE, 'file')))
 end
 threshold_ok_latlon = 0.5; % If point is < 0.5 ° away, consider it ok.
 threshold_ok_time = 10; % If time is < 10 minutes away, consider it ok.
-TC = thermodynamicalConstants();
-R = TC.R;
-PC = planetaryConstants();
-M_dryair = PC.earth.Mair;
+R = 1.380649e-23 * 6.02214076e23; % gas constant = k * N_A
+M_dryair = 0.0288576070373303; % molar mass of dry air on Earth
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Begin treatment,        %
@@ -172,7 +170,7 @@ if(apodisewind)
     nW = apoWind.*nW; disp(['[', mfilename, '] Apodised W up to ', num2str(width), ' m such that W(Z == ', num2str(min(Z)), ') = 0.']);
   elseif(apodisewind == 2)
     nW = w_P_e+apoWind.*(nW-w_P_e);
-    dzmovingavg = 100; nW(Z< = width) = smooth(Z(Z< = width), nW(Z< = width), 'moving', floor(dzmovingavg/mean(diff(Z(Z< = width)))));
+    dzmovingavg = 100; nW(Z<=width) = smooth(Z(Z<=width), nW(Z<=width), 'moving', floor(dzmovingavg/mean(diff(Z(Z<=width)))));
     disp(['[', mfilename, '] Apodise W up to ', num2str(width), ' m such that W(Z == ', num2str(min(Z)), ') is unchanged. Also applied a moving average on [', num2str(min(Z)), ', ', num2str(width), '] m with width ', num2str(dzmovingavg), ' m.']);
   else
     error('kek');
