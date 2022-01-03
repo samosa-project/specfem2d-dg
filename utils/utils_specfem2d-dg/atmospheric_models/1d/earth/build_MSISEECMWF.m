@@ -180,10 +180,7 @@ w_P_treated = nW;
 
 % Compute hydrostatic rho from ECMWF p.
 P = p_e; G = g_e;
-method = 'bruteforce_rho';
-% method = 'bruteforce_rho_log';
-modify_atmos_model;
-nRHO = bruteforced_RHO;
+nRHO = - differentiation_matrix(Z, 0) * P ./ G; % $\rho = -\partial_z{P} / g_z$
 disp(['[', mfilename, '] Bruteforce RHO from ECMWF''s P.']); % Regularise hydrostatic ratio by bruteforcing $\rho = -\partial_z{P} / g_z$.
 smthpar = 1e-12; spline = fit(Z, log(nRHO), 'smoothingspline', 'smoothingparam', smthpar); nRHO = exp(spline(Z)); disp(['[', mfilename, '] Spline log(RHO) (par = ', num2str(smthpar), ').']);
 % smthpar = 1e-15; spline = fit(Z, LRHO, 'smoothingspline', 'smoothingparam', smthpar);       figure();subplot(121);plot(LRHO, Z, spline(Z), Z);subplot(122);plot(D*LRHO, Z, D*spline(Z), Z);
