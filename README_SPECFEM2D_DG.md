@@ -96,6 +96,18 @@
     Make sure you have the right compilers installed (gcc, icc, gfortran, fort, etc.). On clusters, load the relevant package to have them available, e.g. with:
       `load intel/compiler`
 
+  - Known error:
+    ```
+    ld: library not found for -lSystem
+    ```
+  - Solution:
+    Re-install your compilers just in case. On MacOS and using HomeBrew, try `brew reinstall gcc` and `brew reinstall gfortran`.
+    Make sure your library path contains the stdlib. On MacOS:
+    ```
+    export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+    ```
+    It might be useful to add that `export` line (or the one that works for you) in your login script.
+
 ### 4. Compile SPECFEM-DG
   1. Compile SPECFEM-DG:
     ```
